@@ -1,0 +1,14 @@
+{
+    "name": "qingkuai-extension-vscode",
+    "version": "1.0.0",
+    "author": "lgq",
+    "license": "MIT",
+    "description": "qingkuai language support for vscode",
+    "dependencies": {
+        "install": "^0.13.0",
+        "vscode-languageclient": "^9.0.1"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.93.0"
+    }
+}
