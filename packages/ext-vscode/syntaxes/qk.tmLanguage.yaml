@@ -1,0 +1,254 @@
+name: qingkuai
+fileTypes: [qk]
+scopeName: source.qk
+uuid: 762041dd-c0dd-4e04-b8ff-996bf64c76f2
+
+patterns:
+  # embedded javascript language block, ways: <lang-js> <lang-javascript> <script>
+  - begin: (?=<lang-js)
+    end: (?=</lang-js)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.js
+        begin: (?<=>)
+        end: (?=</lang-js)
+        patterns: [include: source.js]
+  - begin: (?=<script)
+    end: (?=</script)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.js
+        begin: (?<=>)
+        end: (?=</script)
+        patterns: [include: source.js]
+
+  # embedded typescript language block, ways: <lang-ts> <lang-typescript>
+  - begin: (?=<lang-ts)
+    end: (?=</lang-ts)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.ts
+        begin: (?<=>)
+        end: (?=</lang-ts)
+        patterns: [include: source.ts]
+
+  # embedded css language block, ways: <lang-css> <style>
+  - begin: (?=<lang-css)
+    end: (?=</lang-css)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.css
+        begin: (?<=>)
+        end: (?=</lang-css)
+        patterns: [include: source.css]
+  - begin: (?=<style)
+    end: (?=</style)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.css
+        begin: (?<=>)
+        end: (?=</style)
+        patterns: [include: source.css]
+
+  # embedded sass language block, ways: <lang-sass>
+  - begin: (?=<lang-sass)
+    end: (?=</lang-sass)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.sass
+        begin: (?<=>)
+        end: (?=</lang-sass)
+        patterns: [include: source.sass]
+
+  # embedded scss language block, ways: <lang-scss>
+  - begin: (?=<lang-scss)
+    end: (?=</lang-scss)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.css.scss
+        begin: (?<=>)
+        end: (?=</lang-scss)
+        patterns: [include: source.css.scss]
+
+  # embedded less language block, ways: <lang-less>
+  - begin: (?=<lang-less)
+    end: (?=</lang-less)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.css.less
+        begin: (?<=>)
+        end: (?=</lang-less)
+        patterns: [include: source.css.less]
+
+  # embedded stylus language block, ways: <lang-stylus>
+  - begin: (?=<lang-stylus)
+    end: (?=</lang-stylus)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.stylus
+        begin: (?<=>)
+        end: (?=</lang-stylus)
+        patterns: [include: source.stylus]
+
+  # embedded postcss language block, ways: <lang-postcss>
+  - begin: (?=<lang-postcss)
+    end: (?=</lang-postcss)
+    patterns:
+      - include: "#tag-structure-start"
+      - name: meta.embedded.block.qk source.css.postcss
+        begin: (?<=>)
+        end: (?=</lang-postcss)
+        patterns: [include: source.css.postcss]
+
+  - include: "#tag-structure"
+  - include: "#text-content"
+
+repository:
+  tag-structure:
+    patterns:
+      - include: "#comment-block"
+      - include: "#tag-structure-start"
+      - include: "#tag-structure-end"
+
+  # tag start structure, likes <div>
+  tag-structure-start:
+    name: meta.tag.structure.$2.start.qk
+    begin: (<)(?!/)([a-zA-Z][a-zA-Z\d\-_.:]*)
+    end: "/?>"
+    beginCaptures:
+      1: { name: punctuation.definition.tag.begin.qk }
+      2: { name: entity.name.tag.qk }
+    endCaptures:
+      0: { name: punctuation.definition.tag.end.qk }
+    patterns:
+      - include: "#attribute"
+      - include: "#special-attribute"
+      - include: "#invalid-attribute"
+
+  # tag end structure, likes: </div>
+  tag-structure-end:
+    name: meta.tag.structure.$2.end.qk
+    begin: (</)([a-zA-z][a-zA-Z\d\-_.:]*)
+    end: ">"
+    beginCaptures:
+      1: { name: punctuation.definition.tag.begin.qk }
+      2: { name: entity.name.tag.qk }
+    endCaptures:
+      0: { name: punctuation.definition.tag.end.qk }
+    patterns:
+      # attribute is not allowed in tag end structure
+      - match: \S
+        name: invalid.illegal.unexpect-character.qk
+
+  comment-block:
+    name: comment.block.qk
+    begin: <!--
+    end: -->
+    beginCaptures:
+      0: { name: punctuation.definition.comment.qk }
+    endCaptures:
+      0: { name: punctuation.definition.comment.qk }
+
+  # attribute and attribute-value from the structure of each attribute
+  # combining them likes: [id], [id='xxx'] or [id = "xxx"]
+  attribute:
+    name: meta.attribute.$1.html.qk
+    begin: (?<=^|[\s'"}])([^!@#&\s='"\{\}>/]+)
+    end: (?<=['"])|(?=\s*(?:[^\s=]|[>/]))
+    beginCaptures:
+      1: { name: entity.other.attribute-name.html.qk }
+    patterns:
+      - begin: =
+        end: (?<=[^\s=])(?!=)
+        beginCaptures:
+          0: { name: punctuation.separator.key-value.qk }
+        patterns: [include: "#attribute-value"]
+
+  attribute-value:
+    patterns:
+      # unquoted attribute value is not allowed in .qk file
+      - name: invalid.illegal.unexpect-character.qk
+        match: ([^\s'"]+)
+
+      # quoted string attribute value
+      - begin: (['"])
+        end: \1
+        beginCaptures:
+          1: { name: punctuation.definition.string.begin.qk }
+        endCaptures:
+          0: { name: punctuation.definition.string.end.qk }
+        patterns:
+          - name: string.quoted.double.qk
+            begin: (?<=")
+            end: (?=")
+          - name: string.quoted.single.qk
+            begin: (?<=')
+            end: (?=')
+
+  # special attribute means: Control Flow Directive, Dynamic Attribute,
+  # Reference Attribute and Event. They are in a embedded block and the
+  # embedded block must be wrapped by a pair of curly brackets.
+  special-attribute:
+    name: meta.attribute.$1.qk
+    begin: (?<=^|[\s'"}])([!@#&][^\s='"\{\}>/]+)
+    end: (?<=['"])|(?=\s*(?:[^\s=]|[/>]))
+    beginCaptures:
+      1:
+        # specify separate scope name for different special attribute
+        patterns:
+          - match: (@)[^\s=\{\}/>]+
+            name: entity.other.attribute-name.event.qk
+            captures:
+              1: { name: punctuation.mark-event.qk }
+          - match: (!)[^\s=\{\}/>]+
+            name: entity.other.attribute-name.dynamic.qk
+            captures:
+              1: { name: punctuation.mark-dynamic.qk }
+          - match: (&)[^\s=\{\}/>]+
+            name: entity.other.attribute-name.reference.qk
+            captures:
+              1: { name: punctuation.mark-reference.qk }
+          - match: (#)[^\s=\{\}/>]+
+            name: entity.other.attribute-name.directive.qk
+            captures:
+              1: { name: punctuation.mark-directive.qk }
+    patterns:
+      - begin: =
+        end: (?<=[^\s=])(?!=)
+        beginCaptures:
+          0: { name: keyword.operator.assignment.qk }
+        patterns: [include: "#special-attribute-value"]
+
+  special-attribute-value:
+    patterns:
+      # no curly bracket is not allowed
+      - name: invalid.illegal.unexpect-character.qk
+        match: ([^\s\{\}]+)
+      - include: "#interpolation-block"
+
+  # text content area
+  text-content:
+    name: text
+    begin: (?<=(?:^|>))
+    end: (?=</?(?:[^/<>\s]+))
+    patterns: [include: "#interpolation-block"]
+
+  # interpolation block
+  interpolation-block:
+    begin: ({)
+    end: (})
+    beginCaptures:
+      1: { name: punctuation.section.embedded.begin.qk }
+    endCaptures:
+      1: { name: punctuation.section.embedded.end.qk }
+    patterns:
+      - name: meta.embeded.block.qk source.ts
+        begin: (?<={)
+        end: (?=})
+        patterns: [include: source.ts#expression]
+
+  # attribute can not start with quotation marks
+  invalid-attribute:
+    name: invalid.illegal.character-not-allowed-here.qk
+    begin: (?=[!@#&'"\{\}=</])
+    end: (?=[>\s])

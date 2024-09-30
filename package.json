@@ -2,7 +2,6 @@
     "name": "qingkuai-language-tools",
     "version": "1.0.0",
     "author": "lgq",
-    "type": "module",
     "license": "MIT",
     "scripts": {
         "dev": "rollup -c -w"
@@ -11,6 +10,7 @@
         "@rollup/plugin-commonjs": "^26.0.1",
         "@rollup/plugin-node-resolve": "^15.2.3",
         "@types/node": "^22.5.5",
+        "prettier": "^3.3.3",
         "rimraf": "^6.0.1",
         "rollup": "^4.21.3",
         "rollup-plugin-esbuild": "^6.1.1"

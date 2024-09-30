@@ -4,12 +4,12 @@ import {
     LanguageClient,
     LanguageClientOptions
 } from "vscode-languageclient/node"
-import { workspace, ExtensionContext, window } from "vscode"
+import { workspace, ExtensionContext, window, SnippetString, languages } from "vscode"
 
 let client: LanguageClient
 
 export function activate(context: ExtensionContext) {
-    const serverModule = context.asAbsolutePath("../qingkuai-language-server/dist/index.js")
+    const serverModule = context.asAbsolutePath("../language-server/dist/index.js")
 
     const serverOptions: ServerOptions = {
         args: ["--nolazy"],
@@ -32,10 +32,12 @@ export function activate(context: ExtensionContext) {
     )
 
     client.start().then(() => {
-        client.sendRequest("ok", { msg: "hello" }).then(res => {
-            console.log(res)
+        client.onNotification("html/automaticallyCloseTag", text => {
+            window.activeTextEditor?.insertSnippet(new SnippetString(text))
         })
     })
+
+    languages.setLanguageConfiguration("qk", {})
 }
 
 export function deactivate(): Thenable<void> | undefined {

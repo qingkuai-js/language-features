@@ -4,11 +4,71 @@
     "author": "lgq",
     "license": "MIT",
     "description": "qingkuai language support for vscode",
-    "dependencies": {
-        "install": "^0.13.0",
-        "vscode-languageclient": "^9.0.1"
+    "engines": {
+        "vscode": "^1.93.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "../ext-vscode/dist/index.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "qk",
+                "extensions": [
+                    ".qk"
+                ],
+                "aliases": [
+                    "QingKuai Component"
+                ],
+                "icon": {
+                    "light": "./imgs/qingkuai.svg",
+                    "dark": "./imgs/qingkuai.svg"
+                },
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "qk",
+                "scopeName": "source.qk",
+                "path": "./syntaxes/qk.tmLanguage.json",
+                "embeddedLanguages": {
+                    "source.js": "javascript",
+                    "source.ts": "typescript",
+                    "source.css": "css",
+                    "source.sass": "sass",
+                    "source.stylus": "stylus",
+                    "source.css.scss": "scss",
+                    "source.css.less": "less",
+                    "source.css.postcss": "css",
+                    "text.html.markdown": "markdown"
+                },
+                "unbalancedBracketScopes": [
+                    "text",
+                    "text-content.qk",
+                    "entity.name.tag",
+                    "punctuation.definition.tag",
+                    "storage.type.function.arrow",
+                    "keyword.operator.relational",
+                    "keyword.operator.bitwise.shift"
+                ]
+            },
+            {
+                "scopeName": "source.css.postcss",
+                "path": "./syntaxes/postcss.tmLanguage.json"
+            }
+        ]
+    },
+    "scripts": {
+        "build:grammer": "cd ./syntaxes && npx js-yaml ./qk.tmLanguage.yaml > ./qk.tmLanguage.json && npx prettier --write ./qk.tmLanguage.json"
     },
     "devDependencies": {
-        "@types/vscode": "^1.93.0"
+        "@types/vscode": "^1.93.0",
+        "js-yaml": "^4.1.0",
+        "vscode-languageclient": "^9.0.1"
     }
 }
