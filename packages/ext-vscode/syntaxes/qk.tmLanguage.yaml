@@ -109,12 +109,14 @@ repository:
       - include: "#comment-block"
       - include: "#tag-structure-start"
       - include: "#tag-structure-end"
+      - include: "#self-closing-tags"
+      - include: "#component-tags"
 
   # tag start structure, likes <div>
   tag-structure-start:
     name: meta.tag.structure.$2.start.qk
-    begin: (<)(?!/)([a-zA-Z][a-zA-Z\d\-_.:]*)
-    end: "/?>"
+    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)([a-z][a-zA-Z\d_.:]*)(?=[\s>/])
+    end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
       2: { name: entity.name.tag.qk }
@@ -127,18 +129,44 @@ repository:
 
   # tag end structure, likes: </div>
   tag-structure-end:
-    name: meta.tag.structure.$2.end.qk
-    begin: (</)([a-zA-z][a-zA-Z\d\-_.:]*)
+    name: meta.tag.native.$2.end.qk
+    begin: (</)([a-z][a-zA-Z\d_.:]*)(?=[\s>])
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
       2: { name: entity.name.tag.qk }
     endCaptures:
       0: { name: punctuation.definition.tag.end.qk }
+
+  # self closing tags, likes: <br> <img>
+  self-closing-tags:
+    name: meta.tag.native.$2.void.qk
+    begin: (<)(?!/)(br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)(?=[\s>/])
+    end: "/?>"
+    beginCaptures:
+      1: { name: punctuation.definition.tag.begin.qk }
+      2: { name: entity.name.tag.qk }
+    endCaptures:
+      0: { name: punctuation.definition.tag.end.qk }
     patterns:
-      # attribute is not allowed in tag end structure
-      - match: \S
-        name: invalid.illegal.unexpect-character.qk
+      - include: "#attribute"
+      - include: "#special-attribute"
+      - include: "#invalid-attribute"
+
+  # component tags, likes: <Test> <Test /> <c-test>
+  component-tags:
+    name: meta.tag.component.$2.void.qk
+    begin: (</?)([a-zA-Z][a-zA-Z\d_\-.:]*)(?=[\s>/])
+    end: "/?>"
+    beginCaptures:
+      1: { name: punctuation.definition.tag.begin.qk }
+      2: { name: support.function.component.qk }
+    endCaptures:
+      0: { name: punctuation.definition.tag.end.qk }
+    patterns:
+      - include: "#attribute"
+      - include: "#special-attribute"
+      - include: "#invalid-attribute"
 
   comment-block:
     name: comment.block.qk
@@ -153,7 +181,7 @@ repository:
   # combining them likes: [id], [id='xxx'] or [id = "xxx"]
   attribute:
     name: meta.attribute.$1.html.qk
-    begin: (?<=^|[\s'"}])([^!@#&\s='"\{\}>/]+)
+    begin: (?<=^|[\s'"}])([^!@#&\s='"\{\}></]+)
     end: (?<=['"])|(?=\s*(?:[^\s=]|[>/]))
     beginCaptures:
       1: { name: entity.other.attribute-name.html.qk }
@@ -168,7 +196,7 @@ repository:
     patterns:
       # unquoted attribute value is not allowed in .qk file
       - name: invalid.illegal.unexpect-character.qk
-        match: ([^\s'"]+)
+        match: (?:[^\s'"]+)
 
       # quoted string attribute value
       - begin: (['"])
@@ -208,22 +236,23 @@ repository:
             name: entity.other.attribute-name.reference.qk
             captures:
               1: { name: punctuation.mark-reference.qk }
-          - match: (#)[^\s=\{\}/>]+
+          - match: (#)([^\s=\{\}/>]+)
             name: entity.other.attribute-name.directive.qk
             captures:
               1: { name: punctuation.mark-directive.qk }
+              2: { name: keyword.control.$2.qk }
     patterns:
       - begin: =
         end: (?<=[^\s=])(?!=)
         beginCaptures:
-          0: { name: keyword.operator.assignment.qk }
+          0: { name: punctuation.separator.key-value.qk }
         patterns: [include: "#special-attribute-value"]
 
   special-attribute-value:
     patterns:
       # no curly bracket is not allowed
       - name: invalid.illegal.unexpect-character.qk
-        match: ([^\s\{\}]+)
+        match: (?:[^\s\{>]+)
       - include: "#interpolation-block"
 
   # text content area

@@ -1,8 +1,8 @@
 import type { Node as HTMLNode } from "vscode-html-languageservice"
+import type { InitializeParams, InitializeResult } from "vscode-languageserver/node"
 
 import {
     createConnection,
-    InitializeParams,
     ProposedFeatures,
     TextDocuments,
     TextDocumentSyncKind
@@ -21,17 +21,18 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument)
 documents.listen(connection)
 connection.listen()
 
-connection.onInitialize((_params: InitializeParams) => {
+connection.onInitialize((params: InitializeParams) => {
     console.log("Keep output choice QingKuaiLanguageServer...")
+    console.log(params.capabilities.textDocument?.diagnostic)
+
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             completionProvider: {
                 triggerCharacters: [".", "+", "#", "*", ">", "]", ")", "^", "$", "@", "-"]
-            },
-            documentFormattingProvider: {}
+            }
         }
-    }
+    } satisfies InitializeResult
 })
 
 connection.onCompletion(async ({ position, textDocument }) => {
@@ -79,6 +80,29 @@ connection.onCompletion(async ({ position, textDocument }) => {
 
 documents.onDidChangeContent(document => {
     // console.log(document)
+})
+
+documents.onDidOpen(params => {
+    // connection.sendNotification("textDocument/publishDiagnostics", {
+    //     uri: params.document.uri,
+    //     diagnostics: [
+    //         {
+    //             range: {
+    //                 start: {
+    //                     line: 0,
+    //                     character: 0
+    //                 },
+    //                 end: {
+    //                     line: 0,
+    //                     character: 5
+    //                 }
+    //             },
+    //             code: 1001,
+    //             source: "qk",
+    //             message: "The diagnostic's severity. To avoid interpretation mismatches when a"
+    //         }
+    //     ]
+    // } satisfies PublishDiagnosticsParams)
 })
 
 connection.onDocumentFormatting((params, token) => {
