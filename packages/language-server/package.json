@@ -6,11 +6,10 @@
     "type": "module",
     "license": "MIT",
     "dependencies": {
-        "vscode-languageserver": "^9.0.1"
-    },
-    "devDependencies": {
-        "@vscode/emmet-helper": "^2.9.3",
+        "@vscode/emmet-helper": "^2.8.4",
+        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai",
         "vscode-html-languageservice": "^5.3.1",
+        "vscode-languageserver": "^9.0.1",
         "vscode-languageserver-textdocument": "^1.0.12"
     }
 }

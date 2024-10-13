@@ -7,7 +7,7 @@ settings:
 devDependencies:
   '@types/vscode':
     specifier: ^1.93.0
-    version: 1.93.0
+    version: 1.94.0
   js-yaml:
     specifier: ^4.1.0
     version: 4.1.0
@@ -17,8 +17,8 @@ devDependencies:
 
 packages:
 
-  /@types/vscode@1.93.0:
-    resolution: {integrity: sha512-kUK6jAHSR5zY8ps42xuW89NLcBpw1kOabah7yv38J8MyiYuOHxLQBi0e7zeXbQgVefDy/mZZetqEFC+Fl5eIEQ==}
+  /@types/vscode@1.94.0:
+    resolution: {integrity: sha512-UyQOIUT0pb14XSqJskYnRwD2aG0QrPVefIfrW1djR+/J4KeFQ0i1+hjZoaAmeNf3Z2jleK+R2hv+EboG/m8ruw==}
     dev: true
 
   /argparse@2.0.1:

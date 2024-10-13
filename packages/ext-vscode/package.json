@@ -13,7 +13,7 @@
     "activationEvents": [
         "*"
     ],
-    "main": "../ext-vscode/dist/index.js",
+    "main": "../../dist/client.js",
     "contributes": {
         "languages": [
             {
@@ -67,8 +67,8 @@
         "build:grammer": "cd ./syntaxes && npx js-yaml ./qk.tmLanguage.yaml > ./qk.tmLanguage.json && npx prettier --write ./qk.tmLanguage.json"
     },
     "devDependencies": {
-        "@types/vscode": "^1.93.0",
         "js-yaml": "^4.1.0",
+        "@types/vscode": "^1.93.0",
         "vscode-languageclient": "^9.0.1"
     }
 }

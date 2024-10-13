@@ -6,14 +6,17 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 export default defineConfig(() => {
     return [
         {
-            external: ["vscode", "vscode-languageclient/node"],
-            input: "./packages/ext-vscode/index.ts",
+            external: ["vscode"],
+            input: {
+                client: "./packages/ext-vscode/index.ts",
+                server: "./packages/language-server/index.ts"
+            },
             output: {
                 format: "cjs",
-                file: "packages/ext-vscode/dist/index.js",
+                dir: "dist",
                 chunkFileNames: "chunks/[name].js"
             },
-            plugins: [esbuild()],
+            plugins: [nodeResolve(), commonjs(), esbuild()],
             onwarn: (log, warn) => {
                 if (
                     !(
@@ -21,34 +24,13 @@ export default defineConfig(() => {
                         log.ids.every(id => {
                             return id.includes("node_modules/.pnpm/semver")
                         })
-                    )
-                ) {
-                    warn(log)
-                }
-            }
-        },
-        {
-            external: [
-                "@vscode/emmet-helper",
-                "vscode-html-languageservice",
-                "vscode-languageserver-textdocument"
-            ],
-            input: "./packages/language-server/index.ts",
-            output: {
-                format: "es",
-                chunkFileNames: "chunks/[name].js",
-                file: "packages/language-server/dist/index.js"
-            },
-            plugins: [esbuild(), commonjs(), nodeResolve()],
-            onwarn: (log, warn) => {
-                if (
+                    ) &&
                     !(
-                        log.code === "CIRCULAR_DEPENDENCY" &&
-                        log.ids.every(id => {
-                            return id.includes("node_modules/.pnpm/semver")
-                        })
+                        log.code === "THIS_IS_UNDEFINED" &&
+                        /emmetHelper\.js|vscode-uri\/lib\/esm\/index.js/.test(log.id)
                     )
                 ) {
+                    console.log(log)
                     warn(log)
                 }
             }

@@ -9,7 +9,7 @@ import { workspace, ExtensionContext, window, SnippetString, languages } from "v
 let client: LanguageClient
 
 export function activate(context: ExtensionContext) {
-    const serverModule = context.asAbsolutePath("../language-server/dist/index.js")
+    const serverModule = context.asAbsolutePath("../../dist/server.js")
 
     const serverOptions: ServerOptions = {
         args: ["--nolazy"],

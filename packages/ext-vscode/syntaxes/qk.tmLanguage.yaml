@@ -114,8 +114,8 @@ repository:
 
   # tag start structure, likes <div>
   tag-structure-start:
-    name: meta.tag.structure.$2.start.qk
-    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)([a-z][a-zA-Z\d_.:]*)(?=[\s>/])
+    name: meta.tag.normal.$2.start.qk
+    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)([a-z][a-zA-Z\d_.:]*|lang-[a-z]*)(?=[\s>/])
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
@@ -129,8 +129,8 @@ repository:
 
   # tag end structure, likes: </div>
   tag-structure-end:
-    name: meta.tag.native.$2.end.qk
-    begin: (</)([a-z][a-zA-Z\d_.:]*)(?=[\s>])
+    name: meta.tag.normal.$2.end.qk
+    begin: (</)([a-z][a-zA-Z\d_.:]*|lang-[a-z]*)(?=[\s>])
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
