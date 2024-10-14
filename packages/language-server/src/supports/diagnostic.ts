@@ -2,11 +2,12 @@ import { Diagnostic } from "vscode-languageserver"
 import type { DiagnosticHandler } from "../types/handlers"
 
 import { documents } from "../state"
-import { isUndefined } from "../../../util/shared/assert"
 import { compile, isCompileError } from "qingkuai/compiler"
+import { isUndefined } from "../../../../shared-util/assert"
 import { DocumentDiagnosticReportKind } from "vscode-languageserver"
 
 export const diagnostic: DiagnosticHandler = params => {
+    return
     const document = documents.get(params.textDocument.uri)!.getText()
     try {
         const messages = compile(document, {

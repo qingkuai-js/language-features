@@ -1,6 +1,5 @@
-import { InitializeParams, InitializeResult, TextDocumentSyncKind } from "vscode-languageserver"
-import { connection, documents } from "../state"
 import { InitializeHandler } from "../types/handlers"
+import { TextDocumentSyncKind } from "vscode-languageserver"
 
 export const initialize: InitializeHandler = params => {
     console.log("Keep output choice QingKuaiLanguageServer...")

@@ -6,14 +6,11 @@ settings:
 
 dependencies:
   '@vscode/emmet-helper':
-    specifier: ^2.8.4
+    specifier: 2.8.4
     version: 2.8.4
   qingkuai:
     specifier: file:/users/lianggaoqiang/desktop/QingKuai/qingkuai
     version: file:../../../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai
-  vscode-html-languageservice:
-    specifier: ^5.3.1
-    version: 5.3.1
   vscode-languageserver:
     specifier: ^9.0.1
     version: 9.0.1
@@ -81,10 +78,6 @@ packages:
       vscode-uri: 2.1.2
     dev: false
 
-  /@vscode/l10n@0.0.18:
-    resolution: {integrity: sha512-KYSIHVmslkaCDyw013pphY+d7x1qV8IZupYfeIfzNA+nsaWHbn5uPuQRvdRFsa9zFzGeudPuoGoZ1Op4jrJXIQ==}
-    dev: false
-
   /emmet@2.4.11:
     resolution: {integrity: sha512-23QPJB3moh/U9sT4rQzGgeyyGIrcM+GH5uVYg2C6wZIxAIJq7Ng3QLT79tl8FUwDXhyq9SusfknOrofAKqvgyQ==}
     dependencies:
@@ -99,15 +92,6 @@ packages:
   /to-fast-properties@2.0.0:
     resolution: {integrity: sha512-/OaKK0xYrs3DmxRYqL/yDc+FxFUVYhDlXMhRmv3z915w2HF1tnN1omB354j8VUGO/hbRzyD6Y3sA7v7GS/ceog==}
     engines: {node: '>=4'}
-    dev: false
-
-  /vscode-html-languageservice@5.3.1:
-    resolution: {integrity: sha512-ysUh4hFeW/WOWz/TO9gm08xigiSsV/FOAZ+DolgJfeLftna54YdmZ4A+lIn46RbdO3/Qv5QHTn1ZGqmrXQhZyA==}
-    dependencies:
-      '@vscode/l10n': 0.0.18
-      vscode-languageserver-textdocument: 1.0.12
-      vscode-languageserver-types: 3.17.5
-      vscode-uri: 3.0.8
     dev: false
 
   /vscode-jsonrpc@8.2.0:
@@ -143,10 +127,6 @@ packages:
 
   /vscode-uri@2.1.2:
     resolution: {integrity: sha512-8TEXQxlldWAuIODdukIb+TR5s+9Ds40eSJrw+1iDDA9IFORPjMELarNQE3myz5XIkWWpdprmJjm1/SxMlWOC8A==}
-    dev: false
-
-  /vscode-uri@3.0.8:
-    resolution: {integrity: sha512-AyFQ0EVmsOZOlAnxoFOGOq1SQDWAB7C6aqMGS23svWAllfOaxbuFvcT8D1i8z3Gyn8fraVeZNNmN6e9bxxXkKw==}
     dev: false
 
   file:../../../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai:

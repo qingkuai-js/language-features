@@ -1,4 +1,4 @@
-import type { Position } from "../../packages/language-server/types/retrans"
+import type { Position } from "vscode-languageserver"
 
 // create a new offset position base on an old position
 export function offsetPosition(

@@ -8,8 +8,8 @@ export default defineConfig(() => {
         {
             external: ["vscode"],
             input: {
-                client: "./packages/ext-vscode/index.ts",
-                server: "./packages/language-server/index.ts"
+                client: "./packages/ext-vscode/src/index.ts",
+                server: "./packages/language-server/src/index.ts"
             },
             output: {
                 format: "cjs",
@@ -17,6 +17,8 @@ export default defineConfig(() => {
                 chunkFileNames: "chunks/[name].js"
             },
             plugins: [nodeResolve(), commonjs(), esbuild()],
+
+            // ignore known warnings that don't matter
             onwarn: (log, warn) => {
                 if (
                     !(
