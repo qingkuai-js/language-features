@@ -14,20 +14,14 @@ export const initialize: InitializeHandler = params => {
             },
             completionProvider: {
                 triggerCharacters: [
-                    ".",
-                    "+",
-                    "#",
-                    "*",
+                    "<",
                     ">",
-                    "]",
-                    ")",
-                    "^",
-                    "$",
                     "!",
                     "@",
                     "#",
                     "&",
                     "-",
+                    "=",
 
                     // digits, emmet needs them
                     "1",

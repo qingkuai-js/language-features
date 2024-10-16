@@ -25,13 +25,14 @@ import {
     CompletionItemKind,
     CompletionTriggerKind
 } from "vscode-languageserver"
-import { selfClosingTags } from "../constants"
+import { getRangeByOffset } from "../util/vscode"
 import { print } from "../../../../shared-util/sundry"
+import { commands, selfClosingTags } from "../constants"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { connection, documents, getCompileRes } from "../state"
-import { getRangeByOffset, offsetPosition } from "../util/vscode"
 import { doComplete as doEmmetComplete } from "@vscode/emmet-helper"
 import { isEmptyString, isString, isUndefined } from "../../../../shared-util/assert"
+import { InsertSnippetParam } from "../../../../types/server"
 
 export const completion: CompletionHandler = async ({ position, textDocument, context }) => {
     const document = documents.get(textDocument.uri)!
@@ -43,20 +44,28 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
 
     // emmet支持，此处处理自定义标签识别
     if (isUndefined(node) || isEmptyString(node.tag)) {
-        const embeddedCompletions = customHTMLTags.map(item => {
+        const embeddedCompletions = customHTMLTags.map(({ name, description }) => {
             return {
-                label: item.name,
+                label: name,
                 textEdit: TextEdit.replace(
-                    getRangeByOffset(document, offset - item.name.length, offset),
-                    `<${item.name}>\n\t$0\n</${item.name}>`
+                    getRangeByOffset(document, offset - name.length, offset),
+                    `<${name}>\n\t$0\n</${name}>`
                 ),
                 insertTextFormat: InsertTextFormat.Snippet,
                 documentation: {
                     kind: "markdown",
-                    value: getCustomTagEmmetDocumentation(item)
+                    value:
+                        `${description}\n\n` +
+                        mdCodeBlockGen("qk-emmet", `<${name}>\n\t|\n</${name}>`)
                 }
             } satisfies CompletionItem
         })
+
+        // 如果是由<触发的补全建议获取，则列举所有标签名建议
+        if (source[offset - 1] === "<") {
+            return doTagComplete(getRangeByOffset(document, offset, offset))
+        }
+
         const emmetRes = doEmmetComplete(document, position, "html", {})
         if (!isUndefined(emmetRes)) {
             return emmetRes.items.concat(embeddedCompletions)
@@ -64,10 +73,10 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         return embeddedCompletions
     }
 
-    // emmet之外的补全建议只能由!、@、#、&、>、-其中一个自定义字符触发
+    // emmet之外的补全建议只能由这些自定义字符触发：!、@、#、&、>、-、=
     if (
         context?.triggerKind === CompletionTriggerKind.TriggerCharacter &&
-        /[^!@#&>-]/.test(context.triggerCharacter || "")
+        /[^!@#&>\-=]/.test(context.triggerCharacter || "")
     ) {
         return
     }
@@ -87,8 +96,10 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         (source[offset - 1] === ">" && endTagStartIndex === -1)
     ) {
         if (!selfClosingTags.has(node.tag)) {
-            const text = node.tag === "!" ? `$0-->` : `$0</${node.tag}>`
-            connection.sendNotification("html/auto-close", text)
+            connection.sendNotification(
+                "insertSnippet",
+                node.tag === "!" ? `$0-->` : `$0</${node.tag}>`
+            )
         }
         return
     }
@@ -99,12 +110,20 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         const keyFirstChar = attr?.key.raw[0] || ""
         const valueEndIndex = attr?.value.loc.end.index ?? -1
         const valueStartIndex = attr?.value.loc.start.index ?? Infinity
+        const hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
-        // 如果光标在属性值处，返回属性值的补全建议列表
+        // 如果光标在属性值处，返回属性值的补全建议列表，如果上前一个字符为等号，则自动添加引号对或大括号对
         if (attr && offset >= valueStartIndex && offset <= valueEndIndex) {
-            if (/[^!@#&]/.test(keyFirstChar)) {
+            const isInterpolation = /[!@#&]/.test(keyFirstChar)
+            if (source[offset - 1] === "=") {
+                connection.sendNotification("insertSnippet", {
+                    command: commands.TriggerCommand,
+                    text: isInterpolation ? "{$0}" : '"$0"'
+                } satisfies InsertSnippetParam)
+            } else if (!isInterpolation) {
                 return doAttributeValueComplete(
                     node.tag,
+                    hasValue,
                     attr.key.raw,
                     getRangeByOffset(document, valueStartIndex, valueEndIndex)
                 )
@@ -114,12 +133,12 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
             const keyStartIndex = attr?.key.loc.start.index || offset
             const keyRange = getRangeByOffset(document, keyStartIndex, keyEndIndex)
             if (keyFirstChar === "#") {
-                return doDirectiveComplete(keyRange)
+                return doDirectiveComplete(hasValue, keyRange)
             }
             if (keyFirstChar === "&") {
-                return doReferenceAttributeComplete(node, keyRange)
+                return doReferenceAttributeComplete(node, hasValue, keyRange)
             }
-            return doAttributeComplete(node.tag, keyFirstChar, keyRange)
+            return doAttributeNameComplete(node.tag, hasValue, keyFirstChar, keyRange)
         }
     }
 }
@@ -136,29 +155,23 @@ function doTagComplete(range: Range) {
 }
 
 // HTML属性补全建议
-function doAttributeComplete(tag: string, startChar: string, range: Range) {
+function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: string, range: Range) {
     const ret: CompletionItem[] = []
-    const offsetedRange: Range = {
-        start: range.start,
-        end: offsetPosition(range.end, 0, 3)
-    }
     const isEvent = startChar === "@"
     const isDynamic = startChar === "!"
     const isExp = startChar && (isEvent || isDynamic)
 
     const getExtra = (attribute: HTMLDataAttributeItem) => {
         const extraRet: Partial<CompletionItem> = {}
+        const assignText = hasValue ? "" : isExp ? "={$0}" : '="$0"'
         if (attribute.valueSet !== "v" || isExp) {
-            if (!isUndefined(attribute.valueSet) && !isExp) {
+            if (!isUndefined(attribute.valueSet) && !isExp && !hasValue) {
                 extraRet.command = {
                     title: "suggest",
-                    command: "editor.action.triggerSuggest"
+                    command: commands.TriggerCommand
                 }
             }
-            extraRet.textEdit = TextEdit.replace(
-                offsetedRange,
-                attribute.name + (isExp ? "={$0}" : '="$0"')
-            )
+            extraRet.textEdit = TextEdit.replace(range, attribute.name + assignText)
             extraRet.insertTextFormat = InsertTextFormat.Snippet
         }
         return extraRet
@@ -207,16 +220,16 @@ function doAttributeComplete(tag: string, startChar: string, range: Range) {
     return ret
 }
 
-// 获取模板指令补全建议，需要偏移插入结束位置，防止用户手动拉取补全建议时插入位置错误
-function doDirectiveComplete(range: Range) {
-    range.end.character += 3
+// 获取模板指令补全建议
+function doDirectiveComplete(hasValue: boolean, range: Range) {
     return HTMLDirectives.map(item => {
         const label = "#" + item.name
+        const newText = label + (hasValue ? "" : "={$0}")
         return {
             label: label,
             filterText: label,
+            textEdit: TextEdit.replace(range, newText),
             insertTextFormat: InsertTextFormat.Snippet,
-            textEdit: TextEdit.replace(range, `${label}={$0}`),
             documentation: {
                 kind: "markdown",
                 value: `${item.description}\n\n${mdCodeBlockGen("qk", item.useage)}`
@@ -225,9 +238,9 @@ function doDirectiveComplete(range: Range) {
     })
 }
 
-// 获取引用属性名补全建议，需要偏移插入结束位置，防止用户手动拉取补全建议时插入位置错误
-// 普通标签建议列表：input -> &value, radio/checkbox -> &value/checked，select -> &value
-function doReferenceAttributeComplete(node: TemplateNode, range: Range) {
+// 获取引用属性名补全建议，普通标的引用属性签建议列表如下：
+// input -> &value, radio/checkbox -> &value/checked，select -> &value
+function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, range: Range) {
     const attrs: string[] = []
     if (node.tag === "select") {
         attrs.push("value")
@@ -252,21 +265,18 @@ function doReferenceAttributeComplete(node: TemplateNode, range: Range) {
         }
     }
 
-    // 偏移插入结束位置，防止用户手动拉取补全建议时插入位置错误
-    range.end.character += 3
-
     return attrs.map(attr => {
         return {
             label: "&" + attr,
             kind: CompletionItemKind.Property,
             insertTextFormat: InsertTextFormat.Snippet,
-            textEdit: TextEdit.replace(range, `&${attr}={$0}`)
+            textEdit: TextEdit.replace(range, `&${attr}${hasValue ? "" : "={$0}"}`)
         } as CompletionItem
     })
 }
 
 // HTML属性值补全建议
-function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
+function doAttributeValueComplete(tag: string, hasValue: boolean, attrName: string, range: Range) {
     const getRes = (value: HTMLDataValueSetValueItem) => {
         return {
             sortText: "!",
@@ -345,16 +355,4 @@ function getDocumentation(
         }
     }
     return item.description || ""
-}
-
-// 获取自定义标签在emmet补全建议支持中的文档描述
-function getCustomTagEmmetDocumentation(item: HTMLDataTagItem) {
-    return (
-        item.description +
-        "\n\n```qk-emmet\n" +
-        `<${item.name}>` +
-        "\n\t|\n" +
-        `</${item.name}>` +
-        "\n```"
-    )
 }

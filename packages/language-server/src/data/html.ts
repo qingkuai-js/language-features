@@ -6339,9 +6339,9 @@ export const customHTMLTags = [
 ].map(item => {
     const language = item[1] || item[0].replace("lang-", "")
     const ret: HTMLDataTagItem = {
-        name: item[0],
         attributes: [],
         references: [],
+        name: "lang-" + item[0],
         description: `The lang-js element is used to embed the ${language} language processed by qingkuai compiler.`
     }
     return ret

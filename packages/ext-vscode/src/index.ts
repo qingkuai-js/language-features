@@ -4,7 +4,9 @@ import {
     LanguageClient,
     LanguageClientOptions
 } from "vscode-languageclient/node"
-import { workspace, ExtensionContext, window, SnippetString, languages } from "vscode"
+import type { InsertSnippetParam } from "../../../types/server"
+
+import { workspace, ExtensionContext, window, SnippetString, commands } from "vscode"
 
 let client: LanguageClient
 
@@ -31,13 +33,7 @@ export function activate(context: ExtensionContext) {
         clientOptions
     )
 
-    client.start().then(() => {
-        client.onNotification("html/auto-close", text => {
-            window.activeTextEditor?.insertSnippet(new SnippetString(text))
-        })
-    })
-
-    languages.setLanguageConfiguration("qk", {})
+    client.start().then(attachHandlers)
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -45,4 +41,12 @@ export function deactivate(): Thenable<void> | undefined {
         return undefined
     }
     return client.stop()
+}
+
+// 添加客户端事件处理程序
+function attachHandlers() {
+    client.onNotification("insertSnippet", (params: InsertSnippetParam) => {
+        window.activeTextEditor?.insertSnippet(new SnippetString(params.text))
+        params.command && commands.executeCommand(params.command)
+    })
 }

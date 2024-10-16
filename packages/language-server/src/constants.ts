@@ -15,4 +15,8 @@ export const selfClosingTags = new Set([
     "wbr"
 ])
 
+export const commands = {
+    TriggerCommand: "editor.action.triggerSuggest"
+}
+
 export const specialTags = new Set(["!", "script", "style"])
