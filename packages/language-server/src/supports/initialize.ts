@@ -23,7 +23,13 @@ export const initialize: InitializeHandler = params => {
                     "-",
                     "=",
 
-                    // digits, emmet needs them
+                    // emmet
+                    ".",
+                    "+",
+                    "*",
+                    "]",
+                    "^",
+                    "$",
                     "1",
                     "2",
                     "3",

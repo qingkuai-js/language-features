@@ -1,3 +1,7 @@
+export function isNull(v: any): v is null {
+    return v === null
+}
+
 export function isString(v: any): v is string {
     return typeof v === "string"
 }

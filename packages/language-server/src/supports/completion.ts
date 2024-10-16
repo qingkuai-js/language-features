@@ -7,6 +7,7 @@ import type {
 } from "../types/data"
 import { type TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
+import type { InsertSnippetParam } from "../../../../types/server"
 
 import {
     findTag,
@@ -22,8 +23,7 @@ import {
     TextEdit,
     InsertTextFormat,
     CompletionItem,
-    CompletionItemKind,
-    CompletionTriggerKind
+    CompletionItemKind
 } from "vscode-languageserver"
 import { getRangeByOffset } from "../util/vscode"
 import { print } from "../../../../shared-util/sundry"
@@ -31,35 +31,26 @@ import { commands, selfClosingTags } from "../constants"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { connection, documents, getCompileRes } from "../state"
 import { doComplete as doEmmetComplete } from "@vscode/emmet-helper"
-import { isEmptyString, isString, isUndefined } from "../../../../shared-util/assert"
-import { InsertSnippetParam } from "../../../../types/server"
+import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
 
 export const completion: CompletionHandler = async ({ position, textDocument, context }) => {
     const document = documents.get(textDocument.uri)!
     const compileRes = getCompileRes(document)!
     const offset = document.offsetAt(position)
     const { source, templateNodes } = compileRes
-    const node = findNodeAt(offset, templateNodes)
-    // print(node, offset)
+    const node = findNodeAt(offset, templateNodes)!
+    const triggerChar = context?.triggerCharacter ?? ""
+    // print(node)
 
     // emmet支持，此处处理自定义标签识别
-    if (isUndefined(node) || isEmptyString(node.tag)) {
-        const embeddedCompletions = customHTMLTags.map(({ name, description }) => {
-            return {
-                label: name,
-                textEdit: TextEdit.replace(
-                    getRangeByOffset(document, offset - name.length, offset),
-                    `<${name}>\n\t$0\n</${name}>`
-                ),
-                insertTextFormat: InsertTextFormat.Snippet,
-                documentation: {
-                    kind: "markdown",
-                    value:
-                        `${description}\n\n` +
-                        mdCodeBlockGen("qk-emmet", `<${name}>\n\t|\n</${name}>`)
-                }
-            } satisfies CompletionItem
-        })
+    if (isEmptyString(node.tag)) {
+        const customTagCompletions = doCustomTagComplete(
+            getRangeByOffset(document, offset),
+            source,
+            offset,
+            node,
+            triggerChar
+        )
 
         // 如果是由<触发的补全建议获取，则列举所有标签名建议
         if (source[offset - 1] === "<") {
@@ -68,16 +59,13 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
 
         const emmetRes = doEmmetComplete(document, position, "html", {})
         if (!isUndefined(emmetRes)) {
-            return emmetRes.items.concat(embeddedCompletions)
+            return emmetRes.items.concat(customTagCompletions)
         }
-        return embeddedCompletions
+        return customTagCompletions
     }
 
-    // emmet之外的补全建议只能由这些自定义字符触发：!、@、#、&、>、-、=
-    if (
-        context?.triggerKind === CompletionTriggerKind.TriggerCharacter &&
-        /[^!@#&>\-=]/.test(context.triggerCharacter || "")
-    ) {
+    // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、-、=
+    if (/[^!@#&>\-=]/.test(triggerChar)) {
         return
     }
 
@@ -96,10 +84,9 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         (source[offset - 1] === ">" && endTagStartIndex === -1)
     ) {
         if (!selfClosingTags.has(node.tag)) {
-            connection.sendNotification(
-                "insertSnippet",
-                node.tag === "!" ? `$0-->` : `$0</${node.tag}>`
-            )
+            connection.sendNotification("insertSnippet", {
+                text: node.tag === "!" ? `$0-->` : `$0</${node.tag}>`
+            })
         }
         return
     }
@@ -108,13 +95,16 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
     if (offset > tagNameEndIndex && (offset < startTagEndIndex || startTagEndIndex === -1)) {
         const attr = findAttribute(offset, node)
         const keyFirstChar = attr?.key.raw[0] || ""
+        const isInterpolation = /[!@#&]/.test(keyFirstChar)
+        const keyEndIndex = attr?.key.loc.end.index || offset
         const valueEndIndex = attr?.value.loc.end.index ?? -1
+        const keyStartIndex = attr?.key.loc.start.index || offset
         const valueStartIndex = attr?.value.loc.start.index ?? Infinity
+        const keyRange = getRangeByOffset(document, keyStartIndex, keyEndIndex)
         const hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
-        // 如果光标在属性值处，返回属性值的补全建议列表，如果上前一个字符为等号，则自动添加引号对或大括号对
+        // 如果光标在属性值处，返回属性值的补全建议列表
         if (attr && offset >= valueStartIndex && offset <= valueEndIndex) {
-            const isInterpolation = /[!@#&]/.test(keyFirstChar)
             if (source[offset - 1] === "=") {
                 connection.sendNotification("insertSnippet", {
                     command: commands.TriggerCommand,
@@ -129,16 +119,21 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
                 )
             }
         } else {
-            const keyEndIndex = attr?.key.loc.end.index || offset
-            const keyStartIndex = attr?.key.loc.start.index || offset
-            const keyRange = getRangeByOffset(document, keyStartIndex, keyEndIndex)
-            if (keyFirstChar === "#") {
-                return doDirectiveComplete(hasValue, keyRange)
+            // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
+            if (source[offset - 1] === "=" && valueEndIndex === attr?.loc.end.index) {
+                connection.sendNotification("insertSnippet", {
+                    command: commands.TriggerCommand,
+                    text: isInterpolation ? "{$0}" : '"$0"'
+                } satisfies InsertSnippetParam)
+            } else if (isUndefined(attr) || offset <= keyEndIndex) {
+                if (keyFirstChar === "#") {
+                    return doDirectiveComplete(hasValue, keyRange)
+                }
+                if (keyFirstChar === "&") {
+                    return doReferenceAttributeComplete(node, hasValue, keyRange)
+                }
+                return doAttributeNameComplete(node.tag, hasValue, keyFirstChar, keyRange)
             }
-            if (keyFirstChar === "&") {
-                return doReferenceAttributeComplete(node, hasValue, keyRange)
-            }
-            return doAttributeNameComplete(node.tag, hasValue, keyFirstChar, keyRange)
         }
     }
 }
@@ -152,6 +147,42 @@ function doTagComplete(range: Range) {
             textEdit: TextEdit.replace(range, item.name)
         } as CompletionItem
     })
+}
+
+// 自定义HTML标签补全建议
+function doCustomTagComplete(
+    range: Range,
+    source: string,
+    offset: number,
+    node: TemplateNode,
+    triggerChar: string
+): CompletionItem[] {
+    // 将请求建议的范围开始位置向前偏移到第一个非空字符
+    for (let i = offset - 1; true; i--) {
+        if (/\S/.test(source[i] || "")) {
+            range.start.character--
+        } else break
+    }
+
+    if (
+        isNull(node.parent) &&
+        (isEmptyString(triggerChar) || source.slice(offset - 2, offset) === "g-")
+    ) {
+        return customHTMLTags.map(({ name, description }) => {
+            return {
+                label: name,
+                insertTextFormat: InsertTextFormat.Snippet,
+                documentation: {
+                    kind: "markdown",
+                    value:
+                        `${description}\n\n` +
+                        mdCodeBlockGen("qk-emmet", `<${name}>\n\t|\n</${name}>`)
+                },
+                textEdit: TextEdit.replace(range, `<${name}>\n\t$0\n</${name}>`)
+            } satisfies CompletionItem
+        })
+    }
+    return []
 }
 
 // HTML属性补全建议
@@ -305,7 +336,8 @@ function doAttributeValueComplete(tag: string, hasValue: boolean, attrName: stri
 function findNodeAt(index: number, nodes: TemplateNode[]) {
     for (const node of nodes) {
         const [start, end] = node.range
-        if (index > start && (end === -1 || index < end)) {
+        const isTextContent = isEmptyString(node.tag)
+        if (index > start && (end === -1 || index < end + +isTextContent)) {
             if (node.children.length === 0) {
                 return node
             }
@@ -316,22 +348,14 @@ function findNodeAt(index: number, nodes: TemplateNode[]) {
 
 // 找到源码中某个索引所处的attribute
 function findAttribute(index: number, node: TemplateNode) {
-    const attributesLen = node.attributes.length
-    for (let i = 0; i < attributesLen; i++) {
+    for (let i = 0; i < node.attributes.length; i++) {
         const attribute = node.attributes[i]
         const endIndex = attribute.loc.end.index
-        const startIndex = attribute.loc.start.index
+        const hasEqualSign = endIndex === attribute.value.loc.end.index
         if (
-            index > startIndex &&
-            ((endIndex === -1 && i === attributesLen - 1) || index <= endIndex)
+            index > attribute.loc.start.index &&
+            (endIndex === -1 || index < endIndex + +hasEqualSign)
         ) {
-            return attribute
-        }
-    }
-    for (const attribute of node.attributes) {
-        const endIndex = attribute.loc.end.index
-        const startIndex = attribute.loc.start.index
-        if (index > startIndex && (endIndex === -1 || index <= endIndex)) {
             return attribute
         }
     }
