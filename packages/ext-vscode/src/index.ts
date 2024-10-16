@@ -32,7 +32,7 @@ export function activate(context: ExtensionContext) {
     )
 
     client.start().then(() => {
-        client.onNotification("html/automaticallyCloseTag", text => {
+        client.onNotification("html/auto-close", text => {
             window.activeTextEditor?.insertSnippet(new SnippetString(text))
         })
     })

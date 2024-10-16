@@ -4,7 +4,7 @@ scopeName: source.qk
 uuid: 762041dd-c0dd-4e04-b8ff-996bf64c76f2
 
 patterns:
-  # embedded javascript language block, ways: <lang-js> <lang-javascript> <script>
+  # embedded javascript language block, ways: <lang-js> <script>
   - begin: (?=<lang-js)
     end: (?=</lang-js)
     patterns:
@@ -22,7 +22,7 @@ patterns:
         end: (?=</script)
         patterns: [include: source.js]
 
-  # embedded typescript language block, ways: <lang-ts> <lang-typescript>
+  # embedded typescript language block, ways: <lang-ts>
   - begin: (?=<lang-ts)
     end: (?=</lang-ts)
     patterns:

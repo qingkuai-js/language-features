@@ -13,7 +13,34 @@ export const initialize: InitializeHandler = params => {
                 interFileDependencies: false
             },
             completionProvider: {
-                triggerCharacters: [".", "+", "#", "*", ">", "]", ")", "^", "$", "@", "-"]
+                triggerCharacters: [
+                    ".",
+                    "+",
+                    "#",
+                    "*",
+                    ">",
+                    "]",
+                    ")",
+                    "^",
+                    "$",
+                    "!",
+                    "@",
+                    "#",
+                    "&",
+                    "-",
+
+                    // digits, emmet needs them
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "9",
+                    "0"
+                ]
             }
         }
     }

@@ -17,6 +17,12 @@
     "contributes": {
         "languages": [
             {
+                "id": "qk-emmet",
+                "extensions": [
+                    ".qk"
+                ]
+            },
+            {
                 "id": "qk",
                 "extensions": [
                     ".qk"
@@ -58,13 +64,23 @@
                 ]
             },
             {
+                "language": "qk-emmet",
+                "scopeName": "source.qk-emmet",
+                "path": "./syntaxes/qk-emmet.tmLanguage.json",
+                "embeddedLanguages": {
+                    "source.qk": "qingkuai"
+                }
+            },
+            {
                 "scopeName": "source.css.postcss",
                 "path": "./syntaxes/postcss.tmLanguage.json"
             }
         ]
     },
     "scripts": {
-        "build:grammer": "cd ./syntaxes && npx js-yaml ./qk.tmLanguage.yaml > ./qk.tmLanguage.json && npx prettier --write ./qk.tmLanguage.json"
+        "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
+        "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
+        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qk-emmet.tmLanguage.json && npx prettier --write ../qk-emmet.tmLanguage.json"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0",

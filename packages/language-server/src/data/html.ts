@@ -1,5 +1,5 @@
 import { isUndefined } from "../../../../shared-util/assert"
-import { HTMLData } from "../types/data"
+import { HTMLData, HTMLDataAttributeItem, HTMLDataTagItem } from "../types/data"
 
 export const htmlData: HTMLData = {
     tags: [
@@ -2568,8 +2568,10 @@ export const htmlData: HTMLData = {
                 },
                 {
                     name: "autocapitalize",
-                    description:
-                        "This is a nonstandard attribute used by iOS Safari Mobile which controls whether and how the text value for textual form control descendants should be automatically capitalized as it is entered/edited by the user. If the `autocapitalize` attribute is specified on an individual form control descendant, it trumps the form-wide `autocapitalize` setting. The non-deprecated values are available in iOS 5 and later. The default value is `sentences`. Possible values are:\n\n*   `none`: Completely disables automatic capitalization\n*   `sentences`: Automatically capitalize the first letter of sentences.\n*   `words`: Automatically capitalize the first letter of words.\n*   `characters`: Automatically capitalize all characters.\n*   `on`: Deprecated since iOS 5.\n*   `off`: Deprecated since iOS 5."
+                    description: {
+                        kind: "markdown",
+                        value: "This is a nonstandard attribute used by iOS Safari Mobile which controls whether and how the text value for textual form control descendants should be automatically capitalized as it is entered/edited by the user. If the `autocapitalize` attribute is specified on an individual form control descendant, it trumps the form-wide `autocapitalize` setting. The non-deprecated values are available in iOS 5 and later. The default value is `sentences`. Possible values are:\n\n*   `none`: Completely disables automatic capitalization\n*   `sentences`: Automatically capitalize the first letter of sentences.\n*   `words`: Automatically capitalize the first letter of words.\n*   `characters`: Automatically capitalize all characters.\n*   `on`: Deprecated since iOS 5.\n*   `off`: Deprecated since iOS 5."
+                    }
                 }
             ],
             references: [
@@ -6262,6 +6264,89 @@ export const htmlData: HTMLData = {
         }
     ]
 }
+
+// 指令名称数据
+export const HTMLDirectives = [
+    {
+        name: "for",
+        useage: "<tag #for={{a,b}, index in arr}>\n\t{index}: {a}, {b})\n</tag>",
+        description:
+            "The for directive is used to create a list of elements that are rendered through a loop, it dependents on an iterable value or a number and can generate context identifiers(destructible) for keys and values under the current element scope."
+    },
+    {
+        name: "key",
+        useage: "<!-- value will not be lost -->\n<input\n\t#key={item}\n\t#for={item in arr.length}\n/>",
+        description:
+            "The key directive is used to ensure that the loop rendering(via #for directive) is correct, list without it may cause loss of internal state of elements, and the key directive avoids this such problems by reusing existing element as much as possible. Note: each key value should be unique in the list."
+    },
+    {
+        name: "if",
+        useage: "<tag #if={count === 0}></tag>\n<tag #elif={count < 3}></tag>\n<tag #elif={count < 6}></tag>\n<tag #else>\n\t<!-- no condition passed -->\n</tag>",
+        description:
+            "The if directive is used to create conditional rendering elements, and it is also support two branch directives: [#elif](https://qingkuai.dev) and [#else](https://qingkuai.dev)."
+    },
+    {
+        name: "elif",
+        useage: "<tag #if={count === 0}></tag>\n<tag #elif={count < 3}></tag>\n<tag #elif={count < 6}></tag>\n<tag #else>\n\t<!-- no condition passed -->\n</tag>",
+        description:
+            "The elif directive is used to create conditional rendering elements, and it can only appear on a rear sibling element of a element with [#if](https://qingkuai.dev) directive."
+    },
+    {
+        name: "else",
+        useage: "<tag #if={count === 0}></tag>\n<tag #elif={count < 3}></tag>\n<tag #elif={count < 6}></tag>\n<tag #else>\n\t<!-- no condition passed -->\n</tag>",
+        description:
+            "The else directive is used to create conditional rendering elements, and it can only appear on a rear sibling element of a element with [#if](https://qingkuai.dev) or [#elif](https://qingkuai.dev) directive."
+    },
+    {
+        name: "await",
+        useage: "<tag #await={pms}></tag>\n<tag #then={{code, message}}>\n\tCode: {code}\n\tMessage: {message}\n</tag>\n<tag #catch={err}>\n\tError: {err}\n</tag>\n\n\n<tag #await={pms} #then>\n\t<!-- pms is resolved -->\n</tag>\n\n\n<tag #await={pms} #catch>\n\t<!-- pms is rejected -->\n</tag>",
+        description:
+            "The await directive is used to create asynchronously rendered elements, it dependents on a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) value, and it also supports two subsequent directives: [#then](https://qingkuai.dev) and [#catch](https://qingkuai.dev). When the dependent Promise has result, it will destroy itself and render the element in corresponding state(resolved -> #then, rejected -> #catch)."
+    },
+    {
+        name: "then",
+        useage: "<tag #await={pms}></tag>\n<tag #then={{code, message}}>\n\tCode: {code}\n\tMessage: {message}\n</tag>\n<tag #catch={err}>\n\tError: {err}\n</tag>\n\n\n<tag #await={pms} #then>\n\t<!-- pms is resolved -->\n</tag>\n\n\n<tag #await={pms} #catch>\n\t<!-- pms is rejected -->\n</tag>",
+        description:
+            "The then directive is used to create asynchronously redered elements in conjunction with [#await](https://qingkuai.dev) and [#catch](https://qingkuai.dev) directives, and it can only appear on a rear sibling element of the element with await or catch directive. When the state of the [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) that await directive dependents on changes to resolved, the then directive bound element will be rendered.\n\nIn additional, the value of then directive can declare identifiers(destructible) for the value passed by [resolve](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve) method that are accessible under the scope of the current element."
+    },
+    {
+        name: "catch",
+        useage: "<tag #await={pms}></tag>\n<tag #then={{code, message}}>\n\tCode: {code}\n\tMessage: {message}\n</tag>\n<tag #catch={err}>\n\tError: {err}\n</tag>\n\n\n<tag #await={pms} #then>\n\t<!-- pms is resolved -->\n</tag>\n\n\n<tag #await={pms} #catch>\n\t<!-- pms is rejected -->\n</tag>",
+        description:
+            "Tthe catch directive is used to create asynchronously rendered elements in conjunction with [#await](https://qingkuai.dev) and [#then](https://qingkuai.dev) directives, and it can only appear on a rear sibling element of the element with await or then directive. When the state of the [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) that await directive dependents on changes to rejected, the await directive bound element will be rendered.\n\nInadditional, the vlaue of catch directive can declare identifiers(destructible) for the value passed by [reject](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/reject) method that are accessible under the scope of the current element."
+    },
+    {
+        name: "slot",
+        useage: '<UserCard>\n\t<div\n\t\tslot="info"\n\t\t#slot={{age, name}}\n\t>\n\t\tReceived age: {age}\n\t\tReceived name: {name}\n\t</div>\n</UserCard>',
+        description:
+            "The slot directive is used to receive the object passed by the slot tag attribute inside the component, and it can also declare identifiers(destructible) for this object through attribute value, the identifiers is accessible under the scope of the current element."
+    }
+]
+HTMLDirectives.forEach(item => {
+    item.description += "\n\nThis directive is processed by qingkuai compiler, useage likes below:"
+})
+
+// 添加自定义标签数据
+export const customHTMLTags = [
+    ["css"],
+    ["sass"],
+    ["scss"],
+    ["less"],
+    ["stylus"],
+    ["postcss"],
+    ["js", "javascript"],
+    ["ts", "typescript"]
+].map(item => {
+    const language = item[1] || item[0].replace("lang-", "")
+    const ret: HTMLDataTagItem = {
+        name: item[0],
+        attributes: [],
+        references: [],
+        description: `The lang-js element is used to embed the ${language} language processed by qingkuai compiler.`
+    }
+    return ret
+})
+htmlData.tags.push(...customHTMLTags)
 
 export function findTag(tag: string) {
     for (const item of htmlData.tags) {
