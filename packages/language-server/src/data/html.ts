@@ -1,5 +1,13 @@
+/**
+ * HTML标签及属性数据，此文件的部分内容复制自NPM包：vscode-html-languageservice,
+ * QingKuai自定义的标签及属性数据也包含在此文件中，例如嵌入语言标签和属性名等等...
+ * HTML tag and attribute data, part of this file is copied from NPM package: vscode-html-languageservice.
+ * Custome tag and attribute data of QingKuai is also included in this file, likes: embedded language tag and directive names...
+ */
+
+import type { HTMLData, HTMLDataTagItem } from "../types/data"
+
 import { isUndefined } from "../../../../shared-util/assert"
-import { HTMLData, HTMLDataAttributeItem, HTMLDataTagItem } from "../types/data"
 
 export const htmlData: HTMLData = {
     tags: [
@@ -3770,7 +3778,7 @@ export const htmlData: HTMLData = {
             name: "itemscope",
             description: {
                 kind: "markdown",
-                value: "`itemscope` (usually) works along with `[itemtype](https://developer.mozilla.org/docs/Web/HTML/Global_attributes#attr-itemtype)` to specify that the HTML contained in a block is about a particular item. `itemscope` creates the Item and defines the scope of the `itemtype` associated with it. `itemtype` is a valid URL of a vocabulary (such as [schema.org](https://schema.org/)) that describes the item and its properties context."
+                value: "`itemscope` (usually) works along with [itemtype](https://developer.mozilla.org/docs/Web/HTML/Global_attributes#attr-itemtype) to specify that the HTML contained in a block is about a particular item. `itemscope` creates the Item and defines the scope of the `itemtype` associated with it. `itemtype` is a valid URL of a vocabulary (such as [schema.org](https://schema.org/)) that describes the item and its properties context."
             },
             valueSet: "v"
         },

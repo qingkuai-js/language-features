@@ -5,7 +5,7 @@ import type {
     HTMLDataValueSetValueItem,
     HTMLDataGlobalAttributeItem
 } from "../types/data"
-import { type TemplateNode } from "qingkuai/compiler"
+import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
 import type { InsertSnippetParam } from "../../../../types/server"
 
@@ -32,31 +32,40 @@ import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { connection, documents, getCompileRes } from "../state"
 import { doComplete as doEmmetComplete } from "@vscode/emmet-helper"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
+import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 
 export const completion: CompletionHandler = async ({ position, textDocument, context }) => {
     const document = documents.get(textDocument.uri)!
     const compileRes = getCompileRes(document)!
     const offset = document.offsetAt(position)
     const { source, templateNodes } = compileRes
-    const node = findNodeAt(offset, templateNodes)!
+    const node = findNodeAt(offset, templateNodes)
     const triggerChar = context?.triggerCharacter ?? ""
     // print(node)
 
-    // emmet支持，此处处理自定义标签识别
+    // 输入结束标签的关闭字符>时不处于任何节点，直接返回
+    if (isUndefined(node)) return
+
+    // emmet支持，此处处理实体字符和自定义标签的补全建议
     if (isEmptyString(node.tag)) {
-        const customTagCompletions = doCustomTagComplete(
-            getRangeByOffset(document, offset),
+        const range = getRangeByOffset(document, offset)
+
+        const characterEntityCompletions = doCharacterEntityComplete(
+            range,
             source,
             offset,
-            node,
-            triggerChar
+            node.loc.start.index
         )
+        if (characterEntityCompletions.length > 0) {
+            return characterEntityCompletions
+        }
 
         // 如果是由<触发的补全建议获取，则列举所有标签名建议
         if (source[offset - 1] === "<") {
-            return doTagComplete(getRangeByOffset(document, offset, offset))
+            return doTagComplete(getRangeByOffset(document, offset))
         }
 
+        const customTagCompletions = doCustomTagComplete(range, source, offset, node)
         const emmetRes = doEmmetComplete(document, position, "html", {})
         if (!isUndefined(emmetRes)) {
             return emmetRes.items.concat(customTagCompletions)
@@ -111,6 +120,18 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
                     text: isInterpolation ? "{$0}" : '"$0"'
                 } satisfies InsertSnippetParam)
             } else if (!isInterpolation) {
+                // 如果是在HTML属性内输入实体字符，则返回实体字符建议
+                const characterEntityCompletions = doCharacterEntityComplete(
+                    getRangeByOffset(document, offset),
+                    source,
+                    offset,
+                    valueStartIndex
+                )
+                if (characterEntityCompletions.length > 0) {
+                    return characterEntityCompletions
+                }
+
+                // 返回属性值建议
                 return doAttributeValueComplete(
                     node.tag,
                     hasValue,
@@ -126,9 +147,6 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
                     text: isInterpolation ? "{$0}" : '"$0"'
                 } satisfies InsertSnippetParam)
             } else if (isUndefined(attr) || offset <= keyEndIndex) {
-                // if (keyFirstChar === "#") {
-                //     return doDirectiveComplete(hasValue, keyRange)
-                // }
                 if (keyFirstChar === "&") {
                     return doReferenceAttributeComplete(node, hasValue, keyRange)
                 }
@@ -149,25 +167,22 @@ function doTagComplete(range: Range) {
     })
 }
 
-// 自定义HTML标签补全建议
+// 自定义HTML标签补全建议（模拟emmet行为）
 function doCustomTagComplete(
     range: Range,
     source: string,
     offset: number,
-    node: TemplateNode,
-    triggerChar: string
+    node: TemplateNode
 ): CompletionItem[] {
-    // 将请求建议的范围开始位置向前偏移到第一个非空字符
-    for (let i = offset - 1; true; i--) {
-        if (/\S/.test(source[i] || "")) {
+    // 找到自定义标签建议替换范围的开始位置：首个非空字符的位置
+    for (let i = offset - 1; i >= node.loc.start.index; i--) {
+        if (!/\s/.test(source[i] || "")) {
             range.start.character--
         } else break
     }
+    range.start.character = Math.max(range.start.character, 0)
 
-    if (
-        isNull(node.parent) &&
-        (isEmptyString(triggerChar) || source.slice(offset - 2, offset) === "g-")
-    ) {
+    if (isNull(node.parent)) {
         return customHTMLTags.map(({ name, description }) => {
             return {
                 label: name,
@@ -185,20 +200,52 @@ function doCustomTagComplete(
     return []
 }
 
+// HTML实体字符补全建议
+function doCharacterEntityComplete(range: Range, source: string, offset: number, endIndex: number) {
+    // 找到实体字符标建议替换范围的开始位置：&的前一个字符或非字母且非数字的字符的位置
+    for (let i = offset - 1; i >= endIndex; i--) {
+        if (/[&a-zA-Z\d]/.test(source[i] || "")) {
+            offset--
+            range.start.character--
+            if (source[i] === "&") {
+                break
+            }
+        } else break
+    }
+
+    const ret: CompletionItem[] = []
+    if (source[offset] === "&") {
+        htmlEntitiesKeys.forEach(key => {
+            const label = `&${key}`
+            if (key.endsWith(";")) {
+                ret.push({
+                    label: label,
+                    textEdit: TextEdit.replace(range, label),
+                    documentation: `Character entity representing ${htmlEntities[key]}`
+                })
+            }
+        })
+    }
+    return ret
+}
+
 // HTML属性名补全建议
 function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: string, range: Range) {
     const ret: CompletionItem[] = []
     const isEvent = startChar === "@"
     const isDynamic = startChar === "!"
-    const isExp = startChar && (isEvent || isDynamic)
+    const isSpecial = startChar && (isEvent || isDynamic)
 
     // 获取属性名补全建议的附加属性（标签属性名和全局属性名通用方法），此方法会根据条件添加
     // 插入范围属性，选中该建议后是否再次触发补全建议的command属性以及插入格式属性（Snippet）
     const getExtra = (attribute: HTMLDataAttributeItem) => {
+        let assignText = ""
         const extraRet: Partial<CompletionItem> = {}
-        const assignText = hasValue ? "" : isExp ? "={$0}" : '="$0"'
-        if (attribute.valueSet !== "v" || isExp) {
-            if (!isUndefined(attribute.valueSet) && !isExp && !hasValue) {
+        if (!hasValue) {
+            assignText = isSpecial ? "={$0}" : '="$0"'
+        }
+        if (attribute.valueSet !== "v" || isSpecial) {
+            if (!isUndefined(attribute.valueSet) && !isSpecial && !hasValue) {
                 extraRet.command = {
                     title: "suggest",
                     command: commands.TriggerCommand
@@ -210,30 +257,32 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
         return { kind: CompletionItemKind.Property, ...extraRet }
     }
 
-    // 查找指定标签的所有属性名作为补全建议
-    findTag(tag)?.attributes.forEach(attribute => {
-        if (!isEvent || attribute.name.startsWith("on")) {
-            ret.push({
-                ...getExtra(attribute),
-                label: attribute.name,
-                documentation: attribute.description
-            })
-        }
-    })
+    if (startChar !== "#") {
+        // 查找指定标签的所有属性名作为补全建议
+        findTag(tag)?.attributes.forEach(attribute => {
+            if (!isEvent || attribute.name.startsWith("on")) {
+                ret.push({
+                    ...getExtra(attribute),
+                    label: attribute.name,
+                    documentation: attribute.description
+                })
+            }
+        })
 
-    // 全局属性的所有项都会被作为属性名补全建议
-    htmlData.globalAttributes.forEach(attribute => {
-        if (!isEvent || attribute.name.startsWith("on")) {
-            ret.push({
-                ...getExtra(attribute),
-                label: attribute.name,
-                documentation: getDocumentation(attribute)
-            })
-        }
-    })
+        // 全局属性的所有项都会被作为属性名补全建议
+        htmlData.globalAttributes.forEach(attribute => {
+            if (!isEvent || attribute.name.startsWith("on")) {
+                ret.push({
+                    ...getExtra(attribute),
+                    label: attribute.name,
+                    documentation: getDocumentation(attribute)
+                })
+            }
+        })
+    }
 
     // 为补全建议标签添加前缀字符（!、@）
-    if (isExp) {
+    if (isSpecial) {
         ret.forEach(item => {
             if (!isEvent) {
                 const textEdit = item.textEdit
@@ -255,6 +304,7 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
         const completion: CompletionItem = {
             label: label,
             filterText: label,
+            kind: CompletionItemKind.Keyword,
             textEdit: TextEdit.replace(range, newText),
             insertTextFormat: InsertTextFormat.Snippet,
             documentation: {
@@ -356,11 +406,16 @@ function findAttribute(index: number, node: TemplateNode) {
     for (let i = 0; i < node.attributes.length; i++) {
         const attribute = node.attributes[i]
         const endIndex = attribute.loc.end.index
-        const hasEqualSign = endIndex === attribute.value.loc.end.index
-        if (
-            index > attribute.loc.start.index &&
-            (endIndex === -1 || index < endIndex + +hasEqualSign)
-        ) {
+
+        // 1. 不存在等号（属性名范围内，attribute.value.loc.start.index为-1）
+        // 2. 存在等号但不存在引号或大括号（endIndex与attribute.value.loc.end.index相等）
+        // 上面两种情况其中一个成立时，记录范围增量为1（光标在attribute.loc.end.index处也视为在当前属性范围内）
+        // 这样处理是因为情况1要在输入等号时自动插入引号或大括号包裹，情况2要明确当前正在输入属性名并给出属性名补全建议
+        const delta = Number(
+            attribute.value.loc.start.index === -1 || endIndex === attribute.value.loc.end.index
+        )
+
+        if (index > attribute.loc.start.index && (endIndex === -1 || index < endIndex + delta)) {
             return attribute
         }
     }
