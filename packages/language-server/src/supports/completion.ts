@@ -126,9 +126,9 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
                     text: isInterpolation ? "{$0}" : '"$0"'
                 } satisfies InsertSnippetParam)
             } else if (isUndefined(attr) || offset <= keyEndIndex) {
-                if (keyFirstChar === "#") {
-                    return doDirectiveComplete(hasValue, keyRange)
-                }
+                // if (keyFirstChar === "#") {
+                //     return doDirectiveComplete(hasValue, keyRange)
+                // }
                 if (keyFirstChar === "&") {
                     return doReferenceAttributeComplete(node, hasValue, keyRange)
                 }
@@ -185,13 +185,15 @@ function doCustomTagComplete(
     return []
 }
 
-// HTML属性补全建议
+// HTML属性名补全建议
 function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: string, range: Range) {
     const ret: CompletionItem[] = []
     const isEvent = startChar === "@"
     const isDynamic = startChar === "!"
     const isExp = startChar && (isEvent || isDynamic)
 
+    // 获取属性名补全建议的附加属性（标签属性名和全局属性名通用方法），此方法会根据条件添加
+    // 插入范围属性，选中该建议后是否再次触发补全建议的command属性以及插入格式属性（Snippet）
     const getExtra = (attribute: HTMLDataAttributeItem) => {
         const extraRet: Partial<CompletionItem> = {}
         const assignText = hasValue ? "" : isExp ? "={$0}" : '="$0"'
@@ -202,12 +204,13 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
                     command: commands.TriggerCommand
                 }
             }
-            extraRet.textEdit = TextEdit.replace(range, attribute.name + assignText)
             extraRet.insertTextFormat = InsertTextFormat.Snippet
+            extraRet.textEdit = TextEdit.replace(range, attribute.name + assignText)
         }
-        return extraRet
+        return { kind: CompletionItemKind.Property, ...extraRet }
     }
 
+    // 查找指定标签的所有属性名作为补全建议
     findTag(tag)?.attributes.forEach(attribute => {
         if (!isEvent || attribute.name.startsWith("on")) {
             ret.push({
@@ -218,6 +221,7 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
         }
     })
 
+    // 全局属性的所有项都会被作为属性名补全建议
     htmlData.globalAttributes.forEach(attribute => {
         if (!isEvent || attribute.name.startsWith("on")) {
             ret.push({
@@ -243,20 +247,12 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
         })
     }
 
-    // 建议列表中的项目均为Property类型
-    ret.forEach(item => {
-        item.kind = CompletionItemKind.Property
-    })
-
-    return ret
-}
-
-// 获取模板指令补全建议
-function doDirectiveComplete(hasValue: boolean, range: Range) {
-    return HTMLDirectives.map(item => {
+    // 指令名补全建议会有两种filterText，一种有#前缀，一种没有，这样做的好处就是无论
+    // 用户有没有输入#前缀都会返回指令名补全建议，例如：#f和f都可以得到for指令的补全建议
+    const directiveCompletions = HTMLDirectives.map(item => {
         const label = "#" + item.name
         const newText = label + (hasValue ? "" : "={$0}")
-        return {
+        const completion: CompletionItem = {
             label: label,
             filterText: label,
             textEdit: TextEdit.replace(range, newText),
@@ -265,8 +261,17 @@ function doDirectiveComplete(hasValue: boolean, range: Range) {
                 kind: "markdown",
                 value: `${item.description}\n\n${mdCodeBlockGen("qk", item.useage)}`
             }
-        } satisfies CompletionItem
+        }
+        return [
+            completion,
+            {
+                ...completion,
+                filterText: item.name
+            }
+        ]
     })
+
+    return ret.concat(...directiveCompletions)
 }
 
 // 获取引用属性名补全建议，普通标的引用属性签建议列表如下：
