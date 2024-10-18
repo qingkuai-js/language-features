@@ -1,11 +1,11 @@
 name: qingkuai
 fileTypes: [qk]
 scopeName: source.qk-emmet
-uuid: 762041dd-c0dd-4e04-b8ff-996bf64c76f2
+uuid: AC4C66D8-55E8-4871-93C8-87A6AFB7ECDC
 
 patterns:
-  # emmet提示中的嵌入语言语法规则：标签中的内容都会被认作注释，这样处理是为了让模拟光标的字符显示为灰色
-  # embedded language block for emmet: everything in embedded block is considered a comment
+  # 模拟emmet提示中的嵌入语言语法规则：标签中的内容都会被认作注释，这样处理是为了让模拟光标的字符显示为灰色
+  # embedded language block for simulation emmet: everything in embedded block is considered a comment
   # This is done so that the characters that simulate the cursor in the completion suggestion prompt are grayed out
   - begin: (?=<lang-js)
     end: (?=</lang-js)

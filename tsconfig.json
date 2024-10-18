@@ -6,6 +6,5 @@
         "strict": true,
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true
-    },
-    "exclude": ["node_modules/**/*"]
+    }
 }

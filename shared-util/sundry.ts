@@ -1,5 +1,5 @@
 import util from "util"
-import { AnyObject } from "./types"
+import { AnyObject } from "../types/util"
 
 // print debugging info, the informations will be output to
 // "QingKuai Language Server" item of output tab of extension host.

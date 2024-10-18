@@ -14,6 +14,7 @@ export default defineConfig(() => {
             output: {
                 format: "cjs",
                 dir: "dist",
+                sourcemap: true,
                 chunkFileNames: "chunks/[name].js"
             },
             plugins: [nodeResolve(), commonjs(), esbuild()],

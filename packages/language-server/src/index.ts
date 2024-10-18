@@ -5,4 +5,5 @@ import { initialize } from "./supports/initialize"
 
 connection.onCompletion(completion)
 connection.onInitialize(initialize)
+connection.onRequest("ping", _ => "pong")
 connection.onRequest("textDocument/diagnostic", diagnostic)

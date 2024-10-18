@@ -14,9 +14,9 @@ import {
     htmlData,
     findValueSet,
     customHTMLTags,
+    HTMLDirectives,
     findTagAttribute,
-    findGlobalAttribute,
-    HTMLDirectives
+    findGlobalAttribute
 } from "../data/html"
 import {
     Range,
@@ -25,36 +25,37 @@ import {
     CompletionItem,
     CompletionItemKind
 } from "vscode-languageserver"
-import { getRangeByOffset } from "../util/vscode"
 import { print } from "../../../../shared-util/sundry"
 import { commands, selfClosingTags } from "../constants"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { connection, documents, getCompileRes } from "../state"
+import { getRangeByOffset, offsetPosition } from "../util/vscode"
 import { doComplete as doEmmetComplete } from "@vscode/emmet-helper"
+import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
-import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 
 export const completion: CompletionHandler = async ({ position, textDocument, context }) => {
     const document = documents.get(textDocument.uri)!
-    const compileRes = getCompileRes(document)!
+    const compileRes = getCompileRes(textDocument)!
     const offset = document.offsetAt(position)
     const { source, templateNodes } = compileRes
-    const node = findNodeAt(offset, templateNodes)
+    const currentNode = findNodeAt(offset, templateNodes)
     const triggerChar = context?.triggerCharacter ?? ""
     // print(node)
+    console.log(position, triggerChar)
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
-    if (isUndefined(node)) return
+    if (isUndefined(currentNode)) return
 
     // emmet支持，此处处理实体字符和自定义标签的补全建议
-    if (isEmptyString(node.tag)) {
+    if (isEmptyString(currentNode.tag)) {
         const range = getRangeByOffset(document, offset)
 
         const characterEntityCompletions = doCharacterEntityComplete(
             range,
             source,
             offset,
-            node.loc.start.index
+            currentNode.loc.start.index
         )
         if (characterEntityCompletions.length > 0) {
             return characterEntityCompletions
@@ -65,7 +66,7 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
             return doTagComplete(getRangeByOffset(document, offset))
         }
 
-        const customTagCompletions = doCustomTagComplete(range, source, offset, node)
+        const customTagCompletions = doCustomTagComplete(range, source, offset, currentNode)
         const emmetRes = doEmmetComplete(document, position, "html", {})
         if (!isUndefined(emmetRes)) {
             return emmetRes.items.concat(customTagCompletions)
@@ -78,23 +79,23 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         return
     }
 
-    const [nodeStartIndex, nodeEndIndex] = node.range
-    const startTagEndIndex = node.startTagEndPos.index
-    const endTagStartIndex = node.endTagStartPos.index
+    const [nodeStartIndex, nodeEndIndex] = currentNode.range
+    const startTagEndIndex = currentNode.startTagEndPos.index
+    const endTagStartIndex = currentNode.endTagStartPos.index
     const tagNameStartIndex = nodeStartIndex + 1
-    const tagNameEndIndex = nodeStartIndex + node.tag.length + 1
+    const tagNameEndIndex = nodeStartIndex + currentNode.tag.length + 1
     if (offset > tagNameStartIndex && offset <= tagNameEndIndex) {
         return doTagComplete(getRangeByOffset(document, tagNameStartIndex, tagNameEndIndex))
     }
 
     // 自动插入结束标签：上一个位置的字符是> 或者为注释开始标签<!--，插入结束标签（自闭合标签无需处理）
     if (
-        (node.tag === "!" && nodeEndIndex === -1) ||
+        (currentNode.tag === "!" && nodeEndIndex === -1) ||
         (source[offset - 1] === ">" && endTagStartIndex === -1)
     ) {
-        if (!selfClosingTags.has(node.tag)) {
+        if (!selfClosingTags.has(currentNode.tag)) {
             connection.sendNotification("insertSnippet", {
-                text: node.tag === "!" ? `$0-->` : `$0</${node.tag}>`
+                text: currentNode.tag === "!" ? `$0-->` : `$0</${currentNode.tag}>`
             })
         }
         return
@@ -102,7 +103,7 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
 
     // 计算并返回属性名称及属性值的补全建议（引用属性的补全建议列表单独处理，不使用htmlData中的数据）
     if (offset > tagNameEndIndex && (offset < startTagEndIndex || startTagEndIndex === -1)) {
-        const attr = findAttribute(offset, node)
+        const attr = findAttribute(offset, currentNode)
         const keyFirstChar = attr?.key.raw[0] || ""
         const isInterpolation = /[!@#&]/.test(keyFirstChar)
         const keyEndIndex = attr?.key.loc.end.index || offset
@@ -133,7 +134,7 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
 
                 // 返回属性值建议
                 return doAttributeValueComplete(
-                    node.tag,
+                    currentNode.tag,
                     hasValue,
                     attr.key.raw,
                     getRangeByOffset(document, valueStartIndex, valueEndIndex)
@@ -148,9 +149,9 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
                 } satisfies InsertSnippetParam)
             } else if (isUndefined(attr) || offset <= keyEndIndex) {
                 if (keyFirstChar === "&") {
-                    return doReferenceAttributeComplete(node, hasValue, keyRange)
+                    return doReferenceAttributeComplete(currentNode, hasValue, keyRange)
                 }
-                return doAttributeNameComplete(node.tag, hasValue, keyFirstChar, keyRange)
+                return doAttributeNameComplete(currentNode.tag, hasValue, keyFirstChar, keyRange)
             }
         }
     }
@@ -214,13 +215,28 @@ function doCharacterEntityComplete(range: Range, source: string, offset: number,
     }
 
     const ret: CompletionItem[] = []
+    const existingEntity = htmlEntityRE.exec(source.slice(offset))
+
+    // 如果替换开始位置处存在实体字符则将替换范围修改为此实体字符的位置范围
+    if (!isNull(existingEntity)) {
+        range.end = offsetPosition(range.start, 0, existingEntity[0].length)
+    }
+
     if (source[offset] === "&") {
         htmlEntitiesKeys.forEach(key => {
             const label = `&${key}`
             if (key.endsWith(";")) {
                 ret.push({
                     label: label,
-                    textEdit: TextEdit.replace(range, label),
+                    textEdit: TextEdit.replace(
+                        {
+                            start: range.start,
+                            end: isNull(existingEntity)
+                                ? range.end
+                                : offsetPosition(range.start, 0, existingEntity[0].length)
+                        },
+                        label
+                    ),
                     documentation: `Character entity representing ${htmlEntities[key]}`
                 })
             }
