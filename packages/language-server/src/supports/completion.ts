@@ -41,8 +41,7 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
     const { source, templateNodes } = compileRes
     const currentNode = findNodeAt(offset, templateNodes)
     const triggerChar = context?.triggerCharacter ?? ""
-    // print(node)
-    console.log(position, triggerChar)
+    // print(currentNode)
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
     if (isUndefined(currentNode)) return
@@ -403,18 +402,24 @@ function doAttributeValueComplete(tag: string, hasValue: boolean, attrName: stri
     }
 }
 
-// 找到源码中某个索引所处的AST节点
-function findNodeAt(index: number, nodes: TemplateNode[]) {
-    for (const node of nodes) {
-        const [start, end] = node.range
-        const isTextContent = isEmptyString(node.tag)
-        if (index > start && (end === -1 || index < end + +isTextContent)) {
-            if (node.children.length === 0) {
-                return node
-            }
-            return findNodeAt(index, node.children)
+// 将htmlData.tags中的description和references组合成补全建议的documentation
+function getDocumentation(
+    item: HTMLDataTagItem | HTMLDataGlobalAttributeItem
+): HTMLDataDescription {
+    if (item.references) {
+        const descriptionValue = isString(item.description)
+            ? item.description
+            : item.description?.value || ""
+        const referenceStrArr = item.references.map(reference => {
+            return `[${reference.name}](${reference.url})`
+        })
+        const referenceStr = referenceStrArr.join(" | ")
+        return {
+            kind: "markdown",
+            value: descriptionValue + "\n\n" + referenceStr
         }
     }
+    return item.description || ""
 }
 
 // 找到源码中某个索引所处的attribute
@@ -437,22 +442,16 @@ function findAttribute(index: number, node: TemplateNode) {
     }
 }
 
-// 将htmlData.tags中的description和references组合成补全建议的documentation
-function getDocumentation(
-    item: HTMLDataTagItem | HTMLDataGlobalAttributeItem
-): HTMLDataDescription {
-    if (item.references) {
-        const descriptionValue = isString(item.description)
-            ? item.description
-            : item.description?.value || ""
-        const referenceStrArr = item.references.map(reference => {
-            return `[${reference.name}](${reference.url})`
-        })
-        const referenceStr = referenceStrArr.join(" | ")
-        return {
-            kind: "markdown",
-            value: descriptionValue + "\n\n" + referenceStr
+// 找到源码中某个索引所处的AST节点
+function findNodeAt(index: number, nodes: TemplateNode[]): TemplateNode | undefined {
+    for (const node of nodes) {
+        const [start, end] = node.range
+        const isTextContent = isEmptyString(node.tag)
+        if (index > start && (end === -1 || index < end + +isTextContent)) {
+            if (node.children.length === 0) {
+                return node
+            }
+            return findNodeAt(index, node.children) || node
         }
     }
-    return item.description || ""
 }

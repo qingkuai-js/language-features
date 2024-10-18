@@ -9,7 +9,12 @@ const connection = rpc.createMessageConnection(
 )
 connection.listen()
 
-test("connection", async () => {
+// 调试消息输出通道
+connection.onNotification("development-debug", msg => {
+    console.log(msg)
+})
+
+test("Connection for language server.", async () => {
     const res = await connection.sendRequest("ping")
     expect(res).toBe("pong")
 })

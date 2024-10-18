@@ -2242,4 +2242,4 @@ export const htmlEntities = {
 }
 
 export const htmlEntitiesKeys = typedKeys(htmlEntities)
-export const htmlEntityRE = new RegExp("^" + htmlEntitiesKeys.map(key => "&" + key).join("|"))
+export const htmlEntityRE = new RegExp(`^(?:${htmlEntitiesKeys.map(key => "&" + key).join("|")})`)
