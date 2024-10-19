@@ -68,7 +68,7 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         const customTagCompletions = doCustomTagComplete(range, source, offset, currentNode)
         const emmetRes = doEmmetComplete(document, position, "html", {})
         if (!isUndefined(emmetRes)) {
-            return emmetRes.items.concat(customTagCompletions)
+            return emmetRes.items.push(...customTagCompletions), emmetRes
         }
         return customTagCompletions
     }
@@ -90,10 +90,10 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
     // 自动插入结束标签：上一个位置的字符是> 或者为注释开始标签<!--，插入结束标签（自闭合标签无需处理）
     if (
         (currentNode.tag === "!" && nodeEndIndex === -1) ||
-        (source[offset - 1] === ">" && endTagStartIndex === -1)
+        (source[offset - 1] === ">" && startTagEndIndex === offset)
     ) {
         if (!selfClosingTags.has(currentNode.tag)) {
-            connection.sendNotification("insertSnippet", {
+            connection.sendNotification("qingkuai/insertSnippet", {
                 text: currentNode.tag === "!" ? `$0-->` : `$0</${currentNode.tag}>`
             })
         }
@@ -103,7 +103,8 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
     // 计算并返回属性名称及属性值的补全建议（引用属性的补全建议列表单独处理，不使用htmlData中的数据）
     if (offset > tagNameEndIndex && (offset < startTagEndIndex || startTagEndIndex === -1)) {
         const attr = findAttribute(offset, currentNode)
-        const keyFirstChar = attr?.key.raw[0] || ""
+        const attrKey = attr?.key.raw || ""
+        const keyFirstChar = attrKey[0] || ""
         const isInterpolation = /[!@#&]/.test(keyFirstChar)
         const keyEndIndex = attr?.key.loc.end.index || offset
         const valueEndIndex = attr?.value.loc.end.index ?? -1
@@ -112,13 +113,29 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
         const keyRange = getRangeByOffset(document, keyStartIndex, keyEndIndex)
         const hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
+        // 判断当前属性是否有推荐的属性值：非动态/引用/指令/事件且htmlData中该属性valueSet不为v
+        const hasRecommendedValue = () => {
+            if (/^(?:[!@#&]|$)/.test(attrKey)) {
+                return false
+            }
+            const valueSet = (
+                findTagAttribute(currentNode.tag, attrKey) || findGlobalAttribute(attrKey)
+            )?.valueSet
+            return valueSet && valueSet !== "v"
+        }
+
         // 如果光标在属性值处，返回属性值的补全建议列表
+        // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
+        // 如果当前不处于任何属性范围内或者处于属性名范围内，则返回属性名补全建议列表
         if (attr && offset >= valueStartIndex && offset <= valueEndIndex) {
             if (source[offset - 1] === "=") {
-                connection.sendNotification("insertSnippet", {
-                    command: commands.TriggerCommand,
+                const snippetItem: InsertSnippetParam = {
                     text: isInterpolation ? "{$0}" : '"$0"'
-                } satisfies InsertSnippetParam)
+                }
+                if (hasRecommendedValue()) {
+                    snippetItem.command = commands.TriggerCommand
+                }
+                connection.sendNotification("qingkuai/insertSnippet", snippetItem)
             } else if (!isInterpolation) {
                 // 如果是在HTML属性内输入实体字符，则返回实体字符建议
                 const characterEntityCompletions = doCharacterEntityComplete(
@@ -134,24 +151,15 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
                 // 返回属性值建议
                 return doAttributeValueComplete(
                     currentNode.tag,
-                    hasValue,
                     attr.key.raw,
                     getRangeByOffset(document, valueStartIndex, valueEndIndex)
                 )
             }
-        } else {
-            // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
-            if (source[offset - 1] === "=" && valueEndIndex === attr?.loc.end.index) {
-                connection.sendNotification("insertSnippet", {
-                    command: commands.TriggerCommand,
-                    text: isInterpolation ? "{$0}" : '"$0"'
-                } satisfies InsertSnippetParam)
-            } else if (isUndefined(attr) || offset <= keyEndIndex) {
-                if (keyFirstChar === "&") {
-                    return doReferenceAttributeComplete(currentNode, hasValue, keyRange)
-                }
-                return doAttributeNameComplete(currentNode.tag, hasValue, keyFirstChar, keyRange)
+        } else if (isUndefined(attr) || offset <= keyEndIndex) {
+            if (keyFirstChar === "&") {
+                return doReferenceAttributeComplete(currentNode, hasValue, keyRange)
             }
+            return doAttributeNameComplete(currentNode.tag, hasValue, keyFirstChar, keyRange)
         }
     }
 }
@@ -236,6 +244,7 @@ function doCharacterEntityComplete(range: Range, source: string, offset: number,
                         },
                         label
                     ),
+                    kind: CompletionItemKind.Keyword,
                     documentation: `Character entity representing ${htmlEntities[key]}`
                 })
             }
@@ -249,7 +258,7 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
     const ret: CompletionItem[] = []
     const isEvent = startChar === "@"
     const isDynamic = startChar === "!"
-    const isSpecial = startChar && (isEvent || isDynamic)
+    const isDynamicOrEvent = startChar && (isEvent || isDynamic)
 
     // 获取属性名补全建议的附加属性（标签属性名和全局属性名通用方法），此方法会根据条件添加
     // 插入范围属性，选中该建议后是否再次触发补全建议的command属性以及插入格式属性（Snippet）
@@ -257,19 +266,22 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
         let assignText = ""
         const extraRet: Partial<CompletionItem> = {}
         if (!hasValue) {
-            assignText = isSpecial ? "={$0}" : '="$0"'
+            assignText = isDynamicOrEvent ? "={$0}" : '="$0"'
         }
-        if (attribute.valueSet !== "v" || isSpecial) {
-            if (!isUndefined(attribute.valueSet) && !isSpecial && !hasValue) {
+        if (attribute.valueSet !== "v" || isDynamicOrEvent) {
+            if (!isUndefined(attribute.valueSet) && !isDynamicOrEvent && !hasValue) {
                 extraRet.command = {
                     title: "suggest",
                     command: commands.TriggerCommand
                 }
             }
             extraRet.insertTextFormat = InsertTextFormat.Snippet
-            extraRet.textEdit = TextEdit.replace(range, attribute.name + assignText)
         }
-        return { kind: CompletionItemKind.Property, ...extraRet }
+        return {
+            ...extraRet,
+            kind: CompletionItemKind.Property,
+            textEdit: TextEdit.replace(range, attribute.name + assignText)
+        }
     }
 
     if (startChar !== "#") {
@@ -297,7 +309,7 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
     }
 
     // 为补全建议标签添加前缀字符（!、@）
-    if (isSpecial) {
+    if (isDynamicOrEvent) {
         ret.forEach(item => {
             if (!isEvent) {
                 const textEdit = item.textEdit
@@ -309,34 +321,36 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
                 textEdit && (textEdit.newText = startChar + textEdit.newText.slice(2))
             }
         })
+    } else {
+        // 如果属性名非动态非事件，则将所有指令添加到补全建议列表中
+        // 指令名补全建议会有两种filterText，一种有#前缀，一种没有，这样做的好处就是无论
+        // 用户有没有输入#前缀都会返回指令名补全建议，例如：#f和f都可以得到for指令的补全建议
+        const directiveCompletions = HTMLDirectives.map(item => {
+            const label = "#" + item.name
+            const newText = label + (hasValue ? "" : "={$0}")
+            const completion: CompletionItem = {
+                label: label,
+                filterText: label,
+                kind: CompletionItemKind.Keyword,
+                textEdit: TextEdit.replace(range, newText),
+                insertTextFormat: InsertTextFormat.Snippet,
+                documentation: {
+                    kind: "markdown",
+                    value: `${item.description}\n\n${mdCodeBlockGen("qk", item.useage)}`
+                }
+            }
+            return [
+                completion,
+                {
+                    ...completion,
+                    filterText: item.name
+                }
+            ]
+        })
+        ret.push(...directiveCompletions.flat())
     }
 
-    // 指令名补全建议会有两种filterText，一种有#前缀，一种没有，这样做的好处就是无论
-    // 用户有没有输入#前缀都会返回指令名补全建议，例如：#f和f都可以得到for指令的补全建议
-    const directiveCompletions = HTMLDirectives.map(item => {
-        const label = "#" + item.name
-        const newText = label + (hasValue ? "" : "={$0}")
-        const completion: CompletionItem = {
-            label: label,
-            filterText: label,
-            kind: CompletionItemKind.Keyword,
-            textEdit: TextEdit.replace(range, newText),
-            insertTextFormat: InsertTextFormat.Snippet,
-            documentation: {
-                kind: "markdown",
-                value: `${item.description}\n\n${mdCodeBlockGen("qk", item.useage)}`
-            }
-        }
-        return [
-            completion,
-            {
-                ...completion,
-                filterText: item.name
-            }
-        ]
-    })
-
-    return ret.concat(...directiveCompletions)
+    return ret
 }
 
 // 获取引用属性名补全建议，普通标的引用属性签建议列表如下：
@@ -377,7 +391,7 @@ function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, ran
 }
 
 // HTML属性值补全建议
-function doAttributeValueComplete(tag: string, hasValue: boolean, attrName: string, range: Range) {
+function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
     const getRes = (value: HTMLDataValueSetValueItem) => {
         return {
             sortText: "!",
@@ -444,14 +458,14 @@ function findAttribute(index: number, node: TemplateNode) {
 
 // 找到源码中某个索引所处的AST节点
 function findNodeAt(index: number, nodes: TemplateNode[]): TemplateNode | undefined {
-    for (const node of nodes) {
-        const [start, end] = node.range
-        const isTextContent = isEmptyString(node.tag)
+    for (const currentNode of nodes) {
+        const [start, end] = currentNode.range
+        const isTextContent = isEmptyString(currentNode.tag)
         if (index > start && (end === -1 || index < end + +isTextContent)) {
-            if (node.children.length === 0) {
-                return node
+            if (currentNode.children.length === 0) {
+                return currentNode
             }
-            return findNodeAt(index, node.children) || node
+            return findNodeAt(index, currentNode.children) || currentNode
         }
     }
 }

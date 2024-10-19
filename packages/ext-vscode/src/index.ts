@@ -45,7 +45,7 @@ export function deactivate(): Thenable<void> | undefined {
 
 // 添加客户端事件处理程序
 function attachHandlers() {
-    client.onNotification("insertSnippet", (params: InsertSnippetParam) => {
+    client.onNotification("qingkuai/insertSnippet", (params: InsertSnippetParam) => {
         window.activeTextEditor?.insertSnippet(new SnippetString(params.text))
         params.command && commands.executeCommand(params.command)
     })
