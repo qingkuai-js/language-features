@@ -3,5 +3,13 @@
     "semi": false,
     "printWidth": 100,
     "arrowParens": "avoid",
-    "trailingComma": "none"
+    "trailingComma": "none",
+    "overrides": [
+        {
+            "files": ["*.yaml"],
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
 }

@@ -5,9 +5,9 @@
             "name": "Run Extension",
             "type": "extensionHost",
             "request": "launch",
-            "preLaunchTask": "${defaultBuildTask}",
+            "autoAttachChildProcesses": true,
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"]
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/ext-vscode"]
         }
     ]
 }
