@@ -80,11 +80,9 @@ export const completion: CompletionHandler = async ({ position, textDocument, co
 
     const [nodeStartIndex, nodeEndIndex] = currentNode.range
     const startTagEndIndex = currentNode.startTagEndPos.index
-    const endTagStartIndex = currentNode.endTagStartPos.index
-    const tagNameStartIndex = nodeStartIndex + 1
     const tagNameEndIndex = nodeStartIndex + currentNode.tag.length + 1
-    if (offset > tagNameStartIndex && offset <= tagNameEndIndex) {
-        return doTagComplete(getRangeByOffset(document, tagNameStartIndex, tagNameEndIndex))
+    if (offset > nodeStartIndex + 1 && offset <= tagNameEndIndex) {
+        return doTagComplete(getRangeByOffset(document, nodeStartIndex + 1, tagNameEndIndex))
     }
 
     // 自动插入结束标签：上一个位置的字符是> 或者为注释开始标签<!--，插入结束标签（自闭合标签无需处理）
