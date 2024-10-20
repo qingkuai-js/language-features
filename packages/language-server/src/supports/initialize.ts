@@ -9,6 +9,7 @@ export const initialize: InitializeHandler = params => {
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
+            hoverProvider: {},
             diagnosticProvider: {
                 workspaceDiagnostics: false,
                 interFileDependencies: false

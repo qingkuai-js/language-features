@@ -1,14 +1,10 @@
 import type { CachedCompileResultItem } from "./types/service"
+import type { Position, TextDocumentIdentifier } from "vscode-languageserver"
 
-import {
-    TextDocuments,
-    createConnection,
-    ProposedFeatures,
-    TextDocumentIdentifier
-} from "vscode-languageserver/node"
 import { compile } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
+import { TextDocuments, createConnection, ProposedFeatures } from "vscode-languageserver/node"
 
 export const state = {
     // 在测试环境中运行时，不会请求textDocument/initialize，
@@ -24,28 +20,45 @@ export const connection = createConnection(ProposedFeatures.all)
 export const crc = new Map<string, CachedCompileResultItem>()
 
 // 解析qk源码文件，版本相同时不会重复解析（测试时无需判断，即state.isInitialized === false）
-export function getCompileRes(document: TextDocument | TextDocumentIdentifier | undefined) {
-    if (document && !("languageId" in document)) {
-        document = documents.get(document.uri)
+export function getCompileRes({ uri }: TextDocumentIdentifier, position: Position) {
+    const document = documents.get(uri)
+    if (isUndefined(document)) {
+        return undefined
     }
 
-    if (isUndefined(document)) return
-
-    const typedDocument = document as TextDocument
-    const { version, uri } = typedDocument
     const cached = crc.get(uri)
+    const { version } = document
+    const offset = document.offsetAt(position)
     if (!state.isInitialized || version !== cached?.version) {
-        const source = typedDocument.getText()
-        const res = {
+        const source = document.getText()
+        const compileRes = compile(source, {
+            componentName: "",
+            check: true
+        })
+        const res: CachedCompileResultItem = {
             source,
             version,
-            ...compile(source, {
-                componentName: "",
-                check: true
-            })
+            document,
+            ...compileRes,
+            getRange(start, end) {
+                if (isUndefined(end)) {
+                    end = start
+                }
+                return {
+                    start: res.getPosition(start),
+                    end: res.getPosition(end)
+                }
+            },
+            getPosition(offset) {
+                const position = compileRes.inputDescriptor.positions[offset]
+                return {
+                    line: position.line - 1,
+                    character: position.column
+                }
+            },
+            getOffset: document.offsetAt.bind(document)
         }
-        crc.set(uri, res)
-        return res
+        return crc.set(uri, res), res
     }
     return cached
 }

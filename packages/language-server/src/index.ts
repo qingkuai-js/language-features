@@ -1,9 +1,12 @@
 import { connection } from "./state"
-import { completion } from "./supports/completion"
+import { hover } from "./supports/hover"
+import { complete } from "./supports/complete"
 import { diagnostic } from "./supports/diagnostic"
 import { initialize } from "./supports/initialize"
 
-connection.onCompletion(completion)
+connection.onHover(hover)
+connection.onCompletion(complete)
 connection.onInitialize(initialize)
+
 connection.onRequest("ping", _ => "pong")
 connection.onRequest("textDocument/diagnostic", diagnostic)

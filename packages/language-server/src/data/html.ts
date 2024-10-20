@@ -5,9 +5,15 @@
  * Custome tag and attribute data of QingKuai is also included in this file, likes: embedded language tag and directive names...
  */
 
-import type { HTMLData, HTMLDataTagItem } from "../types/data"
+import type {
+    HTMLData,
+    HTMLDataTagItem,
+    HTMLDataDescription,
+    HTMLDataAttributeItem
+} from "../types/data"
 
-import { isUndefined } from "../../../../shared-util/assert"
+import { mdCodeBlockGen } from "../../../../shared-util/docs"
+import { isString, isUndefined } from "../../../../shared-util/assert"
 
 export const htmlData: HTMLData = {
     tags: [
@@ -6274,7 +6280,7 @@ export const htmlData: HTMLData = {
 }
 
 // 指令名称数据
-export const HTMLDirectives = [
+export const htmlDirectives = [
     {
         name: "for",
         useage: "<tag #for={{a,b}, index in arr}>\n\t{index}: {a}, {b})\n</tag>",
@@ -6330,9 +6336,6 @@ export const HTMLDirectives = [
             "The slot directive is used to receive the object passed by the slot tag attribute inside the component, and it can also declare identifiers(destructible) for this object through attribute value, the identifiers is accessible under the scope of the current element."
     }
 ]
-HTMLDirectives.forEach(item => {
-    item.description += "\n\nThis directive is processed by qingkuai compiler, useage likes below:"
-})
 
 // 添加自定义标签数据
 export const customHTMLTags = [
@@ -6356,7 +6359,7 @@ export const customHTMLTags = [
 })
 htmlData.tags.push(...customHTMLTags)
 
-export function findTag(tag: string) {
+export function findTagData(tag: string) {
     for (const item of htmlData.tags) {
         if (tag === item.name) {
             return item
@@ -6372,16 +6375,8 @@ export function findValueSet(name: string) {
     }
 }
 
-export function findGlobalAttribute(attrName: string) {
-    for (const attribute of htmlData.globalAttributes) {
-        if (attrName === attribute.name) {
-            return attribute
-        }
-    }
-}
-
-export function findTagAttribute(tag: string, attrName: string) {
-    const tagData = findTag(tag)
+export function findTagAttributeData(tag: string, attrName: string) {
+    const tagData = findTagData(tag)
     if (isUndefined(tagData)) {
         return
     }
@@ -6391,4 +6386,41 @@ export function findTagAttribute(tag: string, attrName: string) {
             return attribute
         }
     }
+    for (const attribute of htmlData.globalAttributes) {
+        if (attrName === attribute.name) {
+            return attribute
+        }
+    }
+}
+
+// 获取模板指令的描述文档
+export function getDirectiveDocumentation(
+    item: (typeof htmlDirectives)[number],
+    needUseage: boolean
+): HTMLDataDescription {
+    let description = item.description
+    if (!needUseage) {
+        description += " Note: this directive is processed by qingkuai compiler."
+    } else {
+        description += `This directive is processed by qingkuai compiler, useage likes below:\n\n${mdCodeBlockGen("qk", item.useage)}`
+    }
+    return { kind: "markdown", value: description }
+}
+
+// 将htmlData.tags中的description和references组合成补全建议的documentation
+export function getDocumentation(item: HTMLDataAttributeItem): HTMLDataDescription {
+    if (item.references) {
+        const descriptionValue = isString(item.description)
+            ? item.description
+            : item.description?.value || ""
+        const referenceStrArr = item.references.map(reference => {
+            return `[${reference.name}](${reference.url})`
+        })
+        const referenceStr = referenceStrArr.join(" | ")
+        return {
+            kind: "markdown",
+            value: descriptionValue + "\n\n" + referenceStr
+        }
+    }
+    return item.description || ""
 }

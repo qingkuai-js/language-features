@@ -375,7 +375,7 @@ describe("Html Attribute name completions:", () => {
         ])
     })
 
-    it.only("should receive corresponding reference attribute name completion suggestions in response.", async () => {
+    it("should receive corresponding reference attribute name completion suggestions in response.", async () => {
         await openContentAsTextDocument(
             formatSourceCode(`
                 <input &>

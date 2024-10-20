@@ -2,14 +2,21 @@ export interface HTMLData {
     tags: HTMLDataTagItem[]
     valueSets: {
         name: string
-        values: HTMLDataValueSetValueItem[]
+        values: {
+            name: string
+            description?: HTMLDataDescription
+        }[]
     }[]
-    globalAttributes: HTMLDataGlobalAttributeItem[]
+    globalAttributes: HTMLDataAttributeItem[]
 }
 
 export interface HTMLDataAttributeItem {
     name: string
     valueSet?: string
+    references?: {
+        name: string
+        url: string
+    }[]
     description?: HTMLDataDescription
 }
 
@@ -22,18 +29,6 @@ export interface HTMLDataTagItem {
     }[]
     description: HTMLDataDescription
     attributes: HTMLDataAttributeItem[]
-}
-
-export interface HTMLDataValueSetValueItem {
-    name: string
-    description?: HTMLDataDescription
-}
-
-export type HTMLDataGlobalAttributeItem = HTMLDataAttributeItem & {
-    references?: {
-        name: string
-        url: string
-    }[]
 }
 
 export type HTMLDataDescription = string | { kind: "markdown"; value: string }
