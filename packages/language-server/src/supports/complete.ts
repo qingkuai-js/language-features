@@ -39,7 +39,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
     const offset = getOffset(position)
     const currentRange = position2Range(position)
     const triggerChar = context?.triggerCharacter ?? ""
-    const currentNode = findNodeAt(templateNodes, offset)
+    const currentNode = findNodeAt(templateNodes, offset - 1)
     // print(currentNode)
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回

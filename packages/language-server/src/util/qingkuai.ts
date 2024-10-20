@@ -1,7 +1,5 @@
 import type { TemplateNode } from "qingkuai/compiler"
 
-import { isEmptyString } from "../../../../shared-util/assert"
-
 // 找到源码中某个索引所处的attribute
 export function findAttribute(index: number, node: TemplateNode) {
     for (let i = 0; i < node.attributes.length; i++) {
@@ -26,8 +24,7 @@ export function findAttribute(index: number, node: TemplateNode) {
 export function findNodeAt(nodes: TemplateNode[], offset: number): TemplateNode | undefined {
     for (const currentNode of nodes) {
         const [start, end] = currentNode.range
-        const isTextContent = isEmptyString(currentNode.tag)
-        if (offset > start && (end === -1 || offset < end + +isTextContent)) {
+        if (offset >= start && (end === -1 || offset < end)) {
             if (currentNode.children.length === 0) {
                 return currentNode
             }

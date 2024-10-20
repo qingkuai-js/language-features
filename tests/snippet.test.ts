@@ -1,10 +1,9 @@
 import type { InsertSnippetParam } from "../types/server"
 
-import { assert, describe, expect, it } from "vitest"
 import { connection } from "./index.test"
+import { doComplete } from "./complete.test"
+import { assert, describe, expect, it } from "vitest"
 import { formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
-import { doComplete } from "./completion.test"
-import { isNull, isUndefined } from "../shared-util/assert"
 
 // 此变量用于存储assertSnippetItem方法中Promise的resolve参数，当接收到qingkuai语言服务器的
 // 插入片段响应后就会调用它并传入接收到的值，之后assertSnippetItem会判断接受到的值是否与期望相符
