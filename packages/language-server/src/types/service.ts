@@ -1,6 +1,6 @@
 import type { CompileResult } from "qingkuai/compiler"
-import type { Position, Range } from "vscode-languageserver"
 import type { TextDocument } from "vscode-languageserver-textdocument"
+import type { Position, Range, WorkspaceEdit } from "vscode-languageserver"
 
 export type CachedCompileResultItem = CompileResult & {
     source: string

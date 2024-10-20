@@ -9,40 +9,21 @@ export const initialize: InitializeHandler = params => {
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
-            hoverProvider: {},
+            hoverProvider: true,
+            renameProvider: {
+                prepareProvider: true
+            },
             diagnosticProvider: {
                 workspaceDiagnostics: false,
                 interFileDependencies: false
             },
             completionProvider: {
                 triggerCharacters: [
-                    "<",
-                    ">",
-                    "!",
-                    "@",
-                    "#",
-                    "&",
-                    "-",
-                    "=",
+                    ["<", ">", "!", "@", "#", "&", "-", "="],
 
-                    // emmet
-                    ".",
-                    "+",
-                    "*",
-                    "]",
-                    "^",
-                    "$",
-                    "1",
-                    "2",
-                    "3",
-                    "4",
-                    "5",
-                    "6",
-                    "7",
-                    "8",
-                    "9",
-                    "0"
-                ]
+                    // emmet needs trigger characters
+                    [".", "+", "*", "]", "^", "$", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+                ].flat()
             }
         }
     }

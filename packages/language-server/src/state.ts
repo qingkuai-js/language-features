@@ -20,7 +20,7 @@ export const connection = createConnection(ProposedFeatures.all)
 export const crc = new Map<string, CachedCompileResultItem>()
 
 // 解析qk源码文件，版本相同时不会重复解析（测试时无需判断，即state.isInitialized === false）
-export function getCompileRes({ uri }: TextDocumentIdentifier, position: Position) {
+export function getCompileRes({ uri }: TextDocumentIdentifier) {
     const document = documents.get(uri)
     if (isUndefined(document)) {
         return undefined
@@ -28,7 +28,6 @@ export function getCompileRes({ uri }: TextDocumentIdentifier, position: Positio
 
     const cached = crc.get(uri)
     const { version } = document
-    const offset = document.offsetAt(position)
     if (!state.isInitialized || version !== cached?.version) {
         const source = document.getText()
         const compileRes = compile(source, {

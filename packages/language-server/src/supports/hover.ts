@@ -8,13 +8,13 @@ import {
     getDirectiveDocumentation
 } from "../data/html"
 import { getCompileRes } from "../state"
-import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
-import { findAttribute, findNodeAt } from "../util/qingkuai"
-import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { MarkupKind } from "vscode-languageserver"
+import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
+import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
+import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const hover: HoverHander = ({ textDocument, position }) => {
-    const { source, templateNodes, getOffset, getRange } = getCompileRes(textDocument, position)!
+    const { source, templateNodes, getOffset, getRange } = getCompileRes(textDocument)!
 
     const offset = getOffset(position)
     const currentNode = findNodeAt(templateNodes, offset)
@@ -22,64 +22,62 @@ export const hover: HoverHander = ({ textDocument, position }) => {
         return null
     }
 
-    let tagStartIndex = -1
-    const tagLen = currentNode.tag.length
-    const nodeEndIndex = currentNode.loc.end.index
-    const nodeStartIndex = currentNode.loc.start.index
-
-    const startTagStartIndex = nodeStartIndex + 1
-    const endTagStartIndex = currentNode.endTagStartPos.index + 2
-    if (offset >= startTagStartIndex && offset < startTagStartIndex + tagLen) {
-        tagStartIndex = startTagStartIndex
-    } else if (offset >= endTagStartIndex && offset < endTagStartIndex + tagLen) {
-        tagStartIndex = endTagStartIndex
-    }
-
-    // 获取HTML标签悬停提示
-    if (tagStartIndex !== -1) {
+    // HTML标签悬停提示
+    const tagRanges = findTagRanges(currentNode, offset)
+    const [nodeStartIndex, nodeEndIndex] = currentNode.range
+    if (!isUndefined(tagRanges[0])) {
+        const isStart = offset <= tagRanges[0][1]
         const tagData = findTagData(currentNode.tag)
         if (isUndefined(tagData)) {
             return null
         }
         return {
             contents: getDocumentation(tagData),
-            range: getRange(tagStartIndex, tagStartIndex + tagLen)
+            range: getRange(...tagRanges[isStart ? 0 : 1]!)
         }
     }
 
+    // HTML属性名悬停提示
     const attribute = findAttribute(offset, currentNode)
     if (attribute) {
         let attrKey = attribute.key.raw
         const keyStartIndex = attribute.key.loc.start.index
         const KeyEndIndex = attribute.key.loc.end.index
-        if (offset >= keyStartIndex && offset <= KeyEndIndex) {
-            if (attrKey[0] === "#") {
-                attrKey = attrKey.slice(1)
-                for (const item of htmlDirectives) {
-                    if (attrKey === item.name) {
-                        return {
-                            range: getRange(keyStartIndex, KeyEndIndex),
-                            contents: getDirectiveDocumentation(item, false)
-                        }
+        if (offset < keyStartIndex || offset >= KeyEndIndex) {
+            return null
+        }
+
+        // 指令名的提示单独处理
+        if (attrKey[0] === "#") {
+            attrKey = attrKey.slice(1)
+            for (const item of htmlDirectives) {
+                if (attrKey === item.name) {
+                    return {
+                        range: getRange(keyStartIndex, KeyEndIndex),
+                        contents: getDirectiveDocumentation(item, false)
                     }
                 }
-                return null
             }
-            if (/[!&]/.test(attrKey[0])) {
-                attrKey = attrKey.slice(1)
-            }
-            if (attrKey[0] === "@") {
-                attrKey = "on" + attrKey.slice(1)
-            }
+            return null
+        }
 
-            const attrData = findTagAttributeData(currentNode.tag, attrKey)
-            if (isUndefined(attrData)) {
-                return null
-            }
-            return {
-                contents: getDocumentation(attrData),
-                range: getRange(keyStartIndex, KeyEndIndex)
-            }
+        // 动态/引用属性名去掉前方的!/&从数据查找提示消息
+        if (/[!&]/.test(attrKey[0])) {
+            attrKey = attrKey.slice(1)
+        }
+
+        // 事件名称将@替换为on从数据中查找提示消息
+        if (attrKey[0] === "@") {
+            attrKey = "on" + attrKey.slice(1)
+        }
+
+        const attrData = findTagAttributeData(currentNode.tag, attrKey)
+        if (isUndefined(attrData)) {
+            return null
+        }
+        return {
+            contents: getDocumentation(attrData),
+            range: getRange(keyStartIndex, KeyEndIndex)
         }
     }
 
@@ -87,12 +85,13 @@ export const hover: HoverHander = ({ textDocument, position }) => {
     if (isEmptyString(currentNode.tag) && offset >= nodeStartIndex && offset < nodeEndIndex) {
         let i = offset
         let j = offset + 1
+        const validRE = /[a-zA-Z\d;]/
         while (true) {
             let passed = 0
-            if (i > nodeStartIndex && /[a-zA-Z\d;]/.test(source[i])) {
+            if (i > nodeStartIndex && validRE.test(source[i])) {
                 i--, passed++
             }
-            if (j <= nodeEndIndex && /[a-zA-Z\d;]/.test(source[j])) {
+            if (j <= nodeEndIndex && validRE.test(source[j])) {
                 j++, passed++
             }
             if (passed === 0) {

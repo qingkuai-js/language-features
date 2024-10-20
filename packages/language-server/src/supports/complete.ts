@@ -31,10 +31,7 @@ import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
 
 export const complete: CompletionHandler = async ({ position, textDocument, context }) => {
-    const { source, templateNodes, getOffset, document, getRange } = getCompileRes(
-        textDocument,
-        position
-    )!
+    const { source, templateNodes, getOffset, document, getRange } = getCompileRes(textDocument)!
 
     const offset = getOffset(position)
     const currentRange = position2Range(position)
