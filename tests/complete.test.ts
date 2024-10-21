@@ -1,15 +1,14 @@
 import type {
-    Range,
+    TextEdit,
     CompletionItem,
     CompletionList,
     CompletionParams
 } from "vscode-languageserver/node"
-import type { FixedArray } from "../types/util"
 
 import { connection } from "./index.test"
 import { isUndefined } from "../shared-util/assert"
-import { assert, describe, expect, it, test } from "vitest"
-import { formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
+import { describe, expect, it, test } from "vitest"
+import { assertRange, formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
 
 describe("Emmet functions:", () => {
     test("emmet syntax is avaliable.", async () => {
@@ -71,7 +70,7 @@ describe("Emmet functions:", () => {
 })
 
 describe("Html character entity completions:", () => {
-    const assertCompletionsLen = (completions: CompletionItem[] | undefined) => {
+    const assertCompletionsLen = (completions: CompletionItem[] | null) => {
         expect(completions?.length).toBe(2125)
     }
 
@@ -80,8 +79,8 @@ describe("Html character entity completions:", () => {
         await doComplete(0, 1, "&").then(completions => {
             assertCompletionsLen(completions)
             completions?.forEach(item => {
-                assertTextEditRange(item, 0, 0, 0, 1)
                 expect(item.textEdit?.newText[0]).toBe("&")
+                assertRange(item?.textEdit?.range, 0, 0, 0, 1)
             })
         })
     })
@@ -91,8 +90,8 @@ describe("Html character entity completions:", () => {
         await doComplete(0, 8).then(completions => {
             assertCompletionsLen(completions)
             completions?.forEach(item => {
-                assertTextEditRange(item, 0, 1, 0, 8)
                 expect(item.textEdit?.newText[0]).toBe("&")
+                assertRange(item.textEdit?.range, 0, 1, 0, 8)
             })
         })
     })
@@ -109,15 +108,15 @@ describe("Html character entity completions:", () => {
             doComplete(0, 2).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 0, 0, 0, 3)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 0, 0, 0, 3)
                 })
             }),
             doComplete(1, 8).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 1, 3, 1, 11)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 1, 3, 1, 11)
                 })
             })
         ])
@@ -140,29 +139,29 @@ describe("Html character entity completions:", () => {
             doComplete(0, 11).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 0, 8, 0, 11)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 0, 8, 0, 11)
                 })
             }),
             doComplete(3, 15).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 3, 11, 3, 15)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 3, 11, 3, 15)
                 })
             }),
             doComplete(7, 3).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 7, 0, 7, 3)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 7, 0, 7, 3)
                 })
             }),
             doComplete(7, 13).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 7, 10, 7, 13)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 7, 10, 7, 13)
                 })
             })
         ])
@@ -179,22 +178,22 @@ describe("Html character entity completions:", () => {
             doComplete(0, 13).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 0, 12, 0, 13)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 0, 12, 0, 13)
                 })
             }),
             doComplete(1, 23).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 1, 18, 1, 23)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 1, 18, 1, 23)
                 })
             }),
             doComplete(1, 19).then(completions => {
                 assertCompletionsLen(completions)
                 completions?.forEach(item => {
-                    assertTextEditRange(item, 1, 18, 1, 23)
                     expect(item.textEdit?.newText[0]).toBe("&")
+                    assertRange(item.textEdit?.range, 1, 18, 1, 23)
                 })
             })
         ])
@@ -217,7 +216,7 @@ describe("Html Attribute name completions:", () => {
                 if (item.label === "class") {
                     expect(item.textEdit?.newText).toBe('class="$0"')
                 }
-                assertTextEditRange(item, 0, 5, 0, 8)
+                assertRange(item.textEdit?.range, 0, 5, 0, 8)
             })
             expect(completions?.length).toBe(161)
         })
@@ -236,7 +235,7 @@ describe("Html Attribute name completions:", () => {
                 if (item.label === "value") {
                     expect(item.textEdit?.newText).toBe('value="$0"')
                 }
-                assertTextEditRange(item, 1, 11, 1, 13)
+                assertRange(item.textEdit?.range, 1, 11, 1, 13)
             })
             expect(completions?.length).toBe(193)
         })
@@ -250,7 +249,7 @@ describe("Html Attribute name completions:", () => {
                     expect(item.textEdit?.newText).toBe("class={$0}")
                 }
                 expect(item.command).toBeUndefined()
-                assertTextEditRange(item, 0, 5, 0, 6)
+                assertRange(item.textEdit?.range, 0, 5, 0, 6)
             })
             expect(completions?.length).toBe(143)
         })
@@ -269,7 +268,7 @@ describe("Html Attribute name completions:", () => {
                         expect(item.textEdit?.newText).toBe("!id")
                     }
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 0, 5, 0, 8)
+                    assertRange(item.textEdit?.range, 0, 5, 0, 8)
                 })
                 expect(completions?.length).toBe(143)
             }),
@@ -279,7 +278,7 @@ describe("Html Attribute name completions:", () => {
                         expect(item.textEdit?.newText).toBe("!class={$0}")
                     }
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 0, 12, 0, 16)
+                    assertRange(item.textEdit?.range, 0, 12, 0, 16)
                 })
                 expect(completions?.length).toBe(143)
             }),
@@ -289,7 +288,7 @@ describe("Html Attribute name completions:", () => {
                         expect(item.textEdit?.newText).toBe("!value={$0}")
                     }
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 1, 11, 1, 14)
+                    assertRange(item.textEdit?.range, 1, 11, 1, 14)
                 })
                 expect(completions?.length).toBe(175)
             })
@@ -301,7 +300,7 @@ describe("Html Attribute name completions:", () => {
         await doComplete(0, 6).then(completions => {
             completions?.forEach(item => {
                 expect(item.command).toBeUndefined()
-                assertTextEditRange(item, 0, 5, 0, 6)
+                assertRange(item.textEdit?.range, 0, 5, 0, 6)
                 expect(item.textEdit?.newText[0]).toBe("@")
                 expect(item.textEdit?.newText).toBe(`${item.label}={$0}`)
             })
@@ -318,7 +317,7 @@ describe("Html Attribute name completions:", () => {
             doComplete(0, 11).then(completions => {
                 completions?.forEach(item => {
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 0, 5, 0, 11)
+                    assertRange(item.textEdit?.range, 0, 5, 0, 11)
                     expect(item.textEdit?.newText[0]).toBe("@")
                     expect(item.textEdit?.newText).toBe(item.label)
                 })
@@ -327,7 +326,7 @@ describe("Html Attribute name completions:", () => {
             doComplete(0, 26).then(completions => {
                 completions?.forEach(item => {
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 0, 25, 0, 26)
+                    assertRange(item.textEdit?.range, 0, 25, 0, 26)
                     expect(item.textEdit?.newText[0]).toBe("@")
                     expect(item.textEdit?.newText).toBe(`${item.label}={$0}`)
                 })
@@ -336,7 +335,7 @@ describe("Html Attribute name completions:", () => {
             doComplete(1, 15).then(completions => {
                 completions?.forEach(item => {
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 1, 11, 1, 15)
+                    assertRange(item.textEdit?.range, 1, 11, 1, 15)
                     expect(item.textEdit?.newText[0]).toBe("@")
                     expect(item.textEdit?.newText).toBe(`${item.label}={$0}`)
                 })
@@ -350,7 +349,7 @@ describe("Html Attribute name completions:", () => {
         await doComplete(0, 6).then(completions => {
             completions?.forEach(item => {
                 expect(item.command).toBeUndefined()
-                assertTextEditRange(item, 0, 5, 0, 6)
+                assertRange(item.textEdit?.range, 0, 5, 0, 6)
                 expect(item.textEdit?.newText).toBe(`${item.label}={$0}`)
             })
             expect(completions?.length).toBe(18)
@@ -361,14 +360,14 @@ describe("Html Attribute name completions:", () => {
             doComplete(0, 9).then(completions => {
                 completions?.forEach(item => {
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 0, 5, 0, 9)
+                    assertRange(item.textEdit?.range, 0, 5, 0, 9)
                     expect(item.textEdit?.newText).toBe(`${item.label}`)
                 })
             }),
             doComplete(0, 14).then(completions => {
                 completions?.forEach(item => {
                     expect(item.command).toBeUndefined()
-                    assertTextEditRange(item, 0, 13, 0, 14)
+                    assertRange(item.textEdit?.range, 0, 13, 0, 14)
                     expect(item.textEdit?.newText).toBe(`${item.label}={$0}`)
                 })
             })
@@ -421,7 +420,7 @@ describe("Html attribute value completions:", () => {
         await openContentAsTextDocument(`<input type=""`)
         await doComplete(0, 13).then(completions => {
             completions?.forEach(item => {
-                assertTextEditRange(item, 0, 13, 0, 13)
+                assertRange(item.textEdit?.range, 0, 13, 0, 13)
             })
             expect(completions?.length).toBe(23)
         })
@@ -444,38 +443,22 @@ describe("Html attribute value completions:", () => {
     })
 })
 
-// 断言CompletionIte.textEdit.range
-function assertTextEditRange(
-    ...[item, sl, sc, el, ec]: [CompletionItem, ...FixedArray<number, 4>]
-) {
-    if (!item.textEdit || !("range" in item.textEdit)) {
-        assert.fail("CompletionItem.textEdit is not a TextEdit structure")
-    }
-    expect(item.textEdit.range).toEqual<Range>({
-        start: { line: sl, character: sc },
-        end: { line: el, character: ec }
-    })
-}
-
-// 此方法用于模拟请求qingkuai语言服务器以获取补全建议
+// 此方法用于向qingkuai语言服务器发起textDocument/completion请求
 export async function doComplete(line: number, character: number, triggerChar?: string) {
-    const ret: CompletionItem[] | undefined = await connection.sendRequest(
-        "textDocument/completion",
-        {
-            textDocument: {
-                uri: ""
-            },
-            position: {
-                line,
-                character
-            },
-            context: {
-                triggerCharacter: triggerChar,
-                triggerKind: isUndefined(triggerChar) ? 1 : 2
-            }
-        } satisfies CompletionParams
-    )
-    return ret
+    const ret = await connection.sendRequest("textDocument/completion", {
+        textDocument: {
+            uri: ""
+        },
+        position: {
+            line,
+            character
+        },
+        context: {
+            triggerCharacter: triggerChar,
+            triggerKind: isUndefined(triggerChar) ? 1 : 2
+        }
+    } satisfies CompletionParams)
+    return ret as (CompletionItem & { textEdit?: TextEdit })[] | null
 }
 
 // 此方法用于将doComplete方法的结果断言为CompletionList

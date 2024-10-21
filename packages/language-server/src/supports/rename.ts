@@ -16,7 +16,7 @@ export const rename: RenameHander = ({ textDocument, position, newName }) => {
 
     // 重命名HTML标签名
     const textEdits: TextEdit[] = []
-    findTagRanges(currentNode, offset).forEach(range => {
+    findTagRanges(currentNode, offset, true).forEach(range => {
         if (!isUndefined(range)) {
             textEdits.push(TextEdit.replace(getRange(...range), newName))
         }

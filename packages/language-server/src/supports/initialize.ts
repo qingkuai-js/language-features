@@ -2,7 +2,7 @@ import { state } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
 
-export const initialize: InitializeHandler = params => {
+export const initialize: InitializeHandler = () => {
     state.isInitialized = true
     console.log("Keep output choice QingKuaiLanguageServer...")
 

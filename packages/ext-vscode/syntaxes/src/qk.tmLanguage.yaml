@@ -4,7 +4,7 @@ scopeName: source.qk
 uuid: 762041dd-c0dd-4e04-b8ff-996bf64c76f2
 
 patterns:
-  # embedded javascript language block, ways: <lang-js> <script>
+  # embedded javascript language block: <lang-js>
   - begin: (?=<lang-js)
     end: (?=</lang-js)
     patterns:
@@ -22,7 +22,7 @@ patterns:
         end: (?=</script)
         patterns: [include: source.js]
 
-  # embedded typescript language block, ways: <lang-ts>
+  # embedded typescript language block: <lang-ts>
   - begin: (?=<lang-ts)
     end: (?=</lang-ts)
     patterns:
@@ -32,7 +32,7 @@ patterns:
         end: (?=</lang-ts)
         patterns: [include: source.ts]
 
-  # embedded css language block, ways: <lang-css> <style>
+  # embedded css language block: <lang-css>
   - begin: (?=<lang-css)
     end: (?=</lang-css)
     patterns:
@@ -50,7 +50,7 @@ patterns:
         end: (?=</style)
         patterns: [include: source.css]
 
-  # embedded sass language block, ways: <lang-sass>
+  # embedded sass language block: <lang-sass>
   - begin: (?=<lang-sass)
     end: (?=</lang-sass)
     patterns:
@@ -60,7 +60,7 @@ patterns:
         end: (?=</lang-sass)
         patterns: [include: source.sass]
 
-  # embedded scss language block, ways: <lang-scss>
+  # embedded scss language block: <lang-scss>
   - begin: (?=<lang-scss)
     end: (?=</lang-scss)
     patterns:
@@ -70,7 +70,7 @@ patterns:
         end: (?=</lang-scss)
         patterns: [include: source.css.scss]
 
-  # embedded less language block, ways: <lang-less>
+  # embedded less language block: <lang-less>
   - begin: (?=<lang-less)
     end: (?=</lang-less)
     patterns:
@@ -80,7 +80,7 @@ patterns:
         end: (?=</lang-less)
         patterns: [include: source.css.less]
 
-  # embedded stylus language block, ways: <lang-stylus>
+  # embedded stylus language block: <lang-stylus>
   - begin: (?=<lang-stylus)
     end: (?=</lang-stylus)
     patterns:
@@ -90,7 +90,7 @@ patterns:
         end: (?=</lang-stylus)
         patterns: [include: source.stylus]
 
-  # embedded postcss language block, ways: <lang-postcss>
+  # embedded postcss language block: <lang-postcss>
   - begin: (?=<lang-postcss)
     end: (?=</lang-postcss)
     patterns:

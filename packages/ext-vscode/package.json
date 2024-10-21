@@ -83,7 +83,6 @@
         "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qk-emmet.tmLanguage.json && npx prettier --write ../qk-emmet.tmLanguage.json"
     },
     "devDependencies": {
-        "js-yaml": "^4.1.0",
-        "vscode-languageclient": "^9.0.1"
+        "js-yaml": "^4.1.0"
     }
 }

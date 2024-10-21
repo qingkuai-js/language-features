@@ -6,7 +6,17 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 export default defineConfig(() => {
     return [
         {
-            external: ["vscode"],
+            external: [
+                "vscode",
+                "qingkuai",
+                "qingkuai/compiler",
+                "@vscode/emmet-helper",
+                "vscode-languageclient",
+                "vscode-languageserver",
+                "vscode-languageclient/node",
+                "vscode-languageserver/node",
+                "vscode-languageserver-textdocument"
+            ],
             input: {
                 client: "./packages/ext-vscode/src/index.ts",
                 server: "./packages/language-server/src/index.ts"

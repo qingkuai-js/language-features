@@ -91,7 +91,7 @@ export const hover: HoverHander = ({ textDocument, position }) => {
             if (i > nodeStartIndex && validRE.test(source[i])) {
                 i--, passed++
             }
-            if (j <= nodeEndIndex && validRE.test(source[j])) {
+            if (j <= nodeEndIndex && source[j - 1] !== ";" && validRE.test(source[j])) {
                 j++, passed++
             }
             if (passed === 0) {

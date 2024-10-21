@@ -41,10 +41,10 @@ export function findTagRanges(node: TemplateNode, offset: number, includeEndChar
     const endTagNameStartIndex = node.endTagStartPos.index + 2
     if (
         (offset >= statTagNameStartIndex && offset < startTagNameEndIndex + delta) ||
-        (offset > endTagNameStartIndex && offset < endTagNameStartIndex + tagLen + delta)
+        (offset >= endTagNameStartIndex && offset < endTagNameStartIndex + tagLen + delta)
     ) {
         ret[0] = [statTagNameStartIndex, startTagNameEndIndex]
-        if (endTagNameStartIndex !== -1) {
+        if (endTagNameStartIndex !== 1) {
             ret[1] = [endTagNameStartIndex, endTagNameStartIndex + tagLen]
         }
     }

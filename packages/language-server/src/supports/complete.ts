@@ -20,7 +20,6 @@ import {
     CompletionItem,
     CompletionItemKind
 } from "vscode-languageserver"
-import { print } from "../../../../shared-util/sundry"
 import { connection, getCompileRes } from "../state"
 import { commands, selfClosingTags } from "../constants"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
