@@ -2,6 +2,8 @@ import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
 import type { HTMLDataAttributeItem } from "../types/data"
 import type { InsertSnippetParam } from "../../../../types/server"
+import type { TextDocument } from "vscode-languageserver-textdocument"
+import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
 
 import {
     htmlData,
@@ -13,21 +15,17 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/html"
-import {
-    Range,
-    TextEdit,
-    InsertTextFormat,
-    CompletionItem,
-    CompletionItemKind
-} from "vscode-languageserver"
+import { parseTemplate } from "qingkuai/compiler"
 import { connection, getCompileRes } from "../state"
 import { commands, selfClosingTags } from "../constants"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { offsetPosition, position2Range } from "../util/vscode"
-import { doComplete as doEmmetComplete } from "@vscode/emmet-helper"
+import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
+import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
+import { print } from "../../../../shared-util/sundry"
 
 export const complete: CompletionHandler = async ({ position, textDocument, context }) => {
     const { source, templateNodes, getOffset, document, getRange } = getCompileRes(textDocument)!
@@ -58,8 +56,8 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             return doTagComplete(currentRange)
         }
 
+        const emmetRes = doEmmetComplete(document, position)
         const customTagCompletions = doCustomTagComplete(currentRange, source, offset, currentNode)
-        const emmetRes = doEmmetComplete(document, position, "html", {})
         if (!isUndefined(emmetRes)) {
             return emmetRes.items.push(...customTagCompletions), emmetRes
         }
@@ -196,6 +194,29 @@ function doCustomTagComplete(
     return []
 }
 
+// emmet支持，此方法会将特殊属性值（动态/引用属性、指令、事件名）转换为花括号包裹
+// 注意：在emmet语法中，以感叹号开头的属性名是要被忽略的属性，qingkuai修改了这一语法（短横线-开头）
+// 由于修改了默认语法，所以此修改并未提交给emmet，而是通过pnpm patch完成的，若之后版本升级需要重新打补丁
+function doEmmetComplete(document: TextDocument, position: Position) {
+    const ret = _doEmmetComplete(document, position, "html", {})
+    ret?.items.forEach(item => {
+        const setNT = (text: string) => (item.textEdit!.newText = text)
+        parseTemplate(item.textEdit?.newText || "", false).forEach(node => {
+            node.attributes.forEach(attr => {
+                const v = attr.value.raw
+                const vsi = attr.value.loc.start.index - 1
+                const newText = item.textEdit?.newText || ""
+                const restStr = newText.slice(attr.loc.end.index)
+                if (/^[!@#&]/.test(attr.key.raw)) {
+                    setNT(`${newText.slice(0, vsi)}{${v}}${restStr}`)
+                }
+            })
+        })
+        item.documentation = item.textEdit?.newText.replace(/\$\{\d+\}/g, "|")
+    })
+    return ret
+}
+
 // HTML实体字符补全建议
 function doCharacterEntityComplete(range: Range, source: string, offset: number, endIndex: number) {
     // 找到实体字符标建议替换范围的开始位置：&的前一个字符或非字母且非数字的字符的位置
@@ -252,17 +273,16 @@ function doAttributeNameComplete(tag: string, hasValue: boolean, startChar: stri
     // 插入范围属性，选中该建议后是否再次触发补全建议的command属性以及插入格式属性（Snippet）
     const getExtra = (attribute: HTMLDataAttributeItem) => {
         let assignText = ""
+        const valueSet = attribute.valueSet || "v"
         const extraRet: Partial<CompletionItem> = {}
         if (!hasValue) {
             assignText = isDynamicOrEvent ? "={$0}" : '="$0"'
             extraRet.insertTextFormat = InsertTextFormat.Snippet
         }
-        if (attribute.valueSet !== "v" || isDynamicOrEvent) {
-            if (!isUndefined(attribute.valueSet) && !isDynamicOrEvent && !hasValue) {
-                extraRet.command = {
-                    title: "suggest",
-                    command: commands.TriggerCommand
-                }
+        if (valueSet !== "v" && !isDynamicOrEvent && !hasValue) {
+            extraRet.command = {
+                title: "suggest",
+                command: commands.TriggerCommand
             }
         }
         return {

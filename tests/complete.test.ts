@@ -67,6 +67,50 @@ describe("Emmet functions:", () => {
             })
         })
     })
+
+    test.only("whether emmet is avaliable for special attribute(dynamic/reference attribute, directive name or event name).", async () => {
+        await openContentAsTextDocument(
+            formatSourceCode(`
+                div[!class=expression]
+                input[-type &value=inpValue]
+                div[#for="item, index in arr"]
+                span[!class &value #for @keyup|stop|once]
+                div[@click="()=>{console.log(expression)}"]
+            `)
+        )
+
+        await doListComplete(0, 23).then(({ items: [item] }) => {
+            expect(item.documentation).toBe("<div !class={expression}>|</div>")
+            expect(item.textEdit?.newText).toBe("<div !class={expression}>${0}</div>")
+        })
+
+        await doListComplete(1, 29).then(({ items: [item] }) => {
+            expect(item.documentation).toBe("<input &value={inpValue}>")
+            expect(item.textEdit?.newText).toBe("<input &value={inpValue}>")
+        })
+
+        await doListComplete(2, 31).then(({ items: [item] }) => {
+            expect(item.documentation).toBe("<div #for={item, index in arr}>|</div>")
+            expect(item.textEdit?.newText).toBe("<div #for={item, index in arr}>${0}</div>")
+        })
+
+        await doListComplete(3, 42).then(({ items: [item] }) => {
+            console.log(item)
+            expect(item.documentation).toBe(
+                "<span !class={|} &value={|} #for={|} @keyup|stop|once={|}>|</span>"
+            )
+            expect(item.textEdit?.newText).toBe(
+                "<span !class={${1}} &value={${2}} #for={${3}} @keyup|stop|once={${4}}>${0}</span>"
+            )
+        })
+
+        await doListComplete(4, 44).then(({ items: [item] }) => {
+            expect(item.textEdit?.newText).toBe(
+                "<div @click={()=>{console.log(expression)}}>${0}</div>"
+            )
+            expect(item.documentation).toBe("<div @click={()=>{console.log(expression)}}>|</div>")
+        })
+    })
 })
 
 describe("Html character entity completions:", () => {

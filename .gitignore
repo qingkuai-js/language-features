@@ -4,5 +4,6 @@ node_modules
 .history
 .DS_Store
 
+features.md
 packages/ext-vscode/syntaxes/qk.tmLanguage.json
 packages/ext-vscode/syntaxes/qk-emmet.tmLanguage.json

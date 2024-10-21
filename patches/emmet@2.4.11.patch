@@ -1,0 +1,13 @@
+diff --git a/dist/emmet.cjs b/dist/emmet.cjs
+index 8d295bced45dd325629717900c308ef0ff6811cf..7e92da2ab7d0c7ec5726a7de419ada4e27d5d359 100644
+--- a/dist/emmet.cjs
++++ b/dist/emmet.cjs
+@@ -1242,7 +1242,7 @@ function convertAttribute(node, state) {
+     let valueType = node.expression ? 'expression' : 'raw';
+     let value;
+     const name = node.name && stringifyName(node.name, state);
+-    if (name && name[0] === '!') {
++    if (name && name[0] === '-') {
+         implied = true;
+     }
+     if (name && name[name.length - 1] === '.') {
