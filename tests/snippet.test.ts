@@ -2,6 +2,7 @@ import type { InsertSnippetParam } from "../types/server"
 
 import { connection } from "./index.test"
 import { doComplete } from "./complete.test"
+import { isNull } from "../shared-util/assert"
 import { assert, describe, expect, it } from "vitest"
 import { formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
 
@@ -10,7 +11,7 @@ import { formatSourceCode, openContentAsTextDocument } from "../shared-util/test
 let resolver: (value: InsertSnippetParam) => void
 
 describe("Html tag auto close functions:", () => {
-    it("should insert close tag automatically", async () => {
+    it("should insert close tag automatically when enttering >", async () => {
         await openContentAsTextDocument(
             formatSourceCode(`
                 <div>
@@ -43,39 +44,88 @@ describe("Html tag auto close functions:", () => {
         ])
     })
 
-    it("should not insert close tag", async () => {
-        // resolver没有改变就表示没有收到插入片段的通知
-        const oriResolver = resolver
+    it("should insert close tag automatically when enttering </", async () => {
+        await openContentAsTextDocument(
+            formatSourceCode(`
+                <div></
+                <custom-element></
+                <div></
+                    <span></
+                </
+            `)
+        )
 
+        await Promise.all([
+            doComplete(0, 7).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            assertSnippetItem({ text: "div>" })
+        ])
+
+        await Promise.all([
+            doComplete(1, 18).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            assertSnippetItem({ text: "custom-element>" })
+        ])
+
+        await Promise.all([
+            doComplete(2, 7).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            assertSnippetItem({ text: "div>" })
+        ])
+
+        await Promise.all([
+            doComplete(3, 12).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            assertSnippetItem({ text: "span>" })
+        ])
+
+        await Promise.all([
+            doComplete(4, 2).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            assertSnippetItem({ text: "span>" })
+        ])
+    })
+
+    it("should not insert close tag.", async () => {
         await openContentAsTextDocument(
             formatSourceCode(`
                 <input>
                 <input/>
                 <Component/>
                 <div>
+                    <span></span>
+                </div>
+                <div>
                     <input>
             `)
         )
 
-        await doComplete(0, 7).then(completions => {
-            expect(completions).toBeNull()
-        })
-        expect(resolver).toBe(oriResolver)
-
-        await doComplete(1, 8).then(completions => {
-            expect(completions).toBeNull()
-        })
-        expect(resolver).toBe(oriResolver)
-
-        await doComplete(2, 12).then(completions => {
-            expect(completions).toBeNull()
-        })
-        expect(resolver).toBe(oriResolver)
-
-        await doComplete(4, 11).then(completions => {
-            expect(completions).toBeNull()
-        })
-        expect(resolver).toBe(oriResolver)
+        await Promise.all([
+            assertSnippetItem(null),
+            doComplete(0, 7).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            doComplete(1, 8).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            doComplete(2, 12).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            doComplete(3, 5).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            doComplete(4, 10).then(completions => {
+                expect(completions).toBeNull()
+            }),
+            doComplete(7, 11).then(completions => {
+                expect(completions).toBeNull()
+            })
+        ])
     })
 })
 
@@ -145,11 +195,14 @@ connection.onNotification("qingkuai/insertSnippet", item => {
 })
 
 // 断言qingkuai语言服务器是否响应了期望的插入片段结构，此方法有超时机制，1000ms内未收到通知则断言失败
-async function assertSnippetItem(expectItem: InsertSnippetParam) {
+async function assertSnippetItem(expectItem: InsertSnippetParam | null) {
     const receivedItem = await new Promise<InsertSnippetParam>(resolve => {
+        const expectIsNull = isNull(expectItem)
         const timeout = setTimeout(() => {
             resolve(assertSnippetItem as any)
-            assert.fail("No insert snippet item has been received")
+            if (!expectIsNull) {
+                assert.fail("No insert snippet item has been received")
+            }
         }, 1000)
         resolver = (item: InsertSnippetParam) => {
             resolve(item)

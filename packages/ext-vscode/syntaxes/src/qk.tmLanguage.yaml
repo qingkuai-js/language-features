@@ -228,10 +228,6 @@ repository:
       1:
         # specify separate scope name for different special attribute
         patterns:
-          - match: (@)[^\s=\{\}/>]+
-            name: entity.other.attribute-name.event.qk
-            captures:
-              1: { name: punctuation.mark-event.qk }
           - match: (!)[^\s=\{\}/>]+
             name: entity.other.attribute-name.dynamic.qk
             captures:
@@ -245,6 +241,16 @@ repository:
             captures:
               1: { name: punctuation.mark-directive.qk }
               2: { name: keyword.control.$2.qk }
+          - begin: "@"
+            end: (?=[\s=\{\}/>])
+            name: entity.name.type.qk
+            beginCaptures:
+              0: { name: punctuation.mark-event.qk }
+            patterns:
+              - match: (\|)([^\s=\{\}\|/>]*)
+                captures:
+                  1: { name: punctuation.definition.event-pipe.qk }
+                  2: { name: constant.event-modifier.qk }
     patterns:
       - begin: =
         end: (?<=[^\s=])(?!=)

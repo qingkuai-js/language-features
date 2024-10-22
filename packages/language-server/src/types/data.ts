@@ -1,34 +1,34 @@
-export interface HTMLData {
-    tags: HTMLDataTagItem[]
+export interface HTMLElementData {
+    tags: HTMLElementDataTagItem[]
     valueSets: {
         name: string
         values: {
             name: string
-            description?: HTMLDataDescription
+            description?: HTMLElementDataDescription
         }[]
     }[]
-    globalAttributes: HTMLDataAttributeItem[]
+    globalAttributes: HTMLElementDataAttributeItem[]
 }
 
-export interface HTMLDataAttributeItem {
+export interface HTMLElementDataAttributeItem {
     name: string
     valueSet?: string
     references?: {
         name: string
         url: string
     }[]
-    description?: HTMLDataDescription
+    description?: HTMLElementDataDescription
 }
 
-export interface HTMLDataTagItem {
+export interface HTMLElementDataTagItem {
     name: string
     void?: boolean
     references: {
         name: string
         url: string
     }[]
-    description: HTMLDataDescription
-    attributes: HTMLDataAttributeItem[]
+    description: HTMLElementDataDescription
+    attributes: HTMLElementDataAttributeItem[]
 }
 
-export type HTMLDataDescription = string | { kind: "markdown"; value: string }
+export type HTMLElementDataDescription = string | { kind: "markdown"; value: string }

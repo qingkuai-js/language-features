@@ -6,7 +6,7 @@ import {
     getDocumentation,
     findTagAttributeData,
     getDirectiveDocumentation
-} from "../data/html"
+} from "../data/element"
 import { getCompileRes } from "../state"
 import { MarkupKind } from "vscode-languageserver"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
@@ -81,26 +81,26 @@ export const hover: HoverHander = ({ textDocument, position }) => {
         }
     }
 
-    // HTML实体字符悬停提示，这里使用双指针算法找到当前position是否处于实体字符范围内
+    // HTML实体字符悬停提示
     if (isEmptyString(currentNode.tag) && offset >= nodeStartIndex && offset < nodeEndIndex) {
-        let i = offset
-        let j = offset + 1
+        let startIndex = offset
+        let endIndex = offset + 1
         const validRE = /[a-zA-Z\d;]/
-        while (true) {
-            let passed = 0
-            if (i > nodeStartIndex && validRE.test(source[i])) {
-                i--, passed++
-            }
-            if (j <= nodeEndIndex && source[j - 1] !== ";" && validRE.test(source[j])) {
-                j++, passed++
-            }
-            if (passed === 0) {
-                break
-            }
+
+        // 找到当前position是否处于实体字符范围内
+        while (
+            endIndex < nodeEndIndex &&
+            source[endIndex - 1] !== ";" &&
+            validRE.test(source[endIndex])
+        ) {
+            endIndex++
+        }
+        while (startIndex > nodeStartIndex && validRE.test(source[startIndex])) {
+            startIndex--
         }
 
-        if (source[i] === "&") {
-            const expectKey = source.slice(i + 1, j)
+        if (source[startIndex] === "&") {
+            const expectKey = source.slice(startIndex + 1, endIndex)
             for (const key of htmlEntitiesKeys) {
                 if (key === expectKey) {
                     const entityItem = htmlEntities[key]
@@ -110,7 +110,7 @@ export const hover: HoverHander = ({ textDocument, position }) => {
                         .toUpperCase()
                         .padStart(4, "0")
                     return {
-                        range: getRange(i, j),
+                        range: getRange(startIndex, endIndex),
                         contents: {
                             kind: MarkupKind.Markdown,
                             value: `Character entity representing: ${entityItem}\n\nUnicode equivalent: U+${unicodeStr}`

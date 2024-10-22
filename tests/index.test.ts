@@ -14,7 +14,7 @@ connection.onNotification("development-debug", msg => {
     console.log(msg)
 })
 
-test("Connection for language server.", async () => {
+test("Connect to language server...", async () => {
     const res = await connection.sendRequest("ping")
     expect(res).toBe("pong")
 })

@@ -19,7 +19,7 @@ export const initialize: InitializeHandler = () => {
             },
             completionProvider: {
                 triggerCharacters: [
-                    ["<", ">", "!", "@", "#", "&", "-", "="],
+                    ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
 
                     // prettier-ignore
                     // emmet needs trigger characters

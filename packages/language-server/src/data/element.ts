@@ -6,16 +6,16 @@
  */
 
 import type {
-    HTMLData,
-    HTMLDataTagItem,
-    HTMLDataDescription,
-    HTMLDataAttributeItem
+    HTMLElementData,
+    HTMLElementDataTagItem,
+    HTMLElementDataDescription,
+    HTMLElementDataAttributeItem
 } from "../types/data"
 
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
-export const htmlData: HTMLData = {
+export const htmlElements: HTMLElementData = {
     tags: [
         {
             name: "html",
@@ -6349,7 +6349,7 @@ export const customHTMLTags = [
     ["ts", "typescript"]
 ].map(item => {
     const language = item[1] || item[0].replace("lang-", "")
-    const ret: HTMLDataTagItem = {
+    const ret: HTMLElementDataTagItem = {
         attributes: [],
         references: [],
         name: "lang-" + item[0],
@@ -6357,10 +6357,10 @@ export const customHTMLTags = [
     }
     return ret
 })
-htmlData.tags.push(...customHTMLTags)
+htmlElements.tags.push(...customHTMLTags)
 
 export function findTagData(tag: string) {
-    for (const item of htmlData.tags) {
+    for (const item of htmlElements.tags) {
         if (tag === item.name) {
             return item
         }
@@ -6368,7 +6368,7 @@ export function findTagData(tag: string) {
 }
 
 export function findValueSet(name: string) {
-    for (const item of htmlData.valueSets) {
+    for (const item of htmlElements.valueSets) {
         if (name === item.name) {
             return item
         }
@@ -6386,7 +6386,7 @@ export function findTagAttributeData(tag: string, attrName: string) {
             return attribute
         }
     }
-    for (const attribute of htmlData.globalAttributes) {
+    for (const attribute of htmlElements.globalAttributes) {
         if (attrName === attribute.name) {
             return attribute
         }
@@ -6397,7 +6397,7 @@ export function findTagAttributeData(tag: string, attrName: string) {
 export function getDirectiveDocumentation(
     item: (typeof htmlDirectives)[number],
     needUseage: boolean
-): HTMLDataDescription {
+): HTMLElementDataDescription {
     let description = item.description
     if (!needUseage) {
         description += " Note: this directive is processed by qingkuai compiler."
@@ -6408,7 +6408,7 @@ export function getDirectiveDocumentation(
 }
 
 // 将htmlData.tags中的description和references组合成补全建议的documentation
-export function getDocumentation(item: HTMLDataAttributeItem): HTMLDataDescription {
+export function getDocumentation(item: HTMLElementDataAttributeItem): HTMLElementDataDescription {
     if (item.references) {
         const descriptionValue = isString(item.description)
             ? item.description
