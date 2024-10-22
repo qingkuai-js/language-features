@@ -12,6 +12,8 @@ import { MarkupKind } from "vscode-languageserver"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { findEventModifier } from "../util/search"
+import { eventModifiers } from "../data/event-modifier"
 
 export const hover: HoverHander = ({ textDocument, position }) => {
     const { source, templateNodes, getOffset, getRange } = getCompileRes(textDocument)!
@@ -66,9 +68,34 @@ export const hover: HoverHander = ({ textDocument, position }) => {
             attrKey = attrKey.slice(1)
         }
 
-        // 事件名称将@替换为on从数据中查找提示消息
+        // 事件名称将@替换为on从数据中查找提示消息，注意以下两点处理细节：
+        // 1. 如果当前事件名中含有事件修饰符，则将事件名的结束为止缩小到第一个修饰符之前
+        // 2. 如果当前指针放置的位置处于事件修饰符范围内，此时应该返回此事件修饰符的提示信息
         if (attrKey[0] === "@") {
-            attrKey = "on" + attrKey.slice(1)
+            const firstModifierStartIndex = attrKey.indexOf("|")
+            if (
+                firstModifierStartIndex === -1 ||
+                offset < firstModifierStartIndex + keyStartIndex
+            ) {
+                attrKey = "on" + attrKey.slice(1, firstModifierStartIndex)
+            } else {
+                const modifier = findEventModifier(source, offset, [keyStartIndex, KeyEndIndex])
+                if (isUndefined(modifier) || source[offset] === "|") {
+                    return null
+                }
+                for (const item of eventModifiers) {
+                    if (item.name === modifier.name) {
+                        return {
+                            contents: {
+                                kind: "markdown",
+                                value: item.description
+                            },
+                            range: getRange(...modifier.range)
+                        }
+                    }
+                }
+                return null
+            }
         }
 
         const attrData = findTagAttributeData(currentNode.tag, attrKey)

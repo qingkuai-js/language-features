@@ -27,7 +27,7 @@ export const eventModifiers = [
     {
         name: "prevent",
         description:
-            "If the [prevent](https://qingkuai.dev] event modifier is set, [preventDefault](https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault) calling will be attached to event handler, this will prevent the default behavior of proxy(mostly browser)."
+            "If the [prevent](https://qingkuai.dev) event modifier is set, [preventDefault](https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault) calling will be attached to event handler, this will prevent the default behavior of proxy(mostly browser)."
     },
     {
         name: "compose",

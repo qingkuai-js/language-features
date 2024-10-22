@@ -27,6 +27,7 @@ import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/asse
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
 import { eventModifiers } from "../data/event-modifier"
 import { print } from "../../../../shared-util/sundry"
+import { findEventModifier } from "../util/search"
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
     const { source, templateNodes, getOffset, document, getRange, getPosition } =
@@ -169,8 +170,6 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
                 )
             }
         } else if (isUndefined(attr) || offset <= keyEndIndex) {
-            let modifierEndIndex = offset
-            let modifierStartIndex = offset - 1
             const keyRange = getRange(keyStartIndex, keyEndIndex)
 
             // 返回引用属性补全建议
@@ -185,16 +184,11 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
             // 如果处于事件修饰符范围内，则提返回事件修饰符补全建议
             if (keyFirstChar === "@") {
                 const firstModifierStartIndex = attrKey.indexOf("|")
-                while (modifierEndIndex < keyEndIndex && source[modifierEndIndex] !== "|") {
-                    modifierEndIndex++
-                }
-                while (modifierStartIndex > keyStartIndex && source[modifierStartIndex] !== "|") {
-                    modifierStartIndex--
-                }
+                const modifier = findEventModifier(source, offset, [keyStartIndex, keyEndIndex])
 
                 // 已经存在的修饰符不再提示（注意：如果光标在这个存在的修饰符范围内，需要重新提醒，这种情况多发生在
                 // 用户主动调用客户端命令来获取补全建议时（vscode对应的命令：editor.action.triggerSuggest）
-                if (source.slice(modifierStartIndex, modifierEndIndex).startsWith("|")) {
+                if (!isUndefined(modifier)) {
                     const existingItems = new Set<string>()
                     const items = attrKey.slice(firstModifierStartIndex).split("|")
                     for (
@@ -208,8 +202,8 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
                     }
                     return doEventModifierComplete(
                         existingItems,
-                        attrKey.slice(1, firstModifierStartIndex),
-                        getRange(modifierStartIndex + 1, modifierEndIndex)
+                        getRange(...modifier.range),
+                        attrKey.slice(1, firstModifierStartIndex)
                     )
                 }
 
@@ -436,7 +430,7 @@ function doAttributeNameComplete(tag: string, range: Range, hasValue: boolean, s
     return ret
 }
 
-function doEventModifierComplete(existingItems: Set<string>, key: string, range: Range) {
+function doEventModifierComplete(existingItems: Set<string>, range: Range, key: string) {
     const ret: CompletionItem[] = []
     eventModifiers.forEach(item => {
         if (existingItems.has(item.name)) {
