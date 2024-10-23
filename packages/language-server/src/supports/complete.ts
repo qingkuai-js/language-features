@@ -15,7 +15,6 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { commands } from "../constants"
 import { parseTemplate } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { connection, getCompileRes } from "../state"
@@ -23,6 +22,7 @@ import { eventModifiers } from "../data/event-modifier"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { offsetPosition, position2Range } from "../util/vscode"
+import { commands, keyRelatedEventModifiers } from "../constants"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
@@ -430,6 +430,11 @@ function doAttributeNameComplete(tag: string, range: Range, hasValue: boolean, s
 
 function doEventModifierComplete(existingItems: Set<string>, range: Range, key: string) {
     const ret: CompletionItem[] = []
+    const keyRelatedEvents = new Set(["keyup", "keydown", "keypress"])
+    const hasKeyRelatedModifier = Array.from(existingItems).some(modifier => {
+        return keyRelatedEventModifiers.has(modifier)
+    })
+
     eventModifiers.forEach(item => {
         if (existingItems.has(item.name)) {
             return
@@ -437,11 +442,10 @@ function doEventModifierComplete(existingItems: Set<string>, range: Range, key: 
         if (key !== "input" && item.name === "compose") {
             return
         }
-        if (
-            !/^key(?:up|down|press)$/.test(key) &&
-            /^enter|tag|del|esc|up|down|left|right|space|tab|shift$/.test(item.name)
-        ) {
-            return
+        if (keyRelatedEventModifiers.has(item.name)) {
+            if (hasKeyRelatedModifier || !keyRelatedEvents.has(key)) {
+                return
+            }
         }
         ret.push({
             label: item.name,
@@ -453,6 +457,7 @@ function doEventModifierComplete(existingItems: Set<string>, range: Range, key: 
             textEdit: TextEdit.replace(range, item.name)
         })
     })
+
     return ret
 }
 

@@ -201,6 +201,57 @@ describe("Html attribute hover tip functions:", () => {
             })
         }
     })
+
+    it.only("should distinguish event and event modifier tips.", async () => {
+        await openContentAsTextDocument(
+            formatSourceCode(`
+                <div @click|once|capture={handlerClick}>
+                    <input @keyup|enter={handleConfirm}>
+                </div>
+            `)
+        )
+
+        for (let c = 5; c < 11; c++) {
+            await doHover(0, c).then(ret => {
+                expect(ret.contents.value.startsWith("A pointing device")).toBe(true)
+            })
+        }
+        for (let c = 12; c < 16; c++) {
+            await doHover(0, c).then(ret => {
+                expect(ret.contents.value.startsWith("If the [once]")).toBe(true)
+            })
+        }
+        for (let c = 17; c < 24; c++) {
+            await doHover(0, c).then(ret => {
+                expect(ret.contents.value.startsWith("If the [capture]")).toBe(true)
+            })
+        }
+        for (let c = 11; c < 17; c++) {
+            await doHover(1, c).then(ret => {
+                expect(ret.contents.value).toBe("A key is released.")
+            })
+        }
+        for (let c = 18; c < 23; c++) {
+            await doHover(1, c).then(ret => {
+                expect(
+                    /The \[enter\]\(https:[^\)]+\) event modifier/.test(ret.contents.value)
+                ).toBe(true)
+            })
+        }
+
+        const positions: FixedArray<number, 2>[] = [
+            [0, 4],
+            [0, 11],
+            [0, 16],
+            [1, 10],
+            [1, 17]
+        ]
+        for (const position of positions) {
+            await doHover(...position).then(ret => {
+                expect(ret).toBeNull()
+            })
+        }
+    })
 })
 
 describe("Html character entity hover tip functions:", () => {

@@ -455,6 +455,68 @@ describe("Html Attribute name completions:", () => {
             })
         ])
     })
+
+    test("whether event modifier compoletion suggestions response is correct.", async () => {
+        await openContentAsTextDocument(
+            formatSourceCode(`
+                <div @click|
+                <input @input|
+                <div @keypress|
+                <div @keydown|
+                <div @keyup|
+            `)
+        )
+
+        await Promise.all([
+            doComplete(0, 12).then(completions => {
+                expect(completions?.length).toBe(9)
+            }),
+            doComplete(1, 14).then(completions => {
+                expect(completions?.length).toBe(10)
+            }),
+            doComplete(2, 15).then(completions => {
+                expect(completions?.length).toBe(19)
+            }),
+            doComplete(3, 14).then(completions => {
+                expect(completions?.length).toBe(19)
+            }),
+            doComplete(4, 12).then(completions => {
+                expect(completions?.length).toBe(19)
+            })
+        ])
+    })
+
+    it("should not receive the existing event modifier completion suggestion in response.", async () => {
+        await openContentAsTextDocument(
+            formatSourceCode(`
+                <div @click|once|capture|></div>
+                <input @input|compose|>
+                <div @keyup|compose>
+                <div @keyup|enter|>
+            `)
+        )
+
+        await Promise.all([
+            doComplete(0, 14).then(completions => {
+                expect(completions?.length).toBe(8)
+            }),
+            doComplete(0, 25).then(completions => {
+                expect(completions?.length).toBe(7)
+            }),
+            doComplete(1, 22).then(completions => {
+                expect(completions?.length).toBe(9)
+            }),
+            doComplete(2, 19).then(completions => {
+                expect(completions?.length).toBe(19)
+            }),
+            doComplete(3, 17).then(completions => {
+                expect(completions?.length).toBe(19)
+            }),
+            doComplete(3, 18).then(completions => {
+                expect(completions?.length).toBe(9)
+            })
+        ])
+    })
 })
 
 describe("Html attribute value completions:", () => {
