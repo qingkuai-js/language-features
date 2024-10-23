@@ -17,7 +17,9 @@ import {
 } from "../data/element"
 import { commands } from "../constants"
 import { parseTemplate } from "qingkuai/compiler"
+import { findEventModifier } from "../util/search"
 import { connection, getCompileRes } from "../state"
+import { eventModifiers } from "../data/event-modifier"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { offsetPosition, position2Range } from "../util/vscode"
@@ -25,9 +27,6 @@ import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
-import { eventModifiers } from "../data/event-modifier"
-import { print } from "../../../../shared-util/sundry"
-import { findEventModifier } from "../util/search"
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
     const { source, templateNodes, getOffset, document, getRange, getPosition } =
@@ -130,27 +129,26 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
 
         let hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
-        // 判断当前属性是否有推荐的属性值：非动态/引用/指令/事件且htmlData中该属性valueSet不为v
-        const hasRecommendedValue = () => {
-            if (/^(?:[!@#&]|$)/.test(attrKey)) {
-                return false
+        // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
+        // 如果属性为非动态/引用/指令/事件且htmlData中该属性valueSet不为v则在此请求补全建议
+        if (attr && valueStartIndex === attr.loc.end.index && source[offset - 1] === "=") {
+            const snippetItem: InsertSnippetParam = {
+                text: isInterpolation ? "{$0}" : '"$0"'
             }
-            return (findTagAttributeData(currentNode.tag, attrKey)?.valueSet || "v") !== "v"
+            if (!isInterpolation) {
+                const atttData = findTagAttributeData(currentNode.tag, attrKey)
+                if (atttData?.valueSet && atttData.valueSet !== "v") {
+                    snippetItem.command = commands.TriggerCommand
+                }
+            }
+            connection.sendNotification("qingkuai/insertSnippet", snippetItem)
+            return null
         }
 
         // 如果光标在属性值处，返回属性值的补全建议列表
-        // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
         // 如果当前不处于任何属性范围内或者处于属性名范围内，则返回属性名补全建议列表
         if (attr && offset >= valueStartIndex && offset <= valueEndIndex) {
-            if (source[offset - 1] === "=") {
-                const snippetItem: InsertSnippetParam = {
-                    text: isInterpolation ? "{$0}" : '"$0"'
-                }
-                if (hasRecommendedValue()) {
-                    snippetItem.command = commands.TriggerCommand
-                }
-                connection.sendNotification("qingkuai/insertSnippet", snippetItem)
-            } else if (!isInterpolation) {
+            if (!isInterpolation) {
                 // 如果是在HTML属性内输入实体字符，则返回实体字符建议
                 const characterEntityCompletions = doCharacterEntityComplete(
                     position2Range(position),
@@ -441,7 +439,7 @@ function doEventModifierComplete(existingItems: Set<string>, range: Range, key: 
         }
         if (
             !/^key(?:up|down|press)$/.test(key) &&
-            /^enter|tag|del|esc|up|down|left|right|space$/.test(item.name)
+            /^enter|tag|del|esc|up|down|left|right|space|tab|shift$/.test(item.name)
         ) {
             return
         }

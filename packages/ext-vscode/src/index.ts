@@ -6,7 +6,7 @@ import {
 } from "vscode-languageclient/node"
 import type { InsertSnippetParam } from "../../../types/server"
 
-import { workspace, ExtensionContext, window, SnippetString, commands } from "vscode"
+import { window, commands, workspace, SnippetString, ExtensionContext } from "vscode"
 
 let client: LanguageClient
 

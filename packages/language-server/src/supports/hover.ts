@@ -77,7 +77,11 @@ export const hover: HoverHander = ({ textDocument, position }) => {
                 firstModifierStartIndex === -1 ||
                 offset < firstModifierStartIndex + keyStartIndex
             ) {
-                attrKey = "on" + attrKey.slice(1, firstModifierStartIndex)
+                if (firstModifierStartIndex === -1) {
+                    attrKey = "on" + attrKey.slice(1)
+                } else {
+                    attrKey = "on" + attrKey.slice(1, firstModifierStartIndex)
+                }
             } else {
                 const modifier = findEventModifier(source, offset, [keyStartIndex, KeyEndIndex])
                 if (isUndefined(modifier) || source[offset] === "|") {
