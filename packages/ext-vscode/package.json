@@ -17,10 +17,7 @@
     "contributes": {
         "languages": [
             {
-                "id": "qk-emmet",
-                "extensions": [
-                    ".qk"
-                ]
+                "id": "qk-emmet"
             },
             {
                 "id": "qk",

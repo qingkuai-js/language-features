@@ -29,7 +29,7 @@ import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/asse
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
-    const { source, templateNodes, getOffset, document, getRange, getPosition } =
+    const { source, templateNodes, document, getOffset, getRange, getPosition } =
         getCompileRes(textDocument)!
 
     const offset = getOffset(position)
