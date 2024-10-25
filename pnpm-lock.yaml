@@ -9,55 +9,68 @@ patchedDependencies:
     hash: lsupxhlwxcwk233qcdvqtw5sve
     path: patches/emmet@2.4.11.patch
 
-devDependencies:
-  '@rollup/plugin-commonjs':
-    specifier: ^26.0.1
-    version: 26.0.3(rollup@4.24.0)
-  '@rollup/plugin-node-resolve':
-    specifier: ^15.2.3
-    version: 15.3.0(rollup@4.24.0)
-  '@types/node':
-    specifier: ^22.5.5
-    version: 22.7.5
-  '@types/vscode':
-    specifier: ^1.94.0
-    version: 1.94.0
-  '@vscode/emmet-helper':
-    specifier: ^2.8.4
-    version: 2.8.4
-  prettier:
-    specifier: ^3.3.3
-    version: 3.3.3
-  qingkuai:
-    specifier: file:/users/lianggaoqiang/desktop/QingKuai/qingkuai
-    version: file:../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai
-  rimraf:
-    specifier: ^6.0.1
-    version: 6.0.1
-  rollup:
-    specifier: ^4.21.3
-    version: 4.24.0
-  rollup-plugin-esbuild:
-    specifier: ^6.1.1
-    version: 6.1.1(esbuild@0.24.0)(rollup@4.24.0)
-  typescript:
-    specifier: ^5.6.3
-    version: 5.6.3
-  vitest:
-    specifier: ^2.1.3
-    version: 2.1.3(@types/node@22.7.5)
-  vscode-jsonrpc:
-    specifier: ^8.2.1
-    version: 8.2.1
-  vscode-languageclient:
-    specifier: ^9.0.1
-    version: 9.0.1
-  vscode-languageserver:
-    specifier: ^9.0.1
-    version: 9.0.1
-  vscode-languageserver-textdocument:
-    specifier: ^1.0.12
-    version: 1.0.12
+importers:
+
+  .:
+    devDependencies:
+      '@rollup/plugin-commonjs':
+        specifier: ^26.0.1
+        version: 26.0.3(rollup@4.24.0)
+      '@rollup/plugin-node-resolve':
+        specifier: ^15.2.3
+        version: 15.3.0(rollup@4.24.0)
+      '@types/node':
+        specifier: ^22.5.5
+        version: 22.7.5
+      '@types/vscode':
+        specifier: ^1.94.0
+        version: 1.94.0
+      '@vscode/emmet-helper':
+        specifier: ^2.8.4
+        version: 2.8.4
+      prettier:
+        specifier: ^3.3.3
+        version: 3.3.3
+      qingkuai:
+        specifier: file:/users/lianggaoqiang/desktop/QingKuai/qingkuai
+        version: file:../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
+      rollup:
+        specifier: ^4.21.3
+        version: 4.24.0
+      rollup-plugin-esbuild:
+        specifier: ^6.1.1
+        version: 6.1.1(esbuild@0.24.0)(rollup@4.24.0)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.6.3
+      vitest:
+        specifier: ^2.1.3
+        version: 2.1.3(@types/node@22.7.5)
+      vscode-jsonrpc:
+        specifier: ^8.2.1
+        version: 8.2.1
+      vscode-languageclient:
+        specifier: ^9.0.1
+        version: 9.0.1
+      vscode-languageserver:
+        specifier: ^9.0.1
+        version: 9.0.1
+      vscode-languageserver-textdocument:
+        specifier: ^1.0.12
+        version: 1.0.12
+
+  packages/ext-vscode:
+    devDependencies:
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
+
+  packages/language-server: {}
+
+  packages/typescript-plugin: {}
 
 packages:
 
@@ -850,6 +863,10 @@ packages:
     engines: {node: '>=12'}
     dev: true
 
+  /argparse@2.0.1:
+    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+    dev: true
+
   /assertion-error@2.0.1:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
     engines: {node: '>=12'}
@@ -1126,6 +1143,13 @@ packages:
     engines: {node: 20 || >=22}
     dependencies:
       '@isaacs/cliui': 8.0.2
+    dev: true
+
+  /js-yaml@4.1.0:
+    resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==}
+    hasBin: true
+    dependencies:
+      argparse: 2.0.1
     dev: true
 
   /jsonc-parser@2.3.1:

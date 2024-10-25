@@ -1,0 +1,5 @@
+packages:
+  - ./
+  - ./packages/ext-vscode
+  - ./packages/language-server
+  - ./packages/typescript-plugin

@@ -1,0 +1,13 @@
+{
+    "name": "qingkuai-typescript-plugin",
+    "author": "mlgq",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {},
+    "keywords": [
+        "qingkuai",
+        "tyepscript"
+    ],
+    "license": "MIT",
+    "description": "A Typescript plugin for Qingkuai."
+}

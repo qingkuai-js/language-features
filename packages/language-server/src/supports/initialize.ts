@@ -6,6 +6,8 @@ export const initialize: InitializeHandler = () => {
     state.isInitialized = true
     console.log("Keep output choice QingKuaiLanguageServer...")
 
+    console.log(process.pid)
+
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
