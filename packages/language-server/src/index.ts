@@ -1,9 +1,10 @@
 import { hover } from "./supports/hover"
-import { connection, connectToTypescriptPluginServer, Logger, tsPluginClient } from "./state"
 import { complete } from "./supports/complete"
 import { diagnostic } from "./supports/diagnostic"
 import { initialize } from "./supports/initialize"
 import { prepareRename, rename } from "./supports/rename"
+import { connection, connectToTypescriptPluginServer, Logger } from "./state"
+import { connectTsPluginServerSuccess, connectTsPluginServerFailed } from "./messages"
 
 connection.onHover(hover)
 connection.onCompletion(complete)
@@ -19,15 +20,12 @@ connection.onNotification("qingkuai/extensionLoaded", function connect(times = 0
     setTimeout(async () => {
         try {
             await connectToTypescriptPluginServer()
-            Logger.info("Connect to typescript-qingkuai-plugin ipc server successfully.")
-            tsPluginClient.send("test", "just a test...")
+            Logger.info(connectTsPluginServerSuccess)
         } catch (err) {
             if (times < 60) {
                 connect(times + 1)
             } else {
-                Logger.error(
-                    "Failed to connect to typescript-qingkuai-plugin ipc server within one minute, please check if the vscode built-in typescript-language-features extension is enabled."
-                )
+                Logger.error(connectTsPluginServerFailed)
             }
         }
     }, 1000)
