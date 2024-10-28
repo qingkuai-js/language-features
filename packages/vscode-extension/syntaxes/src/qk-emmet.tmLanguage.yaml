@@ -1,6 +1,6 @@
 name: qingkuai
 fileTypes: [qk]
-scopeName: source.qk-emmet
+scopeName: source.qke
 uuid: AC4C66D8-55E8-4871-93C8-87A6AFB7ECDC
 
 patterns:
@@ -11,7 +11,7 @@ patterns:
     end: (?=</lang-js)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-js)
 
@@ -19,7 +19,7 @@ patterns:
     end: (?=</lang-ts)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-ts)
 
@@ -27,7 +27,7 @@ patterns:
     end: (?=</lang-css)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-css)
 
@@ -35,7 +35,7 @@ patterns:
     end: (?=</lang-asss)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-asss)
 
@@ -43,7 +43,7 @@ patterns:
     end: (?=</lang-scss)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-scss)
 
@@ -51,7 +51,7 @@ patterns:
     end: (?=</lang-less)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-less)
 
@@ -59,7 +59,7 @@ patterns:
     end: (?=</lang-stylus)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-stylus)
 
@@ -67,7 +67,7 @@ patterns:
     end: (?=</lang-postcss)
     patterns:
       - include: "source.qk#tag-structure-start"
-      - name: comment.block.qk-emmet
+      - name: comment.block.qke
         begin: (?<=>)
         end: (?=</lang-postcss)
 

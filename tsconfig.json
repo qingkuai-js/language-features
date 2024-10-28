@@ -2,7 +2,7 @@
     "compilerOptions": {
         "lib": ["ESNext"],
         "target": "ESNext",
-        "module": "ESNext",
+        "module": "Preserve",
         "strict": true,
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true

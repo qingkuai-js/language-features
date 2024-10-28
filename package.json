@@ -1,5 +1,6 @@
 {
     "name": "qingkuai-language-tools",
+    "packageManager": "pnpm@8.7.6",
     "version": "1.0.0",
     "author": "lgq",
     "license": "MIT",
@@ -13,12 +14,20 @@
         "@types/vscode": "^1.94.0",
         "@vscode/emmet-helper": "^2.8.4",
         "prettier": "^3.3.3",
+        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai",
         "rimraf": "^6.0.1",
         "rollup": "^4.21.3",
         "rollup-plugin-esbuild": "^6.1.1",
+        "typescript": "^5.6.3",
         "vitest": "^2.1.3",
         "vscode-jsonrpc": "^8.2.1",
+        "vscode-languageclient": "^9.0.1",
         "vscode-languageserver": "^9.0.1",
         "vscode-languageserver-textdocument": "^1.0.12"
+    },
+    "pnpm": {
+        "patchedDependencies": {
+            "emmet@2.4.11": "patches/emmet@2.4.11.patch"
+        }
     }
 }

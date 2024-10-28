@@ -41,5 +41,25 @@
         ["\"", "\""],
         ["`", "`"]
     ],
+    "indentationRules": {
+        "increaseIndentPattern": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
+        "decreaseIndentPattern": "</[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>$"
+    },
+    "onEnterRules": [
+        {
+            "beforeText": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
+            "afterText": "^\\s+",
+            "action": {
+                "indent": "indent"
+            }
+        },
+        {
+            "beforeText": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
+            "afterText": "^</[a-z][a-zA-Z_.:\\d\\-]*",
+            "action": {
+                "indent": "indentOutdent"
+            }
+        }
+    ],
     "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
 }
