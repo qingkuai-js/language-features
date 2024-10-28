@@ -1,25 +1,5 @@
 import type { AnyObject } from "../types/util"
 
-import util from "util"
-import { connection, state } from "../packages/language-server/src/state"
-
-// 调试打印，将调试信息通知给父进程，并在父进程中输出信息
-export function print(...values: any[]) {
-    const initialized = state.isInitialized
-    const inspectValues = values.map(value => {
-        return util.inspect(value, {
-            depth: null,
-            colors: !initialized
-        })
-    })
-    const inspectValue = inspectValues.join(" ")
-    if (state.isInitialized) {
-        console.log(inspectValue)
-    } else {
-        connection.sendNotification("development-debug", inspectValue)
-    }
-}
-
 // 获取数组的最后一个元素
 export function lastElem<T extends any[]>(arr: T): T[number] {
     return arr[arr.length - 1]

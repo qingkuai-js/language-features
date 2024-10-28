@@ -1,12 +1,10 @@
-import { state } from "../state"
+import { Logger, state } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
 
 export const initialize: InitializeHandler = () => {
-    state.isInitialized = true
-    console.log("Keep output choice QingKuaiLanguageServer...")
-
-    console.log(process.pid)
+    state.isTestingEnv = true
+    Logger.info("The QingKuai language server starts successfully.")
 
     return {
         capabilities: {

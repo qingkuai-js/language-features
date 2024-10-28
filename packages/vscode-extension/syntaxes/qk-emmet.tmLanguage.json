@@ -1,7 +1,7 @@
 {
     "name": "qingkuai",
     "fileTypes": ["qk"],
-    "scopeName": "source.qk-emmet",
+    "scopeName": "source.qke",
     "uuid": "AC4C66D8-55E8-4871-93C8-87A6AFB7ECDC",
     "patterns": [
         {
@@ -12,7 +12,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-js)"
                 }
@@ -26,7 +26,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-ts)"
                 }
@@ -40,7 +40,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-css)"
                 }
@@ -54,7 +54,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-asss)"
                 }
@@ -68,7 +68,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-scss)"
                 }
@@ -82,7 +82,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-less)"
                 }
@@ -96,7 +96,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-stylus)"
                 }
@@ -110,7 +110,7 @@
                     "include": "source.qk#tag-structure-start"
                 },
                 {
-                    "name": "comment.block.qk-emmet",
+                    "name": "comment.block.qke",
                     "begin": "(?<=>)",
                     "end": "(?=</lang-postcss)"
                 }

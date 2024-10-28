@@ -1,4 +1,4 @@
-import type { InsertSnippetParam } from "../types/server"
+import type { InsertSnippetParam } from "../types/communication"
 
 import { connection } from "./index.test"
 import { doComplete } from "./complete.test"

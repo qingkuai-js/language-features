@@ -1,17 +1,21 @@
 import type { CachedCompileResultItem } from "./types/service"
-import type { Position, TextDocumentIdentifier } from "vscode-languageserver"
+import type { TextDocumentIdentifier } from "vscode-languageserver"
 
 import { compile } from "qingkuai/compiler"
+import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
+import { connectTo, defaultClient } from "../../../shared-util/ipc/client"
 import { TextDocuments, createConnection, ProposedFeatures } from "vscode-languageserver/node"
 
 export const state = {
-    // 在测试环境中运行时，不会请求textDocument/initialize，
-    // 此时无需判断文档版本是否未改变，print方法可以为调试信息添加颜色
-    isInitialized: false
+    // 在测试环境中运行时，不会请求textDocument/initialize，测试环境下需要一些
+    // 特殊处理，例如：无需判断文档版本是否未改变，inspect方法可以为调试信息添加颜色等
+    isTestingEnv: false
 }
 
+export const Logger = createLogger(console)
+export const tsPluginClient = defaultClient
 export const documents = new TextDocuments(TextDocument)
 export const connection = createConnection(ProposedFeatures.all)
 
@@ -19,7 +23,7 @@ export const connection = createConnection(ProposedFeatures.all)
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
 export const crc = new Map<string, CachedCompileResultItem>()
 
-// 解析qk源码文件，版本相同时不会重复解析（测试时无需判断，即state.isInitialized === false）
+// 以检查模式解析qk源码文件，版本相同时不会重复解析（测试时无需判断）
 export function getCompileRes({ uri }: TextDocumentIdentifier) {
     const document = documents.get(uri)
     if (isUndefined(document)) {
@@ -28,11 +32,11 @@ export function getCompileRes({ uri }: TextDocumentIdentifier) {
 
     const cached = crc.get(uri)
     const { version } = document
-    if (!state.isInitialized || version !== cached?.version) {
+    if (!state.isTestingEnv || version !== cached?.version) {
         const source = document.getText()
         const compileRes = compile(source, {
-            componentName: "",
-            check: true
+            check: true,
+            componentName: ""
         })
         const res: CachedCompileResultItem = {
             source,
@@ -60,6 +64,20 @@ export function getCompileRes({ uri }: TextDocumentIdentifier) {
         return crc.set(uri, res), res
     }
     return cached
+}
+
+// 连接到qingkuai-typescript-plugin服务器，将客户端记录到tsPluginClient，
+// 后续qingkuai语言服务器将通过此客户端与vscode内置的typescript语言服务进行通信
+// 此方法还会创建接收qingkuai-typescript-plugin调试日志的处理方法并通过Logger输出
+export async function connectToTypescriptPluginServer() {
+    const client = await connectTo("qingkuai")
+    const kinds = ["info", "warn", "error"] as const
+    kinds.forEach(kind => {
+        client.onMessage(`log/${kind}`, (msg: string) => {
+            Logger[kind](`From typescript-qingkuai-plugin: ${msg}`)
+        })
+    })
+    Object.assign(tsPluginClient, client)
 }
 
 connection.listen()

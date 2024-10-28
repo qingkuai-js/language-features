@@ -1,7 +1,7 @@
 import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
 import type { HTMLElementDataAttributeItem } from "../types/data"
-import type { InsertSnippetParam } from "../../../../types/server"
+import type { InsertSnippetParam } from "../../../../types/communication"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
 

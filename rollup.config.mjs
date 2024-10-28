@@ -5,11 +5,10 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(() => {
     return [
+        // vscode extension and language server
         {
             external: [
                 "vscode",
-                "qingkuai",
-                "typescript",
                 "qingkuai/compiler",
                 "@vscode/emmet-helper",
                 "vscode-languageclient",
@@ -19,8 +18,8 @@ export default defineConfig(() => {
                 "vscode-languageserver-textdocument"
             ],
             input: {
-                client: "./packages/ext-vscode/src/index.ts",
-                server: "./packages/language-server/src/index.ts"
+                server: "./packages/language-server/src/index.ts",
+                client: "./packages/vscode-extension/src/index.ts"
             },
             output: {
                 format: "cjs",
@@ -48,6 +47,17 @@ export default defineConfig(() => {
                     warn(log)
                 }
             }
+        },
+
+        // typescript plugin
+        {
+            input: "./packages/typescript-plugin/src/index.ts",
+            output: {
+                format: "cjs",
+                sourcemap: true,
+                dir: "./packages/typescript-plugin/dist"
+            },
+            plugins: [nodeResolve(), commonjs(), esbuild()]
         }
     ]
 })

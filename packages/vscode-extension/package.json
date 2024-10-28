@@ -11,16 +11,16 @@
         "Other"
     ],
     "activationEvents": [
-        "*"
+        "onLanguage:qingkuai"
     ],
     "main": "../../dist/client.js",
     "contributes": {
         "languages": [
             {
-                "id": "qk-emmet"
+                "id": "qingkuai-emmet"
             },
             {
-                "id": "qk",
+                "id": "qingkuai",
                 "extensions": [
                     ".qk"
                 ],
@@ -36,7 +36,7 @@
         ],
         "grammars": [
             {
-                "language": "qk",
+                "language": "qingkuai",
                 "scopeName": "source.qk",
                 "path": "./syntaxes/qk.tmLanguage.json",
                 "embeddedLanguages": {
@@ -61,8 +61,8 @@
                 ]
             },
             {
-                "language": "qk-emmet",
-                "scopeName": "source.qk-emmet",
+                "language": "qingkuai-emmet",
+                "scopeName": "source.qke",
                 "path": "./syntaxes/qk-emmet.tmLanguage.json",
                 "embeddedLanguages": {
                     "source.qk": "qingkuai"
@@ -71,6 +71,12 @@
             {
                 "scopeName": "source.css.postcss",
                 "path": "./syntaxes/postcss.tmLanguage.json"
+            }
+        ],
+        "typescriptServerPlugins": [
+            {
+                "name": "typescript-qingkuai-plugin",
+                "enableForWorkspaceTypeScriptVersions": true
             }
         ]
     },
@@ -81,5 +87,8 @@
     },
     "devDependencies": {
         "js-yaml": "^4.1.0"
+    },
+    "dependencies": {
+        "typescript-qingkuai-plugin": "workspace:*"
     }
 }
