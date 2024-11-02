@@ -4,6 +4,7 @@ import type { GeneralFunc } from "../../types/util"
 import net from "net"
 import { getSockPath, rmSockFile } from "./sock"
 import { noop } from "../constant"
+import { createBufferReader, createMessageBuffer } from "./buffer"
 
 export const defaultServer: ServerResolveValue = {
     send: noop,
@@ -13,20 +14,19 @@ export const defaultServer: ServerResolveValue = {
 
 export function createServer(name: string) {
     const handlers: Record<string, GeneralFunc> = {}
+    const reader = createBufferReader(handlers)
     const sockPath = getSockPath(name)
 
     return new Promise<ServerResolveValue>(resolve => {
         const server = net.createServer(socket => {
             socket.on("data", bf => {
-                const { uri, data: v } = JSON.parse(bf.toString())
-                const handler = handlers[uri]
-                handler && handler(v)
+                reader.read(bf)
             })
 
             resolve({
                 send: (uri, data) => {
                     socket.write(
-                        JSON.stringify({
+                        createMessageBuffer({
                             uri,
                             data
                         })

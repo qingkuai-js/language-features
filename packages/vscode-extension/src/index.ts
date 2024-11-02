@@ -9,10 +9,12 @@ import type { InsertSnippetParam } from "../../../types/communication"
 
 import * as vsc from "vscode"
 import { builtInTSExtenstionIsNotEnabled } from "./messages"
+import { getSockPath, rmSockFile } from "../../../shared-util/ipc/sock"
 
 let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
+    const sockPath = getSockPath("qingkuai")
     const doc = vsc.window.activeTextEditor?.document
     const serverModule = context.asAbsolutePath("../../dist/server.js")
     const outputChannel = vsc.window.createOutputChannel("QingKuai", "log")
@@ -60,9 +62,11 @@ export async function activate(context: ExtensionContext) {
         languageClientOptions
     )
 
+    rmSockFile("qingkuai"), await client.start()
+
     // 如果vscode内置typescript-language-features扩展未被启用则提示警告信息
-    // 如果此内置扩展已经启用，则发送扩展加载完毕通知到qingkuai语言服务器
-    if ((await client.start(), typescriptExtension?.isActive)) {
+    // 如果此内置扩展已经启用，则将扩展加载完毕的通知发送到qingkuai语言服务器
+    if (typescriptExtension?.isActive) {
         client.sendNotification("qingkuai/extensionLoaded")
     } else {
         const value = await vsc.window.showErrorMessage(

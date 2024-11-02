@@ -1,7 +1,8 @@
 import fs from "fs"
 
 // 删除套接字/命名管道文件
-export function rmSockFile(sockPath: string) {
+export function rmSockFile(sockName: string) {
+    const sockPath = getSockPath(sockName)
     if (fs.existsSync(sockPath)) {
         fs.rmSync(sockPath)
     }

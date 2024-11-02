@@ -57,6 +57,7 @@ export default defineConfig(() => {
                 sourcemap: true,
                 dir: "./packages/typescript-plugin/dist"
             },
+            external: ["qingkuai/compiler"],
             plugins: [nodeResolve(), commonjs(), esbuild()]
         }
     ]

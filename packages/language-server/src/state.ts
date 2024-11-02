@@ -2,8 +2,8 @@ import type { CachedCompileResultItem } from "./types/service"
 import type { TextDocumentIdentifier } from "vscode-languageserver"
 
 import { compile } from "qingkuai/compiler"
-import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
+import { createLogger, inspect } from "../../../shared-util/log"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { connectTo, defaultClient } from "../../../shared-util/ipc/client"
 import { TextDocuments, createConnection, ProposedFeatures } from "vscode-languageserver/node"
@@ -14,8 +14,9 @@ export const state = {
     isTestingEnv: false
 }
 
+export let tsPluginClient = defaultClient
+
 export const Logger = createLogger(console)
-export const tsPluginClient = defaultClient
 export const documents = new TextDocuments(TextDocument)
 export const connection = createConnection(ProposedFeatures.all)
 
@@ -74,10 +75,10 @@ export async function connectToTypescriptPluginServer() {
     const kinds = ["info", "warn", "error"] as const
     kinds.forEach(kind => {
         client.onMessage(`log/${kind}`, (msg: string) => {
-            Logger[kind](`From typescript-qingkuai-plugin: ${msg}`)
+            Logger[kind](`From typescript-qingkuai-plugin: ${inspect(msg)}`)
         })
     })
-    Object.assign(tsPluginClient, client)
+    tsPluginClient = client
 }
 
 connection.listen()

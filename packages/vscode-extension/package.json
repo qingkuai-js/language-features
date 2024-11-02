@@ -89,6 +89,7 @@
         "js-yaml": "^4.1.0"
     },
     "dependencies": {
-        "typescript-qingkuai-plugin": "workspace:*"
+        "typescript-qingkuai-plugin": "workspace:^",
+        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
     }
 }

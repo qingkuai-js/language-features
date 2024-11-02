@@ -4,6 +4,7 @@ import type { GeneralFunc } from "../../types/util"
 import net from "net"
 import { noop } from "../constant"
 import { getSockPath } from "./sock"
+import { createBufferReader, createMessageBuffer } from "./buffer"
 
 export const defaultClient: ClientResolvedValue = {
     send: noop,
@@ -18,7 +19,7 @@ export function connectTo(name: string) {
             resolve({
                 send(uri, data) {
                     client.write(
-                        JSON.stringify({
+                        createMessageBuffer({
                             uri,
                             data
                         })
@@ -32,11 +33,10 @@ export function connectTo(name: string) {
                 }
             })
         })
+        const reader = createBufferReader(handlers)
 
         client.on("data", bf => {
-            const { uri, data: v } = JSON.parse(bf.toString())
-            const handler = handlers[uri]
-            handler && handler(v)
+            reader.read(bf)
         })
 
         client.on("error", err => {
