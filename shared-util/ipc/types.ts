@@ -1,17 +1,23 @@
 import type { Server } from "net"
 import type { GeneralFunc } from "../../types/util"
 
-type SendMethod = <T = any>(uri: string, data: T) => void
-type OnMessageMethod = <T>(uri: string, handler: (params: T) => void) => void
-
-export type ServerResolveValue = {
-    close: Server["close"]
-    send: SendMethod
-    onMessage: OnMessageMethod
+export type Message = {
+    body: any
+    messageId: number
+    methodName: string
 }
 
-export type ClientResolvedValue = {
-    send: SendMethod
-    onMessage: OnMessageMethod
-    close: (cb: () => void) => void
+export type IpcParticipant = {
+    close: () => void
+    onRequest: OnRequestMethod
+    sendRequest: SendRequestMethod
+    onNotification: OnNotificationMethod
+    sendNotification: SendNotificationMethod
 }
+
+export type SocketHandlers = Map<string, GeneralFunc>
+export type RequestResolvers = Map<number, GeneralFunc>
+export type SendNotificationMethod = <P>(name: string, params: P) => void
+export type SendRequestMethod = <P, R>(name: string, params: P) => Promise<R>
+export type OnNotificationMethod = <P>(name: string, handler: (params: P) => void) => void
+export type OnRequestMethod = <P, R>(name: string, handler: (params: P) => R | Promise<R>) => void

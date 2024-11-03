@@ -9,11 +9,10 @@ import {
     TSLanguageServerHost,
     TSLanguageServiceHost
 } from "./types"
-import type { ServerResolveValue } from "../../../shared-util/ipc/types"
 
-import { defaultServer } from "../../../shared-util/ipc/server"
+import { defaultParticipant } from "../../../shared-util/ipc"
 
-export let server = defaultServer
+export let server = defaultParticipant
 
 export let ts: TS
 export let project: TSProject
@@ -23,6 +22,10 @@ export let projectService: TSProjectService
 export let languageService: TSLanguageService
 export let languageServerHost: TSLanguageServerHost
 export let languageServiceHost: TSLanguageServiceHost
+
+export function setServer(v: typeof server) {
+    server = v
+}
 
 export function setTSState(t: TS, info: TSPluginCreateInfo) {
     ts = t
@@ -35,13 +38,9 @@ export function setTSState(t: TS, info: TSPluginCreateInfo) {
     languageServiceHost = info.languageServiceHost
 }
 
-export function setServer(v: ServerResolveValue) {
-    server = v
-}
-
 // 通过qingkuai语言服务器输出日志
 export const Logger = {
-    info: (msg: string) => server.send("log/info", msg),
-    warn: (msg: string) => server.send("log/info", msg),
-    error: (msg: string) => server.send("log/error", msg)
+    info: (msg: string) => server.sendNotification("log/info", msg),
+    warn: (msg: string) => server.sendNotification("log/info", msg),
+    error: (msg: string) => server.sendNotification("log/error", msg)
 }

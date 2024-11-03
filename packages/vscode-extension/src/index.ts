@@ -8,13 +8,12 @@ import type { ExtensionContext } from "vscode"
 import type { InsertSnippetParam } from "../../../types/communication"
 
 import * as vsc from "vscode"
+import { rmSockFile } from "../../../shared-util/ipc/sock"
 import { builtInTSExtenstionIsNotEnabled } from "./messages"
-import { getSockPath, rmSockFile } from "../../../shared-util/ipc/sock"
 
 let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
-    const sockPath = getSockPath("qingkuai")
     const doc = vsc.window.activeTextEditor?.document
     const serverModule = context.asAbsolutePath("../../dist/server.js")
     const outputChannel = vsc.window.createOutputChannel("QingKuai", "log")

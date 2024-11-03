@@ -1,10 +1,10 @@
-import type { FixedArray } from "../types/util"
+import type { FixedArray } from "../../types/util"
 import { Hover, HoverParams, MarkupContent } from "vscode-languageserver/node"
 
 import { connection } from "./index.test"
 import { describe, expect, it } from "vitest"
 import { MarkupKind } from "vscode-languageserver/node"
-import { assertRange, formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
+import { assertRange, formatSourceCode, openContentAsTextDocument } from "../../shared-util/tests"
 
 describe("Html tag hover tip functions:", () => {
     it("should receive html tag hover tip.", async () => {
@@ -202,7 +202,7 @@ describe("Html attribute hover tip functions:", () => {
         }
     })
 
-    it.only("should distinguish event and event modifier tips.", async () => {
+    it("should distinguish event and event modifier tips.", async () => {
         await openContentAsTextDocument(
             formatSourceCode(`
                 <div @click|once|capture={handlerClick}>

@@ -1,6 +1,6 @@
 import { compile } from "qingkuai/compiler"
 import { QingKuaiSnapShot } from "../snapshot"
-import { languageServiceHost, Logger } from "../state"
+import { languageServiceHost } from "../state"
 import { isUndefined } from "../../../../shared-util/assert"
 
 const snapshotCache = new Map<string, QingKuaiSnapShot>()

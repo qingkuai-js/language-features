@@ -21,3 +21,7 @@ export function isFunction(v: any): v is Function {
 export function isUndefined(v: any): v is undefined {
     return v === undefined
 }
+
+export function isPromise(v: any): v is Promise<any> {
+    return v instanceof Promise
+}

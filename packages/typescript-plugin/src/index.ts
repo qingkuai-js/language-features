@@ -1,11 +1,11 @@
 import type TS from "typescript"
 
 import { attachServerHandlers } from "../server"
+import { createServer } from "../../../shared-util/ipc"
 import { rmSockFile } from "../../../shared-util/ipc/sock"
 import { proxyGetScriptSnapshot } from "./proxy/getSnapshot"
-import { createServer } from "../../../shared-util/ipc/server"
 import { proxyResolveModuleNameLiterals } from "./proxy/resolveModule"
-import { setServer, setTSState, languageService, project } from "./state"
+import { setServer, setTSState, languageService, project, Logger } from "./state"
 
 export = function init(modules: { typescript: typeof TS }) {
     function create(info: TS.server.PluginCreateInfo) {
@@ -17,7 +17,7 @@ export = function init(modules: { typescript: typeof TS }) {
             createServer("qingkuai").then(server => {
                 setServer(server)
                 attachServerHandlers()
-                server.send("connectDone", null)
+                server.sendNotification("connectDone", null)
             })
         }
 
