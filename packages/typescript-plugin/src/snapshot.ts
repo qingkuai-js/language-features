@@ -3,6 +3,10 @@ import type { IScriptSnapshot } from "typescript"
 export class QingKuaiSnapShot implements IScriptSnapshot {
     constructor(private text: string) {}
 
+    getFullText() {
+        return this.text
+    }
+
     getText(start: number, end: number) {
         return this.text.slice(start, end)
     }

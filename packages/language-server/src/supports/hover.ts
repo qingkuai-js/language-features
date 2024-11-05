@@ -15,8 +15,9 @@ import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
 
-export const hover: HoverHander = ({ textDocument, position }) => {
-    const { source, templateNodes, getOffset, getRange } = getCompileRes(textDocument)!
+export const hover: HoverHander = async ({ textDocument, position }) => {
+    const cr = await getCompileRes(textDocument)
+    const { source, templateNodes, getOffset, getRange } = cr
 
     const offset = getOffset(position)
     const currentNode = findNodeAt(templateNodes, offset)

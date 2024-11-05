@@ -353,7 +353,7 @@
             "patterns": [
                 {
                     "begin": "=",
-                    "end": "(?<=[^\\s=])(?!=)",
+                    "end": "(?=\\s*[^\\s'\"])",
                     "beginCaptures": {
                         "0": {
                             "name": "punctuation.separator.key-value.qk"
@@ -371,7 +371,7 @@
             "patterns": [
                 {
                     "name": "invalid.illegal.unexpect-character.qk",
-                    "match": "(?:[^\\s'\"]+)"
+                    "match": "(?<==)(?:[^\\s'\"]+)"
                 },
                 {
                     "name": "string.quoted.single.qk",
@@ -482,7 +482,7 @@
             "patterns": [
                 {
                     "begin": "=",
-                    "end": "(?<=[^\\s=])(?!=)",
+                    "end": "(?=\\s*[^\\s\\{])",
                     "beginCaptures": {
                         "0": {
                             "name": "punctuation.separator.key-value.qk"
@@ -500,7 +500,7 @@
             "patterns": [
                 {
                     "name": "invalid.illegal.unexpect-character.qk",
-                    "match": "(?:[^\\s\\{>]+)"
+                    "match": "(?<==)[^\\s\\{>]+"
                 },
                 {
                     "include": "#interpolation-block"

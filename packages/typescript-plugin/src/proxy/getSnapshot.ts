@@ -3,7 +3,7 @@ import { QingKuaiSnapShot } from "../snapshot"
 import { languageServiceHost } from "../state"
 import { isUndefined } from "../../../../shared-util/assert"
 
-const snapshotCache = new Map<string, QingKuaiSnapShot>()
+export const snapshotCache = new Map<string, QingKuaiSnapShot>()
 
 export function proxyGetScriptSnapshot() {
     const ori = languageServiceHost.getScriptSnapshot

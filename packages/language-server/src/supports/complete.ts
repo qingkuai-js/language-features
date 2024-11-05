@@ -28,9 +28,9 @@ import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
 
-export const complete: CompletionHandler = ({ position, textDocument }) => {
-    const { source, templateNodes, document, getOffset, getRange, getPosition } =
-        getCompileRes(textDocument)!
+export const complete: CompletionHandler = async ({ position, textDocument }) => {
+    const rc = await getCompileRes(textDocument)
+    const { source, templateNodes, document, getOffset, getRange, getPosition } = rc
 
     const offset = getOffset(position)
     const triggerChar = source[offset - 1] ?? ""

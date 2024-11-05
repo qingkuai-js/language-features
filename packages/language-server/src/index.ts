@@ -7,8 +7,7 @@ import { initialize } from "./supports/initialize"
 import { connectTo } from "../../../shared-util/ipc"
 import { prepareRename, rename } from "./supports/rename"
 import { getSockPath } from "../../../shared-util/ipc/sock"
-import { updateQingKuaiSnapshot, waitingUris } from "./supports/did-change"
-import { Logger, documents, connection, getCompileRes, setTipc, tpic } from "./state"
+import { Logger, connection, setTipc, tpic } from "./state"
 import { connectTsPluginServerSuccess, connectTsPluginServerFailed } from "./messages"
 
 connection.onHover(hover)
@@ -29,14 +28,7 @@ connection.onNotification("qingkuai/extensionLoaded", async function connect(tim
         const kinds = ["info", "warn", "error"] as const
         kinds.forEach(kind => {
             tpic.onNotification(`log/${kind}`, (msg: string) => {
-                Logger[kind](`From typescript-qingkuai-plugin: ${inspect(msg)}`)
-            })
-        })
-        tpic.onNotification("connectDone", () => {
-            waitingUris.forEach(uri => {
-                const document = documents.get(uri)!
-                const cr = getCompileRes(document)!
-                updateQingKuaiSnapshot(uri, cr.code)
+                Logger[kind]("From typescript-qingkuai-plugin: " + msg)
             })
         })
         Logger.info(connectTsPluginServerSuccess)

@@ -9,7 +9,6 @@ import type { InsertSnippetParam } from "../../../types/communication"
 
 import * as vsc from "vscode"
 import { rmSockFile } from "../../../shared-util/ipc/sock"
-import { builtInTSExtenstionIsNotEnabled } from "./messages"
 
 let client: LanguageClient
 
@@ -33,11 +32,11 @@ export async function activate(context: ExtensionContext) {
         command: "qingkuai.viewLanguageServerLogs"
     }
 
-    // 激活vscode内置typescript-language-features插件，在qingkuai-typescript-plugin
-    // 中会判断到如果是由qk文件触发的激活，则将qk源码文件从typescript语言服务项目中移除
-    if (doc && doc.languageId === "qingkuai") {
+    // 通过切换语言id来激活vscode内置typescript-language-features插件
+    if (doc && doc.languageId === "qingkuai" && !typescriptExtension?.isActive) {
         await vsc.languages.setTextDocumentLanguage(doc, "typescript")
-        await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
+        rmSockFile("qingkuai"), await typescriptExtension?.activate()
+        vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
     }
 
     const languageServerOptions: ServerOptions = {
@@ -54,31 +53,16 @@ export async function activate(context: ExtensionContext) {
         outputChannel
     }
 
-    client = await new LanguageClient(
+    await (client = await new LanguageClient(
         "qingkuai",
         "QingKuai Language features",
         languageServerOptions,
         languageClientOptions
-    )
+    )).start()
 
-    rmSockFile("qingkuai"), await client.start()
-
-    // 如果vscode内置typescript-language-features扩展未被启用则提示警告信息
-    // 如果此内置扩展已经启用，则将扩展加载完毕的通知发送到qingkuai语言服务器
-    if (typescriptExtension?.isActive) {
-        client.sendNotification("qingkuai/extensionLoaded")
-    } else {
-        const value = await vsc.window.showErrorMessage(
-            builtInTSExtenstionIsNotEnabled,
-            "Enable Now"
-        )
-        if (value === "Enable Now") {
-            await typescriptExtension?.activate()
-            vsc.commands.executeCommand("workbench.action.reloadWindow")
-        }
-    }
     attachCustomHandlers()
     languageStatusItem.busy = false
+    client.sendNotification("qingkuai/extensionLoaded")
 }
 
 export function deactivate(): Thenable<void> | undefined {

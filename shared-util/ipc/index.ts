@@ -15,7 +15,7 @@ import { noop } from "../constant"
 import { getSockPath } from "./sock"
 import { getReleaseId, releaseId } from "./id"
 import { isUndefined, isPromise } from "../assert"
-import { readBuffer, createMessageBuffer } from "./buffer"
+import { createMessageBuffer, createBufferReader } from "./buffer"
 
 export const defaultParticipant: IpcParticipant = {
     close: noop,
@@ -55,6 +55,7 @@ function newParticipant(
     handlers: SocketHandlers,
     resolvers: RequestResolvers
 ): IpcParticipant {
+    const reader = createBufferReader()
     const onRequest: OnRequestMethod = setHandler
     const sendNotification: SendNotificationMethod = send
     const onNotification: OnNotificationMethod = setHandler
@@ -68,7 +69,7 @@ function newParticipant(
     }
 
     socket.on("data", buffer => {
-        readBuffer(buffer, ({ messageId, methodName, body }) => {
+        reader.read(buffer, ({ messageId, methodName, body }) => {
             const resolver = resolvers.get(messageId)
             if (!isUndefined(resolver)) {
                 return resolver(body), releaseId(messageId)
