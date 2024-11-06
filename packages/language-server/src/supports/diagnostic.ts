@@ -28,11 +28,19 @@ export const diagnostic: DiagnosticHandler = async ({ textDocument }) => {
         }
     })
 
+    // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
+    const existingTsDiagnostics = new Set<string>()
+
     // javascript/typescript诊断结果，由qingkuai-typescript-plugin诊断中间代码并返回
     ;(await tpic.sendRequest<string, TSDiagnostic[]>("getDiagnostic", filePath)).forEach(item => {
         const tags: DiagnosticTag[] = []
-        const sourceStart = getSourceIndex(item.start)
+        const ss = getSourceIndex(item.start)
+        const se = getSourceIndex(item.start + item.length)
         const relatedInformation: DiagnosticRelatedInformation[] = []
+
+        if (isSourceIndexesIvalid(ss, se)) {
+            return
+        }
 
         if (item.deprecated) {
             tags.push(DiagnosticTag.Deprecated)
@@ -42,29 +50,32 @@ export const diagnostic: DiagnosticHandler = async ({ textDocument }) => {
         }
 
         item.relatedInformation.forEach(ri => {
-            let range = ri.range
-            if (isUndefined(ri.range)) {
-                const rss = getSourceIndex(ri.start)
-                range = getRange(rss, rss + ri.length)
+            const rss = getSourceIndex(ri.start)
+            const rse = getSourceIndex(ri.start + ri.length)
+            if (!isSourceIndexesIvalid(rss, rse)) {
+                relatedInformation.push({
+                    message: ri.message,
+                    location: {
+                        uri: `file://${ri.filePath}`,
+                        range: ri.range || getRange(rss, rse)
+                    }
+                })
             }
-            relatedInformation.push({
-                message: ri.message,
-                location: {
-                    range: range!,
-                    uri: `file://${ri.filePath}`
-                }
-            })
         })
 
-        diagnostics.push({
-            tags,
-            relatedInformation,
-            source: "ts",
-            code: item.code,
-            message: item.message,
-            severity: transTsDiagnosticSeverity(item.kind),
-            range: getRange(sourceStart, sourceStart + item.length)
-        })
+        const existingKey = `${ss}-${se}:${item.message}(${item.code})`
+        if (!existingTsDiagnostics.has(existingKey)) {
+            existingTsDiagnostics.add(existingKey)
+            diagnostics.push({
+                tags,
+                relatedInformation,
+                source: "ts",
+                code: item.code,
+                message: item.message,
+                range: getRange(ss, se),
+                severity: transTsDiagnosticSeverity(item.kind)
+            })
+        }
     })
 
     return {
@@ -85,4 +96,11 @@ function transTsDiagnosticSeverity(n: number) {
         default:
             return DiagnosticSeverity.Information
     }
+}
+
+// 检查传入的源码索引是否是无效的
+function isSourceIndexesIvalid(...items: (number | undefined)[]) {
+    return items.some(item => {
+        return isUndefined(item) || item === -1
+    })
 }

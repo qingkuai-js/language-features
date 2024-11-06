@@ -17,7 +17,6 @@ export = function init(modules: { typescript: typeof TS }) {
             createServer("qingkuai").then(server => {
                 setServer(server)
                 attachServerHandlers()
-                server.sendNotification("connectDone", null)
             })
 
             // 代理typescript语言服务的原始方法

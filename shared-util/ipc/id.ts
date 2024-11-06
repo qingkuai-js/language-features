@@ -11,6 +11,7 @@ export const [getReleaseId, releaseId] = (() => {
     }
 
     return [
+        // get id
         () => {
             const id = arr.pop()
             if (isUndefined(id)) {
@@ -18,6 +19,8 @@ export const [getReleaseId, releaseId] = (() => {
             }
             return set.delete(id), id
         },
+
+        // release a using id
         (id: number) => {
             if (set.has(id)) {
                 return

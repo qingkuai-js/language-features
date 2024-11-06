@@ -1,4 +1,3 @@
-import type { Server } from "net"
 import type { GeneralFunc } from "../../types/util"
 
 export type Message = {

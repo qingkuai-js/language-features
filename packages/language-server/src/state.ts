@@ -14,10 +14,12 @@ import { TextDocuments, createConnection, ProposedFeatures } from "vscode-langua
 let tpicResolver: GeneralFunc
 
 export let isTestingEnv = true
+export let typeCheckerStatement = ""
 export let tpic = defaultParticipant // Typescript Plugin Icp Client
 
 export const setIsTestingEnv = (v: boolean) => (isTestingEnv = v)
 export const setTipc = (v: typeof tpic) => tpicResolver((tpic = v))
+export const setTypeCheckerStatement = (s: string) => (typeCheckerStatement = s)
 
 export const Logger = createLogger(console)
 export const documents = new TextDocuments(TextDocument)
@@ -42,10 +44,13 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
         return cached!
     }
 
+    // 确保首次编译时机在语言服务器与ts插件成功建立ipc连接后
+    !isTestingEnv && (await tpicConnectedPromise)
+
     const source = document.getText()
     const filePath = fileURLToPath(uri)
     const getOffset = document.offsetAt.bind(document)
-    const compileRes = compile(source, { check: true, componentName: "" })
+    const compileRes = compile(source, { check: true, typeCheckerStatement })
 
     // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
     // 如果未传入结束索引，返回的范围固定指向开始位置（Position）
@@ -93,7 +98,6 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
 
     // 将文件的最新中间代码发送给typescript-qingkuai-plugin(非测试环境)
     if (!isTestingEnv) {
-        await tpicConnectedPromise
         await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
             fileName: filePath,
             interCode: ccri.code

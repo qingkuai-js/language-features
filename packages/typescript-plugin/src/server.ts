@@ -1,6 +1,6 @@
-import {
+import type {
     TSDiagnostic,
-    type UpdateSnapshotParams,
+    UpdateSnapshotParams,
     TSDiagnosticRelatedInformation
 } from "../../../types/communication"
 import type { Diagnostic, DiagnosticMessageChain } from "typescript"
@@ -8,15 +8,22 @@ import type { Diagnostic, DiagnosticMessageChain } from "typescript"
 import { QingKuaiSnapShot } from "./snapshot"
 import { snapshotCache } from "./proxy/getSnapshot"
 import { isString, isUndefined } from "../../../shared-util/assert"
-import { languageService, project, projectService, server, ts } from "./state"
+import { languageService, project, projectService, server, typeCheckerStatement, ts } from "./state"
 
 export function attachServerHandlers() {
+    server.onRequest("getTypeCheckerStatement", () => typeCheckerStatement)
+
     server.onRequest<UpdateSnapshotParams>("updateSnapshot", ({ fileName, interCode }) => {
         const oldSnapshot = snapshotCache.get(fileName)
-        const newSnapshot = new QingKuaiSnapShot(interCode)
         const scriptInfo = projectService.getScriptInfo(fileName)
+        const newSnapshot = new QingKuaiSnapShot(interCode)
         if (isUndefined(scriptInfo) || isUndefined(oldSnapshot)) {
-            projectService.openClientFile(fileName, newSnapshot.getFullText(), ts.ScriptKind.TS)
+            // prettier-ignore
+            projectService.openClientFile(
+                fileName,
+                newSnapshot.getFullText(),
+                ts.ScriptKind.TS
+            )
             project.addRoot(projectService.getScriptInfo(fileName)!)
         } else {
             const change = newSnapshot.getChangeRange(oldSnapshot)
@@ -27,7 +34,9 @@ export function attachServerHandlers() {
                 newSnapshot.getText(changeStart, changeStart + change.newLength)
             )
         }
-        return snapshotCache.set(fileName, newSnapshot), ""
+        snapshotCache.set(fileName, newSnapshot)
+        project.updateGraph()
+        return null
     })
 
     server.onRequest<string, TSDiagnostic[]>("getDiagnostic", (filePath: string) => {

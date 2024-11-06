@@ -1,13 +1,12 @@
 import fs from "fs"
 import { hover } from "./supports/hover"
 import { complete } from "./supports/complete"
-import { inspect } from "../../../shared-util/log"
 import { diagnostic } from "./supports/diagnostic"
 import { initialize } from "./supports/initialize"
 import { connectTo } from "../../../shared-util/ipc"
 import { prepareRename, rename } from "./supports/rename"
 import { getSockPath } from "../../../shared-util/ipc/sock"
-import { Logger, connection, setTipc, tpic } from "./state"
+import { Logger, connection, setTipc, setTypeCheckerStatement, tpic } from "./state"
 import { connectTsPluginServerSuccess, connectTsPluginServerFailed } from "./messages"
 
 connection.onHover(hover)
@@ -24,7 +23,13 @@ connection.onRequest("textDocument/diagnostic", diagnostic)
 // 用于qingkuai-typescript-plugin调试日志的处理方法(onNotification)并通过语言服务器的Logger输出
 connection.onNotification("qingkuai/extensionLoaded", async function connect(times = 0) {
     if (fs.existsSync(getSockPath("qingkuai"))) {
-        setTipc(await connectTo("qingkuai"))
+        const client = await connectTo("qingkuai")
+
+        // 获取qingkuai类型检查器文件的本机绝对路径，qingkuai编译器在生成typescript中间代码时需要它
+        await client.sendRequest("getTypeCheckerStatement", "").then(statement => {
+            setTypeCheckerStatement(statement), setTipc(client)
+        })
+
         const kinds = ["info", "warn", "error"] as const
         kinds.forEach(kind => {
             tpic.onNotification(`log/${kind}`, (msg: string) => {

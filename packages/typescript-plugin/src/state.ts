@@ -10,6 +10,7 @@ import {
     TSLanguageServiceHost
 } from "./types"
 
+import path from "path"
 import { defaultParticipant } from "../../../shared-util/ipc"
 
 export let server = defaultParticipant
@@ -44,3 +45,5 @@ export const Logger = {
     warn: (msg: string) => server.sendNotification("log/info", msg),
     error: (msg: string) => server.sendNotification("log/error", msg)
 }
+
+export const typeCheckerStatement = `/// <reference types="${path.resolve(__dirname, "../dts/type-checker.d.ts")}" />\n`
