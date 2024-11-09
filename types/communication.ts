@@ -8,6 +8,7 @@ export interface InsertSnippetParam {
 export interface UpdateSnapshotParams {
     fileName: string
     interCode: string
+    scriptKindKey: "JS" | "TS"
 }
 
 export interface TSDiagnosticRelatedInformation {

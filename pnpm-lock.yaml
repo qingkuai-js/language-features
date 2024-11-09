@@ -64,7 +64,11 @@ importers:
 
   packages/language-server: {}
 
-  packages/typescript-plugin: {}
+  packages/typescript-plugin:
+    dependencies:
+      qingkuai:
+        specifier: file:/users/lianggaoqiang/desktop/QingKuai/qingkuai
+        version: file:../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai
 
   packages/vscode-extension:
     dependencies:

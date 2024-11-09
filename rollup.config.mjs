@@ -51,13 +51,13 @@ export default defineConfig(() => {
 
         // typescript plugin
         {
+            external: ["qingkuai/compiler"],
             input: "./packages/typescript-plugin/src/index.ts",
             output: {
                 format: "cjs",
                 sourcemap: true,
                 dir: "./packages/typescript-plugin/dist"
             },
-            external: ["qingkuai/compiler"],
             plugins: [nodeResolve(), commonjs(), esbuild()]
         }
     ]

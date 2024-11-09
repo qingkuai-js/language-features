@@ -7,7 +7,8 @@ import {
     DiagnosticSeverity,
     DocumentDiagnosticReportKind
 } from "vscode-languageserver/node"
-import { getCompileRes, tpic } from "../state"
+import { isTestingEnv, tpic } from "../state"
+import { getCompileRes } from "../compile"
 import { isUndefined } from "../../../../shared-util/assert"
 
 export const diagnostic: DiagnosticHandler = async ({ textDocument }) => {

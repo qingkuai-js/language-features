@@ -1,51 +1,19 @@
-import type {
-    TSDiagnostic,
-    UpdateSnapshotParams,
-    TSDiagnosticRelatedInformation
-} from "../../../types/communication"
 import type { Diagnostic, DiagnosticMessageChain } from "typescript"
 
-import { QingKuaiSnapShot } from "./snapshot"
-import { snapshotCache } from "./proxy/getSnapshot"
-import { isString, isUndefined } from "../../../shared-util/assert"
-import { languageService, project, projectService, server, typeCheckerStatement, ts } from "./state"
+import { languageService, projectService, server, ts } from "../state"
+import { isString, isUndefined } from "../../../../shared-util/assert"
+import { TSDiagnostic, TSDiagnosticRelatedInformation } from "../../../../types/communication"
+import { DiagnosticType } from "../types"
 
-export function attachServerHandlers() {
-    server.onRequest("getTypeCheckerStatement", () => typeCheckerStatement)
-
-    server.onRequest<UpdateSnapshotParams>("updateSnapshot", ({ fileName, interCode }) => {
-        const oldSnapshot = snapshotCache.get(fileName)
-        const scriptInfo = projectService.getScriptInfo(fileName)
-        const newSnapshot = new QingKuaiSnapShot(interCode)
-        if (isUndefined(scriptInfo) || isUndefined(oldSnapshot)) {
-            // prettier-ignore
-            projectService.openClientFile(
-                fileName,
-                newSnapshot.getFullText(),
-                ts.ScriptKind.TS
-            )
-            project.addRoot(projectService.getScriptInfo(fileName)!)
-        } else {
-            const change = newSnapshot.getChangeRange(oldSnapshot)
-            const changeStart = change.span.start
-            scriptInfo.editContent(
-                changeStart,
-                changeStart + change.span.length,
-                newSnapshot.getText(changeStart, changeStart + change.newLength)
-            )
-        }
-        snapshotCache.set(fileName, newSnapshot)
-        project.updateGraph()
-        return null
-    })
-
+export function attachGetDiagnostic() {
     server.onRequest<string, TSDiagnostic[]>("getDiagnostic", (filePath: string) => {
         const diagnostics: Diagnostic[] = []
-        const diagnosticMethods = [
-            "getSemanticDiagnostics",
-            "getSyntacticDiagnostics",
-            "getSuggestionDiagnostics"
-        ] as const
+        const diagnosticMethods: DiagnosticType[] = ["getSyntacticDiagnostics"]
+
+        // Semtic模式下进行全部诊断，PartialSemantic/Syntactic模式下只进行语法检查
+        if (projectService.serverMode === ts.LanguageServiceMode.Semantic) {
+            diagnosticMethods.push("getSemanticDiagnostics", "getSuggestionDiagnostics")
+        }
 
         diagnosticMethods.forEach(m => {
             diagnostics.push(...languageService[m](filePath))

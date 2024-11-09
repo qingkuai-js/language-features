@@ -1,5 +1,10 @@
 import type Typescript from "typescript"
 
+export type DiagnosticType =
+    | "getSemanticDiagnostics"
+    | "getSyntacticDiagnostics"
+    | "getSuggestionDiagnostics"
+
 export type TS = typeof Typescript
 export type TSProgram = Typescript.Program
 export type TSProject = Typescript.server.Project

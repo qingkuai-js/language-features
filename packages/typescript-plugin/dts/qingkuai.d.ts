@@ -22,3 +22,11 @@ declare const __c__: {
     GetKVPair: ReloadedGetKVPair
     SatisfyResolve: <T>(_: T) => ExtractResolveType<T>
 }
+
+declare const wat: watchFunc
+declare const waT: watchFunc
+declare const Wat: watchFunc
+declare function stc<T>(value: T): T
+declare function der<T>(value: T | (() => T)): T
+declare function rea<T>(value: T, level?: number): T
+type watchFunc = <T>(target: T | ((pre: T, cur: T) => T)) => () => void

@@ -7,13 +7,13 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { getCompileRes } from "../state"
+import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
+import { findEventModifier } from "../util/search"
+import { eventModifiers } from "../data/event-modifier"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { findEventModifier } from "../util/search"
-import { eventModifiers } from "../data/event-modifier"
 
 export const hover: HoverHander = async ({ textDocument, position }) => {
     const cr = await getCompileRes(textDocument)

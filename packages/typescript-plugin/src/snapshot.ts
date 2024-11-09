@@ -1,7 +1,10 @@
-import type { IScriptSnapshot } from "typescript"
+import type { IScriptSnapshot, ScriptKind } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
-    constructor(private text: string) {}
+    constructor(
+        private text: string,
+        public scriptKind: ScriptKind
+    ) {}
 
     getFullText() {
         return this.text

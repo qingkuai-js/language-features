@@ -12,7 +12,6 @@ import type { GeneralFunc } from "../../types/util"
 
 import net from "net"
 import { noop } from "../constant"
-import { getSockPath } from "./sock"
 import { getReleaseId, releaseId } from "./id"
 import { isUndefined, isPromise } from "../assert"
 import { createMessageBuffer, createBufferReader } from "./buffer"
@@ -25,28 +24,26 @@ export const defaultParticipant: IpcParticipant = {
     sendNotification: noop
 }
 
-export function createServer(name: string) {
-    const sockPath = getSockPath(name)
+export function createServer(sockPath: string) {
     const handlers = new Map<string, GeneralFunc>()
     const resolvers = new Map<number, GeneralFunc>()
-
-    return new Promise<IpcParticipant>(resolve => {
+    return new Promise<IpcParticipant>((resolve, reject) => {
         const server = net.createServer(socket => {
             resolve(newParticipant(socket, handlers, resolvers))
         })
         server.listen(sockPath)
+        server.on("error", err => reject(err))
     })
 }
 
-export function connectTo(name: string) {
-    const sockPath = getSockPath(name)
+export function connectTo(sockPath: string) {
     const handlers = new Map<string, GeneralFunc>()
     const resolvers = new Map<number, GeneralFunc>()
-
-    return new Promise<IpcParticipant>(resolve => {
+    return new Promise<IpcParticipant>((resolve, reject) => {
         const client = net.createConnection(sockPath, () => {
             resolve(newParticipant(client, handlers, resolvers))
         })
+        client.on("error", err => reject(err))
     })
 }
 
@@ -76,7 +73,7 @@ function newParticipant(
             }
 
             const response = handlers.get(methodName)?.(body)
-            if (!messageId || isUndefined(response)) {
+            if (!messageId) {
                 return
             }
 

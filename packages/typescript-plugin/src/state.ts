@@ -11,7 +11,7 @@ import {
 } from "./types"
 
 import path from "path"
-import { defaultParticipant } from "../../../shared-util/ipc"
+import { defaultParticipant } from "../../../shared-util/ipc/participant"
 
 export let server = defaultParticipant
 
@@ -46,4 +46,4 @@ export const Logger = {
     error: (msg: string) => server.sendNotification("log/error", msg)
 }
 
-export const typeCheckerStatement = `/// <reference types="${path.resolve(__dirname, "../dts/type-checker.d.ts")}" />\n`
+export const typeRefStatement = `/// <reference types="${path.resolve(__dirname, "../dts/qingkuai.d.ts")}" />\n`
