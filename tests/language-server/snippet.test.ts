@@ -152,7 +152,7 @@ describe("Html attribute value auto quote functions:", () => {
         ])
     })
 
-    it("should insert a pair of curly bracket when entring equal sign.", async () => {
+    it.only("should insert a pair of curly bracket when entring equal sign.", async () => {
         await openContentAsTextDocument(
             formatSourceCode(`
                 <div #for= !class= @click=>

@@ -3,8 +3,10 @@ import {
     connectTsPluginServerFailed,
     connectTsPluginServerSuccess
 } from "./messages"
+import { publishDiagnostics } from "./supports/diagnostic"
 import { connectTo } from "../../../shared-util/ipc/participant"
 import { Logger, setTpic, setTypeRefStatement, tpic, tpicConnectedResolver } from "./state"
+import { pathToFileURL } from "url"
 
 let connectTimes = 0
 
@@ -16,7 +18,7 @@ export async function connectTsServer(sockPath: string) {
 
         // 获取qingkuai类型检查器文件的本机绝对路径，qingkuai编译器在生成typescript中间代码时需要它
         setTypeRefStatement(await client.sendRequest("getQingkuaiDtsReferenceStatement", ""))
-        attachLogOutputChannel(), setTpic(client), tpicConnectedResolver()
+        setTpic(client), attachClientHandlers(), tpicConnectedResolver()
 
         Logger.info(connectTsPluginServerSuccess)
         Logger.info(communicationWayInfo(sockPath))
@@ -31,12 +33,17 @@ export async function connectTsServer(sockPath: string) {
     }
 }
 
-// 附加ts服务器插件日志通道
-function attachLogOutputChannel() {
+function attachClientHandlers() {
+    // 附加ts服务器插件日志通道
     const kinds = ["info", "warn", "error"] as const
     kinds.forEach(kind => {
         tpic.onNotification(`log/${kind}`, (msg: string) => {
             Logger[kind]("From typescript-qingkuai-plugin: " + msg)
         })
+    })
+
+    // 附加服务器主动推送的诊断通知
+    tpic.onNotification("publishDiagnostics", (fileName: string) => {
+        publishDiagnostics(pathToFileURL(fileName).toString())
     })
 }

@@ -1,6 +1,9 @@
+import type { GlobalTypeExistingInfo } from "./types"
 import type { IScriptSnapshot, ScriptKind } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
+    public globalTypeExisting: GlobalTypeExistingInfo = [false, false]
+
     constructor(
         private text: string,
         public scriptKind: ScriptKind
@@ -68,5 +71,9 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
             },
             newLength: newEndIndex - diffStartIndex + 1
         }
+    }
+
+    setGlobalTypeExisting(info: GlobalTypeExistingInfo) {
+        this.globalTypeExisting = info
     }
 }

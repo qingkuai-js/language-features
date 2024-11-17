@@ -1,20 +1,35 @@
-import type { DiagnosticHandler } from "../types/handlers"
-import type { TSDiagnostic } from "../../../../types/communication"
+import type { DiagnosticResult } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
-import {
-    DiagnosticTag,
-    DiagnosticSeverity,
-    DocumentDiagnosticReportKind
-} from "vscode-languageserver/node"
-import { isTestingEnv, tpic } from "../state"
 import { getCompileRes } from "../compile"
-import { isUndefined } from "../../../../shared-util/assert"
+import { stringifyRange } from "../util/vscode"
+import { connection, documents, tpic } from "../state"
+import { debounce } from "../../../../shared-util/sundry"
+import { isNull, isUndefined } from "../../../../shared-util/assert"
+import { GlobalTypeIsImplicitAny, GlobalTypeMissTypeImpl } from "../messages"
+import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
+import { GlobalTypeNotFoundMessageRE, GlobalTypeRefsToValueRE } from "../regular"
 
-export const diagnostic: DiagnosticHandler = async ({ textDocument }) => {
+export const publishDiagnostics = debounce(async (uri: string) => {
+    const textDocument = documents.get(uri)
+    if (isUndefined(textDocument)) {
+        return
+    }
+
     const cr = await getCompileRes(textDocument)
     const { Error, Warning } = DiagnosticSeverity
     const { messages, getRange, filePath, getSourceIndex } = cr
+    const scriptStartTagNamgeRange = cr.inputDescriptor.script.startTagNameRange
+
+    // 将ts语言服务的诊断信息添加到诊断结果
+    const extendDiagnostic = (item: Diagnostic) => {
+        const stringifiedRange = stringifyRange(item.range)
+        const existingKey = `${stringifiedRange}:${item.message}(${item.code})`
+        if (!existingTsDiagnostics.has(existingKey)) {
+            existingTsDiagnostics.add(existingKey)
+            diagnostics.push(item)
+        }
+    }
 
     // qingkuai编译器诊断结果（错误：1xxx，警告：9xxx）
     const diagnostics: Diagnostic[] = messages.map(({ type, value }) => {
@@ -33,13 +48,40 @@ export const diagnostic: DiagnosticHandler = async ({ textDocument }) => {
     const existingTsDiagnostics = new Set<string>()
 
     // javascript/typescript诊断结果，由qingkuai-typescript-plugin诊断中间代码并返回
-    ;(await tpic.sendRequest<string, TSDiagnostic[]>("getDiagnostic", filePath)).forEach(item => {
+    const tsDiagnosticResult = await tpic.sendRequest<string, DiagnosticResult>(
+        "getDiagnostic",
+        filePath
+    )
+
+    tsDiagnosticResult.diagnostics.forEach(item => {
         const tags: DiagnosticTag[] = []
         const ss = getSourceIndex(item.start)
         const se = getSourceIndex(item.start + item.length)
         const relatedInformation: DiagnosticRelatedInformation[] = []
 
         if (isSourceIndexesIvalid(ss, se)) {
+            if (item.code === 2304) {
+                const m = GlobalTypeNotFoundMessageRE.exec(item.message)
+                const sk = tsDiagnosticResult.noImplicitAny ? "Error" : "Hint"
+                if (!isNull(m)) {
+                    extendDiagnostic({
+                        source: "qk",
+                        ...GlobalTypeIsImplicitAny(m[1]),
+                        severity: DiagnosticSeverity[sk],
+                        range: getRange(...scriptStartTagNamgeRange)
+                    })
+                }
+            } else if (item.code === 2749) {
+                const m = GlobalTypeRefsToValueRE.exec(item.message)
+                if (!isNull(m)) {
+                    extendDiagnostic({
+                        source: "qk",
+                        ...GlobalTypeMissTypeImpl(m[1]),
+                        range: getRange(...scriptStartTagNamgeRange),
+                        severity: transTsDiagnosticSeverity(item.kind)
+                    })
+                }
+            }
             return
         }
 
@@ -64,26 +106,23 @@ export const diagnostic: DiagnosticHandler = async ({ textDocument }) => {
             }
         })
 
-        const existingKey = `${ss}-${se}:${item.message}(${item.code})`
-        if (!existingTsDiagnostics.has(existingKey)) {
-            existingTsDiagnostics.add(existingKey)
-            diagnostics.push({
-                tags,
-                relatedInformation,
-                source: "ts",
-                code: item.code,
-                message: item.message,
-                range: getRange(ss, se),
-                severity: transTsDiagnosticSeverity(item.kind)
-            })
-        }
+        extendDiagnostic({
+            tags,
+            relatedInformation,
+            source: "ts",
+            code: item.code,
+            message: item.message,
+            range: getRange(ss, se),
+            severity: transTsDiagnosticSeverity(item.kind)
+        })
     })
 
-    return {
-        items: diagnostics,
-        kind: DocumentDiagnosticReportKind.Full
-    }
-}
+    connection.sendNotification("textDocument/publishDiagnostics", {
+        diagnostics,
+        uri: textDocument.uri,
+        version: textDocument.version
+    })
+}, 200)
 
 // typescript诊断结果类型转换为vscode需要的对应类型
 function transTsDiagnosticSeverity(n: number) {

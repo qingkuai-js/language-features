@@ -12,6 +12,7 @@ import {
 
 import path from "path"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
+import { inspect } from "../../../shared-util/log"
 
 export let server = defaultParticipant
 
@@ -41,9 +42,9 @@ export function setTSState(t: TS, info: TSPluginCreateInfo) {
 
 // 通过qingkuai语言服务器输出日志
 export const Logger = {
-    info: (msg: string) => server.sendNotification("log/info", msg),
-    warn: (msg: string) => server.sendNotification("log/info", msg),
-    error: (msg: string) => server.sendNotification("log/error", msg)
+    info: (v: any) => server.sendNotification("log/info", inspect(v)),
+    warn: (v: any) => server.sendNotification("log/info", inspect(v)),
+    error: (v: any) => server.sendNotification("log/error", inspect(v))
 }
 
 export const typeRefStatement = `/// <reference types="${path.resolve(__dirname, "../dts/qingkuai.d.ts")}" />\n`

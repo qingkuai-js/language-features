@@ -9,7 +9,7 @@ import { UpdateSnapshotParams } from "../../../types/communication"
 import { documents, isTestingEnv, tpic, tpicConnectedPromise, typeRefStatement } from "./state"
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
-export const crc = new Map<string, CachedCompileResultItem>() // Compile Result Cache
+export const crc = new Map<string, Promise<CachedCompileResultItem>>() // Compile Result Cache
 
 // 以检查模式解析qk源码文件，版本相同时不会重复解析（测试时无需判断）
 export async function getCompileRes({ uri }: TextDocumentIdentifier) {
@@ -18,8 +18,8 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
         throw new Error("unknown document: " + uri)
     }
 
-    const cached = crc.get(uri)
     const { version } = document
+    const cached = await crc.get(uri)
 
     // 确保首次编译时机在语言服务器与ts插件成功建立ipc连接后
     // 测试中始终提供最新版本的文档，无需验证文档版本是否发生改变
@@ -68,7 +68,6 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
 
     const ccri: CachedCompileResultItem = {
         ...compileRes,
-        source,
         version,
         getRange,
         filePath,
@@ -79,14 +78,18 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
         getSourceIndex
     }
 
-    // 将文件的最新中间代码发送给typescript-qingkuai-plugin(非测试环境)
-    if (!isTestingEnv) {
-        await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
-            fileName: filePath,
-            interCode: ccri.code,
-            scriptKindKey: getScriptKindKey(ccri)
-        })
-    }
+    // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
+    const pms = new Promise<CachedCompileResultItem>(async resolve => {
+        if (!isTestingEnv) {
+            await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
+                fileName: filePath,
+                interCode: ccri.code,
+                scriptKindKey: getScriptKindKey(ccri),
+                slotInfo: ccri.inputDescriptor.slotInfo
+            })
+        }
+        resolve(ccri)
+    })
 
-    return crc.set(uri, ccri), ccri
+    return crc.set(uri, pms), await pms
 }

@@ -1,6 +1,7 @@
 import type Typescript from "typescript"
+import type { FixedArray } from "../../../types/util"
 
-export type DiagnosticType =
+export type DiagnosticKind =
     | "getSemanticDiagnostics"
     | "getSyntacticDiagnostics"
     | "getSuggestionDiagnostics"
@@ -14,3 +15,5 @@ export type TSProjectService = Typescript.server.ProjectService
 export type TSLanguageServerHost = Typescript.server.ServerHost
 export type TSLanguageServiceHost = Typescript.LanguageServiceHost
 export type TSPluginCreateInfo = Typescript.server.PluginCreateInfo
+
+export type GlobalTypeExistingInfo = FixedArray<boolean, 2>

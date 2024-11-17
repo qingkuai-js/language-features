@@ -1,5 +1,20 @@
 import type { AnyObject, GeneralFunc } from "../types/util"
 
+import { isNull } from "./assert"
+
+// 防抖函数生成器
+export function debounce(fn: GeneralFunc, delay = 1000) {
+    let timer: NodeJS.Timeout | null = null
+    return function (this: any, ...args: any) {
+        if (!isNull(timer)) {
+            clearTimeout(timer)
+        }
+        timer = setTimeout(() => {
+            fn.apply(this, args)
+        }, delay)
+    }
+}
+
 // 生成一个稍后解决的Promise，此方法返回一个Promise和它的resovle方法
 export function generatePromiseAndResolver() {
     let resolver!: GeneralFunc

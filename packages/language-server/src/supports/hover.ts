@@ -17,9 +17,10 @@ import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const hover: HoverHander = async ({ textDocument, position }) => {
     const cr = await getCompileRes(textDocument)
-    const { source, templateNodes, getOffset, getRange } = cr
+    const { templateNodes, getOffset, getRange } = cr
 
     const offset = getOffset(position)
+    const source = cr.inputDescriptor.source
     const currentNode = findNodeAt(templateNodes, offset)
     if (!currentNode) {
         return null

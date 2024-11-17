@@ -16,10 +16,6 @@ export const initialize: InitializeHandler = () => {
             renameProvider: {
                 prepareProvider: true
             },
-            diagnosticProvider: {
-                workspaceDiagnostics: false,
-                interFileDependencies: false
-            },
             completionProvider: {
                 triggerCharacters: [
                     ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],

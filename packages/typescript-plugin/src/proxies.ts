@@ -3,6 +3,7 @@ import path from "path"
 import { compile } from "qingkuai/compiler"
 import { QingKuaiSnapShot } from "./snapshot"
 import { isUndefined } from "../../../shared-util/assert"
+import { refreshQkFileDiagnostic } from "./server/diagnostic"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { languageServiceHost, projectService, ts, typeRefStatement } from "./state"
 
@@ -96,5 +97,37 @@ export function proxyCloseClientFile() {
         if (!fileName.endsWith(".qk") || !snapshotCache.has(fileName)) {
             return ori(fileName, ...rest)
         }
+    }
+}
+
+// 非qk文件修改时，需要刷新已打开的qk文件诊断信息
+export function proxyEditContent() {
+    const proxyCheckKey = "__hasBeenProxiedByQingkuai"
+    const ori = projectService.getScriptInfo.bind(projectService)
+    projectService.getScriptInfo = fileName => {
+        const oriRet = ori(fileName) as any
+        if (
+            !oriRet[proxyCheckKey] &&
+            !fileName.endsWith(".qk") &&
+            !isUndefined(oriRet?.editContent)
+        ) {
+            const oriEditContent = oriRet.editContent.bind(oriRet)
+            oriRet.editContent = (...args: any) => {
+                refreshQkFileDiagnostic()
+                return oriEditContent(...args)
+            }
+            oriRet[proxyCheckKey] = true
+        }
+        return oriRet
+    }
+}
+
+export function proxyOnConfigFileChanged() {
+    // used to access private method
+    const projectServiceAsAny = projectService as any
+    const ori = projectServiceAsAny.onConfigFileChanged.bind(projectService)
+    projectServiceAsAny.onConfigFileChanged = (...args: any) => {
+        setTimeout(refreshQkFileDiagnostic, 2500)
+        return ori(...args)
     }
 }

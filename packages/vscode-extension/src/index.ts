@@ -8,7 +8,7 @@ import type { ExtensionContext } from "vscode"
 import type { InsertSnippetParam } from "../../../types/communication"
 
 import * as vsc from "vscode"
-import { getValidPathWithHash, rmSockFile } from "../../../shared-util/ipc/sock"
+import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 
 let client: LanguageClient
 
@@ -33,11 +33,9 @@ export async function activate(context: ExtensionContext) {
     }
 
     // 通过切换语言id激活vscode内置ts扩展服务器
-    if (!tsExtension.isActive) {
-        await tsExtension.activate()
-        await vsc.languages.setTextDocumentLanguage(doc, "typescript")
-        await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
-    }
+    await tsExtension.activate()
+    await vsc.languages.setTextDocumentLanguage(doc, "typescript")
+    await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
     // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件

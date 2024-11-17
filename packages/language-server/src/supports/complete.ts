@@ -31,9 +31,10 @@ import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languages
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
     const cr = await getCompileRes(textDocument)
-    const { source, templateNodes, document, getOffset, getRange, getPosition } = cr
+    const { templateNodes, document, getOffset, getRange, getPosition } = cr
 
     const offset = getOffset(position)
+    const source = cr.inputDescriptor.source
     const triggerChar = source[offset - 1] ?? ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
     // print(currentNode)

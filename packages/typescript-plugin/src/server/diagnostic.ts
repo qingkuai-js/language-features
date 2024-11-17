@@ -1,14 +1,22 @@
+import type {
+    TSDiagnostic,
+    DiagnosticResult,
+    TSDiagnosticRelatedInformation
+} from "../../../../types/communication"
+import type { DiagnosticKind } from "../types"
 import type { Diagnostic, DiagnosticMessageChain } from "typescript"
 
-import { languageService, projectService, server, ts } from "../state"
+import { openQkFiles } from "./document"
 import { isString, isUndefined } from "../../../../shared-util/assert"
-import { TSDiagnostic, TSDiagnosticRelatedInformation } from "../../../../types/communication"
-import { DiagnosticType } from "../types"
+import { languageService, project, projectService, server, ts } from "../state"
+
+export const qingkuaiDiagnostics = new Map<string, Diagnostic[]>()
 
 export function attachGetDiagnostic() {
-    server.onRequest<string, TSDiagnostic[]>("getDiagnostic", (filePath: string) => {
-        const diagnostics: Diagnostic[] = []
-        const diagnosticMethods: DiagnosticType[] = ["getSyntacticDiagnostics"]
+    server.onRequest<string, DiagnosticResult>("getDiagnostic", (fileName: string) => {
+        const oriDiagnostics = qingkuaiDiagnostics.get(fileName) || []
+        const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
+        const noImplicitAny = project.getCompilationSettings().noImplicitAny || false
 
         // Semtic模式下进行全部诊断，PartialSemantic/Syntactic模式下只进行语法检查
         if (projectService.serverMode === ts.LanguageServiceMode.Semantic) {
@@ -16,10 +24,10 @@ export function attachGetDiagnostic() {
         }
 
         diagnosticMethods.forEach(m => {
-            diagnostics.push(...languageService[m](filePath))
+            oriDiagnostics.push(...languageService[m](fileName))
         })
 
-        return diagnostics.map(item => {
+        const diagnostics: TSDiagnostic[] = oriDiagnostics.map(item => {
             const fri = (item.relatedInformation || []).filter(ri => {
                 return !isUndefined(ri.file)
             })
@@ -35,7 +43,7 @@ export function attachGetDiagnostic() {
                     return ri.file!.getLineAndCharacterOfPosition(offset)
                 }
 
-                // 非qk文件时通过需要返回诊断相关信息范围
+                // 非qk文件时需要返回诊断相关信息范围
                 if (!res.filePath.endsWith(".qk")) {
                     res.range = {
                         start: getRange(res.start),
@@ -57,6 +65,15 @@ export function attachGetDiagnostic() {
                 message: formatDiagnosticMessage(item.messageText)
             }
         })
+
+        return { diagnostics, noImplicitAny }
+    })
+}
+
+// 刷新打开状态的qk文件诊断信息
+export function refreshQkFileDiagnostic() {
+    openQkFiles.forEach(fileName => {
+        server.sendNotification("publishDiagnostics", fileName)
     })
 }
 

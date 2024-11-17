@@ -1,3 +1,4 @@
+import type { SlotInfo } from "qingkuai/compiler"
 import type { CompletionItem, CompletionList, Range } from "vscode-languageserver"
 
 export interface InsertSnippetParam {
@@ -8,9 +9,14 @@ export interface InsertSnippetParam {
 export interface UpdateSnapshotParams {
     fileName: string
     interCode: string
+    slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
 }
 
+export interface DiagnosticResult {
+    noImplicitAny: boolean
+    diagnostics: TSDiagnostic[]
+}
 export interface TSDiagnosticRelatedInformation {
     range?: Range
     start: number

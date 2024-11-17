@@ -1,12 +1,8 @@
 import type {
     Connection,
     DocumentDiagnosticParams,
-    DocumentDiagnosticReport
+    FullDocumentDiagnosticReport
 } from "vscode-languageserver"
-
-export type DiagnosticHandler = (
-    params: DocumentDiagnosticParams
-) => ResolveOrNot<DocumentDiagnosticReport | undefined>
 
 export type HoverHander = ExtractHandler<"onHover">
 export type RenameHander = ExtractHandler<"onRenameRequest">
