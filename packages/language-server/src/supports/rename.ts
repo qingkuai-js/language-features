@@ -1,12 +1,13 @@
 import type { PrepareRename, RenameHander } from "../types/handlers"
 
-import { getCompileRes } from "../state"
+import { getCompileRes } from "../compile"
 import { TextEdit } from "vscode-languageserver/node"
 import { findNodeAt, findTagRanges } from "../util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 
-export const rename: RenameHander = ({ textDocument, position, newName }) => {
-    const { getRange, getOffset, templateNodes } = getCompileRes(textDocument)!
+export const rename: RenameHander = async ({ textDocument, position, newName }) => {
+    const cr = await getCompileRes(textDocument)
+    const { getRange, getOffset, templateNodes } = cr
 
     const offset = getOffset(position)
     const currentNode = findNodeAt(templateNodes, offset)
@@ -30,8 +31,9 @@ export const rename: RenameHander = ({ textDocument, position, newName }) => {
     }
 }
 
-export const prepareRename: PrepareRename = ({ textDocument, position }) => {
-    const { getRange, getOffset, templateNodes } = getCompileRes(textDocument)!
+export const prepareRename: PrepareRename = async ({ textDocument, position }) => {
+    const cr = await getCompileRes(textDocument)
+    const { getRange, getOffset, templateNodes } = cr
 
     const offset = getOffset(position)
     const currentNode = findNodeAt(templateNodes, offset)

@@ -5,7 +5,8 @@
     "author": "lgq",
     "license": "MIT",
     "scripts": {
-        "dev": "rollup -c -w"
+        "dev": "rollup -c -w",
+        "update-qingkuai": "pnpm update qingkuai && cd ./packages/vscode-extension && pnpm update qingkuai && cd ../typescript-plugin && pnpm update qingkuai"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^26.0.1",

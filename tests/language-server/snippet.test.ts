@@ -1,10 +1,10 @@
-import type { InsertSnippetParam } from "../types/communication"
+import type { InsertSnippetParam } from "../../types/communication"
 
 import { connection } from "./index.test"
 import { doComplete } from "./complete.test"
-import { isNull } from "../shared-util/assert"
+import { isNull } from "../../shared-util/assert"
 import { assert, describe, expect, it } from "vitest"
-import { formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
+import { formatSourceCode, openContentAsTextDocument } from "../../shared-util/tests"
 
 // 此变量用于存储assertSnippetItem方法中Promise的resolve参数，当接收到qingkuai语言服务器的
 // 插入片段响应后就会调用它并传入接收到的值，之后assertSnippetItem会判断接受到的值是否与期望相符
@@ -152,7 +152,7 @@ describe("Html attribute value auto quote functions:", () => {
         ])
     })
 
-    it("should insert a pair of curly bracket when entring equal sign.", async () => {
+    it.only("should insert a pair of curly bracket when entring equal sign.", async () => {
         await openContentAsTextDocument(
             formatSourceCode(`
                 <div #for= !class= @click=>

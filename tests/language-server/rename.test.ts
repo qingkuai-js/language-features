@@ -1,4 +1,4 @@
-import type { FixedArray } from "../types/util"
+import type { FixedArray } from "../../types/util"
 import type { Range, WorkspaceEdit, RenameParams, PrepareRenameParams } from "vscode-languageserver"
 
 import {
@@ -6,7 +6,7 @@ import {
     createRange,
     formatSourceCode,
     openContentAsTextDocument
-} from "../shared-util/tests"
+} from "../../shared-util/tests"
 import { connection } from "./index.test"
 import { describe, expect, it } from "vitest"
 import { TextEdit } from "vscode-languageserver/node"

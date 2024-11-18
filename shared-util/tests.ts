@@ -1,9 +1,8 @@
 import type { FixedArray } from "../types/util"
 import type { DidOpenTextDocumentParams, Range } from "vscode-languageserver/node"
 
-import { connection } from "../tests/index.test"
 import { expect } from "vitest"
-import { isUndefined } from "./assert"
+import { connection } from "../tests/language-server/index.test"
 
 // 将内容作为TextDocument打开并发送通知给语言服务器，此方法打开的文档uri为空字符串
 export async function openContentAsTextDocument(content: string) {

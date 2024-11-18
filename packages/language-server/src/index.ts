@@ -1,10 +1,10 @@
 import { hover } from "./supports/hover"
+import { connectTsServer } from "./client"
 import { complete } from "./supports/complete"
-import { diagnostic } from "./supports/diagnostic"
 import { initialize } from "./supports/initialize"
 import { prepareRename, rename } from "./supports/rename"
-import { connection, connectToTypescriptPluginServer, Logger } from "./state"
-import { connectTsPluginServerSuccess, connectTsPluginServerFailed } from "./messages"
+import { connection, documents, tpic, tpicConnectedPromise } from "./state"
+import { publishDiagnostics } from "./supports/diagnostic"
 
 connection.onHover(hover)
 connection.onCompletion(complete)
@@ -13,20 +13,15 @@ connection.onInitialize(initialize)
 connection.onPrepareRename(prepareRename)
 
 connection.onRequest("ping", _ => "pong")
-connection.onRequest("textDocument/diagnostic", diagnostic)
+connection.onRequest("qingkuai/extensionLoaded", connectTsServer)
 
-// vscode扩展加载完毕通知，连接到typescript-qingkuai-plugin的ipc服务器
-connection.onNotification("qingkuai/extensionLoaded", function connect(times = 0) {
-    setTimeout(async () => {
-        try {
-            await connectToTypescriptPluginServer()
-            Logger.info(connectTsPluginServerSuccess)
-        } catch (err) {
-            if (times < 60) {
-                connect(times + 1)
-            } else {
-                Logger.error(connectTsPluginServerFailed)
-            }
-        }
-    }, 1000)
+// 文档事件处理
+documents.onDidChangeContent(({ document }) => publishDiagnostics(document.uri))
+
+documents.onDidOpen(async ({ document }) => {
+    await tpicConnectedPromise, tpic.sendNotification("onDidOpen", document.uri)
+})
+
+documents.onDidClose(async ({ document }) => {
+    await tpicConnectedPromise, tpic.sendNotification("onDidClose", document.uri)
 })

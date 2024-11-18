@@ -1,9 +1,9 @@
 import type { TextEdit, CompletionItem, CompletionParams } from "vscode-languageserver/node"
 
 import { connection } from "./index.test"
-import { isUndefined } from "../shared-util/assert"
 import { describe, expect, it, test } from "vitest"
-import { assertRange, formatSourceCode, openContentAsTextDocument } from "../shared-util/tests"
+import { isUndefined } from "../../shared-util/assert"
+import { assertRange, formatSourceCode, openContentAsTextDocument } from "../../shared-util/tests"
 
 describe("Emmet functions:", () => {
     test("whether emmet syntax is avaliable.", async () => {

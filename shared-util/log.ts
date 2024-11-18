@@ -6,7 +6,7 @@ import { formatDate } from "./time"
 class Logger {
     constructor(private target: LoggerTarget) {}
 
-    get time() {
+    private get time() {
         return formatDate(new Date())
     }
 

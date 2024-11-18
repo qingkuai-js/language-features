@@ -8,16 +8,16 @@ import type { ExtensionContext } from "vscode"
 import type { InsertSnippetParam } from "../../../types/communication"
 
 import * as vsc from "vscode"
-import { builtInTSExtenstionIsNotEnabled } from "./messages"
+import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 
 let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
-    const doc = vsc.window.activeTextEditor?.document
+    const doc = vsc.window.activeTextEditor!.document
     const serverModule = context.asAbsolutePath("../../dist/server.js")
     const outputChannel = vsc.window.createOutputChannel("QingKuai", "log")
     const languageStatusItem = vsc.languages.createLanguageStatusItem("ls", "qingkuai")
-    const typescriptExtension = vsc.extensions.getExtension("vscode.typescript-language-features")
+    const tsExtension = vsc.extensions.getExtension("vscode.typescript-language-features")!
 
     // 开启插件加载状态
     languageStatusItem.text = "QingKuai Language Server"
@@ -32,12 +32,10 @@ export async function activate(context: ExtensionContext) {
         command: "qingkuai.viewLanguageServerLogs"
     }
 
-    // 激活vscode内置typescript-language-features插件，在qingkuai-typescript-plugin
-    // 中会判断到如果是由qk文件触发的激活，则将qk源码文件从typescript语言服务项目中移除
-    if (doc && doc.languageId === "qingkuai") {
-        await vsc.languages.setTextDocumentLanguage(doc, "typescript")
-        await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
-    }
+    // 通过切换语言id激活vscode内置ts扩展服务器
+    await tsExtension.activate()
+    await vsc.languages.setTextDocumentLanguage(doc, "typescript")
+    await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
 
     const languageServerOptions: ServerOptions = {
         args: ["--nolazy"],
@@ -53,29 +51,22 @@ export async function activate(context: ExtensionContext) {
         outputChannel
     }
 
-    client = await new LanguageClient(
+    await (client = await new LanguageClient(
         "qingkuai",
         "QingKuai Language features",
         languageServerOptions,
         languageClientOptions
-    )
+    )).start()
 
-    // 如果vscode内置typescript-language-features扩展未被启用则提示警告信息
-    // 如果此内置扩展已经启用，则发送扩展加载完毕通知到qingkuai语言服务器
-    if ((await client.start(), typescriptExtension?.isActive)) {
-        client.sendNotification("qingkuai/extensionLoaded")
-    } else {
-        const value = await vsc.window.showErrorMessage(
-            builtInTSExtenstionIsNotEnabled,
-            "Enable Now"
-        )
-        if (value === "Enable Now") {
-            await typescriptExtension?.activate()
-            vsc.commands.executeCommand("workbench.action.reloadWindow")
-        }
-    }
+    // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
+    // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
+    const tsapi = tsExtension.exports.getAPI(0)
+    const sockPath = await getValidPathWithHash("qingkuai")
+    tsapi.configurePlugin("typescript-qingkuai-plugin", { sockPath })
+
     attachCustomHandlers()
     languageStatusItem.busy = false
+    client.sendRequest("qingkuai/extensionLoaded", sockPath)
 }
 
 export function deactivate(): Thenable<void> | undefined {

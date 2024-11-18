@@ -10,7 +10,7 @@ const connection = rpc.createMessageConnection(
 connection.listen()
 
 // 调试消息输出通道
-connection.onNotification("development-debug", msg => {
+connection.onNotification("qingkuai/testLog", msg => {
     console.log(msg)
 })
 

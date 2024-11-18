@@ -51,6 +51,7 @@ export default defineConfig(() => {
 
         // typescript plugin
         {
+            external: ["qingkuai/compiler"],
             input: "./packages/typescript-plugin/src/index.ts",
             output: {
                 format: "cjs",

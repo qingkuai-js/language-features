@@ -10,5 +10,8 @@
         "javascript",
         "language features"
     ],
-    "description": "A Typescript plugin for Qingkuai."
+    "description": "A Typescript plugin for Qingkuai.",
+    "dependencies": {
+        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
+    }
 }

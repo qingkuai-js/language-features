@@ -15,9 +15,10 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
+import { connection } from "../state"
+import { getCompileRes } from "../compile"
 import { parseTemplate } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
-import { connection, getCompileRes } from "../state"
 import { eventModifiers } from "../data/event-modifier"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
@@ -29,10 +30,11 @@ import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/asse
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
-    const { source, templateNodes, document, getOffset, getRange, getPosition } =
-        getCompileRes(textDocument)!
+    const cr = await getCompileRes(textDocument)
+    const { templateNodes, document, getOffset, getRange, getPosition } = cr
 
     const offset = getOffset(position)
+    const source = cr.inputDescriptor.source
     const triggerChar = source[offset - 1] ?? ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
     // print(currentNode)

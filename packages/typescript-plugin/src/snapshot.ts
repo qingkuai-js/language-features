@@ -1,7 +1,17 @@
-import type { IScriptSnapshot } from "typescript"
+import type { GlobalTypeExistingInfo } from "./types"
+import type { IScriptSnapshot, ScriptKind } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
-    constructor(private text: string) {}
+    public globalTypeExisting: GlobalTypeExistingInfo = [false, false]
+
+    constructor(
+        private text: string,
+        public scriptKind: ScriptKind
+    ) {}
+
+    getFullText() {
+        return this.text
+    }
 
     getText(start: number, end: number) {
         return this.text.slice(start, end)
@@ -61,5 +71,9 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
             },
             newLength: newEndIndex - diffStartIndex + 1
         }
+    }
+
+    setGlobalTypeExisting(info: GlobalTypeExistingInfo) {
+        this.globalTypeExisting = info
     }
 }

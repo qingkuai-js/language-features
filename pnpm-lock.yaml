@@ -64,12 +64,19 @@ importers:
 
   packages/language-server: {}
 
-  packages/typescript-plugin: {}
+  packages/typescript-plugin:
+    dependencies:
+      qingkuai:
+        specifier: file:/users/lianggaoqiang/desktop/QingKuai/qingkuai
+        version: file:../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai
 
   packages/vscode-extension:
     dependencies:
+      qingkuai:
+        specifier: file:/users/lianggaoqiang/desktop/QingKuai/qingkuai
+        version: file:../../../../../users/lianggaoqiang/desktop/QingKuai/qingkuai
       typescript-qingkuai-plugin:
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../typescript-plugin
     devDependencies:
       js-yaml:
@@ -81,12 +88,10 @@ packages:
   /@babel/helper-string-parser@7.25.9:
     resolution: {integrity: sha512-4A/SCr/2KLd5jrtOMFzaKjVtAei3+2r/NChoBNoZ3EyP/+GlhoaEGoWOZUmFmoITP7zOJyHIMm+DYRd8o3PvHA==}
     engines: {node: '>=6.9.0'}
-    dev: true
 
   /@babel/helper-validator-identifier@7.25.9:
     resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
     engines: {node: '>=6.9.0'}
-    dev: true
 
   /@babel/parser@7.26.1:
     resolution: {integrity: sha512-reoQYNiAJreZNsJzyrDNzFQ+IQ5JFiIzAHJg9bn94S3l+4++J7RsIhNMoB+lgP/9tpmiAQqspv+xfdxTSzREOw==}
@@ -94,7 +99,6 @@ packages:
     hasBin: true
     dependencies:
       '@babel/types': 7.26.0
-    dev: true
 
   /@babel/types@7.26.0:
     resolution: {integrity: sha512-Z/yiTPj+lDVnF7lWeKCIJzaIkI0vYO87dMpZ4bg4TDrFe4XXLFWL1TbXU27gBP3QccxV9mZICCrnjnYlJjXHOA==}
@@ -102,7 +106,6 @@ packages:
     dependencies:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
-    dev: true
 
   /@emmetio/abbreviation@2.3.3:
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -557,7 +560,6 @@ packages:
 
   /@jridgewell/sourcemap-codec@1.5.0:
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
-    dev: true
 
   /@pkgjs/parseargs@0.11.0:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1677,4 +1679,3 @@ packages:
     dependencies:
       '@babel/parser': 7.26.1
       '@jridgewell/sourcemap-codec': 1.5.0
-    dev: true

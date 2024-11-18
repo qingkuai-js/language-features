@@ -1,10 +1,12 @@
-import { Logger, state } from "../state"
 import { connectSuccess } from "../messages"
+import { Logger, setIsTestingEnv } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
 
 export const initialize: InitializeHandler = () => {
-    state.isTestingEnv = true
+    // 测试中不会调用initialize
+    setIsTestingEnv(false)
+
     Logger.info(connectSuccess)
 
     return {
@@ -13,10 +15,6 @@ export const initialize: InitializeHandler = () => {
             hoverProvider: true,
             renameProvider: {
                 prepareProvider: true
-            },
-            diagnosticProvider: {
-                workspaceDiagnostics: false,
-                interFileDependencies: false
             },
             completionProvider: {
                 triggerCharacters: [
