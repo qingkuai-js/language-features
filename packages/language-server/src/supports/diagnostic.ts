@@ -1,20 +1,23 @@
-import type { DiagnosticResult } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
 import { getCompileRes } from "../compile"
 import { stringifyRange } from "../util/vscode"
+import { GlobalTypeMissTypeImpl } from "../messages"
+import { GlobalTypeRefsToValueRE } from "../regular"
 import { connection, documents, tpic } from "../state"
 import { debounce } from "../../../../shared-util/sundry"
+import { TSDiagnostic } from "../../../../types/communication"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
-import { GlobalTypeIsImplicitAny, GlobalTypeMissTypeImpl } from "../messages"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
-import { GlobalTypeNotFoundMessageRE, GlobalTypeRefsToValueRE } from "../regular"
 
 export const publishDiagnostics = debounce(async (uri: string) => {
     const textDocument = documents.get(uri)
     if (isUndefined(textDocument)) {
         return
     }
+
+    // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
+    const existingTsDiagnostics = new Set<string>()
 
     const cr = await getCompileRes(textDocument)
     const { Error, Warning } = DiagnosticSeverity
@@ -44,34 +47,15 @@ export const publishDiagnostics = debounce(async (uri: string) => {
         }
     })
 
-    // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
-    const existingTsDiagnostics = new Set<string>()
-
-    // javascript/typescript诊断结果，由qingkuai-typescript-plugin诊断中间代码并返回
-    const tsDiagnosticResult = await tpic.sendRequest<string, DiagnosticResult>(
-        "getDiagnostic",
-        filePath
-    )
-
-    tsDiagnosticResult.diagnostics.forEach(item => {
+    // 处理javascript/typescript语言服务的诊断结果（通过请求typescript-qingkuai-plugin的ipc服务器获取)
+    ;(await tpic.sendRequest<string, TSDiagnostic[]>("getDiagnostic", filePath)).forEach(item => {
         const tags: DiagnosticTag[] = []
         const ss = getSourceIndex(item.start)
         const se = getSourceIndex(item.start + item.length)
         const relatedInformation: DiagnosticRelatedInformation[] = []
 
         if (isSourceIndexesIvalid(ss, se)) {
-            if (item.code === 2304) {
-                const m = GlobalTypeNotFoundMessageRE.exec(item.message)
-                const sk = tsDiagnosticResult.noImplicitAny ? "Error" : "Hint"
-                if (!isNull(m)) {
-                    extendDiagnostic({
-                        source: "qk",
-                        ...GlobalTypeIsImplicitAny(m[1]),
-                        severity: DiagnosticSeverity[sk],
-                        range: getRange(...scriptStartTagNamgeRange)
-                    })
-                }
-            } else if (item.code === 2749) {
+            if (item.code === 2749) {
                 const m = GlobalTypeRefsToValueRE.exec(item.message)
                 if (!isNull(m)) {
                     extendDiagnostic({
@@ -122,7 +106,7 @@ export const publishDiagnostics = debounce(async (uri: string) => {
         uri: textDocument.uri,
         version: textDocument.version
     })
-}, 200)
+}, 150)
 
 // typescript诊断结果类型转换为vscode需要的对应类型
 function transTsDiagnosticSeverity(n: number) {

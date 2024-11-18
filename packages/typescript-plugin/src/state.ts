@@ -1,8 +1,6 @@
 import {
     TS,
-    TSProgram,
     TSProject,
-    TSTypeChecker,
     TSProjectService,
     TSLanguageService,
     TSPluginCreateInfo,
@@ -11,15 +9,13 @@ import {
 } from "./types"
 
 import path from "path"
-import { defaultParticipant } from "../../../shared-util/ipc/participant"
 import { inspect } from "../../../shared-util/log"
+import { defaultParticipant } from "../../../shared-util/ipc/participant"
 
 export let server = defaultParticipant
 
 export let ts: TS
 export let project: TSProject
-export let program: TSProgram
-export let typeChecker: TSTypeChecker
 export let projectService: TSProjectService
 export let languageService: TSLanguageService
 export let languageServerHost: TSLanguageServerHost
@@ -35,8 +31,6 @@ export function setTSState(t: TS, info: TSPluginCreateInfo) {
     languageServerHost = info.serverHost
     languageService = info.languageService
     projectService = project.projectService
-    program = languageService.getProgram()!
-    typeChecker = program.getTypeChecker()
     languageServiceHost = info.languageServiceHost
 }
 

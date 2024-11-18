@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import { compile } from "qingkuai/compiler"
 import { QingKuaiSnapShot } from "./snapshot"
+import { HasBeenProxiedByQingKuai } from "./constant"
 import { isUndefined } from "../../../shared-util/assert"
 import { refreshQkFileDiagnostic } from "./server/diagnostic"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
@@ -102,12 +103,11 @@ export function proxyCloseClientFile() {
 
 // 非qk文件修改时，需要刷新已打开的qk文件诊断信息
 export function proxyEditContent() {
-    const proxyCheckKey = "__hasBeenProxiedByQingkuai"
     const ori = projectService.getScriptInfo.bind(projectService)
     projectService.getScriptInfo = fileName => {
         const oriRet = ori(fileName) as any
         if (
-            !oriRet[proxyCheckKey] &&
+            !oriRet[HasBeenProxiedByQingKuai] &&
             !fileName.endsWith(".qk") &&
             !isUndefined(oriRet?.editContent)
         ) {
@@ -116,7 +116,7 @@ export function proxyEditContent() {
                 refreshQkFileDiagnostic()
                 return oriEditContent(...args)
             }
-            oriRet[proxyCheckKey] = true
+            oriRet[HasBeenProxiedByQingKuai] = true
         }
         return oriRet
     }

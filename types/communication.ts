@@ -13,10 +13,6 @@ export interface UpdateSnapshotParams {
     scriptKindKey: "JS" | "TS"
 }
 
-export interface DiagnosticResult {
-    noImplicitAny: boolean
-    diagnostics: TSDiagnostic[]
-}
 export interface TSDiagnosticRelatedInformation {
     range?: Range
     start: number

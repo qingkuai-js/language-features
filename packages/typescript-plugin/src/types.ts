@@ -7,9 +7,7 @@ export type DiagnosticKind =
     | "getSuggestionDiagnostics"
 
 export type TS = typeof Typescript
-export type TSProgram = Typescript.Program
 export type TSProject = Typescript.server.Project
-export type TSTypeChecker = Typescript.TypeChecker
 export type TSLanguageService = Typescript.LanguageService
 export type TSProjectService = Typescript.server.ProjectService
 export type TSLanguageServerHost = Typescript.server.ServerHost

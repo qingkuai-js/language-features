@@ -37,12 +37,6 @@ export async function activate(context: ExtensionContext) {
     await vsc.languages.setTextDocumentLanguage(doc, "typescript")
     await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
 
-    // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
-    // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
-    const tsapi = tsExtension.exports.getAPI(0)
-    const sockPath = await getValidPathWithHash("qingkuai")
-    tsapi.configurePlugin("typescript-qingkuai-plugin", { sockPath })
-
     const languageServerOptions: ServerOptions = {
         args: ["--nolazy"],
         module: serverModule,
@@ -64,6 +58,12 @@ export async function activate(context: ExtensionContext) {
         languageClientOptions
     )).start()
 
+    // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
+    // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
+    const tsapi = tsExtension.exports.getAPI(0)
+    const sockPath = await getValidPathWithHash("qingkuai")
+    tsapi.configurePlugin("typescript-qingkuai-plugin", { sockPath })
+
     attachCustomHandlers()
     languageStatusItem.busy = false
     client.sendRequest("qingkuai/extensionLoaded", sockPath)
@@ -81,9 +81,5 @@ function attachCustomHandlers() {
     client.onNotification("qingkuai/insertSnippet", (params: InsertSnippetParam) => {
         vsc.window.activeTextEditor?.insertSnippet(new vsc.SnippetString(params.text))
         params.command && vsc.commands.executeCommand(params.command)
-    })
-
-    client.onNotification("qingkuai/changeScriptKind", () => {
-        vsc.window.showWarningMessage("xxx")
     })
 }
