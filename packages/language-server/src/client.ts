@@ -3,10 +3,10 @@ import {
     connectTsPluginServerFailed,
     connectTsPluginServerSuccess
 } from "./messages"
+import { pathToFileURL } from "url"
 import { publishDiagnostics } from "./supports/diagnostic"
 import { connectTo } from "../../../shared-util/ipc/participant"
 import { Logger, setTpic, setTypeRefStatement, tpic, tpicConnectedResolver } from "./state"
-import { pathToFileURL } from "url"
 
 let connectTimes = 0
 
@@ -34,7 +34,7 @@ export async function connectTsServer(sockPath: string) {
 }
 
 function attachClientHandlers() {
-    // 附加ts服务器插件日志通道
+    // ts服务器插件日志通道
     const kinds = ["info", "warn", "error"] as const
     kinds.forEach(kind => {
         tpic.onNotification(`log/${kind}`, (msg: string) => {
@@ -42,7 +42,7 @@ function attachClientHandlers() {
         })
     })
 
-    // 附加服务器主动推送的诊断通知
+    // ts插件主动推送的诊断通知
     tpic.onNotification("publishDiagnostics", (fileName: string) => {
         publishDiagnostics(pathToFileURL(fileName).toString())
     })

@@ -16,6 +16,7 @@ export let server = defaultParticipant
 
 export let ts: TS
 export let project: TSProject
+export let projectRootPath: string
 export let projectService: TSProjectService
 export let languageService: TSLanguageService
 export let languageServerHost: TSLanguageServerHost
@@ -32,6 +33,7 @@ export function setTSState(t: TS, info: TSPluginCreateInfo) {
     languageService = info.languageService
     projectService = project.projectService
     languageServiceHost = info.languageServiceHost
+    projectRootPath = project.getCurrentDirectory()
 }
 
 // 通过qingkuai语言服务器输出日志

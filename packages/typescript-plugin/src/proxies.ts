@@ -7,8 +7,26 @@ import { isUndefined } from "../../../shared-util/assert"
 import { refreshQkFileDiagnostic } from "./server/diagnostic"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { languageServiceHost, projectService, ts, typeRefStatement } from "./state"
+import { getMappingFileName, getRealName, isMappingFileName, openQkFile } from "./server/document"
 
+// 快照缓存，键是映射文件名称而非原始文件名称
 export const snapshotCache = new Map<string, QingKuaiSnapShot>()
+
+// 代理查询文件是否存在的方法，扩展名为qk的文件直接返回false，它们在ts语言
+// 服务中的扩展名为ts，可以通过getMappingFileName获取到qk文件映射的ts文件名称
+export function proxyFileExists() {
+    const pshOri = projectService.host.fileExists.bind(projectService.host)
+    const lshOri = languageServiceHost.fileExists.bind(languageServiceHost)
+    projectService.host.fileExists = path => {
+        if (path.endsWith(".qk")) {
+            return false
+        }
+        return isMappingFileName(path) || pshOri(path)
+    }
+    languageServiceHost.fileExists = path => {
+        return isMappingFileName(path) || lshOri(path)
+    }
+}
 
 // 代理获取快照的方法，qk文件的快照为QingKuaiSnapshot，且由snapshotCache缓存
 export function proxyGetScriptSnapshot() {
@@ -19,33 +37,26 @@ export function proxyGetScriptSnapshot() {
             return cached
         }
 
-        const oriRet = ori.call(languageServiceHost, fileName)
-        if (fileName.endsWith(".qk") && isUndefined(cached)) {
-            const content = fs.readFileSync(fileName, "utf-8")
+        // 若文件名为映射文件名且不存在快照，则使用qingkuai编译器编译磁盘文件内容
+        // 并为此映射文件名创建新快照，这种情况下此方法的返回值就是这个新创建的快照
+        // 上述情况主要发生在import语句中（模块并不一定已被qingkuai语言服务器打开）
+        if (isMappingFileName(fileName) && isUndefined(cached)) {
+            const content = fs.readFileSync(getRealName(fileName)!, "utf-8")
             const compileRes = compile(content, {
                 check: true,
                 typeRefStatement
             })
             const scriptKind = ts.ScriptKind[getScriptKindKey(compileRes)]
             const snapshot = new QingKuaiSnapShot(compileRes.code, scriptKind)
-
-            // 如果ts语言服务由.qk文件激活，则已被缓存的快照是磁盘内容，这里需要修改其内容
-            if (!isUndefined(oriRet)) {
-                const oriContentLength = oriRet.getLength()
-                if (content === oriRet.getText(0, oriContentLength)) {
-                    const scriptInfo = projectService.getScriptInfo(fileName)
-                    scriptInfo?.editContent(0, oriContentLength, compileRes.code)
-                }
-            }
-
             return snapshotCache.set(fileName, snapshot), snapshot
         }
 
-        return oriRet
+        return ori.call(languageServiceHost, fileName)
     }
 }
 
-// 代理模块解析方法，如果目标是qk文件且它存在于本地磁盘，则成功解析（扩展名为.ts)
+// 代理模块解析方法，如果目标是qk文件且它存在于本地磁盘，解析的模块路径为映射文件名，
+// 扩展名均为.ts，当映射文件名不存在时，需要调用openQkFile方法为其分配一个映射文件名
 export function proxyResolveModuleNameLiterals() {
     const ori = languageServiceHost.resolveModuleNameLiterals?.bind(languageServiceHost)
     if (isUndefined(ori)) {
@@ -59,14 +70,24 @@ export function proxyResolveModuleNameLiterals() {
             const moduleText = moduleLiterals[index].text
             const modulePath = path.resolve(curDir, moduleText)
             if (moduleText.endsWith(".qk") && fs.existsSync(modulePath)) {
+                let mappingFileName = getMappingFileName(modulePath)
+                if (isUndefined(mappingFileName)) {
+                    mappingFileName = openQkFile(modulePath)
+                }
+
+                // 如果映射文件名不存在快照则会调用qingkuai编译器编译磁盘上的文件内容
+                const snapshot = languageServiceHost.getScriptSnapshot(
+                    mappingFileName
+                ) as QingKuaiSnapShot
+                const isTs = snapshot?.scriptKind === ts.ScriptKind.TS
                 Object.assign(item, {
                     resolvedModule: {
                         packageId: undefined,
                         originalPath: undefined,
-                        extension: ts.Extension.Ts,
-                        resolvedFileName: modulePath,
+                        isExternalLibraryImport: false,
                         resolvedUsingTsExtension: false,
-                        isExternalLibraryImport: false
+                        resolvedFileName: mappingFileName,
+                        extension: ts.Extension[isTs ? "Ts" : "Js"]
                     },
                     failedLookupLocations: undefined
                 })
@@ -91,39 +112,34 @@ export function proxyGetScriptKind() {
     }
 }
 
-// 自定义快照缓存中如果还存在某个qk文件，就不需要关闭
-export function proxyCloseClientFile() {
-    const ori = projectService.closeClientFile.bind(projectService)
-    projectService.closeClientFile = (fileName, ...rest) => {
-        if (!fileName.endsWith(".qk") || !snapshotCache.has(fileName)) {
-            return ori(fileName, ...rest)
-        }
-    }
-}
-
 // 非qk文件修改时，需要刷新已打开的qk文件诊断信息
 export function proxyEditContent() {
     const ori = projectService.getScriptInfo.bind(projectService)
     projectService.getScriptInfo = fileName => {
-        const oriRet = ori(fileName) as any
+        // 断言为any，以访问其私有属性及添加新属性
+        // asserts to access its private property and add new property
+        const oriRetAsAny = ori(fileName) as any
         if (
-            !oriRet[HasBeenProxiedByQingKuai] &&
-            !fileName.endsWith(".qk") &&
-            !isUndefined(oriRet?.editContent)
+            !isUndefined(oriRetAsAny) &&
+            !oriRetAsAny.fileName.endsWith(".qk") &&
+            !oriRetAsAny[HasBeenProxiedByQingKuai] &&
+            !isUndefined(oriRetAsAny?.editContent) &&
+            !isMappingFileName(oriRetAsAny.fileName)
         ) {
-            const oriEditContent = oriRet.editContent.bind(oriRet)
-            oriRet.editContent = (...args: any) => {
+            const oriEditContent = oriRetAsAny.editContent.bind(oriRetAsAny)
+            oriRetAsAny.editContent = (...args: any) => {
                 refreshQkFileDiagnostic()
                 return oriEditContent(...args)
             }
-            oriRet[HasBeenProxiedByQingKuai] = true
+            oriRetAsAny[HasBeenProxiedByQingKuai] = true
         }
-        return oriRet
+        return oriRetAsAny
     }
 }
 
 export function proxyOnConfigFileChanged() {
-    // used to access private method
+    // 断言为any以访问其私有属性
+    // assert to access its private property
     const projectServiceAsAny = projectService as any
     const ori = projectServiceAsAny.onConfigFileChanged.bind(projectService)
     projectServiceAsAny.onConfigFileChanged = (...args: any) => {

@@ -32,10 +32,17 @@ export async function activate(context: ExtensionContext) {
         command: "qingkuai.viewLanguageServerLogs"
     }
 
-    // 通过切换语言id激活vscode内置ts扩展服务器
+    // 切换语言id以激活vscode内置ts服务器
     await tsExtension.activate()
     await vsc.languages.setTextDocumentLanguage(doc, "typescript")
     await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
+
+    // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
+    // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
+    const pluginName = "typescript-qingkuai-plugin"
+    const tsExtenstionAPI = tsExtension.exports.getAPI(0)
+    const sockPath = await getValidPathWithHash("qingkuai")
+    tsExtenstionAPI.configurePlugin(pluginName, { sockPath })
 
     const languageServerOptions: ServerOptions = {
         args: ["--nolazy"],
@@ -57,12 +64,6 @@ export async function activate(context: ExtensionContext) {
         languageServerOptions,
         languageClientOptions
     )).start()
-
-    // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
-    // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
-    const tsapi = tsExtension.exports.getAPI(0)
-    const sockPath = await getValidPathWithHash("qingkuai")
-    tsapi.configurePlugin("typescript-qingkuai-plugin", { sockPath })
 
     attachCustomHandlers()
     languageStatusItem.busy = false

@@ -8,21 +8,34 @@ import {
     isEmptyString
 } from "../../../../shared-util/assert"
 import { snapshotCache } from "../proxies"
-import { QingKuaiSnapShot } from "../snapshot"
+import { getMappingFileName } from "./document"
+import { refreshQkFileDiagnostic } from "./diagnostic"
 import { isEqualToken, isInTopScope, walk } from "../ast"
 import { stringify } from "../../../../shared-util/sundry"
+import { defaultSnapshot, QingKuaiSnapShot } from "../snapshot"
 import { UpdateSnapshotParams } from "../../../../types/communication"
 import { globalTypeIdentifierRE, validIdentifierRE } from "../regular"
-import { languageService, Logger, project, projectService, server, ts } from "../state"
+import {
+    ts,
+    languageService,
+    project,
+    projectRootPath,
+    projectService,
+    server,
+    Logger
+} from "../state"
 
 export function attachUpdateSnapshot() {
     server.onRequest<UpdateSnapshotParams>("updateSnapshot", params => {
+        Logger.info("update...")
         const { fileName, slotInfo, scriptKindKey, interCode } = params
-        const oldContent = snapshotCache.get(fileName)!.getFullText()
-        const notExistingGlobalType = new Set(["Props", "Refs"])
-        const scriptKind = ts.ScriptKind[scriptKindKey]
+
         const storedTypes = new Map<number, string>()
+        const notExistingGlobalType = new Set(["Props", "Refs"])
+
         const slotInfoKeys = Object.keys(slotInfo)
+        const scriptKind = ts.ScriptKind[scriptKindKey]
+        const oldContent = snapshotCache.get(fileName)?.getFullText() || ""
 
         // 将每个待提取类型的索引记录到storedTypes
         slotInfoKeys.forEach(slotName => {
@@ -37,7 +50,8 @@ export function attachUpdateSnapshot() {
         // 分析中间代码AST，记录script部分错误及全局类型标识符的存在状态
         const program = languageService.getProgram()!
         const typeChecker = program?.getTypeChecker()!
-        walk(program.getSourceFile(fileName), node => {
+        const mappingFileName = getMappingFileName(fileName)!
+        walk(program.getSourceFile(mappingFileName!), node => {
             let globalTypeIdentifierName = ""
 
             if (
@@ -68,9 +82,9 @@ export function attachUpdateSnapshot() {
         // notExistingGlobalType中的类型标识符(Props/Refs)默认为never
         const globalType = Array.from(notExistingGlobalType).reduce((ret, id) => {
             if (scriptKindKey === "TS") {
-                return `${ret}type ${id}=never;`
+                return `${ret}type ${id}={};`
             } else {
-                return `${ret}/**@typedef {never}${id}*/`
+                return `${ret}/**@typedef {{}}${id}*/`
             }
         }, "")
 
@@ -89,38 +103,41 @@ export function attachUpdateSnapshot() {
 
         // 如果附加中间代码部分未改变，无需更新快照，防止再次增量解析语法树
         const extraStatement = getExtraStatement(globalType, slotType)
-        if (
-            !isEmptyString(extraStatement) &&
-            oldContent.slice(-extraStatement.length) !== extraStatement
-        ) {
+        if (oldContent.slice(-extraStatement.length) !== extraStatement) {
             updateSnapshot(fileName, interCode + extraStatement, scriptKind)
         }
 
         // 刷新已打开文件的诊断信息
-        setTimeout(() => project.refreshDiagnostics(), 300)
+        setTimeout(() => {
+            project.refreshDiagnostics()
+            refreshQkFileDiagnostic(new Set([fileName]))
+        }, 300)
     })
 }
 
 // 增量更新qk文件快照内容
 function updateSnapshot(fileName: string, interCode: string, scriptKind: ScriptKind) {
-    const scriptInfo = projectService.getScriptInfo(fileName)!
-    if (isUndefined(scriptInfo)) {
-        return
+    const mappingFileName = getMappingFileName(fileName)!
+    const newSnapshot = new QingKuaiSnapShot(interCode, scriptKind)
+
+    let oldSnapshot = snapshotCache.get(mappingFileName)!
+    if (!projectService.openFiles.has(projectService.toPath(mappingFileName))) {
+        projectService.openClientFile(mappingFileName, interCode, scriptKind, projectRootPath)
+        oldSnapshot = newSnapshot
     }
 
-    const newSnapshot = new QingKuaiSnapShot(interCode, scriptKind)
-    const change = newSnapshot.getChangeRange(snapshotCache.get(fileName)!)
-
+    const scriptInfo = projectService.getScriptInfo(mappingFileName)!
+    const change = newSnapshot.getChangeRange(oldSnapshot)
     const changeStart = change.span.start
     scriptInfo.editContent(
         changeStart,
         changeStart + change.span.length,
         newSnapshot.getText(changeStart, changeStart + change.newLength)
     )
-    snapshotCache.set(fileName, newSnapshot)
+    snapshotCache.set(mappingFileName, newSnapshot)
 }
 
 // 获取中间代码中的附加语句：全局类型、默认导出语句
 function getExtraStatement(globalType: string, slotType: string) {
-    return `${globalType}export class{constructor(_:Props,__:Refs,___:{${slotType}})}`
+    return `${globalType}export default class{constructor(_:Props,__:Refs,___:{${slotType}}){}}`
 }

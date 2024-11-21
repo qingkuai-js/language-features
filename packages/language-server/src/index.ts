@@ -3,8 +3,8 @@ import { connectTsServer } from "./client"
 import { complete } from "./supports/complete"
 import { initialize } from "./supports/initialize"
 import { prepareRename, rename } from "./supports/rename"
-import { connection, documents, tpic, tpicConnectedPromise } from "./state"
 import { publishDiagnostics } from "./supports/diagnostic"
+import { connection, documents, tpic, tpicConnectedPromise } from "./state"
 
 connection.onHover(hover)
 connection.onCompletion(complete)

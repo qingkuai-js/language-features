@@ -1,9 +1,6 @@
-import type { GlobalTypeExistingInfo } from "./types"
 import type { IScriptSnapshot, ScriptKind } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
-    public globalTypeExisting: GlobalTypeExistingInfo = [false, false]
-
     constructor(
         private text: string,
         public scriptKind: ScriptKind
@@ -43,6 +40,26 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
             }
         }
 
+        // 新旧快照其中之一是空文本
+        if (oldLength === 0) {
+            return {
+                span: {
+                    start: 0,
+                    length: 0
+                },
+                newLength
+            }
+        }
+        if (newLength === 0) {
+            return {
+                span: {
+                    start: 0,
+                    length: oldLength
+                },
+                newLength: 0
+            }
+        }
+
         // 从前向后找到首个不同字符的索引
         // find the index of first different character from front to back
         while (
@@ -72,8 +89,6 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
             newLength: newEndIndex - diffStartIndex + 1
         }
     }
-
-    setGlobalTypeExisting(info: GlobalTypeExistingInfo) {
-        this.globalTypeExisting = info
-    }
 }
+
+export const defaultSnapshot = new QingKuaiSnapShot("", 0)

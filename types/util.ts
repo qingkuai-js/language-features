@@ -1,3 +1,4 @@
+export type Getter = () => any
 export type GeneralFunc = (...args: any[]) => any
 export type ObjectKeys = string | number | symbol
 export type AnyObject<V = any> = Record<ObjectKeys, V>

@@ -2,7 +2,7 @@ import type { DiagnosticKind } from "../types"
 import type { Diagnostic, DiagnosticMessageChain } from "typescript"
 import type { TSDiagnostic, TSDiagnosticRelatedInformation } from "../../../../types/communication"
 
-import { openQkFiles } from "./document"
+import { getMappingFileName, openQkFiles } from "./document"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 import { languageService, projectService, server, ts } from "../state"
 
@@ -10,6 +10,7 @@ export const qingkuaiDiagnostics = new Map<string, Diagnostic[]>()
 
 export function attachGetDiagnostic() {
     server.onRequest<string, TSDiagnostic[]>("getDiagnostic", (fileName: string) => {
+        const mappingFileName = getMappingFileName(fileName)!
         const oriDiagnostics = qingkuaiDiagnostics.get(fileName) || []
         const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
 
@@ -19,7 +20,7 @@ export function attachGetDiagnostic() {
         }
 
         diagnosticMethods.forEach(m => {
-            oriDiagnostics.push(...languageService[m](fileName))
+            oriDiagnostics.push(...languageService[m](mappingFileName))
         })
 
         return oriDiagnostics.map(item => {
@@ -64,9 +65,11 @@ export function attachGetDiagnostic() {
 }
 
 // 刷新打开状态的qk文件诊断信息
-export function refreshQkFileDiagnostic() {
-    openQkFiles.forEach(fileName => {
-        server.sendNotification("publishDiagnostics", fileName)
+export function refreshQkFileDiagnostic(excludes?: Set<string>) {
+    openQkFiles.forEach((_, fileName) => {
+        if (isUndefined(excludes) || !excludes.has(fileName)) {
+            server.sendNotification("publishDiagnostics", fileName)
+        }
     })
 }
 

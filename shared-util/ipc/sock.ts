@@ -1,5 +1,6 @@
 import fs from "fs"
 import { createConnection } from "net"
+import { createRandomHash } from "../sundry"
 
 // 删除套接字/命名管道文件
 export function rmSockFile(sockName: string) {
@@ -43,7 +44,7 @@ export async function getValidPathWithHash(name: string) {
     }
 
     while (true) {
-        const hash = Math.floor(Math.random() * 0xffffffff).toString(16)
+        const hash = createRandomHash(8)
         const nameWithHash = getSockPath(`${name}-${hash}`)
         if (process.platform !== "win32") {
             if (!existingSocks.has(nameWithHash)) {
