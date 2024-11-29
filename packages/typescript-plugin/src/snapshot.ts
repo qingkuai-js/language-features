@@ -1,10 +1,7 @@
-import type { IScriptSnapshot, ScriptKind } from "typescript"
+import type { IScriptSnapshot } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
-    constructor(
-        private text: string,
-        public scriptKind: ScriptKind
-    ) {}
+    constructor(private text: string) {}
 
     getFullText() {
         return this.text
@@ -41,6 +38,7 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
         }
 
         // 新旧快照其中之一是空文本
+        // one of the old and new snapshots is the empty text
         if (oldLength === 0) {
             return {
                 span: {
@@ -90,5 +88,3 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
         }
     }
 }
-
-export const defaultSnapshot = new QingKuaiSnapShot("", 0)

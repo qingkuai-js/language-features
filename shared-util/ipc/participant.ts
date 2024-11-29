@@ -16,8 +16,6 @@ import { getReleaseId, releaseId } from "./id"
 import { isUndefined, isPromise } from "../assert"
 import { createMessageBuffer, createBufferReader } from "./buffer"
 
-let reqId = 1
-
 export const defaultParticipant: IpcParticipant = {
     close: noop,
     onRequest: noop,
@@ -60,8 +58,7 @@ function newParticipant(
     const onNotification: OnNotificationMethod = setHandler
 
     const sendRequest: SendRequestMethod = (name, params) => {
-        const requestId = reqId++
-        console.log("start", requestId, name)
+        const requestId = getReleaseId()
         send(name, params, requestId)
         return new Promise(resolve => {
             resolvers.set(requestId, resolve)
@@ -72,7 +69,6 @@ function newParticipant(
         reader.read(buffer, ({ messageId, methodName, body }) => {
             const resolver = resolvers.get(messageId)
             if (!isUndefined(resolver)) {
-                console.log("end", messageId)
                 return resolver(body), releaseId(messageId)
             }
 

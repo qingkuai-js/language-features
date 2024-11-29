@@ -7,6 +7,7 @@ import {
     TSLanguageServerHost,
     TSLanguageServiceHost
 } from "./types"
+import type { QingKuaiSnapShot } from "./snapshot"
 
 import path from "path"
 import { inspect } from "../../../shared-util/log"
@@ -16,11 +17,13 @@ export let server = defaultParticipant
 
 export let ts: TS
 export let project: TSProject
-export let projectRootPath: string
 export let projectService: TSProjectService
 export let languageService: TSLanguageService
 export let languageServerHost: TSLanguageServerHost
 export let languageServiceHost: TSLanguageServiceHost
+
+// 快照缓存，键是映射文件名称而非原始文件名称
+export const snapshotCache = new Map<string, QingKuaiSnapShot>()
 
 export function setServer(v: typeof server) {
     server = v
@@ -33,7 +36,6 @@ export function setTSState(t: TS, info: TSPluginCreateInfo) {
     languageService = info.languageService
     projectService = project.projectService
     languageServiceHost = info.languageServiceHost
-    projectRootPath = project.getCurrentDirectory()
 }
 
 // 通过qingkuai语言服务器输出日志

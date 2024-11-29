@@ -2,7 +2,12 @@ import type { DiagnosticKind } from "../types"
 import type { Diagnostic, DiagnosticMessageChain } from "typescript"
 import type { TSDiagnostic, TSDiagnosticRelatedInformation } from "../../../../types/communication"
 
-import { getMappingFileName, openQkFiles } from "./document"
+import {
+    getMappingFileInfo,
+    getMappingFileName,
+    getOpenQkMappedFiles,
+    getRealName
+} from "./document"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 import { languageService, projectService, server, ts } from "../state"
 
@@ -66,9 +71,11 @@ export function attachGetDiagnostic() {
 
 // 刷新打开状态的qk文件诊断信息
 export function refreshQkFileDiagnostic(excludes?: Set<string>) {
-    openQkFiles.forEach((_, fileName) => {
-        if (isUndefined(excludes) || !excludes.has(fileName)) {
-            server.sendNotification("publishDiagnostics", fileName)
+    getOpenQkMappedFiles().forEach(fileName => {
+        const realFileName = getRealName(fileName)!
+        if (isUndefined(excludes) || !excludes.has(realFileName)) {
+            getMappingFileInfo(realFileName)!.version++
+            server.sendNotification("publishDiagnostics", realFileName)
         }
     })
 }

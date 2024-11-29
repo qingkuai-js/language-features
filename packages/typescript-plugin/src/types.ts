@@ -7,6 +7,7 @@ export type DiagnosticKind =
     | "getSuggestionDiagnostics"
 
 export interface OpenQkFileInfo {
+    version: number
     mappingFileName: string
     scriptKind: Typescript.ScriptKind
 }

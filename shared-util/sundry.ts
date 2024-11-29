@@ -1,7 +1,5 @@
 import type { AnyObject, GeneralFunc } from "../types/util"
 
-import { isNull } from "./assert"
-
 // JSON.stringify别名
 export function stringify(v: any) {
     return JSON.stringify(v)
@@ -16,16 +14,6 @@ export function generatePromiseAndResolver() {
         }),
         resolver
     ] as const
-}
-
-// 生成指定长度的随机哈希字符串
-export function createRandomHash(length: number) {
-    if (length <= 0) {
-        return ""
-    }
-
-    const maxValue = parseInt("0x" + "f".repeat(length))
-    return Math.floor(Math.random() * maxValue).toString(16)
 }
 
 // 防抖函数生成器，getId是一个获取调用id的方法，执行这个方法时会传入
@@ -48,6 +36,16 @@ export function debounce<T extends GeneralFunc>(
             }, delay)
         )
     }
+}
+
+// 生成指定长度的随机哈希字符串
+export function createRandomHash(length: number) {
+    if (length <= 0) {
+        return ""
+    }
+
+    const maxValue = parseInt("0x" + "f".repeat(length))
+    return Math.floor(Math.random() * maxValue).toString(16)
 }
 
 // 获取数组的最后一个元素

@@ -1,4 +1,4 @@
-import type { SourceFile, Node, BinaryOperatorToken } from "typescript"
+import type { Node, SourceFile, SyntaxKind, ImportDeclaration } from "typescript"
 
 import { ts } from "./state"
 import { isUndefined } from "../../../shared-util/assert"
@@ -20,18 +20,12 @@ export function isInTopScope(node: Node): boolean {
     return true
 }
 
-export function isEqualToken(token: BinaryOperatorToken) {
-    return token.kind === ts.SyntaxKind.EqualsToken
-}
-
 // 遍历所有后代节点
 export function walk(node: Node | undefined, callback: (node: Node) => void) {
     if (!isUndefined(node)) {
         callback(node), ts.forEachChild(node, cn => walk(cn, callback))
     }
 }
-
-// 判断某个标识符是否可以当做类型使用
 
 // 查找指定位置的节点
 export function findNodeAtPosition(sourceFile: SourceFile, position: number): Node | undefined {

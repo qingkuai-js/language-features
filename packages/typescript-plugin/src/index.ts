@@ -1,10 +1,12 @@
 import type TS from "typescript"
 
 import {
-    proxyEditContent,
     proxyFileExists,
+    proxyEditContent,
     proxyGetScriptKind,
+    proxyGetScriptVersion,
     proxyGetScriptSnapshot,
+    proxyGetScriptFileNames,
     proxyOnConfigFileChanged,
     proxyResolveModuleNameLiterals
 } from "./proxies"
@@ -18,14 +20,17 @@ import { setServer, setTSState, ts, typeRefStatement } from "./state"
 
 export = function init(modules: { typescript: typeof TS }) {
     function create(info: TS.server.PluginCreateInfo) {
-        if (isUndefined(ts)) {
+        // @ts-expect-error: access private property
+        if (isUndefined(ts) && info.session.currentRequestId !== 1) {
             setTSState(modules.typescript, info)
 
             // 代理typescript语言服务的原始方法
             proxyFileExists()
             proxyEditContent()
             proxyGetScriptKind()
+            proxyGetScriptVersion()
             proxyGetScriptSnapshot()
+            proxyGetScriptFileNames()
             proxyOnConfigFileChanged()
             proxyResolveModuleNameLiterals()
         }
