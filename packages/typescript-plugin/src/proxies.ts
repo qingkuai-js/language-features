@@ -9,12 +9,12 @@ import {
     isMappingFileName,
     getMappingFileInfo,
     assignMappingFileForQkFile
-} from "./server/document"
+} from "./server/content/document"
 import { compile } from "qingkuai/compiler"
 import { HasBeenProxiedByQingKuai } from "./constant"
-import { refreshDiagnostics } from "./server/diagnostic"
+import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
-import { updateQingkuaiSnapshot } from "./server/updateSnapshot"
+import { updateQingkuaiSnapshot } from "./server/content/snapshot"
 import { isEmptyString, isUndefined } from "../../../shared-util/assert"
 import { ts, languageServiceHost, projectService, snapshotCache, typeRefStatement } from "./state"
 

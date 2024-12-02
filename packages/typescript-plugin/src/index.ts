@@ -12,11 +12,10 @@ import {
 } from "./proxies"
 import fs from "fs"
 import { isUndefined } from "../../../shared-util/assert"
-import { attachGetDiagnostic } from "./server/diagnostic"
-import { attachDocumentManager } from "./server/document"
-import { attachUpdateSnapshot } from "./server/updateSnapshot"
+import { attachGetDiagnostic } from "./server/diagnostic/handler"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { setServer, setTSState, ts, typeRefStatement } from "./state"
+import { attachDocumentManager, attachUpdateSnapshot } from "./server/content/handler"
 
 export = function init(modules: { typescript: typeof TS }) {
     function create(info: TS.server.PluginCreateInfo) {

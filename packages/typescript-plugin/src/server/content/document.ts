@@ -1,10 +1,9 @@
-import type { QingKuaiFileInfo } from "../types"
+import type { QingKuaiFileInfo } from "../../types"
 
 import { existsSync } from "fs"
-import { fileURLToPath } from "url"
-import { server, ts } from "../state"
-import { isUndefined } from "../../../../shared-util/assert"
-import { createRandomHash } from "../../../../shared-util/sundry"
+import { ts } from "../../state"
+import { isUndefined } from "../../../../../shared-util/assert"
+import { createRandomHash } from "../../../../../shared-util/sundry"
 
 const reverseMap = new Map<string, string>()
 const mappedQkFiles = new Map<string, QingKuaiFileInfo>()
@@ -41,17 +40,7 @@ export function getMappedQkFiles() {
     })
 }
 
-export function attachDocumentManager() {
-    server.onNotification("onDidOpen", (uri: string) => {
-        const path = fileURLToPath(uri)
-        assignMappingFileForQkFile(path, true)
-    })
-
-    server.onNotification("onDidClose", (uri: string) => {
-        getMappingFileInfo(fileURLToPath(uri))!.isOpen = false
-    })
-}
-
+// 为.qk文件分配一个映射文件信息，如果它已经存在，则只修改它的打开状态
 export function assignMappingFileForQkFile(fileName: string, isOpen = false) {
     let mappingFileName = getMappingFileName(fileName)
     if (isUndefined(mappingFileName)) {

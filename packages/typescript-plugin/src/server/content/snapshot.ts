@@ -1,15 +1,13 @@
 import type { ScriptKind } from "typescript"
 import type { SlotInfo } from "qingkuai/compiler"
-import type { UpdateSnapshotParams } from "../../../../types/communication"
 
-import { isInTopScope, walk } from "../ast"
-import { QingKuaiSnapShot } from "../snapshot"
-import { refreshDiagnostics } from "./diagnostic"
-import { stringify } from "../../../../shared-util/sundry"
+import { isInTopScope, walk } from "../../ast"
+import { ts, languageService } from "../../state"
+import { editQingKuaiScriptInfo } from "./scriptInfo"
+import { stringify } from "../../../../../shared-util/sundry"
 import { getMappingFileInfo, getMappingFileName } from "./document"
-import { globalTypeIdentifierRE, validIdentifierRE } from "../regular"
-import { isNumber, isString, isUndefined } from "../../../../shared-util/assert"
-import { ts, languageService, project, projectService, server, snapshotCache } from "../state"
+import { globalTypeIdentifierRE, validIdentifierRE } from "../../regular"
+import { isNumber, isString, isUndefined } from "../../../../../shared-util/assert"
 
 export function updateQingkuaiSnapshot(
     fileName: string,
@@ -175,51 +173,4 @@ export function updateQingkuaiSnapshot(
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
     editQingKuaiScriptInfo(fileName, content, scriptKind)
-}
-
-export function attachUpdateSnapshot() {
-    server.onRequest<UpdateSnapshotParams>("updateSnapshot", ({ fileName, ...rest }) => {
-        const scriptKind = ts.ScriptKind[rest.scriptKindKey]
-        const oriScriptKind = getMappingFileInfo(fileName)?.scriptKind
-        updateQingkuaiSnapshot(fileName, rest.interCode, rest.slotInfo, scriptKind)
-        refreshDiagnostics(fileName, !isUndefined(oriScriptKind) && scriptKind !== oriScriptKind)
-    })
-}
-
-// 增量更新qk文件ScriptInfo的内容
-export function editQingKuaiScriptInfo(fileName: string, content: string, scriptKind: ScriptKind) {
-    const program = languageService.getProgram()
-    const newSnapshot = new QingKuaiSnapShot(content)
-    const mappingFileInfo = getMappingFileInfo(fileName)!
-    const mappingFileName = mappingFileInfo.mappingFileName
-    const oldSnapshot = snapshotCache.get(mappingFileName)
-    const scriptInfo = projectService.getScriptInfo(mappingFileName)
-
-    if (isUndefined(scriptInfo) || isUndefined(oldSnapshot)) {
-        const info = projectService.getOrCreateScriptInfoForNormalizedPath(
-            ts.server.toNormalizedPath(mappingFileName),
-            true,
-            content,
-            scriptKind
-        )
-        if (!isUndefined(info)) {
-            info.attachToProject(project)
-            if (isUndefined(program?.getSourceFile(mappingFileName))) {
-                info.markContainingProjectsAsDirty()
-                project.updateGraph()
-            }
-        }
-    } else if (!isUndefined(oldSnapshot)) {
-        const change = newSnapshot.getChangeRange(oldSnapshot)
-        const changeStart = change.span.start
-        scriptInfo.editContent(
-            changeStart,
-            changeStart + change.span.length,
-            newSnapshot.getText(changeStart, changeStart + change.newLength)
-        )
-    }
-
-    mappingFileInfo.version++
-    mappingFileInfo.scriptKind = scriptKind
-    snapshotCache.set(mappingFileName, newSnapshot ?? oldSnapshot)
 }
