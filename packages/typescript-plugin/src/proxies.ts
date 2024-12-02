@@ -1,3 +1,5 @@
+import type { IScriptSnapshot } from "typescript"
+
 import fs from "fs"
 import path from "path"
 
@@ -10,11 +12,11 @@ import {
 } from "./server/document"
 import { compile } from "qingkuai/compiler"
 import { HasBeenProxiedByQingKuai } from "./constant"
-import { updateSnapshot } from "./server/updateSnapshot"
-import { isUndefined } from "../../../shared-util/assert"
-import { refreshQkFileDiagnostic } from "./server/diagnostic"
+import { refreshDiagnostics } from "./server/diagnostic"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
-import { languageServiceHost, projectService, snapshotCache, ts, typeRefStatement } from "./state"
+import { updateQingkuaiSnapshot } from "./server/updateSnapshot"
+import { isEmptyString, isUndefined } from "../../../shared-util/assert"
+import { ts, languageServiceHost, projectService, snapshotCache, typeRefStatement } from "./state"
 
 export function proxyGetScriptFileNames() {
     const ori = languageServiceHost.getScriptFileNames.bind(languageServiceHost)
@@ -53,8 +55,7 @@ export function proxyOnConfigFileChanged() {
     const projectServiceAsAny = projectService as any
     const ori = projectServiceAsAny.onConfigFileChanged.bind(projectService)
     projectServiceAsAny.onConfigFileChanged = (...args: any) => {
-        setTimeout(refreshQkFileDiagnostic, 2500)
-        return ori(...args)
+        return setTimeout(() => refreshDiagnostics("", false), 2500), ori(...args)
     }
 }
 
@@ -104,7 +105,7 @@ export function proxyResolveModuleNameLiterals() {
                         typeRefStatement
                     })
                     setTimeout(() => {
-                        updateSnapshot(
+                        updateQingkuaiSnapshot(
                             modulePath,
                             compileRes.code,
                             compileRes.inputDescriptor.slotInfo,
@@ -146,9 +147,20 @@ export function proxyEditContent() {
             !isMappingFileName(oriRetAsAny.fileName)
         ) {
             const oriEditContent = oriRetAsAny.editContent.bind(oriRetAsAny)
-            oriRetAsAny.editContent = (...args: any) => {
-                refreshQkFileDiagnostic()
-                return oriEditContent(...args)
+            oriRetAsAny.editContent = (start: number, end: number, newText: string) => {
+                const snapshot: IScriptSnapshot = oriRetAsAny.getSnapshot()
+                const contentLength = snapshot.getLength()
+                if (
+                    end !== contentLength ||
+                    !(
+                        (start === end && newText === " ") ||
+                        (start === end - 1 && isEmptyString(newText))
+                    )
+                ) {
+                    // 确保当前修改不是由其他.qk文件改动时重新获取诊断信息触发
+                    refreshDiagnostics(fileName, false)
+                }
+                return oriEditContent(start, end, newText)
             }
             oriRetAsAny[HasBeenProxiedByQingKuai] = true
         }

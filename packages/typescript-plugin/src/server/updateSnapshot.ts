@@ -4,20 +4,21 @@ import type { UpdateSnapshotParams } from "../../../../types/communication"
 
 import { isInTopScope, walk } from "../ast"
 import { QingKuaiSnapShot } from "../snapshot"
-import { refreshQkFileDiagnostic } from "./diagnostic"
+import { refreshDiagnostics } from "./diagnostic"
+import { stringify } from "../../../../shared-util/sundry"
 import { getMappingFileInfo, getMappingFileName } from "./document"
-import { debounce, stringify } from "../../../../shared-util/sundry"
 import { globalTypeIdentifierRE, validIdentifierRE } from "../regular"
 import { isNumber, isString, isUndefined } from "../../../../shared-util/assert"
 import { ts, languageService, project, projectService, server, snapshotCache } from "../state"
 
-export function updateSnapshot(
+export function updateQingkuaiSnapshot(
     fileName: string,
     content: string,
     slotInfo: SlotInfo,
     scriptKind: ScriptKind
 ) {
     const slotInfoKeys = Object.keys(slotInfo)
+    const isTS = scriptKind === ts.ScriptKind.TS
     const storedTypes = new Map<number, string>()
     const mappingFileName = getMappingFileName(fileName)!
     const notExistingGlobalType = new Set(["Props", "Refs"])
@@ -32,16 +33,17 @@ export function updateSnapshot(
     })
 
     // 将由qingkuai编译器产生的中间代码更新到快照
-    editScriptInfo(fileName, content, scriptKind)
+    editQingKuaiScriptInfo(fileName, content, scriptKind)
 
     // 获取program、typeCheker以及sourceFile
     const program = languageService.getProgram()!
     const typeChecker = program?.getTypeChecker()!
     const sourceFile = program.getSourceFile(mappingFileName)
 
-    // 分析中间代码AST，记录全局类型标识符的存在状态，类型别名声明和interface声明可直接认为当前文件已声明全局
-    // 类型标识符，对于导入的标识符，需要确定其是否能作为类型使用；另外此处还处理一些与qingkuai编译器中对于脚本
-    // 部分类似的检查逻辑（禁止标识符等），检查模式下qingkuai编译器不会使用@babel/parser解析脚本以提高编译效率
+    // 分析中间代码AST，记录全局类型标识符的存在状态，类型别名声明和interface声明则
+    // 认为当前文件已声明全局类型标识符，对于导入的标识符，需要确定其是否能作为类型使用；
+    // 另外此处还处理一些与qingkuai编译器中对于脚本部分类似的检查逻辑（禁用的标识符等），
+    // 因为检查模式下qingkuai编译器不会使用@babel/parser解析嵌入脚本代码以提高编译效率
     walk(sourceFile, node => {
         if (
             ts.isBinaryExpression(node) &&
@@ -54,16 +56,35 @@ export function updateSnapshot(
             storedTypes.set(node.right.pos, typeStr)
         }
 
-        if (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) {
+        // 脚本类型为js时，检查是否通过JSDoc声明全局类型标识符
+        if (!isTS && notExistingGlobalType.size > 0) {
+            const typeDefNodes = ts.getJSDocTags(node).filter(jsDocNode => {
+                return ts.isJSDocTypedefTag(jsDocNode)
+            })
+            if (typeDefNodes.length > 0 && isInTopScope(node)) {
+                typeDefNodes.forEach(jsDocNode => {
+                    if (ts.isJSDocTypedefTag(jsDocNode)) {
+                        const identifierName = ts.getNameOfJSDocTypedef(jsDocNode)?.text || ""
+                        if (globalTypeIdentifierRE.test(identifierName)) {
+                            notExistingGlobalType.delete(identifierName)
+                        }
+                    }
+                })
+            }
+        }
+
+        // 脚本类型为ts时，检查是否通过类型别名或接口声明全局类型标识符
+        if (isTS && (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))) {
             const identifierName = node.name.getText()
             if (globalTypeIdentifierRE.test(identifierName) && isInTopScope(node)) {
                 notExistingGlobalType.delete(identifierName)
             }
         }
 
-        // 判断有没有从其他文件导入全局类型标识符，importGlobalIdentifier是一个键为模块导出标识符名称，
-        // 值为导入标识符名称的映射表，若导入名称与全局类型名称一致则需要判断导出的标识符符号是否可用作类型
-        if (ts.isImportDeclaration(node) && isInTopScope(node)) {
+        // 脚本类型为ts时，判断有没有通过import语句从其他文件导入全局类型标识符
+        // importGlobalIdentifier为一个键为模块导出标识符名称，值为导入标识符名称的映射表，当导入
+        // 标识符名称与全局类型标识符名称一致，且其可作为类型标识符使用时，视为该全局类型标识符已被声明
+        if (isTS && ts.isImportDeclaration(node) && isInTopScope(node)) {
             const importGlobalTypeIdentifiers = new Map<string, string>()
             if (!isUndefined(node.importClause?.name)) {
                 const identifierName = node.importClause.name.text
@@ -103,13 +124,25 @@ export function updateSnapshot(
     })
 
     // notExistingGlobalType中的类型标识符(Props/Refs)默认为never
-    const globalType = Array.from(notExistingGlobalType).reduce((ret, id) => {
-        if (scriptKind === ts.ScriptKind.TS) {
-            return `${ret}type ${id}=never;`
-        } else {
-            return `${ret}/**@typedef {never}${id}*/`
-        }
-    }, "")
+    const globalTypeDeclaration = Array.from(notExistingGlobalType).reduce(
+        (ret, identifierName) => {
+            if (isTS) {
+                return `${ret}type ${identifierName}=never;`
+            } else {
+                return `${ret}/** @typedef {never} ${identifierName} */`
+            }
+        },
+        ""
+    )
+    if (isTS) {
+        content += globalTypeDeclaration
+    } else {
+        // 由于脚本类型为js时，jsDoc类型声明被放在了前方，所以这里要记录jsDoc类型
+        // 声明代码的长度作为源码位置其偏移量，任何获取位置的地方都要减去这个偏移量
+        const flbi = content.indexOf("\n") + 1 // First Line Break Index
+        getMappingFileInfo(fileName)!.offset = globalTypeDeclaration.length
+        content = content.slice(0, flbi) + globalTypeDeclaration + content.slice(flbi)
+    }
 
     // 根据storedTypes记录的类型组合出当前文件所表示的组件的slot类型
     const slotType = slotInfoKeys.reduce((ret, slotName, i) => {
@@ -125,46 +158,57 @@ export function updateSnapshot(
     }, "")
 
     // 为中间代码添加全局类型声明及默认导出语句
-    const extraStatements = getExtraStatement(globalType, slotType)
-    editScriptInfo(fileName, content + extraStatements, scriptKind)
+    if (!isTS) {
+        content += `export default class{
+            /**
+             * @param {Props} _
+             * @param {Refs} __
+             * @param {{${slotType}}} ___
+             */
+            constructor(_, __, ___){}
+        }`
+    } else {
+        content += `export default class{
+            constructor(_: Props, __: Refs, ___: {${slotType}}){}
+        }`
+    }
+
+    // 将补全了全局类型声明及默认导出语句的内容更新到快照
+    editQingKuaiScriptInfo(fileName, content, scriptKind)
 }
 
 export function attachUpdateSnapshot() {
-    server.onRequest<UpdateSnapshotParams>("updateSnapshot", params => {
-        updateSnapshot(
-            params.fileName,
-            params.interCode,
-            params.slotInfo,
-            ts.ScriptKind[params.scriptKindKey]
-        )
-
-        // 刷新已打开文件的诊断信息
-        refreshDiagnosticsOfOpenFiles(params.fileName)
+    server.onRequest<UpdateSnapshotParams>("updateSnapshot", ({ fileName, ...rest }) => {
+        const scriptKind = ts.ScriptKind[rest.scriptKindKey]
+        const oriScriptKind = getMappingFileInfo(fileName)?.scriptKind
+        updateQingkuaiSnapshot(fileName, rest.interCode, rest.slotInfo, scriptKind)
+        refreshDiagnostics(fileName, !isUndefined(oriScriptKind) && scriptKind !== oriScriptKind)
     })
 }
 
-// 刷新一打开文件诊断信息的方法（延时300ms，且有防抖机制）
-const refreshDiagnosticsOfOpenFiles = debounce((fileName: string) => {
-    project.refreshDiagnostics()
-    refreshQkFileDiagnostic(new Set([fileName]))
-}, 300)
-
 // 增量更新qk文件ScriptInfo的内容
-function editScriptInfo(fileName: string, content: string, scriptKind: ScriptKind) {
+export function editQingKuaiScriptInfo(fileName: string, content: string, scriptKind: ScriptKind) {
+    const program = languageService.getProgram()
     const newSnapshot = new QingKuaiSnapShot(content)
     const mappingFileInfo = getMappingFileInfo(fileName)!
     const mappingFileName = mappingFileInfo.mappingFileName
     const oldSnapshot = snapshotCache.get(mappingFileName)
+    const scriptInfo = projectService.getScriptInfo(mappingFileName)
 
-    let scriptInfo = projectService.getScriptInfo(mappingFileName)
-    if (isUndefined(scriptInfo)) {
-        scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
+    if (isUndefined(scriptInfo) || isUndefined(oldSnapshot)) {
+        const info = projectService.getOrCreateScriptInfoForNormalizedPath(
             ts.server.toNormalizedPath(mappingFileName),
             true,
             content,
             scriptKind
         )
-        scriptInfo?.attachToProject(project)
+        if (!isUndefined(info)) {
+            info.attachToProject(project)
+            if (isUndefined(program?.getSourceFile(mappingFileName))) {
+                info.markContainingProjectsAsDirty()
+                project.updateGraph()
+            }
+        }
     } else if (!isUndefined(oldSnapshot)) {
         const change = newSnapshot.getChangeRange(oldSnapshot)
         const changeStart = change.span.start
@@ -178,9 +222,4 @@ function editScriptInfo(fileName: string, content: string, scriptKind: ScriptKin
     mappingFileInfo.version++
     mappingFileInfo.scriptKind = scriptKind
     snapshotCache.set(mappingFileName, newSnapshot ?? oldSnapshot)
-}
-
-// 获取中间代码中的附加语句：全局类型、默认导出语句
-function getExtraStatement(globalType: string, slotType: string) {
-    return `${globalType}export default class{constructor(_:Props,__:Refs,___:{${slotType}}){}}`
 }

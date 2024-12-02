@@ -1,14 +1,16 @@
 import type Typescript from "typescript"
-import type { FixedArray } from "../../../types/util"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
     | "getSyntacticDiagnostics"
     | "getSuggestionDiagnostics"
 
-export interface OpenQkFileInfo {
+export interface QingKuaiFileInfo {
+    offset: number
     version: number
+    isOpen: boolean
     mappingFileName: string
+    getPos(pos: number): number
     scriptKind: Typescript.ScriptKind
 }
 

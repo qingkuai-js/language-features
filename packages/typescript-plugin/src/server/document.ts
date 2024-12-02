@@ -1,4 +1,4 @@
-import type { OpenQkFileInfo } from "../types"
+import type { QingKuaiFileInfo } from "../types"
 
 import { existsSync } from "fs"
 import { fileURLToPath } from "url"
@@ -6,14 +6,17 @@ import { server, ts } from "../state"
 import { isUndefined } from "../../../../shared-util/assert"
 import { createRandomHash } from "../../../../shared-util/sundry"
 
-const openQkFiles = new Set<string>()
 const reverseMap = new Map<string, string>()
-const mappedQkFiles = new Map<string, OpenQkFileInfo>()
+const mappedQkFiles = new Map<string, QingKuaiFileInfo>()
 
-export function getOpenQkMappedFiles() {
-    return Array.from(openQkFiles).map(fileName => {
-        return getMappingFileName(fileName)!
+export function getOpenQkFileInfos() {
+    const fileInfos: QingKuaiFileInfo[] = []
+    mappedQkFiles.forEach(info => {
+        if (info.isOpen) {
+            fileInfos.push(info)
+        }
     })
+    return fileInfos
 }
 
 export function isMappingFileName(fileName: string) {
@@ -41,15 +44,15 @@ export function getMappedQkFiles() {
 export function attachDocumentManager() {
     server.onNotification("onDidOpen", (uri: string) => {
         const path = fileURLToPath(uri)
-        openQkFiles.add(path), assignMappingFileForQkFile(path)
+        assignMappingFileForQkFile(path, true)
     })
 
     server.onNotification("onDidClose", (uri: string) => {
-        openQkFiles.delete(fileURLToPath(uri))
+        getMappingFileInfo(fileURLToPath(uri))!.isOpen = false
     })
 }
 
-export function assignMappingFileForQkFile(fileName: string, scriptKind = ts.ScriptKind.JS) {
+export function assignMappingFileForQkFile(fileName: string, isOpen = false) {
     let mappingFileName = getMappingFileName(fileName)
     if (isUndefined(mappingFileName)) {
         do {
@@ -57,11 +60,21 @@ export function assignMappingFileForQkFile(fileName: string, scriptKind = ts.Scr
         } while (existsSync(mappingFileName) || reverseMap.has(mappingFileName))
 
         mappedQkFiles.set(fileName, {
-            scriptKind,
+            isOpen,
+            offset: 0,
             version: 0,
-            mappingFileName
+            mappingFileName,
+            scriptKind: ts.ScriptKind.JS,
+            getPos(pos: number) {
+                if (!pos) {
+                    return 0
+                }
+                return pos - this.offset
+            }
         })
         reverseMap.set(mappingFileName, fileName)
     }
-    return getMappingFileInfo(fileName)!
+
+    const ret = getMappingFileInfo(fileName)!
+    return (ret.isOpen = isOpen), ret
 }

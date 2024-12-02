@@ -1,4 +1,4 @@
-import type { Node, SourceFile, SyntaxKind, ImportDeclaration } from "typescript"
+import type { Node, SourceFile } from "typescript"
 
 import { ts } from "./state"
 import { isUndefined } from "../../../shared-util/assert"

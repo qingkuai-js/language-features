@@ -15,11 +15,11 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
         return this.text.length
     }
 
-    getChangeRange(oldSnapshot: QingKuaiSnapShot) {
+    getChangeRange(oldSnapshot: IScriptSnapshot) {
         const newText = this.text
-        const oldText = oldSnapshot.text
-        const oldLength = oldText.length
         const newLength = newText.length
+        const oldLength = oldSnapshot.getLength()
+        const oldText = oldSnapshot.getText(0, oldLength)
 
         let diffStartIndex = 0
         let oldEndIndex = oldLength - 1
