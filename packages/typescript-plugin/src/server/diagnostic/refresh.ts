@@ -6,9 +6,9 @@ import {
     getMappingFileInfo,
     getOpenQkFileInfos
 } from "../content/document"
+import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { debounce } from "../../../../../shared-util/sundry"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
-import { isEmptyString } from "../../../../../shared-util/assert"
 import { languageService, languageServiceHost, projectService, server } from "../../state"
 
 // 刷新引用文件的诊断信息，如果目标文件是.qk文件，则通知qingkuai语言服务器重新推送诊断信息，第二个参数用于
@@ -17,12 +17,13 @@ import { languageService, languageServiceHost, projectService, server } from "..
 //
 // 注意：如果触发刷新诊断信息的文件是.qk文件（通过判断byFileName参数的扩展名确定）需要刷新所有引用文档的诊断信息，
 // 反之则只需要刷新.qk文件的诊断信息（其他类型的诊断信息更新由原始ts语言服务或其他ts插件服务负责）；如果byFileName
-// 参数为空字符串，表示当前调用为配置文件变动触发（通常为修改了tsconfig.json文件），需要刷新所有已打开文档的诊断信息
+// 参数以///开头，表示当前调用为配置文件变动触发（通常为tsconfig.json/jsconfig.json/.qingkuairc等文件被修改），
+// 需要刷新所有已打开文档的诊断信息，如果有qingkuai配置文件变动触发，则应重新遍历中间代码语法树执行自定义检查相关逻辑
 export const refreshDiagnostics = debounce(
     (byFileName: string, scriptKindChanged: boolean) => {
         const referenceFileNames: string[] = []
         const byQingKuaiFile = byFileName.endsWith(".qk")
-        const byConfigChanged = isEmptyString(byFileName)
+        const byConfigChanged = byFileName.startsWith("///")
 
         if (byQingKuaiFile) {
             const mappingFileInfo = getMappingFileInfo(byFileName)
@@ -42,6 +43,7 @@ export const refreshDiagnostics = debounce(
             projectService.openFiles.forEach((_, path) => {
                 referenceFileNames.push(projectService.getScriptInfoForPath(path)!.fileName)
             })
+            scriptKindChanged = true
         }
 
         referenceFileNames.forEach(fileName => {
@@ -54,9 +56,20 @@ export const refreshDiagnostics = debounce(
             if (isMappingFileName(fileName)) {
                 const realFileName = getRealName(fileName)!
                 if (scriptKindChanged) {
-                    const content = (snapshot as QingKuaiSnapShot).getFullText()
-                    const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
-                    editQingKuaiScriptInfo(realFileName, newContent, scriptInfo.scriptKind)
+                    if (byFileName === "///qk") {
+                        const mappingFileInfo = getMappingFileInfo(realFileName)!
+                        updateQingkuaiSnapshot(
+                            realFileName,
+                            mappingFileInfo.interCode,
+                            mappingFileInfo.itos,
+                            mappingFileInfo.slotInfo,
+                            mappingFileInfo.scriptKind
+                        )
+                    } else {
+                        const content = (snapshot as QingKuaiSnapShot).getFullText()
+                        const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
+                        editQingKuaiScriptInfo(realFileName, newContent, scriptInfo.scriptKind)
+                    }
                 }
                 server.sendNotification("publishDiagnostics", realFileName)
             } else {

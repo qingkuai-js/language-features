@@ -22,7 +22,7 @@ export function attachUpdateSnapshot() {
     server.onRequest<UpdateSnapshotParams>("updateSnapshot", ({ fileName, ...rest }) => {
         const scriptKind = ts.ScriptKind[rest.scriptKindKey]
         const oriScriptKind = getMappingFileInfo(fileName)?.scriptKind
-        updateQingkuaiSnapshot(fileName, rest.interCode, rest.slotInfo, scriptKind)
+        updateQingkuaiSnapshot(fileName, rest.interCode, rest.itos, rest.slotInfo, scriptKind)
         refreshDiagnostics(fileName, !isUndefined(oriScriptKind) && scriptKind !== oriScriptKind)
     })
 }

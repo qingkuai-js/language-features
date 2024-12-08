@@ -272,7 +272,7 @@ function doEmmetComplete(document: TextDocument, position: Position) {
     const ret = _doEmmetComplete(document, position, "html", {})
     ret?.items.forEach(item => {
         const setNT = (text: string) => (item.textEdit!.newText = text)
-        parseTemplate(item.textEdit?.newText || "", false).forEach(node => {
+        parseTemplate(item.textEdit?.newText || "", true).forEach(node => {
             node.attributes.forEach(attr => {
                 const v = attr.value.raw
                 const vsi = attr.value.loc.start.index - 1

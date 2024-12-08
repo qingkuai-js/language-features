@@ -1,8 +1,17 @@
-import type { IScriptSnapshot } from "typescript"
+import type { TsModuleResolutionBackup } from "./types"
+import type { Diagnostic, IScriptSnapshot, DiagnosticMessageChain } from "typescript"
 
 import fs from "fs"
 import path from "path"
 
+import {
+    ts,
+    snapshotCache,
+    projectService,
+    languageService,
+    typeRefStatement,
+    languageServiceHost
+} from "./state"
 import {
     getRealName,
     getMappedQkFiles,
@@ -11,39 +20,40 @@ import {
     assignMappingFileForQkFile
 } from "./server/content/document"
 import { compile } from "qingkuai/compiler"
+import { mappingFileNameRE } from "./regular"
+import { getConfigByFileName } from "./server/config"
 import { HasBeenProxiedByQingKuai } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { updateQingkuaiSnapshot } from "./server/content/snapshot"
-import { isEmptyString, isUndefined } from "../../../shared-util/assert"
-import { ts, languageServiceHost, projectService, snapshotCache, typeRefStatement } from "./state"
+import { isEmptyString, isString, isUndefined } from "../../../shared-util/assert"
 
 export function proxyGetScriptFileNames() {
-    const ori = languageServiceHost.getScriptFileNames.bind(languageServiceHost)
+    const getscriptFileNames = languageServiceHost.getScriptFileNames.bind(languageServiceHost)
     languageServiceHost.getScriptFileNames = () => {
-        return ori().concat(getMappedQkFiles())
+        return getscriptFileNames().concat(getMappedQkFiles())
     }
 }
 
 export function proxyGetScriptVersion() {
-    const ori = languageServiceHost.getScriptVersion.bind(languageServiceHost)
+    const getScriptVersion = languageServiceHost.getScriptVersion.bind(languageServiceHost)
     languageServiceHost.getScriptVersion = fileName => {
         if (!isMappingFileName(fileName)) {
-            return ori(fileName)
+            return getScriptVersion(fileName)
         }
         return getMappingFileInfo(getRealName(fileName)!)!.version.toString()
     }
 }
 
 export function proxyGetScriptKind() {
-    const ori = languageServiceHost.getScriptKind?.bind(languageServiceHost)
-    if (isUndefined(ori)) {
+    const getScriptKind = languageServiceHost.getScriptKind?.bind(languageServiceHost)
+    if (isUndefined(getScriptKind)) {
         return
     }
 
     languageServiceHost.getScriptKind = fileName => {
         if (!isMappingFileName(fileName)) {
-            return ori(fileName)
+            return getScriptKind(fileName)
         }
         return getMappingFileInfo(getRealName(fileName)!)!.scriptKind
     }
@@ -53,102 +63,132 @@ export function proxyOnConfigFileChanged() {
     // 断言为any以访问其私有属性
     // assert to access its private property
     const projectServiceAsAny = projectService as any
-    const ori = projectServiceAsAny.onConfigFileChanged.bind(projectService)
+    const onConfigFileChanged = projectServiceAsAny.onConfigFileChanged.bind(projectService)
     projectServiceAsAny.onConfigFileChanged = (...args: any) => {
-        return setTimeout(() => refreshDiagnostics("", false), 2500), ori(...args)
+        setTimeout(() => {
+            refreshDiagnostics("///ts", false)
+        }, 2500)
+        return onConfigFileChanged(...args)
     }
 }
 
 // 代理查询文件是否存在的方法，扩展名为qk的文件直接返回false，它们在ts语言
 // 服务中的扩展名为ts，可以通过getMappingFileName获取到qk文件映射的ts文件名称
 export function proxyFileExists() {
-    const pshOri = projectService.host.fileExists.bind(projectService.host)
-    const lshOri = languageServiceHost.fileExists.bind(languageServiceHost)
+    const projectServiceFileExists = projectService.host.fileExists.bind(projectService.host)
+    const languageServiceFileExists = languageServiceHost.fileExists.bind(languageServiceHost)
     projectService.host.fileExists = path => {
         if (path.endsWith(".qk")) {
             return false
         }
-        return isMappingFileName(path) || pshOri(path)
+        return isMappingFileName(path) || projectServiceFileExists(path)
     }
     languageServiceHost.fileExists = path => {
-        return isMappingFileName(path) || lshOri(path)
+        return isMappingFileName(path) || languageServiceFileExists(path)
     }
 }
 
 // 代理获取快照的方法，qk文件的快照为QingKuaiSnapshot，且由snapshotCache缓存
 export function proxyGetScriptSnapshot() {
-    const ori = languageServiceHost.getScriptSnapshot.bind(languageServiceHost)
+    const getScriptSnapshot = languageServiceHost.getScriptSnapshot.bind(languageServiceHost)
     languageServiceHost.getScriptSnapshot = fileName => {
-        return snapshotCache.get(fileName) || ori(fileName)
+        return snapshotCache.get(fileName) || getScriptSnapshot(fileName)
     }
 }
 
 // 代理模块解析方法，如果目标是qk文件且它存在于本地磁盘，解析的模块路径为映射文件名，这些映射文件的
 // 扩展名均为.ts，当映射文件名不存在时，需要调用assignMappingFileForQkFile方法为其分配一个映射文件名
 export function proxyResolveModuleNameLiterals() {
-    const ori = languageServiceHost.resolveModuleNameLiterals?.bind(languageServiceHost)
-    if (isUndefined(ori)) {
+    const resolveModuleNameLiterals =
+        languageServiceHost.resolveModuleNameLiterals?.bind(languageServiceHost)
+    if (isUndefined(resolveModuleNameLiterals)) {
         return undefined
     }
 
-    languageServiceHost.resolveModuleNameLiterals = (moduleLiterals, ...rest) => {
-        const ret = ori(moduleLiterals, ...rest)
-        const curDir = path.dirname(rest[3].fileName)
-        ret.forEach((item, index) => {
+    const tsModuleResolutionBackup: TsModuleResolutionBackup = new Map()
+    languageServiceHost.resolveModuleNameLiterals = (moduleLiterals, containingFile, ...rest) => {
+        const curDir = path.dirname(containingFile)
+        const config = getConfigByFileName(containingFile)
+        const fromQingKuaiFile = isMappingFileName(containingFile)
+        const ret = resolveModuleNameLiterals(moduleLiterals, containingFile, ...rest)
+
+        let backup = tsModuleResolutionBackup.get(containingFile)
+        if (isUndefined(backup)) {
+            backup = new Map()
+            tsModuleResolutionBackup.set(containingFile, backup)
+        }
+
+        return ret.map((item, index) => {
             const moduleText = moduleLiterals[index].text
-            const modulePath = path.resolve(curDir, moduleText)
-            if (moduleText.endsWith(".qk") && fs.existsSync(modulePath)) {
-                let mappingFileInfo = getMappingFileInfo(modulePath)
-                if (isUndefined(mappingFileInfo)) {
-                    const compileRes = compile(fs.readFileSync(modulePath, "utf-8"), {
-                        check: true,
-                        typeRefStatement
-                    })
-                    setTimeout(() => {
-                        updateQingkuaiSnapshot(
-                            modulePath,
-                            compileRes.code,
-                            compileRes.inputDescriptor.slotInfo,
-                            ts.ScriptKind[getScriptKindKey(compileRes)]
-                        )
-                    })
-                    mappingFileInfo = assignMappingFileForQkFile(modulePath)
-                }
-                const isTs = mappingFileInfo?.scriptKind === ts.ScriptKind.TS
-                Object.assign(item, {
-                    resolvedModule: {
-                        packageId: undefined,
-                        originalPath: undefined,
-                        isExternalLibraryImport: false,
-                        resolvedUsingTsExtension: false,
-                        extension: ts.Extension[isTs ? "Ts" : "Js"],
-                        resolvedFileName: mappingFileInfo.mappingFileName
-                    },
-                    failedLookupLocations: undefined
+            const isDirectory = isEmptyString(path.extname(moduleText))
+            const resolveAsQk = isDirectory && fromQingKuaiFile && config.resolveImportExtension
+
+            const modulePath = path.resolve(curDir, `${moduleText}${resolveAsQk ? ".qk" : ""}`)
+            if (!modulePath.endsWith(".qk") || !fs.existsSync(modulePath)) {
+                return backup.get(moduleText) ?? item
+            }
+
+            // 如果某个导入语句被添加了qk扩展名，则备份原始解析对象
+            if (resolveAsQk && !backup.has(moduleText)) {
+                backup.set(moduleText, item)
+            }
+
+            let mappingFileInfo = getMappingFileInfo(modulePath)
+            if (isUndefined(mappingFileInfo)) {
+                const compileRes = compile(fs.readFileSync(modulePath, "utf-8"), {
+                    check: true,
+                    typeRefStatement
+                })
+                const scriptKind = ts.ScriptKind[getScriptKindKey(compileRes)]
+                setTimeout(() => {
+                    updateQingkuaiSnapshot(
+                        modulePath,
+                        compileRes.code,
+                        compileRes.interIndexMap.itos,
+                        compileRes.inputDescriptor.slotInfo,
+                        scriptKind
+                    )
+                })
+                mappingFileInfo = assignMappingFileForQkFile(modulePath, false, {
+                    scriptKind,
+                    interCode: compileRes.code,
+                    itos: compileRes.interIndexMap.itos,
+                    slotInfo: compileRes.inputDescriptor.slotInfo
                 })
             }
+
+            const isTs = mappingFileInfo.scriptKind === ts.ScriptKind.TS
+            return {
+                ...item,
+                resolvedModule: {
+                    isExternalLibraryImport: false,
+                    resolvedUsingTsExtension: false,
+                    extension: ts.Extension[isTs ? "Ts" : "Js"],
+                    resolvedFileName: mappingFileInfo.mappingFileName
+                },
+                failedLookupLocations: undefined
+            }
         })
-        return ret
     }
 }
 
 // 非qk文件修改时，需要刷新已打开的qk文件诊断信息
 export function proxyEditContent() {
-    const ori = projectService.getScriptInfo.bind(projectService)
+    const getScriptInfo = projectService.getScriptInfo.bind(projectService)
     projectService.getScriptInfo = fileName => {
         // 断言为any，以访问其私有属性及添加新属性
         // asserts to access its private property and add new property
-        const oriRetAsAny = ori(fileName) as any
+        const scriptInfoAsAny = getScriptInfo(fileName) as any
         if (
-            !isUndefined(oriRetAsAny) &&
-            !oriRetAsAny.fileName.endsWith(".qk") &&
-            !oriRetAsAny[HasBeenProxiedByQingKuai] &&
-            !isUndefined(oriRetAsAny?.editContent) &&
-            !isMappingFileName(oriRetAsAny.fileName)
+            !isUndefined(scriptInfoAsAny) &&
+            !scriptInfoAsAny.fileName.endsWith(".qk") &&
+            !scriptInfoAsAny[HasBeenProxiedByQingKuai] &&
+            !isUndefined(scriptInfoAsAny?.editContent) &&
+            !isMappingFileName(scriptInfoAsAny.fileName)
         ) {
-            const oriEditContent = oriRetAsAny.editContent.bind(oriRetAsAny)
-            oriRetAsAny.editContent = (start: number, end: number, newText: string) => {
-                const snapshot: IScriptSnapshot = oriRetAsAny.getSnapshot()
+            const editContent = scriptInfoAsAny.editContent.bind(scriptInfoAsAny)
+            scriptInfoAsAny.editContent = (start: number, end: number, newText: string) => {
+                const snapshot: IScriptSnapshot = scriptInfoAsAny.getSnapshot()
                 const contentLength = snapshot.getLength()
                 if (
                     end !== contentLength ||
@@ -160,10 +200,48 @@ export function proxyEditContent() {
                     // 确保当前修改不是由其他.qk文件改动时重新获取诊断信息触发
                     refreshDiagnostics(fileName, false)
                 }
-                return oriEditContent(start, end, newText)
+                return editContent(start, end, newText)
             }
-            oriRetAsAny[HasBeenProxiedByQingKuai] = true
+            scriptInfoAsAny[HasBeenProxiedByQingKuai] = true
         }
-        return oriRetAsAny
+        return scriptInfoAsAny
     }
+}
+
+// 代理诊断信息获取方法
+export function proxyGetDiagnostics() {
+    const getSemanticDiagnostics = languageService.getSemanticDiagnostics.bind(languageService)
+    const getSyntacticDiagnostics = languageService.getSyntacticDiagnostics.bind(languageService)
+    const getSuggestionDiagnostics = languageService.getSuggestionDiagnostics.bind(languageService)
+
+    languageService.getSemanticDiagnostics = fileName => {
+        const ret = getSemanticDiagnostics(fileName)
+        return foreachDiagnostics(ret), ret
+    }
+    languageService.getSyntacticDiagnostics = fileName => {
+        const ret = getSyntacticDiagnostics(fileName)
+        return foreachDiagnostics(ret), ret
+    }
+    languageService.getSuggestionDiagnostics = fileName => {
+        const ret = getSuggestionDiagnostics(fileName)
+        return foreachDiagnostics(ret), ret
+    }
+}
+
+// 将诊断信息中的映射文件名称修改为真实文件名称
+function foreachDiagnostics(diagnostics: Diagnostic[]) {
+    diagnostics.forEach(item => {
+        if (!isString(item.messageText)) {
+            changeDiagnosticMessageChain(item.messageText)
+        } else {
+            item.messageText = item.messageText.replace(mappingFileNameRE, "")
+        }
+    })
+}
+
+function changeDiagnosticMessageChain(messageChain: DiagnosticMessageChain) {
+    if (!isUndefined(messageChain.next)) {
+        messageChain.next.forEach(changeDiagnosticMessageChain)
+    }
+    messageChain.messageText = messageChain.messageText.replace(mappingFileNameRE, "")
 }

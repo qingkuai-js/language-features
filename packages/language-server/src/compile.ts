@@ -24,7 +24,9 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
     // 确保首次编译时机在语言服务器与ts插件成功建立ipc连接后
     // 测试中始终提供最新版本的文档，无需验证文档版本是否发生改变
     if (!isTestingEnv) {
-        await tpicConnectedPromise
+        if (tpicConnectedPromise.state === "pending") {
+            await tpicConnectedPromise
+        }
         if (version === cached?.version) {
             return cached
         }
@@ -84,6 +86,7 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
             await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
                 fileName: filePath,
                 interCode: ccri.code,
+                itos: ccri.interIndexMap.itos,
                 scriptKindKey: getScriptKindKey(ccri),
                 slotInfo: ccri.inputDescriptor.slotInfo
             })

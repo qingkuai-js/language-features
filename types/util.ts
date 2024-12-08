@@ -2,6 +2,7 @@ export type Getter = () => any
 export type GeneralFunc = (...args: any[]) => any
 export type ObjectKeys = string | number | symbol
 export type AnyObject<V = any> = Record<ObjectKeys, V>
+export type MapValueType<M> = M extends Map<any, infer U> ? U : never
 
 export type FixedArray<T, L extends number, R extends T[] = []> = R["length"] extends L
     ? R

@@ -78,7 +78,18 @@
                 "name": "typescript-qingkuai-plugin",
                 "enableForWorkspaceTypeScriptVersions": true
             }
-        ]
+        ],
+        "jsonValidation": [
+            {
+                "fileMatch": ".qingkuairc",
+                "url": "./config-validation.json"
+            }
+        ],
+        "configurationDefaults": {
+            "files.associations": {
+                ".qingkuairc": "json"
+            }
+        }
     },
     "scripts": {
         "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",

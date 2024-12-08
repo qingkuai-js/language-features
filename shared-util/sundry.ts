@@ -6,14 +6,19 @@ export function stringify(v: any) {
 }
 
 // 生成一个稍后解决的Promise，此方法返回一个Promise和它的resovle方法
+// 返回的Promise是经过包装的，可以访问其state属性获取它当前所处的状态
 export function generatePromiseAndResolver() {
     let resolver!: GeneralFunc
-    return [
-        new Promise(resolve => {
-            resolver = resolve
-        }),
-        resolver
-    ] as const
+    const promise: Promise<any> & {
+        state: "fullfilled" | "pending"
+    } = new Promise(resolve => {
+        resolver = (value: any) => {
+            resolve(value)
+            promise.state = "fullfilled"
+        }
+    }) as any
+    promise.state = "pending"
+    return [promise, resolver] as const
 }
 
 // 防抖函数生成器，getId是一个获取调用id的方法，执行这个方法时会传入

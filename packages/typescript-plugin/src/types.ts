@@ -1,4 +1,6 @@
 import type Typescript from "typescript"
+import type { commonMessage, SlotInfo } from "qingkuai/compiler"
+import type { Diagnostic, ResolvedModuleWithFailedLookupLocations } from "typescript"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -9,10 +11,21 @@ export interface QingKuaiFileInfo {
     offset: number
     version: number
     isOpen: boolean
+    itos: number[]
+    interCode: string
+    slotInfo: SlotInfo
     mappingFileName: string
     getPos(pos: number): number
     scriptKind: Typescript.ScriptKind
 }
+
+export type QingKuaiCommonMessage = typeof commonMessage
+export type QingKuaiDiagnostic = Omit<Diagnostic, "file">
+
+export type TsModuleResolutionBackup = Map<
+    string,
+    Map<string, ResolvedModuleWithFailedLookupLocations>
+>
 
 export type TS = typeof Typescript
 export type TSProject = Typescript.server.Project

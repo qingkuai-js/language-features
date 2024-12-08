@@ -1,3 +1,5 @@
+import type { RetransmissionParams } from "../../../types/communication"
+
 import { hover } from "./supports/hover"
 import { connectTsServer } from "./client"
 import { complete } from "./supports/complete"
@@ -16,12 +18,35 @@ connection.onRequest("ping", _ => "pong")
 connection.onRequest("qingkuai/extensionLoaded", connectTsServer)
 
 // 文档事件处理
-documents.onDidChangeContent(({ document }) => publishDiagnostics(document.uri))
+documents.onDidChangeContent(({ document }) => {
+    publishDiagnostics(document.uri)
+})
 
 documents.onDidOpen(async ({ document }) => {
-    await tpicConnectedPromise, tpic.sendNotification("onDidOpen", document.uri)
+    if (tpicConnectedPromise.state === "pending") {
+        await tpicConnectedPromise
+    }
+    tpic.sendNotification("onDidOpen", document.uri)
 })
 
 documents.onDidClose(async ({ document }) => {
-    await tpicConnectedPromise, tpic.sendNotification("onDidClose", document.uri)
+    if (tpicConnectedPromise.state === "pending") {
+        await tpicConnectedPromise
+    }
+    tpic.sendNotification("onDidClose", document.uri)
+})
+
+// 事件转发，将接受到的请求/通知转发给typescript插件的ipc服务器
+connection.onRequest("qingkuai/retransmission", async (params: RetransmissionParams) => {
+    if (tpicConnectedPromise.state === "pending") {
+        await tpicConnectedPromise
+    }
+    return tpic.sendRequest(params.name, params.data)
+})
+
+connection.onNotification("qingkuai/retransmission", async (params: RetransmissionParams) => {
+    if (tpicConnectedPromise.state === "pending") {
+        await tpicConnectedPromise
+    }
+    tpic.sendNotification(params.name, params.data)
 })

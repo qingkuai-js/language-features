@@ -3,6 +3,7 @@ type AnyObject = Record<AnyObjectKey, any>
 type Constructible = new (..._: any) => any
 type AnyObjectKey = string | number | symbol
 type NotFunction<T> = Exclude<T, GeneralFunc>
+type ReactReturnType<T> = T extends unknown ? undefined : T
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
 type ExtractSlotNames<T extends Constructible> = keyof ConstructorParameters<T>[2]
 
@@ -49,11 +50,13 @@ declare const __c__: {
         _: T,
         __: T extends Set<infer U> ? U : T extends Array<infer U> ? U : any
     ) => void
+
+    [K: AnyObjectKey]: any
 }
 
 declare const wat: WatchFunc
 declare const waT: WatchFunc
 declare const Wat: WatchFunc
 declare const der: DerivedFunc
-declare function stc<T>(value: T): T
-declare function rea<T>(value: T, level?: number): T
+declare function stc<T>(value: T): ReactReturnType<T>
+declare function rea<T>(value: T, level?: number): ReactReturnType<T>

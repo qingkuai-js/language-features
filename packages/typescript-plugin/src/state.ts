@@ -1,8 +1,9 @@
-import {
+import type {
     TS,
     TSProject,
     TSProjectService,
     TSLanguageService,
+    QingKuaiDiagnostic,
     TSPluginCreateInfo,
     TSLanguageServerHost,
     TSLanguageServiceHost
@@ -12,6 +13,7 @@ import type { QingKuaiSnapShot } from "./snapshot"
 import path from "path"
 import { inspect } from "../../../shared-util/log"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
+import { QingkuaiConfiguration } from "../../../types/common"
 
 export let server = defaultParticipant
 
@@ -22,8 +24,14 @@ export let languageService: TSLanguageService
 export let languageServerHost: TSLanguageServerHost
 export let languageServiceHost: TSLanguageServiceHost
 
-// 快照缓存，键是映射文件名称而非原始文件名称
+// 快照缓存，键为映射文件名称，值为QingkuaiSnapshot
 export const snapshotCache = new Map<string, QingKuaiSnapShot>()
+
+// .qingkuairc文件配置内容，键为其所在的目录
+export const configurations = new Map<string, QingkuaiConfiguration>()
+
+// qingkuai自定义错误缓存
+export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
 
 export function setServer(v: typeof server) {
     server = v
@@ -45,4 +53,5 @@ export const Logger = {
     error: (v: any) => server.sendNotification("log/error", inspect(v))
 }
 
-export const typeRefStatement = `/// <reference types="${path.resolve(__dirname, "../dts/qingkuai.d.ts")}" />\n`
+export const typeDeclarationFilePath = path.resolve(__dirname, "../dts/qingkuai.d.ts")
+export const typeRefStatement = `/// <reference types="${typeDeclarationFilePath}" />\n`

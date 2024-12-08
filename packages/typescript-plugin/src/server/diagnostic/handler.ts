@@ -3,17 +3,18 @@ import type {
     TSDiagnosticRelatedInformation
 } from "../../../../../types/communication"
 import type { DiagnosticKind } from "../../types"
-import type { Diagnostic, DiagnosticMessageChain } from "typescript"
+import type { DiagnosticMessageChain } from "typescript"
 
 import { getMappingFileInfo } from "../content/document"
 import { isString, isUndefined } from "../../../../../shared-util/assert"
-import { languageService, projectService, server, ts } from "../../state"
+import { ts, server, projectService, languageService, qingkuaiDiagnostics } from "../../state"
 
 export function attachGetDiagnostic() {
-    server.onRequest<string, TSDiagnostic[]>("getDiagnostic", (fileName: string) => {
-        const oriDiagnostics: Diagnostic[] = []
+    server.onRequest<string, TSDiagnostic[]>("getDiagnostic", fileName => {
         const mappingFileInfo = getMappingFileInfo(fileName)!
+        const mappingFileName = mappingFileInfo.mappingFileName
         const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
+        const oriDiagnostics = Array.from(qingkuaiDiagnostics.get(mappingFileName) || [])
 
         // Semtic模式下进行全部诊断，PartialSemantic/Syntactic模式下只进行语法检查
         if (projectService.serverMode === ts.LanguageServiceMode.Semantic) {
@@ -21,7 +22,7 @@ export function attachGetDiagnostic() {
         }
 
         diagnosticMethods.forEach(m => {
-            oriDiagnostics.push(...languageService[m](mappingFileInfo.mappingFileName))
+            oriDiagnostics.push(...languageService[m](mappingFileName))
         })
 
         return oriDiagnostics.map(item => {
@@ -56,6 +57,7 @@ export function attachGetDiagnostic() {
                 code: item.code,
                 kind: item.category,
                 length: item.length || 0,
+                source: item.source || "ts",
                 deprecated: Boolean(item.reportsDeprecated),
                 unnecessary: Boolean(item.reportsUnnecessary),
                 start: mappingFileInfo.getPos(item.start || 0),
@@ -66,12 +68,24 @@ export function attachGetDiagnostic() {
 }
 
 // 诊断信息为链表形式时，将其整理为一个字符串表示
-function formatDiagnosticMessage(mt: string | DiagnosticMessageChain) {
+function formatDiagnosticMessage(mt: string | DiagnosticMessageChain, indentLevel = 0): string {
+    const indent = " ".repeat(indentLevel * 2)
+
+    const eliminate = (s: string) => {
+        return s.replace(" Did you mean '__c__'?", "")
+    }
+
     if (isString(mt)) {
-        return mt
+        return eliminate(mt)
     }
+
     if (isUndefined(mt.next)) {
-        return mt + mt.messageText
+        return eliminate(mt.messageText)
     }
-    return mt.messageText + "  " + mt.next.reduce((p, c) => p + c.messageText, "")
+
+    const nextMsg = mt.next.reduce((p, c) => {
+        return p + indent + formatDiagnosticMessage(c, indentLevel + 1)
+    }, "")
+
+    return eliminate(mt.messageText) + "\n" + nextMsg
 }

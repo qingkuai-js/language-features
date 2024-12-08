@@ -1,3 +1,4 @@
+import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
 import { getCompileRes } from "../compile"
@@ -6,7 +7,6 @@ import { GlobalTypeMissTypeImpl } from "../messages"
 import { GlobalTypeRefsToValueRE } from "../regular"
 import { connection, documents, tpic } from "../state"
 import { debounce } from "../../../../shared-util/sundry"
-import { TSDiagnostic } from "../../../../types/communication"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 
@@ -93,11 +93,9 @@ export const publishDiagnostics = debounce(
                 })
 
                 extendDiagnostic({
+                    ...item,
                     tags,
                     relatedInformation,
-                    source: "ts",
-                    code: item.code,
-                    message: item.message,
                     range: getRange(ss, se),
                     severity: transTsDiagnosticSeverity(item.kind)
                 })

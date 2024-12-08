@@ -41,7 +41,11 @@ export function getMappedQkFiles() {
 }
 
 // 为.qk文件分配一个映射文件信息，如果它已经存在，则只修改它的打开状态
-export function assignMappingFileForQkFile(fileName: string, isOpen = false) {
+export function assignMappingFileForQkFile(
+    fileName: string,
+    isOpen: boolean,
+    properties: Partial<QingKuaiFileInfo> = {}
+) {
     let mappingFileName = getMappingFileName(fileName)
     if (isUndefined(mappingFileName)) {
         do {
@@ -50,8 +54,11 @@ export function assignMappingFileForQkFile(fileName: string, isOpen = false) {
 
         mappedQkFiles.set(fileName, {
             isOpen,
+            itos: [],
             offset: 0,
             version: 0,
+            slotInfo: {},
+            interCode: "",
             mappingFileName,
             scriptKind: ts.ScriptKind.JS,
             getPos(pos: number) {
@@ -59,7 +66,8 @@ export function assignMappingFileForQkFile(fileName: string, isOpen = false) {
                     return 0
                 }
                 return pos - this.offset
-            }
+            },
+            ...properties
         })
         reverseMap.set(mappingFileName, fileName)
     }

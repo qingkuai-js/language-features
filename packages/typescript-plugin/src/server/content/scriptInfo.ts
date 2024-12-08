@@ -39,6 +39,5 @@ export function editQingKuaiScriptInfo(fileName: string, content: string, script
     }
 
     mappingFileInfo.version++
-    mappingFileInfo.scriptKind = scriptKind
     snapshotCache.set(mappingFileName, newSnapshot ?? oldSnapshot)
 }

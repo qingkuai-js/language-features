@@ -6,7 +6,7 @@ import {
 import { pathToFileURL } from "url"
 import { publishDiagnostics } from "./supports/diagnostic"
 import { connectTo } from "../../../shared-util/ipc/participant"
-import { Logger, setTpic, setTypeRefStatement, tpic, tpicConnectedResolver } from "./state"
+import { tpic, Logger, setTpic, setTypeRefStatement, tpicConnectedResolver } from "./state"
 
 let connectTimes = 0
 
