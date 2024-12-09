@@ -3526,28 +3526,6 @@ export const htmlElements: HTMLElementData = {
             ]
         },
         {
-            name: "slot",
-            description: {
-                kind: "markdown",
-                value: "The slot element is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together."
-            },
-            attributes: [
-                {
-                    name: "name",
-                    description: {
-                        kind: "markdown",
-                        value: "The slot's name.\nA **named slot** is a `<slot>` element with a `name` attribute."
-                    }
-                }
-            ],
-            references: [
-                {
-                    name: "MDN Reference",
-                    url: "https://developer.mozilla.org/docs/Web/HTML/Element/slot"
-                }
-            ]
-        },
-        {
             name: "data",
             description: {
                 kind: "markdown",
@@ -6357,7 +6335,28 @@ export const customHTMLTags = [
     }
     return ret
 })
-htmlElements.tags.push(...customHTMLTags)
+htmlElements.tags.push(...customHTMLTags, {
+    name: "slot",
+    description: {
+        kind: "markdown",
+        value: "The slot element is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together."
+    },
+    attributes: [
+        {
+            name: "name",
+            description: {
+                kind: "markdown",
+                value: "The slot's name.\nA **named slot** is a `<slot>` element with a `name` attribute."
+            }
+        }
+    ],
+    references: [
+        {
+            name: "MDN Reference",
+            url: "https://developer.mozilla.org/docs/Web/HTML/Element/slot"
+        }
+    ]
+})
 
 export function findTagData(tag: string) {
     for (const item of htmlElements.tags) {

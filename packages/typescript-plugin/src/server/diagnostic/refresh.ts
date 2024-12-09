@@ -33,8 +33,13 @@ export const refreshDiagnostics = debounce(
         }
 
         if (!byConfigChanged) {
-            languageService.getFileReferences(byFileName).forEach(entry => {
-                referenceFileNames.push(entry.fileName)
+            languageService.getFileReferences(byFileName).forEach(({ fileName }) => {
+                if (
+                    getMappingFileInfo(fileName)?.isOpen ||
+                    projectService.getScriptInfo(fileName)?.isScriptOpen()
+                ) {
+                    referenceFileNames.push(fileName)
+                }
             })
         } else {
             getOpenQkFileInfos().forEach(fileInfo => {
@@ -73,7 +78,7 @@ export const refreshDiagnostics = debounce(
                 }
                 server.sendNotification("publishDiagnostics", realFileName)
             } else {
-                if (!scriptInfo.isScriptOpen || (!byConfigChanged && !byQingKuaiFile)) {
+                if (!byConfigChanged && !byQingKuaiFile) {
                     return
                 }
 

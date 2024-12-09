@@ -84,7 +84,6 @@ export function updateQingkuaiSnapshot(
     mappingFileInfo.itos = itos
     mappingFileInfo.interCode = content
     mappingFileInfo.slotInfo = slotInfo
-    mappingFileInfo.scriptKind = scriptKind
     qingkuaiDiagnostics.set(mappingFileName, diagnosticsCache)
 
     // 将每个待提取类型的索引记录到storedTypes

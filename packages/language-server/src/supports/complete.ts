@@ -37,7 +37,6 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
     const source = cr.inputDescriptor.source
     const triggerChar = source[offset - 1] ?? ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
-    // print(currentNode)
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
     if (isUndefined(currentNode)) {
@@ -67,7 +66,7 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
             ),
 
             // prettier-ignore
-            ...doEmbeddedLanguageTagComplete(
+            ...doCsutomTagComplete(
                 position2Range(position),
                 source,
                 offset,
@@ -231,7 +230,7 @@ function doTagComplete(range: Range) {
 }
 
 // 自定义HTML标签补全建议（模拟emmet行为）
-function doEmbeddedLanguageTagComplete(
+function doCsutomTagComplete(
     range: Range,
     source: string,
     offset: number,

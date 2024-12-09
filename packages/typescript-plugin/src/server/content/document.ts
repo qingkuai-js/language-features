@@ -8,6 +8,7 @@ import { createRandomHash } from "../../../../../shared-util/sundry"
 const reverseMap = new Map<string, string>()
 const mappedQkFiles = new Map<string, QingKuaiFileInfo>()
 
+// 获取打开状态的映射文件信息列表
 export function getOpenQkFileInfos() {
     const fileInfos: QingKuaiFileInfo[] = []
     mappedQkFiles.forEach(info => {
@@ -18,22 +19,30 @@ export function getOpenQkFileInfos() {
     return fileInfos
 }
 
+// 判断文件名称是否是映射后的文件名称
 export function isMappingFileName(fileName: string) {
     return reverseMap.has(fileName)
 }
 
+// 通过原始文件名称换取映射文件名称
 export function getMappingFileName(fileName: string) {
     return mappedQkFiles.get(fileName)?.mappingFileName
 }
 
+// 通过原始/映射文件名称获取映射文件信息
 export function getMappingFileInfo(fileName: string) {
+    if (isMappingFileName(fileName)) {
+        fileName = getRealName(fileName)!
+    }
     return mappedQkFiles.get(fileName)
 }
 
+// 通过映射文件名称换取原始文件名称
 export function getRealName(mappingFileName: string) {
     return reverseMap.get(mappingFileName)
 }
 
+// 获取已被映射的qk文件的映射文件信息列表
 export function getMappedQkFiles() {
     return Array.from(mappedQkFiles).map(([_, info]) => {
         return info.mappingFileName

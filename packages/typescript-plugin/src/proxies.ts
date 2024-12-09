@@ -255,7 +255,7 @@ function foreachDiagnostics(diagnostics: Diagnostic[]) {
                         } as any
                     }
                 }
-                return item
+                return info
             })
         }
     })

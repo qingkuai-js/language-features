@@ -17,9 +17,7 @@ export function editQingKuaiScriptInfo(fileName: string, content: string, script
     if (isUndefined(scriptInfo) || isUndefined(oldSnapshot)) {
         const info = projectService.getOrCreateScriptInfoForNormalizedPath(
             ts.server.toNormalizedPath(mappingFileName),
-            true,
-            content,
-            scriptKind
+            false
         )
         if (!isUndefined(info)) {
             info.attachToProject(project)
@@ -28,6 +26,7 @@ export function editQingKuaiScriptInfo(fileName: string, content: string, script
                 project.updateGraph()
             }
         }
+        info?.editContent(0, 0, content)
     } else if (!isUndefined(oldSnapshot)) {
         const change = newSnapshot.getChangeRange(oldSnapshot)
         const changeStart = change.span.start
@@ -39,5 +38,6 @@ export function editQingKuaiScriptInfo(fileName: string, content: string, script
     }
 
     mappingFileInfo.version++
+    mappingFileInfo.scriptKind = scriptKind
     snapshotCache.set(mappingFileName, newSnapshot ?? oldSnapshot)
 }

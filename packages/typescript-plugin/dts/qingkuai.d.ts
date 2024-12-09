@@ -32,6 +32,7 @@ declare const __c__: {
     Receiver: any
 
     GetKVPair: ReloadedGetKVPair
+    GetTypedValue: <T>() => T
     GetResolve: <T>(_: T) => ExtractResolveType<T>
     GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
         _: T,

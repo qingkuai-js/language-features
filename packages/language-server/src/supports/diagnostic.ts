@@ -2,23 +2,25 @@ import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
 import { stringifyRange } from "../util/vscode"
-import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
-import { connection, documents, tpic } from "../state"
 import { debounce } from "../../../../shared-util/sundry"
-import { isNull, isUndefined } from "../../../../shared-util/assert"
 import { getCompileRes, getCompileResByPath } from "../compile"
+import { isNull, isUndefined } from "../../../../shared-util/assert"
+import { connection, documents, isTestingEnv, tpic } from "../state"
+import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
         // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
         const existingTsDiagnostics = new Set<string>()
+        if (isTestingEnv) {
+            return
+        }
 
         const textDocument = documents.get(uri)!
         const cr = await getCompileRes(textDocument)
         const { Error, Warning } = DiagnosticSeverity
         const { messages, getRange, filePath, getSourceIndex } = cr
-        const scriptStartTagNamgeRange = cr.inputDescriptor.script.startTagNameRange
 
         // 将ts语言服务的诊断信息添加到诊断结果
         const extendDiagnostic = (item: Diagnostic) => {
