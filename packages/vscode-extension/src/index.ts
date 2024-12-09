@@ -63,7 +63,6 @@ export async function activate(context: ExtensionContext) {
     // 切换语言id以激活vscode内置ts服务器
     if ((await tsExtension.activate()) && shouldToggleLanguageId) {
         await vsc.languages.setTextDocumentLanguage(doc, "typescript")
-        await vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
     }
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
@@ -71,7 +70,11 @@ export async function activate(context: ExtensionContext) {
     const pluginName = "typescript-qingkuai-plugin"
     const tsExtenstionAPI = tsExtension.exports.getAPI(0)
     const sockPath = await getValidPathWithHash("qingkuai")
-    tsExtenstionAPI.configurePlugin(pluginName, { sockPath, configurations })
+    tsExtenstionAPI.configurePlugin(pluginName, {
+        sockPath,
+        configurations
+    })
+    vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
 
     const languageServerOptions: ServerOptions = {
         args: ["--nolazy"],

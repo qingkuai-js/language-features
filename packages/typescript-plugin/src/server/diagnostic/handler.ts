@@ -3,10 +3,11 @@ import type {
     TSDiagnosticRelatedInformation
 } from "../../../../../types/communication"
 import type { DiagnosticKind } from "../../types"
-import type { DiagnosticMessageChain } from "typescript"
+import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
-import { getMappingFileInfo } from "../content/document"
+import { OriSourceFile } from "../../constant"
 import { isString, isUndefined } from "../../../../../shared-util/assert"
+import { getMappingFileInfo, isMappingFileName } from "../content/document"
 import { ts, server, projectService, languageService, qingkuaiDiagnostics } from "../../state"
 
 export function attachGetDiagnostic() {
@@ -29,6 +30,7 @@ export function attachGetDiagnostic() {
             const fri = (item.relatedInformation || []).filter(ri => {
                 return !isUndefined(ri.file)
             })
+
             const relatedInformation = fri.map(ri => {
                 const res: TSDiagnosticRelatedInformation = {
                     start: ri.start || 0,
@@ -38,11 +40,13 @@ export function attachGetDiagnostic() {
                 }
 
                 const getRange = (offset: number) => {
-                    return ri.file!.getLineAndCharacterOfPosition(offset)
+                    // @ts-expect-error: access additional custom property
+                    const sourceFile: SourceFile = ri.file[OriSourceFile] ?? ri.file
+                    return sourceFile.getLineAndCharacterOfPosition(offset)
                 }
 
                 // 非qk文件时需要返回诊断相关信息范围
-                if (!res.filePath.endsWith(".qk")) {
+                if (!(res.filePath.endsWith(".qk") || isMappingFileName(res.filePath))) {
                     res.range = {
                         start: getRange(res.start),
                         end: getRange(res.start + res.length)

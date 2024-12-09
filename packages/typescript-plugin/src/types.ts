@@ -1,6 +1,7 @@
 import type Typescript from "typescript"
+import type { OriSourceFile } from "./constant"
 import type { commonMessage, SlotInfo } from "qingkuai/compiler"
-import type { Diagnostic, ResolvedModuleWithFailedLookupLocations } from "typescript"
+import type { Diagnostic, ResolvedModuleWithFailedLookupLocations, SourceFile } from "typescript"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -18,6 +19,14 @@ export interface QingKuaiFileInfo {
     getPos(pos: number): number
     scriptKind: Typescript.ScriptKind
 }
+
+export type RelatedInfoFile =
+    | SourceFile
+    | undefined
+    | {
+          fileName: string
+          [OriSourceFile]: SourceFile
+      }
 
 export type QingKuaiCommonMessage = typeof commonMessage
 export type QingKuaiDiagnostic = Omit<Diagnostic, "file">

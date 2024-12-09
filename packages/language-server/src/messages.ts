@@ -1,11 +1,3 @@
-
-export function GlobalTypeMissTypeImpl(id: string) {
-    return {
-        code: 2001,
-        message: `The top scope identifier(${id}) just refs to a value, missing type implementation.`
-    }
-}
-
 export const connectSuccess = "The QingKuai language server starts successfully."
 
 export const connectTsPluginServerSuccess =

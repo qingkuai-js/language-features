@@ -1,25 +1,20 @@
 import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
-import { getCompileRes } from "../compile"
 import { stringifyRange } from "../util/vscode"
-import { GlobalTypeMissTypeImpl } from "../messages"
-import { GlobalTypeRefsToValueRE } from "../regular"
+import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
 import { connection, documents, tpic } from "../state"
 import { debounce } from "../../../../shared-util/sundry"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
+import { getCompileRes, getCompileResByPath } from "../compile"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
-        const textDocument = documents.get(uri)
-        if (isUndefined(textDocument)) {
-            return
-        }
-
         // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
         const existingTsDiagnostics = new Set<string>()
 
+        const textDocument = documents.get(uri)!
         const cr = await getCompileRes(textDocument)
         const { Error, Warning } = DiagnosticSeverity
         const { messages, getRange, filePath, getSourceIndex } = cr
@@ -48,59 +43,76 @@ export const publishDiagnostics = debounce(
             }
         })
 
-        // 处理javascript/typescript语言服务的诊断结果（通过请求typescript-qingkuai-plugin的ipc服务器获取)
-        ;(await tpic.sendRequest<string, TSDiagnostic[]>("getDiagnostic", filePath)).forEach(
-            item => {
-                const tags: DiagnosticTag[] = []
-                const ss = getSourceIndex(item.start)
-                const se = getSourceIndex(item.start + item.length)
-                const relatedInformation: DiagnosticRelatedInformation[] = []
+        // 处理javascript/typescript语言服务的诊断结果（通过请求ts插件的ipc服务器获取)
+        const tsDiagnostics = await tpic.sendRequest<string, TSDiagnostic[]>(
+            "getDiagnostic",
+            filePath
+        )
+        for (const item of tsDiagnostics) {
+            const tags: DiagnosticTag[] = []
+            const ss = getSourceIndex(item.start)
+            const se = getSourceIndex(item.start + item.length)
+            const relatedInformation: DiagnosticRelatedInformation[] = []
 
-                if (isSourceIndexesIvalid(ss, se)) {
-                    if (item.code === 2749) {
-                        const m = GlobalTypeRefsToValueRE.exec(item.message)
-                        if (!isNull(m)) {
-                            extendDiagnostic({
-                                source: "qk",
-                                ...GlobalTypeMissTypeImpl(m[1]),
-                                range: getRange(...scriptStartTagNamgeRange),
-                                severity: transTsDiagnosticSeverity(item.kind)
-                            })
-                        }
+            if (isSourceIndexesIvalid(ss, se)) {
+                continue
+            }
+
+            if (item.deprecated) {
+                tags.push(DiagnosticTag.Deprecated)
+            }
+            if (item.unnecessary) {
+                tags.push(DiagnosticTag.Unnecessary)
+            }
+
+            for (const relatedInfo of item.relatedInformation) {
+                let range = relatedInfo.range
+                if (isUndefined(range)) {
+                    const cr = await getCompileResByPath(relatedInfo.filePath)
+                    const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length)
+                    const rss = cr.getSourceIndex(relatedInfo.start)
+                    if (isSourceIndexesIvalid(rss, rse)) {
+                        continue
                     }
-                    return
+                    range = cr.getRange(rss, rse)
                 }
-
-                if (item.deprecated) {
-                    tags.push(DiagnosticTag.Deprecated)
-                }
-                if (item.unnecessary) {
-                    tags.push(DiagnosticTag.Unnecessary)
-                }
-
-                item.relatedInformation.forEach(ri => {
-                    const rss = getSourceIndex(ri.start)
-                    const rse = getSourceIndex(ri.start + ri.length)
-                    if (!isSourceIndexesIvalid(rss, rse)) {
-                        relatedInformation.push({
-                            message: ri.message,
-                            location: {
-                                uri: `file://${ri.filePath}`,
-                                range: ri.range || getRange(rss, rse)
-                            }
-                        })
+                relatedInformation.push({
+                    message: relatedInfo.message,
+                    location: {
+                        range,
+                        uri: `file://${relatedInfo.filePath}`
                     }
-                })
-
-                extendDiagnostic({
-                    ...item,
-                    tags,
-                    relatedInformation,
-                    range: getRange(ss, se),
-                    severity: transTsDiagnosticSeverity(item.kind)
                 })
             }
-        )
+
+            // 为指定的诊断信息添加qingkuai相关解释
+            if (
+                item.code === 2345 &&
+                item.source === "ts" &&
+                cr.isPositionFlagSet(ss, "isSlotAttrStart") &&
+                badSlotNameDiagnosticRE.test(item.message)
+            ) {
+                item.message += `\n(Qingkuai explain): There is no slot with the same name in the component.`
+            }
+            if (
+                item.code === 2353 &&
+                item.source === "ts" &&
+                cr.isPositionFlagSet(ss, "isComponentAttrStart")
+            ) {
+                const m = badComponentAttrRE.exec(item.message)
+                if (!isNull(m)) {
+                    item.message += `\n(Qingkuai explain): The attribute name is not a property of component's ${m[1]} type.`
+                }
+            }
+
+            extendDiagnostic({
+                ...item,
+                tags,
+                relatedInformation,
+                range: getRange(ss, se),
+                severity: transTsDiagnosticSeverity(item.kind)
+            })
+        }
 
         connection.sendNotification("textDocument/publishDiagnostics", {
             diagnostics,

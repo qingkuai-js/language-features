@@ -15,8 +15,8 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { connection } from "../state"
 import { getCompileRes } from "../compile"
+import { connection, documents } from "../state"
 import { parseTemplate } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
@@ -30,7 +30,7 @@ import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/asse
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
-    const cr = await getCompileRes(textDocument)
+    const cr = await getCompileRes(documents.get(textDocument.uri)!)
     const { templateNodes, document, getOffset, getRange, getPosition } = cr
 
     const offset = getOffset(position)
@@ -272,7 +272,7 @@ function doEmmetComplete(document: TextDocument, position: Position) {
     const ret = _doEmmetComplete(document, position, "html", {})
     ret?.items.forEach(item => {
         const setNT = (text: string) => (item.textEdit!.newText = text)
-        parseTemplate(item.textEdit?.newText || "", true).forEach(node => {
+        parseTemplate(item.textEdit?.newText || "").forEach(node => {
             node.attributes.forEach(attr => {
                 const v = attr.value.raw
                 const vsi = attr.value.loc.start.index - 1

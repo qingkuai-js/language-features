@@ -22,10 +22,10 @@ import {
 import { compile } from "qingkuai/compiler"
 import { mappingFileNameRE } from "./regular"
 import { getConfigByFileName } from "./server/config"
-import { HasBeenProxiedByQingKuai } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { updateQingkuaiSnapshot } from "./server/content/snapshot"
+import { HasBeenProxiedByQingKuai, OriSourceFile } from "./constant"
 import { isEmptyString, isString, isUndefined } from "../../../shared-util/assert"
 
 export function proxyGetScriptFileNames() {
@@ -228,13 +228,35 @@ export function proxyGetDiagnostics() {
     }
 }
 
+// 将字符串中所有的mappingFileName替换为真实文件名称
+function m2r(str: string) {
+    return str.replace(mappingFileNameRE, "")
+}
+
 // 将诊断信息中的映射文件名称修改为真实文件名称
 function foreachDiagnostics(diagnostics: Diagnostic[]) {
     diagnostics.forEach(item => {
         if (!isString(item.messageText)) {
             changeDiagnosticMessageChain(item.messageText)
         } else {
-            item.messageText = item.messageText.replace(mappingFileNameRE, "")
+            item.messageText = m2r(item.messageText)
+        }
+
+        // 如果相关信息中的sourceFile为qk文件，则修改其文件名称
+        if (!isUndefined(item.relatedInformation)) {
+            item.relatedInformation = item.relatedInformation.map(info => {
+                if (!isUndefined(info.file) && isMappingFileName(info.file.fileName)) {
+                    return {
+                        ...info,
+                        file: {
+                            ...info.file,
+                            [OriSourceFile]: info.file,
+                            fileName: m2r(info.file.fileName)
+                        } as any
+                    }
+                }
+                return item
+            })
         }
     })
 }
@@ -243,5 +265,5 @@ function changeDiagnosticMessageChain(messageChain: DiagnosticMessageChain) {
     if (!isUndefined(messageChain.next)) {
         messageChain.next.forEach(changeDiagnosticMessageChain)
     }
-    messageChain.messageText = messageChain.messageText.replace(mappingFileNameRE, "")
+    messageChain.messageText = m2r(messageChain.messageText)
 }

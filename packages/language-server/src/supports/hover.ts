@@ -7,6 +7,7 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
+import { documents } from "../state"
 import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
 import { findEventModifier } from "../util/search"
@@ -16,7 +17,7 @@ import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const hover: HoverHander = async ({ textDocument, position }) => {
-    const cr = await getCompileRes(textDocument)
+    const cr = await getCompileRes(documents.get(textDocument.uri)!)
     const { templateNodes, getOffset, getRange } = cr
 
     const offset = getOffset(position)

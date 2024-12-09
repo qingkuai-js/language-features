@@ -228,7 +228,7 @@ export function updateQingkuaiSnapshot(
         ) {
             if (!isUndefined(node.name)) {
                 const identifierName = node.name.getText()
-                if (existingTopScopeIdentifierRE.test(identifierName)) {
+                if (identifierName === "$arg") {
                     // 名称为$arg的标识符可能在内联事件处理程序中会被覆盖（警告）
                     if (isInTopScope(node)) {
                         recordQingkuaiDiagnostic(
@@ -314,7 +314,7 @@ export function updateQingkuaiSnapshot(
                                 variableDeclarationNode.getStart(),
                                 getLength(variableDeclarationNode),
                                 ts.DiagnosticCategory.Error,
-                                getCommonMessage("ShortHandDerivedWithOtherReactFunc", funcName)
+                                getCommonMessage("ConvenientDerivedWithOtherReactFunc", funcName)
                             )
                         }
                     }
@@ -379,12 +379,13 @@ export function updateQingkuaiSnapshot(
         ""
     )
     if (isTS) {
+        mappingFileInfo.offset = 0
         content += globalTypeDeclaration
     } else {
         // 由于脚本类型为js时，jsDoc类型声明被放在了前方，所以这里要记录jsDoc类型
         // 声明代码的长度作为源码位置其偏移量，任何获取位置的地方都要减去这个偏移量
         const flbi = content.indexOf("\n") + 1 // First Line Break Index
-        getMappingFileInfo(fileName)!.offset = globalTypeDeclaration.length
+        mappingFileInfo!.offset = globalTypeDeclaration.length
         content = content.slice(0, flbi) + globalTypeDeclaration + content.slice(flbi)
 
         // 将已记录的qingkuai自定义诊断项的start增加这个偏移量
