@@ -1,3 +1,4 @@
+import type { ExtensionConfiguration } from "../../../types/common"
 import type { IpcParticipant } from "../../../shared-util/ipc/types"
 
 import { createLogger } from "../../../shared-util/log"
@@ -10,9 +11,16 @@ export let isTestingEnv = true
 export let typeRefStatement = ""
 export let tpic = defaultParticipant // Typescript Plugin Icp Client
 
+export let configuration: ExtensionConfiguration = {
+    typescriptDiagnosticsExplain: true,
+    componentTagFormatPreference: "camel",
+    htmlHoverTip: ["tag", "entity", "attribute"]
+}
+
 export const setTpic = (v: IpcParticipant) => (tpic = v)
 export const setIsTestingEnv = (v: boolean) => (isTestingEnv = v)
 export const setTypeRefStatement = (v: string) => (typeRefStatement = v)
+export const setConfiguration = (v: ExtensionConfiguration) => (configuration = v)
 
 export const Logger = createLogger(console)
 export const documents = new TextDocuments(TextDocument)

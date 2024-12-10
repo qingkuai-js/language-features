@@ -23,8 +23,8 @@ import { getConfigByFileName } from "../config"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { stringify } from "../../../../../shared-util/sundry"
-import { ts, languageService, qingkuaiDiagnostics } from "../../state"
 import { isNull, isNumber, isString, isUndefined } from "../../../../../shared-util/assert"
+import { ts, languageService, qingkuaiDiagnostics, resolvedQingkuaiModule } from "../../state"
 
 export function updateQingkuaiSnapshot(
     fileName: string,
@@ -33,6 +33,7 @@ export function updateQingkuaiSnapshot(
     slotInfo: SlotInfo,
     scriptKind: ScriptKind
 ) {
+    const componentIdentifiers: string[] = []
     const slotInfoKeys = Object.keys(slotInfo)
     const config = getConfigByFileName(fileName)
     const isTS = scriptKind === ts.ScriptKind.TS
@@ -41,6 +42,7 @@ export function updateQingkuaiSnapshot(
     const mappingFileInfo = getMappingFileInfo(fileName)!
     const mappingFileName = mappingFileInfo.mappingFileName
     const notExistingGlobalType = new Set(["Props", "Refs"])
+    const qingkuaiModules = resolvedQingkuaiModule.get(mappingFileName)
 
     // 记录qingkuai自定义诊断信息
     const recordQingkuaiDiagnostic = (
@@ -153,6 +155,12 @@ export function updateQingkuaiSnapshot(
                 const identifierName = node.importClause.name.text
                 if (globalTypeIdentifierRE.test(identifierName)) {
                     importGlobalTypeIdentifiers.set("default", identifierName)
+                }
+                if (
+                    ts.isStringLiteral(node.moduleSpecifier) &&
+                    qingkuaiModules?.has(node.moduleSpecifier.text)
+                ) {
+                    componentIdentifiers.push(identifierName)
                 }
             }
 
@@ -421,7 +429,7 @@ export function updateQingkuaiSnapshot(
     }
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
-    editQingKuaiScriptInfo(fileName, content, scriptKind)
+    return editQingKuaiScriptInfo(fileName, content, scriptKind), componentIdentifiers
 }
 
 // 获取commonMessage中的诊断信息

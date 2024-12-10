@@ -20,8 +20,9 @@ let client: LanguageClient
 
 export async function activate(context: ExtensionContext) {
     const doc = vsc.window.activeTextEditor!.document
-    const configurations: QingkuaiConfigurationWithDir[] = []
+    const extensionConfiguration = getExtensionConfiguration()
     const shouldToggleLanguageId = doc.languageId === "qingkuai"
+    const qingkuaiConfigurations: QingkuaiConfigurationWithDir[] = []
     const serverModule = context.asAbsolutePath("../../dist/server.js")
     const outputChannel = vsc.window.createOutputChannel("QingKuai", "log")
     const clientWatcher = vsc.workspace.createFileSystemWatcher("**/.clientrc")
@@ -38,7 +39,7 @@ export async function activate(context: ExtensionContext) {
                 const fileAbsPath = path.join(folderPath, filePath)
                 const config = loadConfiguration(fileAbsPath)
                 if (!isUndefined(config)) {
-                    configurations.push({
+                    qingkuaiConfigurations.push({
                         ...config,
                         dir: folderPath
                     })
@@ -72,7 +73,7 @@ export async function activate(context: ExtensionContext) {
     const sockPath = await getValidPathWithHash("qingkuai")
     tsExtenstionAPI.configurePlugin(pluginName, {
         sockPath,
-        configurations
+        configurations: qingkuaiConfigurations
     })
     vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
 
@@ -103,7 +104,10 @@ export async function activate(context: ExtensionContext) {
 
     attachCustomHandlers()
     languageStatusItem.busy = false
-    client.sendRequest("qingkuai/extensionLoaded", sockPath)
+    client.sendRequest("qingkuai/extensionLoaded", {
+        sockPath,
+        configuration: extensionConfiguration
+    })
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -111,6 +115,19 @@ export function deactivate(): Thenable<void> | undefined {
         return undefined
     }
     return client.stop()
+}
+
+// 获取扩展配置项
+function getExtensionConfiguration() {
+    const config = {
+        ...vsc.workspace.getConfiguration("qingkuai")
+    }
+    Object.keys(config).forEach(key => {
+        if (key === "htmlHoverTip") {
+            config[key] = Array.from(new Set(config[key]))
+        }
+    })
+    return config
 }
 
 // 添加自定义请求/通知处理程序
@@ -135,28 +152,40 @@ function attachCustomHandlers() {
         } satisfies RetransmissionParams)
     })
 
+    // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
+    vsc.window.onDidChangeActiveTextEditor(textEditor => {
+        if (textEditor?.document.languageId === "qingkuai") {
+            client.sendNotification(
+                "qingkuai/publishDiagnostics",
+                `file://${textEditor.document.uri.fsPath}`
+            )
+        }
+    })
+
     // 插入片段通知，qingkuai语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
     client.onNotification("qingkuai/insertSnippet", (params: InsertSnippetParam) => {
         vsc.window.activeTextEditor?.insertSnippet(new vsc.SnippetString(params.text))
         params.command && vsc.commands.executeCommand(params.command)
     })
+
+    // 监听扩展配置项变化，并发送最新的配置内容到qingkuai语言服务器
+    vsc.workspace.onDidChangeConfiguration(() => {
+        client.sendNotification("qingkuai/updateExtensionConfig", getExtensionConfiguration())
+    })
 }
 
 // 读取指定路径(.qingkuairc)的配置文件内容
-function loadConfiguration(path: string) {
+async function loadConfiguration(path: string) {
     try {
         return JSON.parse(fs.readFileSync(path, "utf-8") || "{}") as QingkuaiConfiguration
     } catch {
-        vsc.window
-            .showWarningMessage(
-                `Load configuration from "${path}" is failed, please check its contents.`,
-                "Open Config File"
-            )
-            .then(async value => {
-                if (value === "Open Config File") {
-                    const document = await vsc.workspace.openTextDocument(path)
-                    vsc.window.showTextDocument(document)
-                }
-            })
+        const value = await vsc.window.showWarningMessage(
+            `Load configuration from "${path}" is failed, please check its contents.`,
+            "Open Config File"
+        )
+        if (value === "Open Config File") {
+            const document = await vsc.workspace.openTextDocument(path)
+            vsc.window.showTextDocument(document)
+        }
     }
 }

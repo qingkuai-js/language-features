@@ -1,31 +1,33 @@
 import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
 import type { HTMLElementDataAttributeItem } from "../types/data"
-import type { InsertSnippetParam } from "../../../../types/communication"
+import { GetCompletionParams, type InsertSnippetParam } from "../../../../types/communication"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
 
 import {
+    slotTagData,
     findTagData,
     htmlElements,
     findValueSet,
-    customHTMLTags,
     htmlDirectives,
+    embeddedLangTags,
     getDocumentation,
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
 import { getCompileRes } from "../compile"
-import { connection, documents } from "../state"
-import { parseTemplate } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
+import { camel2Kebab } from "../../../../shared-util/sundry"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
+import { parseTemplate, PositionFlag } from "qingkuai/compiler"
 import { offsetPosition, position2Range } from "../util/vscode"
 import { commands, keyRelatedEventModifiers } from "../constants"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
+import { configuration, connection, documents, isTestingEnv, tpic } from "../state"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
 import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
 
@@ -37,10 +39,18 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
     const source = cr.inputDescriptor.source
     const triggerChar = source[offset - 1] ?? ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
+    const inScript = (cr.inputDescriptor.positions[offset].flag & PositionFlag.inScript) !== 0
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
     if (isUndefined(currentNode)) {
         return null
+    }
+
+    if (!isTestingEnv && inScript) {
+        await tpic.sendRequest<GetCompletionParams>("getCompoletion", {
+            pos: offset,
+            fileName: cr.filePath
+        })
     }
 
     // 文本节点范文内启用emmet、实体字符及自定义标签补全建议支持
@@ -66,11 +76,12 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
             ),
 
             // prettier-ignore
-            ...doCsutomTagComplete(
+            ...doCustomTagComplete(
                 position2Range(position),
                 source,
                 offset,
-                currentNode
+                currentNode,
+                cr.componentIdentifiers
             )
         ]
 
@@ -230,13 +241,15 @@ function doTagComplete(range: Range) {
 }
 
 // 自定义HTML标签补全建议（模拟emmet行为）
-function doCsutomTagComplete(
+function doCustomTagComplete(
     range: Range,
     source: string,
     offset: number,
-    node: TemplateNode
+    node: TemplateNode,
+    componentIdentifiers: string[]
 ): CompletionItem[] {
     let shouldSuggest = false
+    const ret: CompletionItem[] = []
 
     for (let i = offset - 1; i >= node.loc.start.index; i--) {
         if (/[a-z\-]/.test(source[i] || "")) {
@@ -245,23 +258,46 @@ function doCsutomTagComplete(
         } else break
     }
 
-    if (shouldSuggest && isNull(node.parent)) {
-        return customHTMLTags.map(({ name, description }) => {
-            return {
-                label: name,
+    if (shouldSuggest) {
+        if (isNull(node.parent)) {
+            embeddedLangTags.forEach(({ name, description }) => {
+                ret.push({
+                    label: name,
+                    insertTextFormat: InsertTextFormat.Snippet,
+                    documentation: {
+                        kind: "markdown",
+                        value:
+                            `${description}\n\n` +
+                            mdCodeBlockGen("qingkuai-emmet", `<${name}>\n\t|\n</${name}>`)
+                    },
+                    textEdit: TextEdit.replace(range, `<${name}>\n\t$0\n</${name}>`)
+                })
+            })
+        }
+
+        // 为slot标签添加emmet支持
+        if (!isTestingEnv) {
+            ret.push({
+                label: slotTagData.name,
+                documentation: getDocumentation(slotTagData),
                 insertTextFormat: InsertTextFormat.Snippet,
-                documentation: {
-                    kind: "markdown",
-                    value:
-                        `${description}\n\n` +
-                        mdCodeBlockGen("qk-emmet", `<${name}>\n\t|\n</${name}>`)
-                },
-                textEdit: TextEdit.replace(range, `<${name}>\n\t$0\n</${name}>`)
-            } satisfies CompletionItem
+                textEdit: TextEdit.replace(range, `<slot name="$1">$0</slot>`)
+            })
+        }
+
+        componentIdentifiers.forEach(item => {
+            const kebab = configuration.componentTagFormatPreference === "kebab"
+            const tag = kebab ? camel2Kebab(item) : item
+            ret.push({
+                label: tag,
+                documentation: `(component) ${item}`,
+                insertTextFormat: InsertTextFormat.Snippet,
+                textEdit: TextEdit.replace(range, `<${tag}>$0</${tag}>`)
+            })
         })
     }
 
-    return []
+    return ret
 }
 
 // emmet支持，此方法会将特殊属性值（动态/引用属性、指令、事件名）转换为花括号包裹

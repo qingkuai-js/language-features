@@ -1,9 +1,20 @@
 import type { SlotInfo } from "qingkuai/compiler"
+import type { ExtensionConfiguration } from "./common"
 import type { CompletionItem, CompletionList, Range } from "vscode-languageserver"
 
 export interface RetransmissionParams<T = any> {
     data: T
     name: string
+}
+
+export interface GetCompletionParams {
+    pos: number
+    fileName: string
+}
+
+export interface ExtensionLoadedParams {
+    sockPath: string
+    configuration: ExtensionConfiguration
 }
 
 export interface InsertSnippetParam {

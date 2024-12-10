@@ -5,9 +5,9 @@ import { stringifyRange } from "../util/vscode"
 import { debounce } from "../../../../shared-util/sundry"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
-import { connection, documents, isTestingEnv, tpic } from "../state"
 import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
+import { configuration, connection, documents, isTestingEnv, tpic } from "../state"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -88,22 +88,25 @@ export const publishDiagnostics = debounce(
             }
 
             // 为指定的诊断信息添加qingkuai相关解释
-            if (
-                item.code === 2345 &&
-                item.source === "ts" &&
-                cr.isPositionFlagSet(ss, "isSlotAttrStart") &&
-                badSlotNameDiagnosticRE.test(item.message)
-            ) {
-                item.message += `\n(Qingkuai explain): There is no slot with the same name in the component.`
-            }
-            if (
-                item.code === 2353 &&
-                item.source === "ts" &&
-                cr.isPositionFlagSet(ss, "isComponentAttrStart")
-            ) {
-                const m = badComponentAttrRE.exec(item.message)
-                if (!isNull(m)) {
-                    item.message += `\n(Qingkuai explain): The attribute name is not a property of component's ${m[1]} type.`
+            if (configuration.typescriptDiagnosticsExplain) {
+                if (
+                    item.code === 2345 &&
+                    item.source === "ts" &&
+                    cr.isPositionFlagSet(ss, "isSlotAttrStart") &&
+                    badSlotNameDiagnosticRE.test(item.message)
+                ) {
+                    item.message += `\n(Qingkuai explain): There is no slot with the same name in the component.`
+                }
+
+                if (
+                    item.code === 2353 &&
+                    item.source === "ts" &&
+                    cr.isPositionFlagSet(ss, "isComponentAttrStart")
+                ) {
+                    const m = badComponentAttrRE.exec(item.message)
+                    if (!isNull(m)) {
+                        item.message += `\n(Qingkuai explain): The attribute name is not a property of component's ${m[1]} type.`
+                    }
                 }
             }
 
@@ -116,15 +119,19 @@ export const publishDiagnostics = debounce(
             })
         }
 
-        connection.sendNotification("textDocument/publishDiagnostics", {
-            diagnostics,
-            uri: textDocument.uri,
-            version: textDocument.version
-        })
+        connection.sendNotification("textDocument/publishDiagnostics", { uri, diagnostics })
     },
-    200,
+    300,
     debounceIdGetter
 )
+
+// 清空诊断信息
+export function clearDiagnostics(uri: string) {
+    connection.sendNotification("textDocument/publishDiagnostics", {
+        uri,
+        diagnostics: []
+    })
+}
 
 function debounceIdGetter(uri: string) {
     return uri

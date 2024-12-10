@@ -6,26 +6,38 @@ import {
 import { pathToFileURL } from "url"
 import { publishDiagnostics } from "./supports/diagnostic"
 import { connectTo } from "../../../shared-util/ipc/participant"
-import { tpic, Logger, setTpic, setTypeRefStatement, tpicConnectedResolver } from "./state"
+import {
+    tpic,
+    Logger,
+    setTpic,
+    setTypeRefStatement,
+    tpicConnectedResolver,
+    setConfiguration
+} from "./state"
+import { ExtensionLoadedParams } from "../../../types/communication"
 
 let connectTimes = 0
 
-// vscode扩展加载完毕处理，连接到typescript-qingkuai-plugin的ipc服务器，并将客户端句柄记录到tpic
-// 后续qingkuai语言服务器将通过tpic与vscode内置的typescript语言服务进行通信，
-export async function connectTsServer(sockPath: string) {
+// vscode扩展加载完毕处理，连接到typescript-qingkuai-plugin的ipc服务器，并将客户端句柄
+// 记录到tpic，后续qingkuai语言服务器将通过tpic与vscode内置的typescript语言服务进行通信
+export async function connectTsServer(params: ExtensionLoadedParams) {
     try {
-        const client = await connectTo(sockPath)
+        const client = await connectTo(params.sockPath)
+
+        setTpic(client)
+        attachClientHandlers()
+        tpicConnectedResolver()
+        setConfiguration(params.configuration)
 
         // 获取qingkuai类型检查器文件的本机绝对路径，qingkuai编译器在生成typescript中间代码时需要它
         setTypeRefStatement(await client.sendRequest("getQingkuaiDtsReferenceStatement", ""))
-        setTpic(client), attachClientHandlers(), tpicConnectedResolver()
 
         Logger.info(connectTsPluginServerSuccess)
-        Logger.info(communicationWayInfo(sockPath))
+        Logger.info(communicationWayInfo(params.sockPath))
     } catch {
         if (connectTimes++ < 60) {
             setTimeout(() => {
-                connectTsServer(sockPath)
+                connectTsServer(params)
             }, 1000)
         } else {
             Logger.error(connectTsPluginServerFailed)

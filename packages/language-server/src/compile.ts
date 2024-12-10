@@ -84,19 +84,23 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         getPosition,
         getInterIndex,
         getSourceIndex,
-        isPositionFlagSet
+        isPositionFlagSet,
+        componentIdentifiers: []
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
     const pms = new Promise<CachedCompileResultItem>(async resolve => {
         if (!isTestingEnv && synchronize) {
-            await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
-                fileName: filePath,
-                interCode: ccri.code,
-                itos: ccri.interIndexMap.itos,
-                scriptKindKey: getScriptKindKey(ccri),
-                slotInfo: ccri.inputDescriptor.slotInfo
-            })
+            ccri.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
+                "updateSnapshot",
+                {
+                    fileName: filePath,
+                    interCode: ccri.code,
+                    itos: ccri.interIndexMap.itos,
+                    scriptKindKey: getScriptKindKey(ccri),
+                    slotInfo: ccri.inputDescriptor.slotInfo
+                }
+            )
         }
         resolve(ccri)
     })

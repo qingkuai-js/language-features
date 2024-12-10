@@ -10,7 +10,8 @@ import {
     projectService,
     languageService,
     typeRefStatement,
-    languageServiceHost
+    languageServiceHost,
+    resolvedQingkuaiModule
 } from "./state"
 import {
     getRealName,
@@ -118,6 +119,12 @@ export function proxyResolveModuleNameLiterals() {
             tsModuleResolutionBackup.set(containingFile, backup)
         }
 
+        let qingkuaiModules = resolvedQingkuaiModule.get(containingFile)
+        if (isUndefined(qingkuaiModules)) {
+            qingkuaiModules = new Set()
+            resolvedQingkuaiModule.set(containingFile, qingkuaiModules)
+        }
+
         return ret.map((item, index) => {
             const moduleText = moduleLiterals[index].text
             const isDirectory = isEmptyString(path.extname(moduleText))
@@ -125,6 +132,7 @@ export function proxyResolveModuleNameLiterals() {
 
             const modulePath = path.resolve(curDir, `${moduleText}${resolveAsQk ? ".qk" : ""}`)
             if (!modulePath.endsWith(".qk") || !fs.existsSync(modulePath)) {
+                qingkuaiModules.delete(moduleText)
                 return backup.get(moduleText) ?? item
             }
 
@@ -132,6 +140,9 @@ export function proxyResolveModuleNameLiterals() {
             if (resolveAsQk && !backup.has(moduleText)) {
                 backup.set(moduleText, item)
             }
+
+            // 记录当前导入路径为qingkuai模块
+            qingkuaiModules.add(moduleText)
 
             let mappingFileInfo = getMappingFileInfo(modulePath)
             if (isUndefined(mappingFileInfo)) {

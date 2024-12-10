@@ -7,10 +7,10 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { documents } from "../state"
 import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
 import { findEventModifier } from "../util/search"
+import { configuration, documents } from "../state"
 import { eventModifiers } from "../data/event-modifier"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
@@ -30,7 +30,8 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
     // HTML标签悬停提示
     const tagRanges = findTagRanges(currentNode, offset)
     const [nodeStartIndex, nodeEndIndex] = currentNode.range
-    if (!isUndefined(tagRanges[0])) {
+    const tagTip = configuration.htmlHoverTip.includes("tag")
+    if (tagTip && !isUndefined(tagRanges[0])) {
         const isStart = offset <= tagRanges[0][1]
         const tagData = findTagData(currentNode.tag)
         if (isUndefined(tagData)) {
@@ -44,7 +45,8 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
 
     // HTML属性名悬停提示
     const attribute = findAttribute(offset, currentNode)
-    if (attribute) {
+    const attrTip = configuration.htmlHoverTip.includes("attribute")
+    if (attrTip && attribute) {
         let attrKey = attribute.key.raw
         const keyStartIndex = attribute.key.loc.start.index
         const KeyEndIndex = attribute.key.loc.end.index
@@ -116,7 +118,13 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
     }
 
     // HTML实体字符悬停提示
-    if (isEmptyString(currentNode.tag) && offset >= nodeStartIndex && offset < nodeEndIndex) {
+    const entityTip = configuration.htmlHoverTip.includes("entity")
+    if (
+        entityTip &&
+        offset < nodeEndIndex &&
+        offset >= nodeStartIndex &&
+        isEmptyString(currentNode.tag)
+    ) {
         let startIndex = offset
         let endIndex = offset + 1
         const validRE = /[a-zA-Z\d;]/

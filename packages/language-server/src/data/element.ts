@@ -15,8 +15,27 @@ import type {
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
+export const slotTagData: HTMLElementDataTagItem = {
+    name: "slot",
+    description: {
+        kind: "markdown",
+        value: "The slot element is a placeholder inside qingkuai component, which will be filled with child elements of the component instance."
+    },
+    attributes: [
+        {
+            name: "name",
+            description: {
+                kind: "markdown",
+                value: "Specify the slot name, if a child element in the component instance has the slot attribute of the same value, it will be inserted into current slot."
+            }
+        }
+    ],
+    references: []
+}
+
 export const htmlElements: HTMLElementData = {
     tags: [
+        slotTagData,
         {
             name: "html",
             description: {
@@ -6316,7 +6335,7 @@ export const htmlDirectives = [
 ]
 
 // 添加自定义标签数据
-export const customHTMLTags = [
+export const embeddedLangTags = [
     ["css"],
     ["sass"],
     ["scss"],
@@ -6335,30 +6354,15 @@ export const customHTMLTags = [
     }
     return ret
 })
-htmlElements.tags.push(...customHTMLTags, {
-    name: "slot",
-    description: {
-        kind: "markdown",
-        value: "The slot element is a placeholder inside a web component that you can fill with your own markup, which lets you create separate DOM trees and present them together."
-    },
-    attributes: [
-        {
-            name: "name",
-            description: {
-                kind: "markdown",
-                value: "The slot's name.\nA **named slot** is a `<slot>` element with a `name` attribute."
-            }
-        }
-    ],
-    references: [
-        {
-            name: "MDN Reference",
-            url: "https://developer.mozilla.org/docs/Web/HTML/Element/slot"
-        }
-    ]
-})
 
 export function findTagData(tag: string) {
+    if (tag.startsWith("lang-")) {
+        for (const item of embeddedLangTags) {
+            if (tag === item.name) {
+                return item
+            }
+        }
+    }
     for (const item of htmlElements.tags) {
         if (tag === item.name) {
             return item

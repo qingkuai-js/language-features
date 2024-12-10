@@ -6,6 +6,7 @@ export type CachedCompileResultItem = CompileResult & {
     version: number
     filePath: string
     document: TextDocument
+    componentIdentifiers: string[]
     getOffset: (position: Position) => number
     getPosition: (offset: number) => Position
     getSourceIndex: (interIndex: number) => number

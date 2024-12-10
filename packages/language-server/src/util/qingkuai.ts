@@ -1,5 +1,6 @@
 import type { TemplateNode } from "qingkuai/compiler"
 import type { FixedArray } from "../../../../types/util"
+
 import { isEmptyString } from "../../../../shared-util/assert"
 
 // 找到源码中某个索引所处的attribute

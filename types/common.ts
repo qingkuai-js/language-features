@@ -7,3 +7,9 @@ export type QingkuaiConfiguration = Partial<{
     convenientDerivedDeclaration: boolean
     reserveHtmlComments: "all" | "never" | "development" | "production"
 }>
+
+export interface ExtensionConfiguration {
+    typescriptDiagnosticsExplain: boolean
+    componentTagFormatPreference: "camel" | "kebab"
+    htmlHoverTip: ("tag" | "entity" | "attribute")[]
+}
