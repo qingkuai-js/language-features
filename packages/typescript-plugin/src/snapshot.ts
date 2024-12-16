@@ -1,13 +1,7 @@
-import type { GlobalTypeExistingInfo } from "./types"
-import type { IScriptSnapshot, ScriptKind } from "typescript"
+import type { IScriptSnapshot } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
-    public globalTypeExisting: GlobalTypeExistingInfo = [false, false]
-
-    constructor(
-        private text: string,
-        public scriptKind: ScriptKind
-    ) {}
+    constructor(private text: string) {}
 
     getFullText() {
         return this.text
@@ -21,11 +15,11 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
         return this.text.length
     }
 
-    getChangeRange(oldSnapshot: QingKuaiSnapShot) {
+    getChangeRange(oldSnapshot: IScriptSnapshot) {
         const newText = this.text
-        const oldText = oldSnapshot.text
-        const oldLength = oldText.length
         const newLength = newText.length
+        const oldLength = oldSnapshot.getLength()
+        const oldText = oldSnapshot.getText(0, oldLength)
 
         let diffStartIndex = 0
         let oldEndIndex = oldLength - 1
@@ -38,6 +32,27 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
                 span: {
                     start: 0,
                     length: 0
+                },
+                newLength: 0
+            }
+        }
+
+        // 新旧快照其中之一是空文本
+        // one of the old and new snapshots is the empty text
+        if (oldLength === 0) {
+            return {
+                span: {
+                    start: 0,
+                    length: 0
+                },
+                newLength
+            }
+        }
+        if (newLength === 0) {
+            return {
+                span: {
+                    start: 0,
+                    length: oldLength
                 },
                 newLength: 0
             }
@@ -71,9 +86,5 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
             },
             newLength: newEndIndex - diffStartIndex + 1
         }
-    }
-
-    setGlobalTypeExisting(info: GlobalTypeExistingInfo) {
-        this.globalTypeExisting = info
     }
 }

@@ -29,3 +29,7 @@ export function isUndefined(v: any): v is undefined {
 export function isPromise(v: any): v is Promise<any> {
     return v instanceof Promise
 }
+
+export function isBoolean(v: any): v is boolean {
+    return typeof v === "boolean"
+}

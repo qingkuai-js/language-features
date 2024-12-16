@@ -1,39 +1,47 @@
+import type {
+    UpdateSnapshotParams,
+    GetClientConfigParams,
+    GetClientConfigResult
+} from "../../../types/communication"
+import type { PositionFlagKeys } from "qingkuai/compiler"
 import type { CachedCompileResultItem } from "./types/service"
-import type { TextDocumentIdentifier } from "vscode-languageserver/node"
 
+import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
-import { compile } from "qingkuai/compiler"
+import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
+import { ExtensionConfiguration } from "../../../types/common"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
-import { UpdateSnapshotParams } from "../../../types/communication"
-import { documents, isTestingEnv, tpic, tpicConnectedPromise, typeRefStatement } from "./state"
+import { TextDocument } from "vscode-languageserver-textdocument"
+import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
+
+// 文档的扩展配置项，键为TextDocument.uri（string）
+const extensionConfigCache = new Map<string, ExtensionConfiguration>()
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
-export const crc = new Map<string, Promise<CachedCompileResultItem>>() // Compile Result Cache
+const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
 
 // 以检查模式解析qk源码文件，版本相同时不会重复解析（测试时无需判断）
-export async function getCompileRes({ uri }: TextDocumentIdentifier) {
-    const document = documents.get(uri)
-    if (isUndefined(document)) {
-        throw new Error("unknown document: " + uri)
-    }
-
-    const { version } = document
-    const cached = await crc.get(uri)
+export async function getCompileRes(document: TextDocument, synchronize = true) {
+    const cached = await compileResultCache.get(document.uri)
 
     // 确保首次编译时机在语言服务器与ts插件成功建立ipc连接后
     // 测试中始终提供最新版本的文档，无需验证文档版本是否发生改变
     if (!isTestingEnv) {
-        await tpicConnectedPromise
-        if (version === cached?.version) {
+        if (tpicConnectedPromise.state === "pending") {
+            await tpicConnectedPromise
+        }
+        if (document.version === cached?.version) {
+            await getClientConfiguration(cached)
+            await syncToTsPlugin(cached)
             return cached
         }
     }
 
     const source = document.getText()
     const getOffset = document.offsetAt.bind(document)
-    const filePath = isTestingEnv ? uri : fileURLToPath(uri)
     const compileRes = compile(source, { check: true, typeRefStatement })
+    const filePath = isTestingEnv ? document.uri : fileURLToPath(document.uri)
 
     // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
     // 如果未传入结束索引，返回的范围固定指向开始位置（Position）
@@ -66,30 +74,92 @@ export async function getCompileRes({ uri }: TextDocumentIdentifier) {
         return compileRes.interIndexMap.stoi[sourceIndex]
     }
 
+    // 验证某个索引的位置信息是否设置了指定的标志位
+    const isPositionFlagSet = (index: number, key: PositionFlagKeys) => {
+        const positionInfo = compileRes.inputDescriptor.positions[index]
+        if (isUndefined(positionInfo)) {
+            return false
+        }
+        return (positionInfo.flag & PositionFlag[key]) !== 0
+    }
+
     const ccri: CachedCompileResultItem = {
         ...compileRes,
-        version,
         getRange,
         filePath,
         document,
         getOffset,
         getPosition,
         getInterIndex,
-        getSourceIndex
+        getSourceIndex,
+        isPositionFlagSet,
+        isSynchronized: false,
+        componentIdentifiers: [],
+        version: document.version,
+        config: {
+            htmlHoverTip: [],
+            typescriptDiagnosticsExplain: false,
+            componentTagFormatPreference: "camel"
+        }
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
     const pms = new Promise<CachedCompileResultItem>(async resolve => {
-        if (!isTestingEnv) {
-            await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
-                fileName: filePath,
-                interCode: ccri.code,
-                scriptKindKey: getScriptKindKey(ccri),
-                slotInfo: ccri.inputDescriptor.slotInfo
-            })
-        }
+        await getClientConfiguration(ccri)
+        await syncToTsPlugin(ccri)
         resolve(ccri)
     })
 
-    return crc.set(uri, pms), await pms
+    // 将编译结果同步到typescript-qingkuai-plugin
+    async function syncToTsPlugin(cr: CachedCompileResultItem) {
+        if (!isTestingEnv && synchronize && !cr.isSynchronized) {
+            cr.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
+                "updateSnapshot",
+                {
+                    interCode: cr.code,
+                    fileName: cr.filePath,
+                    itos: cr.interIndexMap.itos,
+                    scriptKindKey: getScriptKindKey(cr),
+                    slotInfo: cr.inputDescriptor.slotInfo
+                }
+            )
+        }
+    }
+
+    async function getClientConfiguration(cr: CachedCompileResultItem) {
+        if (!extensionConfigCache.has(document.uri)) {
+            const res: GetClientConfigResult = await connection.sendRequest(
+                "qingkuai/getClientConfig",
+                {
+                    filePath: cr.filePath,
+                    scriptPartIsTypescript: cr.inputDescriptor.script.isTS
+                } satisfies GetClientConfigParams
+            )
+
+            extensionConfigCache.set(document.uri, (cr.config = res.extensionConfig))
+        }
+    }
+
+    return compileResultCache.set(document.uri, pms), await pms
+}
+
+// 获取未打开的文档的编译结果
+export async function getCompileResByPath(path: string) {
+    const cache = compileResultCache.get(path)
+    if (!isUndefined(cache)) {
+        return await cache
+    }
+
+    const document = TextDocument.create(
+        `file://${path}`,
+        "qingkuai",
+        1,
+        readFileSync(path, "utf-8")
+    )
+    return await getCompileRes(document, false)
+}
+
+// 清空已缓存的配置内容
+export function clearConfigCache() {
+    extensionConfigCache.clear()
 }

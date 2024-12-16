@@ -63,7 +63,7 @@
             {
                 "language": "qingkuai-emmet",
                 "scopeName": "source.qke",
-                "path": "./syntaxes/qk-emmet.tmLanguage.json",
+                "path": "./syntaxes/qke.tmLanguage.json",
                 "embeddedLanguages": {
                     "source.qk": "qingkuai"
                 }
@@ -78,12 +78,59 @@
                 "name": "typescript-qingkuai-plugin",
                 "enableForWorkspaceTypeScriptVersions": true
             }
-        ]
+        ],
+        "jsonValidation": [
+            {
+                "fileMatch": ".qingkuairc",
+                "url": "./config-validation.json"
+            }
+        ],
+        "configurationDefaults": {
+            "files.associations": {
+                ".qingkuairc": "json"
+            }
+        },
+        "configuration": {
+            "title": "Qingkuai",
+            "properties": {
+                "qingkuai.typescriptDiagnosticsExplain": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Allow to add explain to ambiguous typescript diagnostic message."
+                },
+                "qingkuai.componentTagFormatPreference": {
+                    "type": "string",
+                    "enum": [
+                        "camel",
+                        "kebab"
+                    ],
+                    "default": "camel",
+                    "description": "Your preferred component tag format for completion suggestions."
+                },
+                "qingkuai.htmlHoverTip": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "tag",
+                            "entity",
+                            "attribute"
+                        ]
+                    },
+                    "default": [
+                        "tag",
+                        "entity",
+                        "attribute"
+                    ],
+                    "description": "Whether to enable hover tip for HTML tags, attributes and entity characters."
+                }
+            }
+        }
     },
     "scripts": {
         "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
         "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
-        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qk-emmet.tmLanguage.json && npx prettier --write ../qk-emmet.tmLanguage.json"
+        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qk-emmet.tmLanguage.json"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0"

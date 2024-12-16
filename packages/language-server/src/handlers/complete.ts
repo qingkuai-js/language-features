@@ -1,52 +1,123 @@
+import type {
+    InsertSnippetParam,
+    GetCompletionParams,
+    GetCompletionResult
+} from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
 import type { HTMLElementDataAttributeItem } from "../types/data"
-import type { InsertSnippetParam } from "../../../../types/communication"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
 
 import {
+    slotTagData,
     findTagData,
     htmlElements,
     findValueSet,
-    customHTMLTags,
     htmlDirectives,
+    embeddedLangTags,
     getDocumentation,
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { connection } from "../state"
+import {
+    TextEdit,
+    InsertTextFormat,
+    CompletionItemTag,
+    CompletionItemKind
+} from "vscode-languageserver/node"
 import { getCompileRes } from "../compile"
 import { parseTemplate } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
+import { camel2Kebab } from "../../../../shared-util/sundry"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { offsetPosition, position2Range } from "../util/vscode"
 import { commands, keyRelatedEventModifiers } from "../constants"
+import { connection, documents, isTestingEnv, tpic } from "../state"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
-import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
+
+const optionalSameKeys = [
+    "data",
+    "preselect",
+    "filterText",
+    "insertText",
+    "labelDetails",
+    "commitCharacters"
+] as const
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
-    const cr = await getCompileRes(textDocument)
-    const { templateNodes, document, getOffset, getRange, getPosition } = cr
+    const cr = await getCompileRes(documents.get(textDocument.uri)!)
+    const { templateNodes, document, getOffset, getRange, getPosition, getSourceIndex, config } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
     const triggerChar = source[offset - 1] ?? ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
-    // print(currentNode)
+    const inScript = cr.isPositionFlagSet(offset, "inScript")
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
     if (isUndefined(currentNode)) {
         return null
     }
 
-    // 文本节点范文内启用emmet、实体字符及自定义标签补全建议支持
+    if (!isTestingEnv && inScript) {
+        const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<GetCompletionParams>(
+            "getCompletion",
+            {
+                fileName: cr.filePath,
+                pos: cr.interIndexMap.stoi[offset]
+            }
+        )
+        if (isNull(tsCompletionRes)) {
+            return null
+        }
+
+        const compltionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
+            const ret: CompletionItem = {
+                label: item.label,
+                kind: convertTsCompletionKind(item.kind)
+            }
+            optionalSameKeys.forEach(key => {
+                item[key] && (ret[key] = item[key])
+            })
+            if (item.deprecated) {
+                ret.tags = [CompletionItemTag.Deprecated]
+            }
+            if (item.isSnippet) {
+                ret.insertTextFormat = InsertTextFormat.Snippet
+            }
+            if (item.replacementSpan) {
+                const { start, length } = item.replacementSpan
+                ret.textEdit = TextEdit.del(
+                    getRange(getSourceIndex(start), getSourceIndex(start + length))
+                )
+            }
+            return ret
+        })
+
+        let defaultEditRange: Range | undefined = undefined
+        if (tsCompletionRes.defaultRepalcementSpan) {
+            const { start, length } = tsCompletionRes.defaultRepalcementSpan
+            defaultEditRange = getRange(getSourceIndex(start), getSourceIndex(start + length))
+        }
+
+        return {
+            items: compltionItems,
+            isIncomplete: tsCompletionRes.isIncomplete,
+            itemDefaults: {
+                editRange: defaultEditRange,
+                commitCharacters: tsCompletionRes.defaultCommitCharacters
+            }
+        }
+    }
+
+    // 文本节点范围内启用emmet、实体字符及自定义标签补全建议支持
+    // 如果父节点结束标签未闭合且前两个字符为</，则自动闭合结束标签
     if (isEmptyString(currentNode.tag)) {
-        // 如果当前文本节点的父节点未闭合，且触发补全建议的位置之前是</，则自动闭合父节点
         if (
             !isNull(currentNode.parent) &&
             currentNode.parent?.range[1] === -1 &&
@@ -67,11 +138,13 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
             ),
 
             // prettier-ignore
-            ...doEmbeddedLanguageTagComplete(
+            ...doCustomTagComplete(
                 position2Range(position),
                 source,
                 offset,
-                currentNode
+                currentNode,
+                cr.componentIdentifiers,
+                config.componentTagFormatPreference
             )
         ]
 
@@ -231,13 +304,16 @@ function doTagComplete(range: Range) {
 }
 
 // 自定义HTML标签补全建议（模拟emmet行为）
-function doEmbeddedLanguageTagComplete(
+function doCustomTagComplete(
     range: Range,
     source: string,
     offset: number,
-    node: TemplateNode
+    node: TemplateNode,
+    componentIdentifiers: string[],
+    componentTagFormatPreference: string
 ): CompletionItem[] {
     let shouldSuggest = false
+    const ret: CompletionItem[] = []
 
     for (let i = offset - 1; i >= node.loc.start.index; i--) {
         if (/[a-z\-]/.test(source[i] || "")) {
@@ -246,23 +322,46 @@ function doEmbeddedLanguageTagComplete(
         } else break
     }
 
-    if (shouldSuggest && isNull(node.parent)) {
-        return customHTMLTags.map(({ name, description }) => {
-            return {
-                label: name,
+    if (shouldSuggest) {
+        if (isNull(node.parent)) {
+            embeddedLangTags.forEach(({ name, description }) => {
+                ret.push({
+                    label: name,
+                    insertTextFormat: InsertTextFormat.Snippet,
+                    documentation: {
+                        kind: "markdown",
+                        value:
+                            `${description}\n\n` +
+                            mdCodeBlockGen("qingkuai-emmet", `<${name}>\n\t|\n</${name}>`)
+                    },
+                    textEdit: TextEdit.replace(range, `<${name}>\n\t$0\n</${name}>`)
+                })
+            })
+        }
+
+        // 为slot标签添加emmet支持
+        if (!isTestingEnv) {
+            ret.push({
+                label: slotTagData.name,
+                documentation: getDocumentation(slotTagData),
                 insertTextFormat: InsertTextFormat.Snippet,
-                documentation: {
-                    kind: "markdown",
-                    value:
-                        `${description}\n\n` +
-                        mdCodeBlockGen("qk-emmet", `<${name}>\n\t|\n</${name}>`)
-                },
-                textEdit: TextEdit.replace(range, `<${name}>\n\t$0\n</${name}>`)
-            } satisfies CompletionItem
+                textEdit: TextEdit.replace(range, `<slot name="$1">$0</slot>`)
+            })
+        }
+
+        componentIdentifiers.forEach(item => {
+            const kebab = componentTagFormatPreference === "kebab"
+            const tag = kebab ? camel2Kebab(item) : item
+            ret.push({
+                label: tag,
+                documentation: `(component) ${item}`,
+                insertTextFormat: InsertTextFormat.Snippet,
+                textEdit: TextEdit.replace(range, `<${tag}>$0</${tag}>`)
+            })
         })
     }
 
-    return []
+    return ret
 }
 
 // emmet支持，此方法会将特殊属性值（动态/引用属性、指令、事件名）转换为花括号包裹
@@ -272,7 +371,7 @@ function doEmmetComplete(document: TextDocument, position: Position) {
     const ret = _doEmmetComplete(document, position, "html", {})
     ret?.items.forEach(item => {
         const setNT = (text: string) => (item.textEdit!.newText = text)
-        parseTemplate(item.textEdit?.newText || "", false).forEach(node => {
+        parseTemplate(item.textEdit?.newText || "").forEach(node => {
             node.attributes.forEach(attr => {
                 const v = attr.value.raw
                 const vsi = attr.value.loc.start.index - 1
@@ -513,5 +612,69 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
                 textEdit: TextEdit.replace(range, value.name)
             } as CompletionItem
         })
+    }
+}
+
+// 将ts补全建议的kind转换为LSP需要的kind
+function convertTsCompletionKind(kind: string) {
+    switch (kind) {
+        case "keyword":
+        case "primitive type":
+            return CompletionItemKind.Keyword
+
+        case "var":
+        case "let":
+        case "const":
+        case "alias":
+        case "local var":
+        case "parameter":
+            return CompletionItemKind.Variable
+
+        case "getter":
+        case "setter":
+        case "property":
+            return CompletionItemKind.Field
+
+        case "function":
+        case "local function":
+            return CompletionItemKind.Function
+
+        case "call":
+        case "index":
+        case "method":
+        case "construct":
+            return CompletionItemKind.Method
+
+        case "enum":
+            return CompletionItemKind.Enum
+
+        case "enum member":
+            return CompletionItemKind.EnumMember
+
+        case "module":
+        case "external module name":
+            return CompletionItemKind.Module
+
+        case "type":
+        case "class":
+            return CompletionItemKind.Class
+
+        case "interface":
+            return CompletionItemKind.Interface
+
+        case "warning":
+            return CompletionItemKind.Text
+
+        case "script":
+            return CompletionItemKind.File
+
+        case "directory":
+            return CompletionItemKind.Folder
+
+        case "string":
+            return CompletionItemKind.Constant
+
+        default:
+            return CompletionItemKind.Property
     }
 }

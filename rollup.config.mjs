@@ -43,7 +43,6 @@ export default defineConfig(() => {
                         /emmetHelper\.js|vscode-uri\/lib\/esm\/index.js/.test(log.id)
                     )
                 ) {
-                    console.log(log)
                     warn(log)
                 }
             }

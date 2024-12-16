@@ -1,25 +1,28 @@
+import { tpic, Logger, setTpic, setTypeRefStatement, tpicConnectedResolver } from "./state"
 import {
     communicationWayInfo,
     connectTsPluginServerFailed,
     connectTsPluginServerSuccess
 } from "./messages"
-import { publishDiagnostics } from "./supports/diagnostic"
-import { connectTo } from "../../../shared-util/ipc/participant"
-import { Logger, setTpic, setTypeRefStatement, tpic, tpicConnectedResolver } from "./state"
 import { pathToFileURL } from "url"
+import { publishDiagnostics } from "./handlers/diagnostic"
+import { connectTo } from "../../../shared-util/ipc/participant"
 
 let connectTimes = 0
 
-// vscode扩展加载完毕处理，连接到typescript-qingkuai-plugin的ipc服务器，并将客户端句柄记录到tpic
-// 后续qingkuai语言服务器将通过tpic与vscode内置的typescript语言服务进行通信，
+// vscode扩展加载完毕处理，连接到typescript-qingkuai-plugin的ipc服务器，并将客户端句柄
+// 记录到tpic，后续qingkuai语言服务器将通过tpic与vscode内置的typescript语言服务进行通信
 export async function connectTsServer(sockPath: string) {
     try {
         const client = await connectTo(sockPath)
 
+        setTpic(client)
+        attachClientHandlers()
+
         // 获取qingkuai类型检查器文件的本机绝对路径，qingkuai编译器在生成typescript中间代码时需要它
         setTypeRefStatement(await client.sendRequest("getQingkuaiDtsReferenceStatement", ""))
-        setTpic(client), attachClientHandlers(), tpicConnectedResolver()
 
+        tpicConnectedResolver()
         Logger.info(connectTsPluginServerSuccess)
         Logger.info(communicationWayInfo(sockPath))
     } catch {
@@ -34,7 +37,7 @@ export async function connectTsServer(sockPath: string) {
 }
 
 function attachClientHandlers() {
-    // 附加ts服务器插件日志通道
+    // ts服务器插件日志通道
     const kinds = ["info", "warn", "error"] as const
     kinds.forEach(kind => {
         tpic.onNotification(`log/${kind}`, (msg: string) => {
@@ -42,7 +45,7 @@ function attachClientHandlers() {
         })
     })
 
-    // 附加服务器主动推送的诊断通知
+    // ts插件主动推送的诊断通知
     tpic.onNotification("publishDiagnostics", (fileName: string) => {
         publishDiagnostics(pathToFileURL(fileName).toString())
     })

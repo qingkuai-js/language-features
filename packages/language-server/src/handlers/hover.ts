@@ -7,6 +7,7 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
+import { documents } from "../state"
 import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
 import { findEventModifier } from "../util/search"
@@ -16,8 +17,8 @@ import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const hover: HoverHander = async ({ textDocument, position }) => {
-    const cr = await getCompileRes(textDocument)
-    const { templateNodes, getOffset, getRange } = cr
+    const cr = await getCompileRes(documents.get(textDocument.uri)!)
+    const { templateNodes, getOffset, getRange, config } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
@@ -29,7 +30,8 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
     // HTML标签悬停提示
     const tagRanges = findTagRanges(currentNode, offset)
     const [nodeStartIndex, nodeEndIndex] = currentNode.range
-    if (!isUndefined(tagRanges[0])) {
+    const tagTip = config.htmlHoverTip.includes("tag")
+    if (tagTip && !isUndefined(tagRanges[0])) {
         const isStart = offset <= tagRanges[0][1]
         const tagData = findTagData(currentNode.tag)
         if (isUndefined(tagData)) {
@@ -43,7 +45,8 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
 
     // HTML属性名悬停提示
     const attribute = findAttribute(offset, currentNode)
-    if (attribute) {
+    const attrTip = config.htmlHoverTip.includes("attribute")
+    if (attrTip && attribute) {
         let attrKey = attribute.key.raw
         const keyStartIndex = attribute.key.loc.start.index
         const KeyEndIndex = attribute.key.loc.end.index
@@ -115,7 +118,13 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
     }
 
     // HTML实体字符悬停提示
-    if (isEmptyString(currentNode.tag) && offset >= nodeStartIndex && offset < nodeEndIndex) {
+    const entityTip = config.htmlHoverTip.includes("entity")
+    if (
+        entityTip &&
+        offset < nodeEndIndex &&
+        offset >= nodeStartIndex &&
+        isEmptyString(currentNode.tag)
+    ) {
         let startIndex = offset
         let endIndex = offset + 1
         const validRE = /[a-zA-Z\d;]/
