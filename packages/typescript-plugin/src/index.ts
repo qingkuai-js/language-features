@@ -17,6 +17,7 @@ import {
 import { attachChangeConfig } from "./server/config"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachGetDiagnostic } from "./server/diagnostic/handler"
+import { attachGetCompletion } from "./server/completion/handler"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { configurations, setServer, setTSState, ts, typeRefStatement } from "./state"
 import { attachDocumentManager, attachUpdateSnapshot } from "./server/content/handler"
@@ -56,6 +57,7 @@ export = function init(modules: { typescript: typeof TS }) {
                     setServer(server)
                     attachChangeConfig()
                     attachGetDiagnostic()
+                    attachGetCompletion()
                     attachUpdateSnapshot()
                     attachDocumentManager()
                     server.onRequest("getQingkuaiDtsReferenceStatement", () => typeRefStatement)

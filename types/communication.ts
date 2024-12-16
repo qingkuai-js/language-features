@@ -1,6 +1,7 @@
 import type { SlotInfo } from "qingkuai/compiler"
-import type { ExtensionConfiguration } from "./common"
-import type { CompletionItem, CompletionList, Range } from "vscode-languageserver"
+import type { ExtensionConfiguration, TSClientConfiguration } from "./common"
+import type { Range, CompletionItemLabelDetails } from "vscode-languageserver"
+import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
 
 export interface RetransmissionParams<T = any> {
     data: T
@@ -12,9 +13,37 @@ export interface GetCompletionParams {
     fileName: string
 }
 
-export interface ExtensionLoadedParams {
-    sockPath: string
-    configuration: ExtensionConfiguration
+export interface GetClientConfigParams {
+    filePath: string
+    scriptPartIsTypescript: boolean
+}
+
+export interface GetClientConfigResult {
+    workspaceFolder: string
+    typescriptConfig: TSClientConfiguration
+    extensionConfig: ExtensionConfiguration
+}
+
+export interface GetCompletionResultEntry {
+    label: string
+    kind: ScriptElementKind
+    sortText?: string
+    filterText?: string
+    insertText?: string
+    isSnippet?: boolean
+    preselect?: boolean
+    deprecated?: boolean
+    data?: CompletionEntryData
+    replacementSpan?: TextSpan
+    commitCharacters?: string[]
+    labelDetails?: CompletionItemLabelDetails
+}
+
+export type GetCompletionResult = null | {
+    isIncomplete: boolean
+    defaultCommitCharacters: string[]
+    defaultRepalcementSpan?: TextSpan
+    entries: GetCompletionResultEntry[]
 }
 
 export interface InsertSnippetParam {
@@ -48,5 +77,3 @@ export interface TSDiagnostic {
     unnecessary: boolean
     relatedInformation: TSDiagnosticRelatedInformation[]
 }
-
-export type CompletionResult = CompletionItem[] | CompletionList | undefined | null

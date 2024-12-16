@@ -1,3 +1,8 @@
+import type {
+    UpdateSnapshotParams,
+    GetClientConfigParams,
+    GetClientConfigResult
+} from "../../../types/communication"
 import type { PositionFlagKeys } from "qingkuai/compiler"
 import type { CachedCompileResultItem } from "./types/service"
 
@@ -5,18 +10,20 @@ import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
+import { ExtensionConfiguration } from "../../../types/common"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { UpdateSnapshotParams } from "../../../types/communication"
-import { isTestingEnv, tpic, tpicConnectedPromise, typeRefStatement } from "./state"
+import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
+
+// 文档的扩展配置项，键为TextDocument.uri（string）
+const extensionConfigCache = new Map<string, ExtensionConfiguration>()
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
-export const crc = new Map<string, Promise<CachedCompileResultItem>>() // Compile Result Cache
+const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
 
 // 以检查模式解析qk源码文件，版本相同时不会重复解析（测试时无需判断）
 export async function getCompileRes(document: TextDocument, synchronize = true) {
-    const { version } = document
-    const cached = await crc.get(document.uri)
+    const cached = await compileResultCache.get(document.uri)
 
     // 确保首次编译时机在语言服务器与ts插件成功建立ipc连接后
     // 测试中始终提供最新版本的文档，无需验证文档版本是否发生改变
@@ -24,7 +31,9 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         if (tpicConnectedPromise.state === "pending") {
             await tpicConnectedPromise
         }
-        if (version === cached?.version) {
+        if (document.version === cached?.version) {
+            await getClientConfiguration(cached)
+            await syncToTsPlugin(cached)
             return cached
         }
     }
@@ -76,7 +85,6 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
 
     const ccri: CachedCompileResultItem = {
         ...compileRes,
-        version,
         getRange,
         filePath,
         document,
@@ -85,32 +93,59 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         getInterIndex,
         getSourceIndex,
         isPositionFlagSet,
-        componentIdentifiers: []
+        isSynchronized: false,
+        componentIdentifiers: [],
+        version: document.version,
+        config: {
+            htmlHoverTip: [],
+            typescriptDiagnosticsExplain: false,
+            componentTagFormatPreference: "camel"
+        }
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
     const pms = new Promise<CachedCompileResultItem>(async resolve => {
-        if (!isTestingEnv && synchronize) {
-            ccri.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
-                "updateSnapshot",
-                {
-                    fileName: filePath,
-                    interCode: ccri.code,
-                    itos: ccri.interIndexMap.itos,
-                    scriptKindKey: getScriptKindKey(ccri),
-                    slotInfo: ccri.inputDescriptor.slotInfo
-                }
-            )
-        }
+        await getClientConfiguration(ccri)
+        await syncToTsPlugin(ccri)
         resolve(ccri)
     })
 
-    return crc.set(document.uri, pms), await pms
+    // 将编译结果同步到typescript-qingkuai-plugin
+    async function syncToTsPlugin(cr: CachedCompileResultItem) {
+        if (!isTestingEnv && synchronize && !cr.isSynchronized) {
+            cr.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
+                "updateSnapshot",
+                {
+                    interCode: cr.code,
+                    fileName: cr.filePath,
+                    itos: cr.interIndexMap.itos,
+                    scriptKindKey: getScriptKindKey(cr),
+                    slotInfo: cr.inputDescriptor.slotInfo
+                }
+            )
+        }
+    }
+
+    async function getClientConfiguration(cr: CachedCompileResultItem) {
+        if (!extensionConfigCache.has(document.uri)) {
+            const res: GetClientConfigResult = await connection.sendRequest(
+                "qingkuai/getClientConfig",
+                {
+                    filePath: cr.filePath,
+                    scriptPartIsTypescript: cr.inputDescriptor.script.isTS
+                } satisfies GetClientConfigParams
+            )
+
+            extensionConfigCache.set(document.uri, (cr.config = res.extensionConfig))
+        }
+    }
+
+    return compileResultCache.set(document.uri, pms), await pms
 }
 
 // 获取未打开的文档的编译结果
 export async function getCompileResByPath(path: string) {
-    const cache = crc.get(path)
+    const cache = compileResultCache.get(path)
     if (!isUndefined(cache)) {
         return await cache
     }
@@ -122,4 +157,9 @@ export async function getCompileResByPath(path: string) {
         readFileSync(path, "utf-8")
     )
     return await getCompileRes(document, false)
+}
+
+// 清空已缓存的配置内容
+export function clearConfigCache() {
+    extensionConfigCache.clear()
 }

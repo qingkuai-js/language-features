@@ -69,3 +69,19 @@ export function lastElem<T extends any[]>(arr: T): T[number] {
 export function typedKeys<T extends AnyObject>(obj: T): Array<keyof T> {
     return Object.keys(obj) as any
 }
+
+// 从对象中排除指定的属性
+export function excludeProperty<T extends AnyObject, K extends keyof T>(
+    obj: T,
+    ...keys: K[]
+): Omit<T, (typeof keys)[number]> {
+    const ret: any = {}
+    const set = new Set(keys)
+    for (const key of Reflect.ownKeys(obj)) {
+        // @ts-expect-error
+        if (!set.has(key)) {
+            ret[key] = obj[key]
+        }
+    }
+    return ret
+}

@@ -1,7 +1,11 @@
+import type {
+    InsertSnippetParam,
+    GetCompletionParams,
+    GetCompletionResult
+} from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionHandler } from "../types/handlers"
 import type { HTMLElementDataAttributeItem } from "../types/data"
-import { GetCompletionParams, type InsertSnippetParam } from "../../../../types/communication"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
 
@@ -16,30 +20,44 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
+import {
+    TextEdit,
+    InsertTextFormat,
+    CompletionItemTag,
+    CompletionItemKind
+} from "vscode-languageserver/node"
 import { getCompileRes } from "../compile"
+import { parseTemplate } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
 import { camel2Kebab } from "../../../../shared-util/sundry"
 import { findAttribute, findNodeAt } from "../util/qingkuai"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
-import { parseTemplate, PositionFlag } from "qingkuai/compiler"
 import { offsetPosition, position2Range } from "../util/vscode"
 import { commands, keyRelatedEventModifiers } from "../constants"
+import { connection, documents, isTestingEnv, tpic } from "../state"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
-import { configuration, connection, documents, isTestingEnv, tpic } from "../state"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
-import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
+
+const optionalSameKeys = [
+    "data",
+    "preselect",
+    "filterText",
+    "insertText",
+    "labelDetails",
+    "commitCharacters"
+] as const
 
 export const complete: CompletionHandler = async ({ position, textDocument }) => {
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    const { templateNodes, document, getOffset, getRange, getPosition } = cr
+    const { templateNodes, document, getOffset, getRange, getPosition, getSourceIndex, config } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
     const triggerChar = source[offset - 1] ?? ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
-    const inScript = (cr.inputDescriptor.positions[offset].flag & PositionFlag.inScript) !== 0
+    const inScript = cr.isPositionFlagSet(offset, "inScript")
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
     if (isUndefined(currentNode)) {
@@ -47,15 +65,59 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
     }
 
     if (!isTestingEnv && inScript) {
-        await tpic.sendRequest<GetCompletionParams>("getCompoletion", {
-            pos: offset,
-            fileName: cr.filePath
+        const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<GetCompletionParams>(
+            "getCompletion",
+            {
+                fileName: cr.filePath,
+                pos: cr.interIndexMap.stoi[offset]
+            }
+        )
+        if (isNull(tsCompletionRes)) {
+            return null
+        }
+
+        const compltionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
+            const ret: CompletionItem = {
+                label: item.label,
+                kind: convertTsCompletionKind(item.kind)
+            }
+            optionalSameKeys.forEach(key => {
+                item[key] && (ret[key] = item[key])
+            })
+            if (item.deprecated) {
+                ret.tags = [CompletionItemTag.Deprecated]
+            }
+            if (item.isSnippet) {
+                ret.insertTextFormat = InsertTextFormat.Snippet
+            }
+            if (item.replacementSpan) {
+                const { start, length } = item.replacementSpan
+                ret.textEdit = TextEdit.del(
+                    getRange(getSourceIndex(start), getSourceIndex(start + length))
+                )
+            }
+            return ret
         })
+
+        let defaultEditRange: Range | undefined = undefined
+        if (tsCompletionRes.defaultRepalcementSpan) {
+            const { start, length } = tsCompletionRes.defaultRepalcementSpan
+            defaultEditRange = getRange(getSourceIndex(start), getSourceIndex(start + length))
+        }
+
+        return {
+            items: compltionItems,
+            isIncomplete: tsCompletionRes.isIncomplete,
+            itemDefaults: {
+                editRange: defaultEditRange,
+                commitCharacters: tsCompletionRes.defaultCommitCharacters
+            }
+        }
     }
 
-    // 文本节点范文内启用emmet、实体字符及自定义标签补全建议支持
+    // 文本节点范围内启用emmet、实体字符及自定义标签补全建议支持
+    // 如果父节点结束标签未闭合且前两个字符为</，则自动闭合结束标签
     if (isEmptyString(currentNode.tag)) {
-        // 如果当前文本节点的父节点未闭合，且触发补全建议的位置之前是</，则自动闭合父节点
         if (
             !isNull(currentNode.parent) &&
             currentNode.parent?.range[1] === -1 &&
@@ -81,7 +143,8 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
                 source,
                 offset,
                 currentNode,
-                cr.componentIdentifiers
+                cr.componentIdentifiers,
+                config.componentTagFormatPreference
             )
         ]
 
@@ -246,7 +309,8 @@ function doCustomTagComplete(
     source: string,
     offset: number,
     node: TemplateNode,
-    componentIdentifiers: string[]
+    componentIdentifiers: string[],
+    componentTagFormatPreference: string
 ): CompletionItem[] {
     let shouldSuggest = false
     const ret: CompletionItem[] = []
@@ -286,7 +350,7 @@ function doCustomTagComplete(
         }
 
         componentIdentifiers.forEach(item => {
-            const kebab = configuration.componentTagFormatPreference === "kebab"
+            const kebab = componentTagFormatPreference === "kebab"
             const tag = kebab ? camel2Kebab(item) : item
             ret.push({
                 label: tag,
@@ -548,5 +612,69 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
                 textEdit: TextEdit.replace(range, value.name)
             } as CompletionItem
         })
+    }
+}
+
+// 将ts补全建议的kind转换为LSP需要的kind
+function convertTsCompletionKind(kind: string) {
+    switch (kind) {
+        case "keyword":
+        case "primitive type":
+            return CompletionItemKind.Keyword
+
+        case "var":
+        case "let":
+        case "const":
+        case "alias":
+        case "local var":
+        case "parameter":
+            return CompletionItemKind.Variable
+
+        case "getter":
+        case "setter":
+        case "property":
+            return CompletionItemKind.Field
+
+        case "function":
+        case "local function":
+            return CompletionItemKind.Function
+
+        case "call":
+        case "index":
+        case "method":
+        case "construct":
+            return CompletionItemKind.Method
+
+        case "enum":
+            return CompletionItemKind.Enum
+
+        case "enum member":
+            return CompletionItemKind.EnumMember
+
+        case "module":
+        case "external module name":
+            return CompletionItemKind.Module
+
+        case "type":
+        case "class":
+            return CompletionItemKind.Class
+
+        case "interface":
+            return CompletionItemKind.Interface
+
+        case "warning":
+            return CompletionItemKind.Text
+
+        case "script":
+            return CompletionItemKind.File
+
+        case "directory":
+            return CompletionItemKind.Folder
+
+        case "string":
+            return CompletionItemKind.Constant
+
+        default:
+            return CompletionItemKind.Property
     }
 }

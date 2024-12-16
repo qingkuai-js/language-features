@@ -5,9 +5,9 @@ import { stringifyRange } from "../util/vscode"
 import { debounce } from "../../../../shared-util/sundry"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
+import { connection, documents, isTestingEnv, tpic } from "../state"
 import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
-import { configuration, connection, documents, isTestingEnv, tpic } from "../state"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -20,7 +20,7 @@ export const publishDiagnostics = debounce(
         const textDocument = documents.get(uri)!
         const cr = await getCompileRes(textDocument)
         const { Error, Warning } = DiagnosticSeverity
-        const { messages, getRange, filePath, getSourceIndex } = cr
+        const { messages, getRange, filePath, getSourceIndex, config } = cr
 
         // 将ts语言服务的诊断信息添加到诊断结果
         const extendDiagnostic = (item: Diagnostic) => {
@@ -88,7 +88,7 @@ export const publishDiagnostics = debounce(
             }
 
             // 为指定的诊断信息添加qingkuai相关解释
-            if (configuration.typescriptDiagnosticsExplain) {
+            if (config.typescriptDiagnosticsExplain) {
                 if (
                     item.code === 2345 &&
                     item.source === "ts" &&
