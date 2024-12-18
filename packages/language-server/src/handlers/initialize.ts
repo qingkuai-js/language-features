@@ -18,6 +18,9 @@ export const initialize: InitializeHandler = () => {
             },
             completionProvider: {
                 resolveProvider: true,
+                completionItem: {
+                    labelDetailsSupport: true
+                },
                 triggerCharacters: [
                     ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
 

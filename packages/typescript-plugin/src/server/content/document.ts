@@ -1,7 +1,7 @@
 import type { QingKuaiFileInfo } from "../../types"
 
 import { existsSync } from "fs"
-import { ts } from "../../state"
+import { project, projectService, ts } from "../../state"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { createRandomHash } from "../../../../../shared-util/sundry"
 
@@ -83,4 +83,17 @@ export function assignMappingFileForQkFile(
 
     const ret = getMappingFileInfo(fileName)!
     return (ret.isOpen = isOpen), ret
+}
+
+export function ensureFileOpenStatus({ isOpen, mappingFileName }: QingKuaiFileInfo) {
+    // @ts-expect-error: access private property
+    const { openFiles, filenameToScriptInfo } = projectService
+    const p = projectService.toPath(mappingFileName)
+    if (openFiles.has(p) && !isOpen) {
+        openFiles.delete(p)
+        filenameToScriptInfo.delete(p)
+    } else if (!openFiles.has(p) && isOpen) {
+        filenameToScriptInfo.set(p, projectService.getScriptInfo(mappingFileName))
+        openFiles.set(p, ts.server.toNormalizedPath(project.getCurrentDirectory()))
+    }
 }

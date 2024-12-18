@@ -30,9 +30,6 @@ export const snapshotCache = new Map<string, QingKuaiSnapShot>()
 // 已解析的qingkuai模块，键为映射文件名，值为导入路径
 export const resolvedQingkuaiModule = new Map<string, Set<string>>()
 
-// .qingkuairc文件配置内容，键为其所在的目录
-export const configurations = new Map<string, QingkuaiConfiguration>()
-
 // qingkuai自定义错误缓存
 export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
 

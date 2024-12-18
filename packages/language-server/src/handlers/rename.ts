@@ -6,7 +6,11 @@ import { TextEdit } from "vscode-languageserver/node"
 import { findNodeAt, findTagRanges } from "../util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 
-export const rename: RenameHander = async ({ textDocument, position, newName }) => {
+export const rename: RenameHander = async ({ textDocument, position, newName }, token) => {
+    if (token.isCancellationRequested) {
+        return
+    }
+
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
     const { getRange, getOffset, templateNodes } = cr
 

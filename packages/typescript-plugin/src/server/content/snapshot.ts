@@ -19,10 +19,10 @@ import {
 } from "../../regular"
 import { compilerFuncs } from "../../constant"
 import { getMappingFileInfo } from "./document"
-import { getConfigByFileName } from "../config"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { stringify } from "../../../../../shared-util/sundry"
+import { getConfigByFileName } from "../configuration/method"
 import { isNull, isNumber, isString, isUndefined } from "../../../../../shared-util/assert"
 import { ts, languageService, qingkuaiDiagnostics, resolvedQingkuaiModule } from "../../state"
 

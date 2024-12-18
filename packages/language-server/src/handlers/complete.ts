@@ -1,13 +1,14 @@
 import type {
     InsertSnippetParam,
     GetCompletionParams,
-    GetCompletionResult
+    GetCompletionResult,
+    ResolveCompletionResult
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
-import type { CompletionHandler } from "../types/handlers"
 import type { HTMLElementDataAttributeItem } from "../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
+import type { CompletionHandler, ResolveCompletionHandler } from "../types/handlers"
 
 import {
     slotTagData,
@@ -41,7 +42,6 @@ import { htmlEntities, htmlEntitiesKeys, htmlEntityRE } from "../data/entity"
 import { isEmptyString, isNull, isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
-    "data",
     "preselect",
     "filterText",
     "insertText",
@@ -49,7 +49,11 @@ const optionalSameKeys = [
     "commitCharacters"
 ] as const
 
-export const complete: CompletionHandler = async ({ position, textDocument }) => {
+export const complete: CompletionHandler = async ({ position, textDocument }, token) => {
+    if (token.isCancellationRequested) {
+        return
+    }
+
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
     const { templateNodes, document, getOffset, getRange, getPosition, getSourceIndex, config } = cr
 
@@ -65,11 +69,12 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
     }
 
     if (!isTestingEnv && inScript) {
+        const positionOfInterCode = cr.interIndexMap.stoi[offset]
         const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<GetCompletionParams>(
             "getCompletion",
             {
                 fileName: cr.filePath,
-                pos: cr.interIndexMap.stoi[offset]
+                pos: positionOfInterCode
             }
         )
         if (isNull(tsCompletionRes)) {
@@ -79,11 +84,28 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
         const compltionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
             const ret: CompletionItem = {
                 label: item.label,
+                data: {
+                    _fromTS: true,
+                    ori: item.data,
+                    source: item.source,
+                    entryName: item.name,
+                    fileName: cr.filePath,
+                    pos: positionOfInterCode
+                },
                 kind: convertTsCompletionKind(item.kind)
             }
             optionalSameKeys.forEach(key => {
+                // @ts-expect-error
                 item[key] && (ret[key] = item[key])
             })
+            if (item.source) {
+                ret.labelDetails = {
+                    description: item.source
+                }
+            }
+            if (item.isColor) {
+                ret.kind = CompletionItemKind.Color
+            }
             if (item.deprecated) {
                 ret.tags = [CompletionItemTag.Deprecated]
             }
@@ -290,6 +312,24 @@ export const complete: CompletionHandler = async ({ position, textDocument }) =>
             return doAttributeNameComplete(currentNode.tag, keyRange, hasValue, keyFirstChar)
         }
     }
+}
+
+export const resolveCompletion: ResolveCompletionHandler = async (item, token) => {
+    if (token.isCancellationRequested || item.data?._fromTS !== true) {
+        return item
+    }
+
+    const ret: ResolveCompletionResult = await tpic.sendRequest("resolveCompletion", item.data)
+    if (ret.detail) {
+        item.detail = ret.detail
+    }
+    if (ret.documentation) {
+        item.documentation = {
+            kind: "markdown",
+            value: ret.documentation
+        }
+    }
+    return item
 }
 
 // HTML标签补全建议
@@ -654,6 +694,9 @@ function convertTsCompletionKind(kind: string) {
         case "module":
         case "external module name":
             return CompletionItemKind.Module
+
+        case "color":
+            return CompletionItemKind.Color
 
         case "type":
         case "class":

@@ -22,29 +22,12 @@ import {
 } from "./server/content/document"
 import { compile } from "qingkuai/compiler"
 import { mappingFileNameRE } from "./regular"
-import { getConfigByFileName } from "./server/config"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { updateQingkuaiSnapshot } from "./server/content/snapshot"
+import { getConfigByFileName } from "./server/configuration/method"
 import { HasBeenProxiedByQingKuai, OriSourceFile } from "./constant"
 import { isEmptyString, isString, isUndefined } from "../../../shared-util/assert"
-
-export function proxyGetScriptFileNames() {
-    const getscriptFileNames = languageServiceHost.getScriptFileNames.bind(languageServiceHost)
-    languageServiceHost.getScriptFileNames = () => {
-        return getscriptFileNames().concat(getMappedQkFiles())
-    }
-}
-
-export function proxyGetScriptVersion() {
-    const getScriptVersion = languageServiceHost.getScriptVersion.bind(languageServiceHost)
-    languageServiceHost.getScriptVersion = fileName => {
-        if (!isMappingFileName(fileName)) {
-            return getScriptVersion(fileName)
-        }
-        return getMappingFileInfo(getRealName(fileName)!)!.version.toString()
-    }
-}
 
 export function proxyGetScriptKind() {
     const getScriptKind = languageServiceHost.getScriptKind?.bind(languageServiceHost)
@@ -60,6 +43,16 @@ export function proxyGetScriptKind() {
     }
 }
 
+export function proxyGetScriptVersion() {
+    const getScriptVersion = languageServiceHost.getScriptVersion.bind(languageServiceHost)
+    languageServiceHost.getScriptVersion = fileName => {
+        if (!isMappingFileName(fileName)) {
+            return getScriptVersion(fileName)
+        }
+        return getMappingFileInfo(getRealName(fileName)!)!.version.toString()
+    }
+}
+
 export function proxyOnConfigFileChanged() {
     // 断言为any以访问其私有属性
     // assert to access its private property
@@ -70,6 +63,13 @@ export function proxyOnConfigFileChanged() {
             refreshDiagnostics("///ts", false)
         }, 2500)
         return onConfigFileChanged(...args)
+    }
+}
+
+export function proxyGetScriptFileNames() {
+    const getscriptFileNames = languageServiceHost.getScriptFileNames.bind(languageServiceHost)
+    languageServiceHost.getScriptFileNames = () => {
+        return getscriptFileNames().concat(getMappedQkFiles())
     }
 }
 

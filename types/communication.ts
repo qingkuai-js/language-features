@@ -19,15 +19,38 @@ export interface GetClientConfigParams {
 }
 
 export interface GetClientConfigResult {
-    workspaceFolder: string
+    workspacePath: string
     typescriptConfig: TSClientConfiguration
     extensionConfig: ExtensionConfiguration
 }
 
+export interface ConfigureFileParams {
+    fileName: string
+    workspacePath: string
+    config: TSClientConfiguration
+}
+
+export interface ResolveCompletionParams {
+    pos: number
+    fileName: string
+    entryName: string
+    source?: string
+    ori?: CompletionEntryData
+}
+
+export interface ResolveCompletionResult {
+    detail?: string
+    documentation?: string
+}
+
 export interface GetCompletionResultEntry {
+    name: string
     label: string
     kind: ScriptElementKind
+    source?: string
+    detail?: string
     sortText?: string
+    isColor?: boolean
     filterText?: string
     insertText?: string
     isSnippet?: boolean

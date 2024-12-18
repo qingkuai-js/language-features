@@ -14,12 +14,13 @@ import {
     proxyOnConfigFileChanged,
     proxyResolveModuleNameLiterals
 } from "./proxies"
-import { attachChangeConfig } from "./server/config"
-import { isUndefined } from "../../../shared-util/assert"
 import { attachGetDiagnostic } from "./server/diagnostic/handler"
 import { attachGetCompletion } from "./server/completion/handler"
+import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
-import { configurations, setServer, setTSState, ts, typeRefStatement } from "./state"
+import { attachChangeConfig } from "./server/configuration/handler"
+import { isEmptyString, isUndefined } from "../../../shared-util/assert"
+import { projectService, setServer, setTSState, ts, typeRefStatement } from "./state"
 import { attachDocumentManager, attachUpdateSnapshot } from "./server/content/handler"
 
 export = function init(modules: { typescript: typeof TS }) {
@@ -38,22 +39,30 @@ export = function init(modules: { typescript: typeof TS }) {
                 proxyGetScriptFileNames()
                 proxyOnConfigFileChanged()
                 proxyResolveModuleNameLiterals()
+
+                const ori = info.project.projectService.openClientFile
+                info.project.projectService.openClientFile = fileName => {
+                    console.log(fileName)
+                    return ori.call(info.project.projectService, fileName)
+                }
             }
             return Object.assign({}, info.languageService)
         },
 
         onConfigurationChanged(params: {
             sockPath: string
+            triggerFileName: string
             configurations: QingkuaiConfigurationWithDir[]
         }) {
-            params.configurations.forEach(item => {
-                configurations.set(item.dir, item)
-            })
+            initQingkuaiConfig(params.configurations)
+
+            if (!isEmptyString(params.triggerFileName)) {
+                projectService.closeClientFile(params.triggerFileName)
+            }
 
             // 创建ipc通道，并监听来自qingkuai语言服务器的请求
             if (!fs.existsSync(params.sockPath)) {
                 createServer(params.sockPath).then(server => {
-                    const init = "getQingkuaiDtsReferenceStatement"
                     setServer(server)
                     attachChangeConfig()
                     attachGetDiagnostic()

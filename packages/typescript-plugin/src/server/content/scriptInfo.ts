@@ -1,8 +1,8 @@
 import type { ScriptKind } from "typescript"
 
-import { getMappingFileInfo } from "./document"
 import { QingKuaiSnapShot } from "../../snapshot"
 import { isUndefined } from "../../../../../shared-util/assert"
+import { ensureFileOpenStatus, getMappingFileInfo } from "./document"
 import { ts, languageService, project, projectService, snapshotCache } from "../../state"
 
 // 增量更新qk文件ScriptInfo的内容
@@ -15,18 +15,27 @@ export function editQingKuaiScriptInfo(fileName: string, content: string, script
     const scriptInfo = projectService.getScriptInfo(mappingFileName)
 
     if (isUndefined(scriptInfo) || isUndefined(oldSnapshot)) {
-        const info = projectService.getOrCreateScriptInfoForNormalizedPath(
-            ts.server.toNormalizedPath(mappingFileName),
-            false
+        // const info = projectService.getOrCreateScriptInfoForNormalizedPath(
+        //     ts.server.toNormalizedPath(mappingFileName),
+        //     true
+        // )
+        // if (!isUndefined(info)) {
+        //     info.attachToProject(project)
+
+        //     if (isUndefined(program?.getSourceFile(mappingFileName))) {
+        //         info.markContainingProjectsAsDirty()
+        //         project.updateGraph()
+        //     }
+        // }
+        // info?.editContent(0, 0, content)
+
+        projectService.openClientFile(
+            mappingFileName,
+            "",
+            scriptKind,
+            project.getCurrentDirectory()
         )
-        if (!isUndefined(info)) {
-            info.attachToProject(project)
-            if (isUndefined(program?.getSourceFile(mappingFileName))) {
-                info.markContainingProjectsAsDirty()
-                project.updateGraph()
-            }
-        }
-        info?.editContent(0, 0, content)
+        projectService.getScriptInfo(mappingFileName)?.editContent(0, 0, content)
     } else if (!isUndefined(oldSnapshot)) {
         const change = newSnapshot.getChangeRange(oldSnapshot)
         const changeStart = change.span.start
@@ -38,6 +47,7 @@ export function editQingKuaiScriptInfo(fileName: string, content: string, script
     }
 
     mappingFileInfo.version++
+    // ensureFileOpenStatus(mappingFileInfo)
     mappingFileInfo.scriptKind = scriptKind
     snapshotCache.set(mappingFileName, newSnapshot ?? oldSnapshot)
 }

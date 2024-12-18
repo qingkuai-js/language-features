@@ -16,7 +16,11 @@ import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
-export const hover: HoverHander = async ({ textDocument, position }) => {
+export const hover: HoverHander = async ({ textDocument, position }, token) => {
+    if (token.isCancellationRequested) {
+        return
+    }
+
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
     const { templateNodes, getOffset, getRange, config } = cr
 

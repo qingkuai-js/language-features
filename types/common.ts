@@ -1,5 +1,11 @@
 import TS from "typescript"
 
+export interface OpenFileParams {
+    path: string
+    start: number
+    end: number
+}
+
 export interface ExtensionConfiguration {
     typescriptDiagnosticsExplain: boolean
     componentTagFormatPreference: "camel" | "kebab"

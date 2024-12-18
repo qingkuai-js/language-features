@@ -1,7 +1,8 @@
 import type {
     UpdateSnapshotParams,
     GetClientConfigParams,
-    GetClientConfigResult
+    GetClientConfigResult,
+    ConfigureFileParams
 } from "../../../types/communication"
 import type { PositionFlagKeys } from "qingkuai/compiler"
 import type { CachedCompileResultItem } from "./types/service"
@@ -32,8 +33,8 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             await tpicConnectedPromise
         }
         if (document.version === cached?.version) {
-            await getClientConfiguration(cached)
-            await syncToTsPlugin(cached)
+            await synchronizeContentToTypescriptPlugin(cached)
+            await getConfigurationOfFile(cached)
             return cached
         }
     }
@@ -105,13 +106,13 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
 
     // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
     const pms = new Promise<CachedCompileResultItem>(async resolve => {
-        await getClientConfiguration(ccri)
-        await syncToTsPlugin(ccri)
+        await synchronizeContentToTypescriptPlugin(ccri)
+        await getConfigurationOfFile(ccri)
         resolve(ccri)
     })
 
     // 将编译结果同步到typescript-qingkuai-plugin
-    async function syncToTsPlugin(cr: CachedCompileResultItem) {
+    async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
         if (!isTestingEnv && synchronize && !cr.isSynchronized) {
             cr.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
                 "updateSnapshot",
@@ -126,7 +127,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         }
     }
 
-    async function getClientConfiguration(cr: CachedCompileResultItem) {
+    async function getConfigurationOfFile(cr: CachedCompileResultItem) {
         if (!extensionConfigCache.has(document.uri)) {
             const res: GetClientConfigResult = await connection.sendRequest(
                 "qingkuai/getClientConfig",
@@ -135,6 +136,14 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
                 } satisfies GetClientConfigParams
             )
+
+            if (res.typescriptConfig) {
+                tpic.sendNotification<ConfigureFileParams>("configureFile", {
+                    fileName: cr.filePath,
+                    config: res.typescriptConfig,
+                    workspacePath: res.workspacePath
+                })
+            }
 
             extensionConfigCache.set(document.uri, (cr.config = res.extensionConfig))
         }

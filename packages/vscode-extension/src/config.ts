@@ -78,7 +78,7 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
 export function getTypescriptConfig(uri: vsc.Uri, isTypescriptDocument: boolean) {
     const options = getFormattingOptions(uri)
     if (isUndefined(options)) {
-        return options
+        return
     }
     return {
         preference: getTSPreferences(uri, isTypescriptDocument),

@@ -9,8 +9,7 @@ import { assignMappingFileForQkFile, getMappingFileInfo } from "./document"
 
 export function attachDocumentManager() {
     server.onNotification("onDidOpen", (uri: string) => {
-        const path = fileURLToPath(uri)
-        assignMappingFileForQkFile(path, true)
+        assignMappingFileForQkFile(fileURLToPath(uri), true)
     })
 
     server.onNotification("onDidClose", (uri: string) => {
