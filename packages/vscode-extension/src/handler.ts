@@ -4,7 +4,7 @@ import type { GetClientConfigParams, InsertSnippetParam } from "../../../types/c
 import fs from "fs"
 import * as vsc from "vscode"
 import { isUndefined } from "../../../shared-util/assert"
-import { getExtensionConfig, getTypescriptConfig } from "./config"
+import { getExtensionConfig, getPrettierConfig, getTypescriptConfig } from "./config"
 
 export function attachCustomHandlers(client: LanguageClient) {
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
@@ -18,8 +18,14 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 监听扩展配置项变化，并通知qingkuai语言服务器
-    vsc.workspace.onDidChangeConfiguration(() => {
-        client.sendNotification("qingkuai/updateExtensionConfig", null)
+    vsc.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
+        if (
+            affectsConfiguration("qingkuai") ||
+            affectsConfiguration("prettier") ||
+            affectsConfiguration("typescript")
+        ) {
+            client.sendNotification("qingkuai/cleanConfigurationCache", null)
+        }
     })
 
     // 插入片段通知，qingkuai语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
@@ -45,6 +51,7 @@ export function attachCustomHandlers(client: LanguageClient) {
             return {
                 workspacePath: workspaceFolder.uri.fsPath,
                 extensionConfig: getExtensionConfig(fileUri),
+                prettierConfig: await getPrettierConfig(fileUri),
                 typescriptConfig: getTypescriptConfig(fileUri, scriptPartIsTypescript)
             }
         }

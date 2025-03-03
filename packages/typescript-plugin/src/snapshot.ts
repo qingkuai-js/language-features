@@ -1,7 +1,16 @@
-import type { IScriptSnapshot } from "typescript"
+import type { SlotInfo } from "qingkuai/compiler"
+import type { IScriptSnapshot, ScriptKind } from "typescript"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
-    constructor(private text: string) {}
+    public version = 1
+
+    constructor(
+        private text: string,
+        public initial: boolean,
+        public scriptKind: ScriptKind,
+        public readonly itos: number[],
+        public readonly slotInfo: SlotInfo
+    ) {}
 
     getFullText() {
         return this.text

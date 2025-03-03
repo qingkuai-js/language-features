@@ -1,30 +1,56 @@
+import type TS from "typescript"
 import type { SlotInfo } from "qingkuai/compiler"
 import type { QingKuaiCommonMessage, QingKuaiDiagnostic } from "../../types"
-import type { DiagnosticCategory, HasModifiers, Node, ScriptKind } from "typescript"
+import type { ComponentIdentifierInfo } from "../../../../../types/communication"
+import type { Node, ScriptKind, HasModifiers, DiagnosticCategory } from "typescript"
 
+import {
+    isNull,
+    isNumber,
+    isString,
+    isUndefined,
+    isEmptyString
+} from "../../../../../shared-util/assert"
+import {
+    ts,
+    projectService,
+    typeRefStatement,
+    qingkuaiDiagnostics,
+    resolvedQingkuaiModule
+} from "../../state"
+import {
+    stringify,
+    toCamelCase,
+    getRelativePathWithStartDot
+} from "../../../../../shared-util/sundry"
 import {
     walk,
     isInTopScope,
     isDeclarationOfGlobalType,
     findVariableDeclarationOfReactFunc
-} from "../../ast"
+} from "../../util/ast"
+import {
+    getProgramByProject,
+    getDefaultProjectByFileName,
+    getContainingProjectsByFileName
+} from "../../util/typescript"
 import {
     endingInvalidStr,
     validIdentifierRE,
     reactCompilerFuncRE,
     watchCompilerFuncRE,
+    componentInvalidCharRE,
     globalTypeIdentifierRE,
     bannedIdentifierFormatRE,
     existingTopScopeIdentifierRE
 } from "../../regular"
+import path from "path"
+import assert from "assert"
 import { compilerFuncs } from "../../constant"
-import { getMappingFileInfo } from "./document"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
-import { stringify } from "../../../../../shared-util/sundry"
 import { getConfigByFileName } from "../configuration/method"
-import { isNull, isNumber, isString, isUndefined } from "../../../../../shared-util/assert"
-import { ts, languageService, qingkuaiDiagnostics, resolvedQingkuaiModule } from "../../state"
+import { ensureGetSnapshotOfQingkuaiFile, isQingkuaiFileName } from "../../util/qingkuai"
 
 export function updateQingkuaiSnapshot(
     fileName: string,
@@ -32,17 +58,37 @@ export function updateQingkuaiSnapshot(
     itos: number[],
     slotInfo: SlotInfo,
     scriptKind: ScriptKind
-) {
-    const componentIdentifiers: string[] = []
+): ComponentIdentifierInfo[] {
+    const dirPath = path.dirname(fileName)
     const slotInfoKeys = Object.keys(slotInfo)
+    const existingGlobalType = new Set<string>()
     const config = getConfigByFileName(fileName)
     const isTS = scriptKind === ts.ScriptKind.TS
     const storedTypes = new Map<number, string>()
     const diagnosticsCache: QingKuaiDiagnostic[] = []
-    const mappingFileInfo = getMappingFileInfo(fileName)!
-    const mappingFileName = mappingFileInfo.mappingFileName
-    const notExistingGlobalType = new Set(["Props", "Refs"])
-    const qingkuaiModules = resolvedQingkuaiModule.get(mappingFileName)
+    const importedQingkuaiFileNames = new Set<string>()
+    const typeRefStatementLen = typeRefStatement.length
+    const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
+    const componentIdentifierInfos: ComponentIdentifierInfo[] = []
+    const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
+    const builtInTypeDeclarationEndIndex = typeRefStatement.length + (isTS ? 115 : 121)
+
+    const editScriptInfoCommon = (content: string) => {
+        if (originalScriptKind !== scriptKind) {
+            updateScriptKindOfQingkuaiFile(fileName, scriptKind)
+        }
+        editQingKuaiScriptInfo(fileName, content, itos, slotInfo, scriptKind)
+    }
+
+    // 标记已声明的全局类型标识符
+    const markGlobalTypeExisting = (identifierName: string, startIndex: number) => {
+        if (
+            startIndex > builtInTypeDeclarationEndIndex &&
+            globalTypeIdentifierRE.test(identifierName)
+        ) {
+            existingGlobalType.add(identifierName)
+        }
+    }
 
     // 记录qingkuai自定义诊断信息
     const recordQingkuaiDiagnostic = (
@@ -82,12 +128,6 @@ export function updateQingkuaiSnapshot(
         return nodeOrText.replace(endingInvalidStr, "").length
     }
 
-    // 更新映射文件信息
-    mappingFileInfo.itos = itos
-    mappingFileInfo.interCode = content
-    mappingFileInfo.slotInfo = slotInfo
-    qingkuaiDiagnostics.set(mappingFileName, diagnosticsCache)
-
     // 将每个待提取类型的索引记录到storedTypes
     slotInfoKeys.forEach(slotName => {
         slotInfo[slotName].properties.forEach(property => {
@@ -97,13 +137,16 @@ export function updateQingkuaiSnapshot(
         })
     })
 
-    // 将由qingkuai编译器产生的中间代码更新到快照
-    editQingKuaiScriptInfo(fileName, content, scriptKind)
+    // 缓存自定义诊断信息并将中间代码更新到快照
+    editScriptInfoCommon(content)
+    qingkuaiDiagnostics.set(fileName, diagnosticsCache)
 
-    // 获取program、typeCheker以及sourceFile
-    const program = languageService.getProgram()!
-    const typeChecker = program?.getTypeChecker()!
-    const sourceFile = program.getSourceFile(mappingFileName)
+    const project = getDefaultProjectByFileName(fileName)!
+    const program = getProgramByProject(project)!
+    assert(!isUndefined(program))
+
+    const sourceFile = program.getSourceFile(fileName)
+    const typeChecker = program.getTypeChecker()
 
     // 分析中间代码AST，记录全局类型标识符的存在状态，类型别名声明和interface声明则
     // 认为当前文件已声明全局类型标识符，对于导入的标识符，需要确定其是否能作为类型使用；
@@ -112,8 +155,8 @@ export function updateQingkuaiSnapshot(
     walk(sourceFile, node => {
         if (
             ts.isBinaryExpression(node) &&
+            storedTypes.has(node.right.pos) &&
             node.left.getText() === "__c__.Receiver" &&
-            !isUndefined(storedTypes.get(node.right.pos)) &&
             node.operatorToken.kind === ts.SyntaxKind.EqualsToken
         ) {
             const type = typeChecker.getTypeAtLocation(node.right)
@@ -122,28 +165,23 @@ export function updateQingkuaiSnapshot(
         }
 
         // 脚本类型为js时，检查是否通过JSDoc声明全局类型标识符
-        if (!isTS && notExistingGlobalType.size > 0) {
+        if (!isTS && existingGlobalType.size < 2) {
             const typeDefNodes = ts.getJSDocTags(node).filter(jsDocNode => {
                 return ts.isJSDocTypedefTag(jsDocNode)
             })
             if (typeDefNodes.length > 0 && isInTopScope(node)) {
-                typeDefNodes.forEach(jsDocNode => {
-                    if (ts.isJSDocTypedefTag(jsDocNode)) {
-                        const identifierName = ts.getNameOfJSDocTypedef(jsDocNode)?.text || ""
-                        if (globalTypeIdentifierRE.test(identifierName)) {
-                            notExistingGlobalType.delete(identifierName)
-                        }
-                    }
+                typeDefNodes.forEach(typeDefNode => {
+                    markGlobalTypeExisting(
+                        ts.getNameOfJSDocTypedef(typeDefNode)?.text || "",
+                        typeDefNode.getStart()
+                    )
                 })
             }
         }
 
         // 脚本类型为ts时，检查是否通过类型别名或接口声明全局类型标识符
         if (isTS && (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))) {
-            const identifierName = node.name.getText()
-            if (globalTypeIdentifierRE.test(identifierName) && isInTopScope(node)) {
-                notExistingGlobalType.delete(identifierName)
-            }
+            isInTopScope(node) && markGlobalTypeExisting(node.name.text, node.getStart())
         }
 
         // 脚本类型为ts时，判断有没有通过import语句从其他文件导入全局类型标识符
@@ -160,7 +198,12 @@ export function updateQingkuaiSnapshot(
                     ts.isStringLiteral(node.moduleSpecifier) &&
                     qingkuaiModules?.has(node.moduleSpecifier.text)
                 ) {
-                    componentIdentifiers.push(identifierName)
+                    const componentFileName = path.resolve(dirPath, node.moduleSpecifier.text)
+                    componentIdentifierInfos.push({
+                        name: identifierName,
+                        hasSlot: isComponentHasSlot(componentFileName)
+                    })
+                    importedQingkuaiFileNames.add(componentFileName)
                 }
             }
 
@@ -188,9 +231,7 @@ export function updateQingkuaiSnapshot(
                             symbol.flags & ts.SymbolFlags.Type &&
                             importGlobalTypeIdentifiers.has(symbol.name)
                         ) {
-                            notExistingGlobalType.delete(
-                                importGlobalTypeIdentifiers.get(symbol.name)!
-                            )
+                            existingGlobalType.add(importGlobalTypeIdentifiers.get(symbol.name)!)
                         }
                     })
                 }
@@ -374,29 +415,20 @@ export function updateQingkuaiSnapshot(
         }
     })
 
-    // notExistingGlobalType中的类型标识符(Props/Refs)默认为never
-    const globalTypeDeclaration = Array.from(notExistingGlobalType).reduce(
-        (ret, identifierName) => {
-            if (isTS) {
-                return `${ret}type ${identifierName}=never;`
-            } else {
-                return `${ret}/** @typedef {never} ${identifierName} */`
-            }
-        },
-        ""
-    )
-    if (isTS) {
-        mappingFileInfo.offset = 0
-        content += globalTypeDeclaration
-    } else {
-        // 由于脚本类型为js时，jsDoc类型声明被放在了前方，所以这里要记录jsDoc类型
-        // 声明代码的长度作为源码位置其偏移量，任何获取位置的地方都要减去这个偏移量
-        const flbi = content.indexOf("\n") + 1 // First Line Break Index
-        mappingFileInfo!.offset = globalTypeDeclaration.length
-        content = content.slice(0, flbi) + globalTypeDeclaration + content.slice(flbi)
-
-        // 将已记录的qingkuai自定义诊断项的start增加这个偏移量
-        diagnosticsCache.forEach(item => (item.start! += globalTypeDeclaration.length))
+    // 如果全局类型标识符已被声明，则将中间代码中的默认声明（never）部分用空白字符填充
+    if (existingGlobalType.has("Props")) {
+        if (isTS) {
+            eliminateContent(typeRefStatementLen, 17)
+        } else {
+            eliminateContent(typeRefStatementLen + 3, 22)
+        }
+    }
+    if (existingGlobalType.has("Refs")) {
+        if (isTS) {
+            eliminateContent(typeRefStatementLen + 17, 16)
+        } else {
+            eliminateContent(typeRefStatementLen + 25, 20)
+        }
     }
 
     // 根据storedTypes记录的类型组合出当前文件所表示的组件的slot类型
@@ -414,22 +446,52 @@ export function updateQingkuaiSnapshot(
 
     // 为中间代码添加全局类型声明及默认导出语句
     if (!isTS) {
-        content += `export default class{
+        content += `export default class ${getComponentName(fileName)} {
             /**
              * @param {Props} _
              * @param {Refs} __
-             * @param {{${slotType}}} ___
+             * @param {{${slotType}}} __
              */
             constructor(_, __, ___){}
         }`
     } else {
-        content += `export default class{
+        content += `export default class ${getComponentName(fileName)} {
             constructor(_: Props, __: Refs, ___: {${slotType}}){}
         }`
     }
 
+    project.getFileNames().forEach(normalizedPath => {
+        if (
+            normalizedPath !== fileName &&
+            isQingkuaiFileName(normalizedPath) &&
+            !importedQingkuaiFileNames.has(normalizedPath)
+        ) {
+            const componentName = getComponentName(normalizedPath)
+            const relativePath = getRelativePathWithStartDot(dirPath, normalizedPath)
+            componentIdentifierInfos.push({
+                name: componentName,
+                relativePath: relativePath,
+                builtInTypeDeclarationEndIndex,
+                hasSlot: isComponentHasSlot(normalizedPath)
+            })
+        }
+    })
+
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
-    return editQingKuaiScriptInfo(fileName, content, scriptKind), componentIdentifiers
+    return editScriptInfoCommon(content), componentIdentifierInfos
+}
+
+function getComponentName(fileName: string) {
+    let name = path.basename(fileName, path.extname(fileName))
+    if (/\d/.test(name[0])) {
+        name = name.slice(1)
+    }
+    name = toCamelCase(name.replace(componentInvalidCharRE, ""))
+
+    if (isEmptyString(name)) {
+        return ""
+    }
+    return name[0].toUpperCase() + name.slice(1)
 }
 
 // 获取commonMessage中的诊断信息
@@ -442,4 +504,23 @@ function getCommonMessage<K extends keyof QingKuaiCommonMessage>(
         msg: commonMessage[key][1](...args),
         code: commonMessage[key][0]
     }
+}
+
+function isComponentHasSlot(fileName: string) {
+    return Object.keys(ensureGetSnapshotOfQingkuaiFile(fileName).slotInfo).length > 0
+}
+
+// 动态修改qk文件的脚本类型
+function updateScriptKindOfQingkuaiFile(fileName: string, scriptKind: TS.ScriptKind) {
+    const scriptInfo = projectService.getScriptInfo(fileName)
+
+    // @ts-expect-error: change read-only property
+    scriptInfo && (scriptInfo.scriptKind = scriptKind)
+
+    getContainingProjectsByFileName(fileName).forEach(project => {
+        const sourceFile = getProgramByProject(project)?.getSourceFile(fileName)
+
+        // @ts-expect-error: change private property
+        sourceFile && (sourceFile.scriptKind = scriptKind)
+    })
 }

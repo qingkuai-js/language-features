@@ -31,15 +31,6 @@ export type RelatedInfoFile =
 export type QingKuaiCommonMessage = typeof commonMessage
 export type QingKuaiDiagnostic = Omit<Diagnostic, "file">
 
-export type TsModuleResolutionBackup = Map<
-    string,
-    Map<string, ResolvedModuleWithFailedLookupLocations>
->
-
 export type TS = typeof Typescript
-export type TSProject = Typescript.server.Project
-export type TSLanguageService = Typescript.LanguageService
 export type TSProjectService = Typescript.server.ProjectService
-export type TSLanguageServerHost = Typescript.server.ServerHost
-export type TSLanguageServiceHost = Typescript.LanguageServiceHost
 export type TSPluginCreateInfo = Typescript.server.PluginCreateInfo

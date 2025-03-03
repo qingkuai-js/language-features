@@ -6,12 +6,14 @@ import type {
 } from "../../../types/common"
 import type TS from "typescript"
 import type { LanguageClient } from "vscode-languageclient/node"
+import type { Options as PrettierConfiguration } from "prettier"
 import type { RetransmissionParams } from "../../../types/communication"
 
 import fs from "fs"
 import path from "path"
 import * as vsc from "vscode"
-import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util/assert"
+import prettier from "prettier"
+import { isBoolean, isNull, isNumber, isString, isUndefined } from "../../../shared-util/assert"
 
 // 获取扩展配置项
 export function getExtensionConfig(uri: vsc.Uri) {
@@ -52,10 +54,9 @@ export function getInitQingkuaiConfig() {
     return configurations
 }
 
-// 监听工作区范围内配置文件（.qingkuairc）的修改和删除事件
+// 监听工作区范围内.qingkuairc配置文件的修改和删除事件
 export function startQingkuaiConfigWatcher(client: LanguageClient) {
     const watcher = vsc.workspace.createFileSystemWatcher("**/.qingkuairc", true)
-
     watcher.onDidChange(uri => {
         client.sendNotification("qingkuai/retransmission", {
             name: "updateConfig",
@@ -65,12 +66,23 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
             }
         } satisfies RetransmissionParams)
     })
-
-    watcher.onDidCreate(uri => {
+    watcher.onDidDelete(uri => {
         client.sendNotification("qingkuai/retransmission", {
             name: "deleteConfig",
             data: path.dirname(uri.path)
         } satisfies RetransmissionParams)
+    })
+}
+
+export function startPrettierConfigWatcher(client: LanguageClient) {
+    const watcher = vsc.workspace.createFileSystemWatcher(
+        "**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}"
+    )
+    watcher.onDidChange(() => {
+        client.sendNotification("qingkuai/updateExtensionConfig", null)
+    })
+    watcher.onDidDelete(() => {
+        client.sendNotification("qingkuai/updateExtensionConfig", null)
     })
 }
 
@@ -84,6 +96,15 @@ export function getTypescriptConfig(uri: vsc.Uri, isTypescriptDocument: boolean)
         preference: getTSPreferences(uri, isTypescriptDocument),
         formatCodeSettings: getTSFormatCodeSettings(uri, options, isTypescriptDocument)
     }
+}
+
+export async function getPrettierConfig(uri: vsc.Uri) {
+    const byVscode = vsc.workspace.getConfiguration("prettier")
+    const byConfigFile = await prettier.resolveConfig(uri.fsPath, {
+        useCache: false,
+        editorconfig: true
+    })
+    return Object.assign({}, byVscode, byConfigFile || {}) as PrettierConfiguration
 }
 
 async function loadQingkuaiConfig(path: string) {

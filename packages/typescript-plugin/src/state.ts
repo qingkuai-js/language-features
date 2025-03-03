@@ -1,33 +1,20 @@
-import type {
-    TS,
-    TSProject,
-    TSProjectService,
-    TSLanguageService,
-    QingKuaiDiagnostic,
-    TSPluginCreateInfo,
-    TSLanguageServerHost,
-    TSLanguageServiceHost
-} from "./types"
+import type { TS, TSProjectService, QingKuaiDiagnostic, TSPluginCreateInfo } from "./types"
 import type { QingKuaiSnapShot } from "./snapshot"
 
 import path from "path"
 import { inspect } from "../../../shared-util/log"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
-import { QingkuaiConfiguration } from "../../../types/common"
 
 export let server = defaultParticipant
 
 export let ts: TS
-export let project: TSProject
+export let triggerQingkuaiFileName = ""
 export let projectService: TSProjectService
-export let languageService: TSLanguageService
-export let languageServerHost: TSLanguageServerHost
-export let languageServiceHost: TSLanguageServiceHost
 
 // 快照缓存，键为映射文件名称，值为QingkuaiSnapshot
 export const snapshotCache = new Map<string, QingKuaiSnapShot>()
 
-// 已解析的qingkuai模块，键为映射文件名，值为导入路径
+// import语句导入目标为目录时解析为qingkuai源文件的记录
 export const resolvedQingkuaiModule = new Map<string, Set<string>>()
 
 // qingkuai自定义错误缓存
@@ -37,13 +24,12 @@ export function setServer(v: typeof server) {
     server = v
 }
 
+export function setTriggerQingkuaiFileName(fileName: string) {
+    triggerQingkuaiFileName = fileName
+}
+
 export function setTSState(t: TS, info: TSPluginCreateInfo) {
-    ts = t
-    project = info.project
-    languageServerHost = info.serverHost
-    languageService = info.languageService
-    projectService = project.projectService
-    languageServiceHost = info.languageServiceHost
+    ;[ts, projectService] = [t, info.project.projectService]
 }
 
 // 通过qingkuai语言服务器输出日志

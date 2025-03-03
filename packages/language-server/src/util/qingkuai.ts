@@ -1,7 +1,29 @@
 import type { TemplateNode } from "qingkuai/compiler"
 import type { FixedArray } from "../../../../types/util"
+import type { Options as PrettierConfiguration } from "prettier"
 
 import { isEmptyString } from "../../../../shared-util/assert"
+import { NumNum } from "../../../../types/common"
+
+// 整理自动添加的import语句的格式
+export function formatImportStatement(
+    statement: string,
+    source: string,
+    posRange: NumNum,
+    prettierConfig: PrettierConfiguration
+) {
+    statement = " ".repeat(prettierConfig.tabWidth || 2) + statement
+    if (!/^\s*\n/.test(source.slice(posRange[1]))) {
+        statement += "\n"
+    }
+    if (!/\n\s*$/.test(source.slice(0, posRange[0]))) {
+        statement = "\n" + statement
+    }
+    if (prettierConfig.semi) {
+        statement += ";"
+    }
+    return statement
+}
 
 // 找到源码中某个索引所处的attribute
 export function findAttribute(index: number, node: TemplateNode) {
@@ -28,7 +50,7 @@ export function findAttribute(index: number, node: TemplateNode) {
 // 请传入第二个参数为true（此处理为了是为了兼容某些特殊情况，例如重名标签名时，如果光标在标签名之后一个位置，也应正常处理）
 export function findTagRanges(node: TemplateNode, offset: number, includeEndChar = false) {
     // @ts-ignore
-    const ret: FixedArray<FixedArray<number, 2> | undefined, 2> = []
+    const ret: FixedArray<NumNum | undefined, 2> = []
 
     // 文本节点无标签
     if (isEmptyString(node.tag)) {

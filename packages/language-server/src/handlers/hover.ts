@@ -1,4 +1,4 @@
-import type { HoverHander } from "../types/handlers"
+import type { HoverHandler } from "../types/handlers"
 
 import {
     findTagData,
@@ -16,7 +16,7 @@ import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
-export const hover: HoverHander = async ({ textDocument, position }, token) => {
+export const hover: HoverHandler = async ({ textDocument, position }, token) => {
     if (token.isCancellationRequested) {
         return
     }
@@ -34,7 +34,7 @@ export const hover: HoverHander = async ({ textDocument, position }, token) => {
     // HTML标签悬停提示
     const tagRanges = findTagRanges(currentNode, offset)
     const [nodeStartIndex, nodeEndIndex] = currentNode.range
-    const tagTip = config.htmlHoverTip.includes("tag")
+    const tagTip = config.extensionConfig.htmlHoverTip.includes("tag")
     if (tagTip && !isUndefined(tagRanges[0])) {
         const isStart = offset <= tagRanges[0][1]
         const tagData = findTagData(currentNode.tag)
@@ -49,7 +49,7 @@ export const hover: HoverHander = async ({ textDocument, position }, token) => {
 
     // HTML属性名悬停提示
     const attribute = findAttribute(offset, currentNode)
-    const attrTip = config.htmlHoverTip.includes("attribute")
+    const attrTip = config.extensionConfig.htmlHoverTip.includes("attribute")
     if (attrTip && attribute) {
         let attrKey = attribute.key.raw
         const keyStartIndex = attribute.key.loc.start.index
@@ -122,7 +122,7 @@ export const hover: HoverHander = async ({ textDocument, position }, token) => {
     }
 
     // HTML实体字符悬停提示
-    const entityTip = config.htmlHoverTip.includes("entity")
+    const entityTip = config.extensionConfig.htmlHoverTip.includes("entity")
     if (
         entityTip &&
         offset < nodeEndIndex &&

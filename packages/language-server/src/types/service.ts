@@ -1,19 +1,25 @@
+import type {
+    GetClientConfigResult,
+    ComponentIdentifierInfo
+} from "../../../../types/communication"
 import type { Position, Range } from "vscode-languageserver"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
-import { ExtensionConfiguration } from "../../../../types/common"
+
+export type GetRangeFunc = (start: number, end?: number) => Range
+export type GetSourceIndexFunc = (interIndex: number, isEnd?: boolean) => number
 
 export type CachedCompileResultItem = CompileResult & {
     version: number
     filePath: string
+    getRange: GetRangeFunc
     document: TextDocument
     isSynchronized: boolean
-    componentIdentifiers: string[]
-    config: ExtensionConfiguration
+    config: GetClientConfigResult
+    componentIdentifierInfos: ComponentIdentifierInfo[]
     getOffset: (position: Position) => number
     getPosition: (offset: number) => Position
-    getSourceIndex: (interIndex: number) => number
     getInterIndex: (sourceIndex: number) => number
-    getRange: (start: number, end?: number) => Range
+    getSourceIndex: (interIndex: number, isEnd?: boolean) => number
     isPositionFlagSet: (index: number, key: PositionFlagKeys) => boolean
 }

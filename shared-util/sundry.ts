@@ -1,8 +1,20 @@
+import path from "path"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
 // JSON.stringify别名
 export function stringify(v: any) {
     return JSON.stringify(v)
+}
+
+export function runAll(funcs: GeneralFunc[]) {
+    funcs.forEach(func => func())
+}
+
+// 将字符串转换为驼峰格式
+export function toCamelCase(s: string) {
+    return s.replace(/[\.\-_]([a-zA-Z])/g, m => {
+        return m[1].toUpperCase()
+    })
 }
 
 // 驼峰命名转串型命名格式
@@ -84,4 +96,9 @@ export function excludeProperty<T extends AnyObject, K extends keyof T>(
         }
     }
     return ret
+}
+
+export function getRelativePathWithStartDot(from: string, to: string) {
+    const relativePath = path.relative(from, to)
+    return /\.{1,2}\//.test(relativePath) ? relativePath : `./${relativePath}`
 }

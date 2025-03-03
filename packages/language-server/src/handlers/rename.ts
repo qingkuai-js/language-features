@@ -1,4 +1,4 @@
-import type { PrepareRename, RenameHander } from "../types/handlers"
+import type { PrepareRename, RenameHandler } from "../types/handlers"
 
 import { documents } from "../state"
 import { getCompileRes } from "../compile"
@@ -6,7 +6,7 @@ import { TextEdit } from "vscode-languageserver/node"
 import { findNodeAt, findTagRanges } from "../util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 
-export const rename: RenameHander = async ({ textDocument, position, newName }, token) => {
+export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
     if (token.isCancellationRequested) {
         return
     }

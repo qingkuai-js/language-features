@@ -1,11 +1,19 @@
 import type { SlotInfo } from "qingkuai/compiler"
+import type { Options as PrettierConfiguration } from "prettier"
 import type { ExtensionConfiguration, TSClientConfiguration } from "./common"
-import type { Range, CompletionItemLabelDetails } from "vscode-languageserver"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
+import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
 
 export interface RetransmissionParams<T = any> {
     data: T
     name: string
+}
+
+export interface ComponentIdentifierInfo {
+    name: string
+    hasSlot: boolean
+    relativePath?: string
+    builtInTypeDeclarationEndIndex?: number
 }
 
 export interface GetCompletionParams {
@@ -20,6 +28,7 @@ export interface GetClientConfigParams {
 
 export interface GetClientConfigResult {
     workspacePath: string
+    prettierConfig: PrettierConfiguration
     typescriptConfig: TSClientConfiguration
     extensionConfig: ExtensionConfiguration
 }
@@ -38,9 +47,17 @@ export interface ResolveCompletionParams {
     ori?: CompletionEntryData
 }
 
+export interface TextEditParam {
+    start: number
+    end: number
+    newText: string
+}
+
 export interface ResolveCompletionResult {
     detail?: string
+    command?: Command
     documentation?: string
+    textEdits?: TextEditParam[]
 }
 
 export interface GetCompletionResultEntry {

@@ -53,7 +53,7 @@ export const publishDiagnostics = debounce(
         for (const item of tsDiagnostics) {
             const tags: DiagnosticTag[] = []
             const ss = getSourceIndex(item.start)
-            const se = getSourceIndex(item.start + item.length)
+            const se = getSourceIndex(item.start + item.length, true)
             const relatedInformation: DiagnosticRelatedInformation[] = []
 
             if (isSourceIndexesIvalid(ss, se)) {
@@ -71,8 +71,8 @@ export const publishDiagnostics = debounce(
                 let range = relatedInfo.range
                 if (isUndefined(range)) {
                     const cr = await getCompileResByPath(relatedInfo.filePath)
-                    const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length)
                     const rss = cr.getSourceIndex(relatedInfo.start)
+                    const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length, true)
                     if (isSourceIndexesIvalid(rss, rse)) {
                         continue
                     }
@@ -88,7 +88,7 @@ export const publishDiagnostics = debounce(
             }
 
             // 为指定的诊断信息添加qingkuai相关解释
-            if (config.typescriptDiagnosticsExplain) {
+            if (config.extensionConfig.typescriptDiagnosticsExplain) {
                 if (
                     item.code === 2345 &&
                     item.source === "ts" &&

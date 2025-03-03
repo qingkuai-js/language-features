@@ -16,6 +16,9 @@ export const initialize: InitializeHandler = () => {
             renameProvider: {
                 prepareProvider: true
             },
+            documentFormattingProvider: {
+                workDoneProgress: true
+            },
             completionProvider: {
                 resolveProvider: true,
                 completionItem: {
@@ -23,6 +26,9 @@ export const initialize: InitializeHandler = () => {
                 },
                 triggerCharacters: [
                     ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
+
+                    // script needs trigger characters
+                    [".", "'", '"', "`", ":", ",", "_"],
 
                     // prettier-ignore
                     // emmet needs trigger characters

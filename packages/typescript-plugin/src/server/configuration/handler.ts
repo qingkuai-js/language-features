@@ -7,7 +7,6 @@ import type { ConfigureFileParams } from "../../../../../types/communication"
 import path from "path"
 import { relativePathRE } from "../../regular"
 import { projectService, server, ts } from "../../state"
-import { getMappingFileName } from "../content/document"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { deleteQingkuaiConfig, getQingkuaiConfig, setQingkuaiConfig } from "./method"
@@ -25,13 +24,12 @@ export function attachChangeConfig() {
 
     // 此方法用于将typescript相关的配置项与文件关联，qk文件不会经过ts的客户端扩展处理需要手动添加配置信息
     server.onNotification("configureFile", (params: ConfigureFileParams) => {
-        const mappingFileName = getMappingFileName(params.fileName)
         convertImportFileExcludePatternsPreferences(
             params.config.preference.autoImportFileExcludePatterns!,
             params.workspacePath
         )
         projectService.setHostConfiguration({
-            file: mappingFileName,
+            file: params.fileName,
             preferences: params.config.preference,
             formatOptions: params.config.formatCodeSettings
         })

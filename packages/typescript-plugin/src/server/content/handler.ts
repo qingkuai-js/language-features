@@ -1,39 +1,33 @@
 import type { UpdateSnapshotParams } from "../../../../../types/communication"
 
 import { fileURLToPath } from "url"
-import { server, ts } from "../../state"
 import { updateQingkuaiSnapshot } from "./snapshot"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { isUndefined } from "../../../../../shared-util/assert"
-import { assignMappingFileForQkFile, getMappingFileInfo } from "./document"
+import { projectService, server, snapshotCache, ts } from "../../state"
 
 export function attachDocumentManager() {
     server.onNotification("onDidOpen", (uri: string) => {
-        assignMappingFileForQkFile(fileURLToPath(uri), true)
+        projectService.openClientFile(fileURLToPath(uri))
     })
 
     server.onNotification("onDidClose", (uri: string) => {
-        getMappingFileInfo(fileURLToPath(uri))!.isOpen = false
+        projectService.closeClientFile(fileURLToPath(uri))
     })
 }
 
 export function attachUpdateSnapshot() {
     server.onRequest<UpdateSnapshotParams>("updateSnapshot", ({ fileName, ...rest }) => {
         const scriptKind = ts.ScriptKind[rest.scriptKindKey]
-        const oriScriptKind = getMappingFileInfo(fileName)?.scriptKind
-        const ret = updateQingkuaiSnapshot(
+        const oriScriptKind = snapshotCache.get(fileName)?.scriptKind
+        const componentIdentifiers = updateQingkuaiSnapshot(
             fileName,
             rest.interCode,
             rest.itos,
             rest.slotInfo,
             scriptKind
         )
-        return (
-            refreshDiagnostics(
-                fileName,
-                !isUndefined(oriScriptKind) && scriptKind !== oriScriptKind
-            ),
-            ret
-        )
+        refreshDiagnostics(fileName, !isUndefined(oriScriptKind) && scriptKind !== oriScriptKind)
+        return componentIdentifiers
     })
 }

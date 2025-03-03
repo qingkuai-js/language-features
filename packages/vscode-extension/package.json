@@ -75,7 +75,7 @@
         ],
         "typescriptServerPlugins": [
             {
-                "name": "typescript-qingkuai-plugin",
+                "name": "typescript-plugin-qingkuai",
                 "enableForWorkspaceTypeScriptVersions": true
             }
         ],
@@ -98,11 +98,17 @@
                     "default": true,
                     "description": "Allow to add explain to ambiguous typescript diagnostic message."
                 },
+                "qingkuai.insertSpaceAroundInterpolation": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to insert a space around interpolation block."
+                },
                 "qingkuai.componentTagFormatPreference": {
                     "type": "string",
                     "enum": [
                         "camel",
-                        "kebab"
+                        "kebab",
+                        "none"
                     ],
                     "default": "camel",
                     "description": "Your preferred component tag format for completion suggestions."
@@ -136,7 +142,7 @@
         "js-yaml": "^4.1.0"
     },
     "dependencies": {
-        "typescript-qingkuai-plugin": "workspace:^",
+        "typescript-plugin-qingkuai": "workspace:^",
         "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
     }
 }

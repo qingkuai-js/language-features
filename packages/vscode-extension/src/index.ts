@@ -10,7 +10,11 @@ import {
 import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
-import { getInitQingkuaiConfig, startQingkuaiConfigWatcher } from "./config"
+import {
+    getInitQingkuaiConfig,
+    startPrettierConfigWatcher,
+    startQingkuaiConfigWatcher
+} from "./config"
 
 let client: LanguageClient
 
@@ -41,10 +45,9 @@ export async function activate(context: ExtensionContext) {
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
     // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
-    const pluginName = "typescript-qingkuai-plugin"
     const tsExtenstionAPI = tsExtension.exports.getAPI(0)
     const sockPath = await getValidPathWithHash("qingkuai")
-    tsExtenstionAPI.configurePlugin(pluginName, {
+    tsExtenstionAPI.configurePlugin("typescript-plugin-qingkuai", {
         sockPath,
         configurations: getInitQingkuaiConfig(),
         triggerFileName: shouldToggleLanguageId ? doc.fileName : ""
@@ -85,6 +88,7 @@ export async function activate(context: ExtensionContext) {
     attachCustomHandlers(client)
     languageStatusItem.busy = false
     startQingkuaiConfigWatcher(client)
+    startPrettierConfigWatcher(client)
     client.sendRequest("qingkuai/extensionLoaded", sockPath)
 }
 

@@ -10,7 +10,7 @@ import { connectTo } from "../../../shared-util/ipc/participant"
 
 let connectTimes = 0
 
-// vscode扩展加载完毕处理，连接到typescript-qingkuai-plugin的ipc服务器，并将客户端句柄
+// vscode扩展加载完毕处理，连接到typescript-plugin-qingkuai的ipc服务器，并将客户端句柄
 // 记录到tpic，后续qingkuai语言服务器将通过tpic与vscode内置的typescript语言服务进行通信
 export async function connectTsServer(sockPath: string) {
     try {
@@ -41,7 +41,7 @@ function attachClientHandlers() {
     const kinds = ["info", "warn", "error"] as const
     kinds.forEach(kind => {
         tpic.onNotification(`log/${kind}`, (msg: string) => {
-            Logger[kind]("From typescript-qingkuai-plugin: " + msg)
+            Logger[kind]("From typescript-plugin-qingkuai: " + msg)
         })
     })
 

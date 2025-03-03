@@ -1,51 +1,40 @@
 import type TS from "typescript"
 import type { QingkuaiConfigurationWithDir } from "../../../types/common"
 
-import fs from "fs"
-
 import {
-    proxyFileExists,
-    proxyEditContent,
-    proxyGetScriptKind,
-    proxyGetDiagnostics,
-    proxyGetScriptVersion,
-    proxyGetScriptSnapshot,
-    proxyGetScriptFileNames,
-    proxyOnConfigFileChanged,
-    proxyResolveModuleNameLiterals
-} from "./proxies"
+    proxyTypescriptProjectServiceMethods,
+    proxyTypescriptLanguageServiceMethods
+} from "./proxy"
+import fs from "fs"
+import { isUndefined } from "../../../shared-util/assert"
 import { attachGetDiagnostic } from "./server/diagnostic/handler"
 import { attachGetCompletion } from "./server/completion/handler"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { attachChangeConfig } from "./server/configuration/handler"
-import { isEmptyString, isUndefined } from "../../../shared-util/assert"
-import { projectService, setServer, setTSState, ts, typeRefStatement } from "./state"
 import { attachDocumentManager, attachUpdateSnapshot } from "./server/content/handler"
+import { ts, setServer, setTSState, typeRefStatement, setTriggerQingkuaiFileName } from "./state"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
         create(info: TS.server.PluginCreateInfo) {
             if (isUndefined(ts)) {
                 setTSState(modules.typescript, info)
+                proxyTypescriptProjectServiceMethods()
 
-                // 代理typescript语言服务的原始方法
-                proxyFileExists()
-                proxyEditContent()
-                proxyGetScriptKind()
-                proxyGetDiagnostics()
-                proxyGetScriptVersion()
-                proxyGetScriptSnapshot()
-                proxyGetScriptFileNames()
-                proxyOnConfigFileChanged()
-                proxyResolveModuleNameLiterals()
-
-                const ori = info.project.projectService.openClientFile
-                info.project.projectService.openClientFile = fileName => {
-                    console.log(fileName)
-                    return ori.call(info.project.projectService, fileName)
-                }
+                info.project.projectService.setHostConfiguration({
+                    extraFileExtensions: [
+                        {
+                            extension: ".qk",
+                            isMixedContent: false,
+                            scriptKind: modules.typescript.ScriptKind.Deferred
+                        }
+                    ]
+                })
             }
+
+            proxyTypescriptLanguageServiceMethods(info)
+
             return Object.assign({}, info.languageService)
         },
 
@@ -55,10 +44,7 @@ export = function init(modules: { typescript: typeof TS }) {
             configurations: QingkuaiConfigurationWithDir[]
         }) {
             initQingkuaiConfig(params.configurations)
-
-            if (!isEmptyString(params.triggerFileName)) {
-                projectService.closeClientFile(params.triggerFileName)
-            }
+            setTriggerQingkuaiFileName(params.triggerFileName)
 
             // 创建ipc通道，并监听来自qingkuai语言服务器的请求
             if (!fs.existsSync(params.sockPath)) {

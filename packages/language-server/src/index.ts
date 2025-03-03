@@ -1,5 +1,6 @@
 import { connection } from "./state"
 import { hover } from "./handlers/hover"
+import { format } from "./handlers/format"
 import { connectTsServer } from "./client"
 import { clearConfigCache } from "./compile"
 import { initialize } from "./handlers/initialize"
@@ -16,6 +17,7 @@ connection.onHover(hover)
 connection.onCompletion(complete)
 connection.onRenameRequest(rename)
 connection.onInitialize(initialize)
+connection.onDocumentFormatting(format)
 connection.onPrepareRename(prepareRename)
 connection.onCompletionResolve(resolveCompletion)
 
@@ -23,4 +25,4 @@ connection.onCompletionResolve(resolveCompletion)
 connection.onRequest("ping", _ => "pong")
 connection.onRequest("qingkuai/extensionLoaded", connectTsServer)
 connection.onNotification("qingkuai/publishDiagnostics", publishDiagnostics)
-connection.onNotification("qingkuai/updateExtensionConfig", clearConfigCache)
+connection.onNotification("qingkuai/cleanConfigurationCache", clearConfigCache)

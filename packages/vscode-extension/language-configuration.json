@@ -41,21 +41,24 @@
         ["\"", "\""],
         ["`", "`"]
     ],
+    "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)",
     "onEnterRules": [
         {
-            "beforeText": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
-            "afterText": "^\\s+",
+            "beforeText": "<(?!/|br|img|input|meta|link|hr|base|area|col|keygen|menuitem|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]+[^>]*(?<!/)>",
             "action": {
                 "indent": "indent"
             }
         },
         {
-            "beforeText": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
+            "beforeText": "<(?!/|br|img|input|meta|link|hr|base|area|col|keygen|menuitem|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]+[^>]*(?<!/)>",
             "afterText": "^</[a-z][a-zA-Z_.:\\d\\-]*",
             "action": {
                 "indent": "indentOutdent"
             }
         }
     ],
-    "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
+    "indentationRules": {
+        "increaseIndentPattern": "<(?!\\?|(?:br|img|input|meta|link|hr|base|area|col|keygen|menuitem|embed|param|source|track|wbr)\\b|[^>]*\\/>)([-_\\.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}\"']*$",
+        "decreaseIndentPattern": "^\\s*(<\\/[-_\\.A-Za-z0-9]+\\b[^>]*>|-->|\\})"
+    }
 }

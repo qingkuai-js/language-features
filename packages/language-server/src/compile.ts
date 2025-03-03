@@ -11,13 +11,12 @@ import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
-import { ExtensionConfiguration } from "../../../types/common"
 import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
 // 文档的扩展配置项，键为TextDocument.uri（string）
-const extensionConfigCache = new Map<string, ExtensionConfiguration>()
+const extensionConfigCache = new Map<string, GetClientConfigResult>()
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
 const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
@@ -33,7 +32,6 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             await tpicConnectedPromise
         }
         if (document.version === cached?.version) {
-            await synchronizeContentToTypescriptPlugin(cached)
             await getConfigurationOfFile(cached)
             return cached
         }
@@ -66,8 +64,14 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     }
 
     // 通过中间代码索引换取源码索引
-    const getSourceIndex = (interIndex: number) => {
-        return compileRes.interIndexMap.itos[interIndex]
+    const getSourceIndex = (interIndex: number, isEnd = false) => {
+        const sourceIndex = compileRes.interIndexMap.itos[interIndex]
+        if (sourceIndex !== -1 || !isEnd) {
+            return sourceIndex
+        }
+
+        const preSourceIndex = compileRes.interIndexMap.itos[interIndex - 1]
+        return preSourceIndex === -1 ? -1 : preSourceIndex + 1
     }
 
     // 通过源码索引换取中间代码索引
@@ -94,27 +98,23 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         getInterIndex,
         getSourceIndex,
         isPositionFlagSet,
+        config: null as any,
         isSynchronized: false,
-        componentIdentifiers: [],
-        version: document.version,
-        config: {
-            htmlHoverTip: [],
-            typescriptDiagnosticsExplain: false,
-            componentTagFormatPreference: "camel"
-        }
+        componentIdentifierInfos: [],
+        version: document.version
     }
 
-    // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
+    // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
     const pms = new Promise<CachedCompileResultItem>(async resolve => {
         await synchronizeContentToTypescriptPlugin(ccri)
         await getConfigurationOfFile(ccri)
         resolve(ccri)
     })
 
-    // 将编译结果同步到typescript-qingkuai-plugin
+    // 将编译结果同步到typescript-plugin-qingkuai
     async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
         if (!isTestingEnv && synchronize && !cr.isSynchronized) {
-            cr.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
+            cr.componentIdentifierInfos = await tpic.sendRequest<UpdateSnapshotParams>(
                 "updateSnapshot",
                 {
                     interCode: cr.code,
@@ -128,7 +128,9 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     }
 
     async function getConfigurationOfFile(cr: CachedCompileResultItem) {
-        if (!extensionConfigCache.has(document.uri)) {
+        if (extensionConfigCache.has(document.uri)) {
+            cr.config = extensionConfigCache.get(document.uri)!
+        } else {
             const res: GetClientConfigResult = await connection.sendRequest(
                 "qingkuai/getClientConfig",
                 {
@@ -136,16 +138,15 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
                 } satisfies GetClientConfigParams
             )
-
             if (res.typescriptConfig) {
+                updateTypescriptConfigurationForQingkuaiFile(res)
                 tpic.sendNotification<ConfigureFileParams>("configureFile", {
                     fileName: cr.filePath,
                     config: res.typescriptConfig,
                     workspacePath: res.workspacePath
                 })
             }
-
-            extensionConfigCache.set(document.uri, (cr.config = res.extensionConfig))
+            extensionConfigCache.set(document.uri, (cr.config = res))
         }
     }
 
@@ -171,4 +172,13 @@ export async function getCompileResByPath(path: string) {
 // 清空已缓存的配置内容
 export function clearConfigCache() {
     extensionConfigCache.clear()
+}
+
+// prettier-ignore
+function updateTypescriptConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+    // @ts-expect-error: change read-only property
+    config.typescriptConfig.formatCodeSettings.semicolons = config.prettierConfig.semi ? "insert" : "remove"
+
+    // @ts-expect-error: change read-only property
+    config.typescriptConfig.preference.quotePreference = config.prettierConfig.singleQuote ? "single" : "double"
 }

@@ -1,17 +1,19 @@
 import type {
+    TextEditParam,
     GetCompletionParams,
     GetCompletionResult,
     ResolveCompletionResult,
     ResolveCompletionParams,
     GetCompletionResultEntry
 } from "../../../../../types/communication"
-import type { CompletionEntry, DocumentSpan, SymbolDisplayPart, UserPreferences } from "typescript"
+import type { Command } from "vscode-languageserver"
+import type { DocumentSpan, UserPreferences, CompletionEntry, SymbolDisplayPart } from "typescript"
 
 import { scriptExensions } from "../../constant"
-import { getMappingFileName } from "../content/document"
+import { projectService, server, ts } from "../../state"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { excludeProperty } from "../../../../../shared-util/sundry"
-import { languageService, Logger, projectService, server, ts } from "../../state"
+import { getDefaultLanguageServiceByFileName } from "../../util/typescript"
 
 const optionalSameKeys = [
     "data",
@@ -26,25 +28,24 @@ const optionalSameKeys = [
 
 export function attachGetCompletion() {
     server.onRequest<GetCompletionParams, GetCompletionResult>("getCompletion", params => {
-        const mappingFileName = getMappingFileName(params.fileName)
-        if (isUndefined(mappingFileName)) {
-            return null
-        }
-
-        const completionRes = languageService.getCompletionsAtPosition(
-            mappingFileName,
+        const languageService = getDefaultLanguageServiceByFileName(params.fileName)
+        const completionRes = languageService?.getCompletionsAtPosition(
+            params.fileName,
             params.pos,
-            getUserPreferencesByFileName(mappingFileName),
-            getFormatCodeSettingsByFileName(mappingFileName)
+            getUserPreferencesByFileName(params.fileName),
+            getFormatCodeSettingsByFileName(params.fileName)
         )
+
         if (isUndefined(completionRes)) {
             return null
         }
+
         const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
             const kindModifiers = parseKindModifier(item.kindModifiers)
             const ret: GetCompletionResultEntry = {
                 name: item.name,
                 kind: item.kind,
+                source: item.source,
                 detail: getScriptKindDetails(item),
                 label: item.name || (item.insertText ?? "")
             }
@@ -78,11 +79,12 @@ export function attachGetCompletion() {
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
         "resolveCompletion",
         ({ fileName, entryName, pos, ori, source }) => {
-            const mappingFileName = getMappingFileName(fileName)!
-            const preferences = getUserPreferencesByFileName(mappingFileName)
-            const formatSettings = getFormatCodeSettingsByFileName(mappingFileName)
-            const detailRes = languageService.getCompletionEntryDetails(
-                mappingFileName,
+            const preferences = getUserPreferencesByFileName(fileName)
+            const formatSettings = getFormatCodeSettingsByFileName(fileName)
+            const languageService = getDefaultLanguageServiceByFileName(fileName)
+
+            const detailRes = languageService?.getCompletionEntryDetails(
+                fileName,
                 pos,
                 entryName,
                 formatSettings,
@@ -91,17 +93,64 @@ export function attachGetCompletion() {
                 ori
             )
 
-            const detailSections = (detailRes?.codeActions || []).map(item => {
-                return item.description
-            })
-            if (detailSections.length) {
+            let command: Command | undefined = undefined
+            const [detailSections, textEdits]: [string[], TextEditParam[]] = [[], []]
+
+            if (detailRes?.codeActions) {
+                for (
+                    let i = 0, hasRemainingCommandOrEdits = false;
+                    i < detailRes.codeActions.length;
+                    i++
+                ) {
+                    const action = detailRes.codeActions[i]
+                    if (action.commands) {
+                        hasRemainingCommandOrEdits = true
+                    }
+                    action.changes.forEach(change => {
+                        if (change.fileName === fileName) {
+                            textEdits.push(
+                                ...change.textChanges.map(item => {
+                                    return {
+                                        newText: item.newText,
+                                        start: item.span.start,
+                                        end: item.span.start + item.span.length
+                                    }
+                                })
+                            )
+                        } else {
+                            hasRemainingCommandOrEdits = true
+                        }
+                    })
+                    if (hasRemainingCommandOrEdits) {
+                        command = {
+                            title: "",
+                            arguments: [
+                                fileName,
+                                detailRes.codeActions.map(action => {
+                                    let changes = action.changes.filter(
+                                        x => x.fileName !== fileName
+                                    )
+                                    changes = changes.map(x => {
+                                        return { ...x, fileName }
+                                    })
+                                    return { ...action, changes }
+                                })
+                            ],
+                            command: "_typescript.applyCompletionCodeAction"
+                        }
+                    }
+                    detailSections.push(action.description)
+                }
                 detailSections.push("\n\n")
             }
+
             detailSections.push(ts.displayPartsToString(detailRes?.displayParts))
 
             return {
-                detail: detailSections.join(""),
-                documentation: convertToPlainTextWithLink(detailRes?.documentation)
+                command,
+                textEdits,
+                detail: detailSections.join("") || undefined,
+                documentation: convertToPlainTextWithLink(detailRes?.documentation) || undefined
             }
         }
     )

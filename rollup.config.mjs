@@ -9,6 +9,7 @@ export default defineConfig(() => {
         {
             external: [
                 "vscode",
+                "prettier",
                 "qingkuai/compiler",
                 "@vscode/emmet-helper",
                 "vscode-languageclient",
