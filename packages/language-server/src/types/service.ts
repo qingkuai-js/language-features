@@ -16,7 +16,8 @@ export type CachedCompileResultItem = CompileResult & {
     document: TextDocument
     isSynchronized: boolean
     config: GetClientConfigResult
-    componentIdentifierInfos: ComponentIdentifierInfo[]
+    builtInTypeDeclarationEndIndex: number
+    componentInfos: ComponentIdentifierInfo[]
     getOffset: (position: Position) => number
     getPosition: (offset: number) => Position
     getInterIndex: (sourceIndex: number) => number

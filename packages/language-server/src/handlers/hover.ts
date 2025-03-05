@@ -7,14 +7,15 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { documents } from "../state"
 import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
+import { documents, isTestingEnv, tpic } from "../state"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { HoverTipParams, HoverTipResult } from "../../../../types/communication"
 
 export const hover: HoverHandler = async ({ textDocument, position }, token) => {
     if (token.isCancellationRequested) {
@@ -22,13 +23,39 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
     }
 
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    const { templateNodes, getOffset, getRange, config } = cr
+    const { templateNodes, getOffset, getRange, config, getSourceIndex } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
     const currentNode = findNodeAt(templateNodes, offset)
     if (!currentNode) {
         return null
+    }
+
+    const inScript = cr.isPositionFlagSet(offset, "inScript")
+    if (!isTestingEnv && inScript) {
+        const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<HoverTipParams>(
+            "hoverTip",
+            {
+                fileName: cr.filePath,
+                pos: cr.interIndexMap.stoi[offset]
+            }
+        )
+
+        if (!tsHoverTip) {
+            return null
+        }
+
+        return {
+            contents: {
+                kind: "markdown",
+                value: tsHoverTip.content
+            },
+            range: getRange(
+                getSourceIndex(tsHoverTip.posRange[0]),
+                getSourceIndex(tsHoverTip.posRange[1], true)
+            )
+        }
     }
 
     // HTML标签悬停提示

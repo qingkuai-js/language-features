@@ -45,7 +45,7 @@ export const MAYBE_INVALID_COMPLETION_LABELS = new Set([
 ])
 
 export const COMMANDS = {
-    TriggerCommand: "editor.action.triggerSuggest"
+    TriggerSuggest: "editor.action.triggerSuggest"
 }
 export const SPECIAL_TAGS = new Set(["!", "script", "style"])
 export const INVALID_COMPLETION_TEXT_LABELS = new Set(["_", "__", "___"])

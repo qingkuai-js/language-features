@@ -7,12 +7,9 @@ import {
 } from "./proxy"
 import fs from "fs"
 import { isUndefined } from "../../../shared-util/assert"
-import { attachGetDiagnostic } from "./server/diagnostic/handler"
-import { attachGetCompletion } from "./server/completion/handler"
+import { attachLanguageServerIPCHandlers } from "./server"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
-import { attachChangeConfig } from "./server/configuration/handler"
-import { attachDocumentManager, attachUpdateSnapshot } from "./server/content/handler"
 import { ts, setServer, setTSState, typeRefStatement, setTriggerQingkuaiFileName } from "./state"
 
 export = function init(modules: { typescript: typeof TS }) {
@@ -50,11 +47,7 @@ export = function init(modules: { typescript: typeof TS }) {
             if (!fs.existsSync(params.sockPath)) {
                 createServer(params.sockPath).then(server => {
                     setServer(server)
-                    attachChangeConfig()
-                    attachGetDiagnostic()
-                    attachGetCompletion()
-                    attachUpdateSnapshot()
-                    attachDocumentManager()
+                    attachLanguageServerIPCHandlers()
                     server.onRequest("getQingkuaiDtsReferenceStatement", () => typeRefStatement)
                 })
             }

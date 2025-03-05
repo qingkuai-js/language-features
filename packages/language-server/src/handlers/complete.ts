@@ -1,17 +1,17 @@
 import type {
     InsertSnippetParam,
-    GetCompletionParams,
-    GetCompletionResult,
-    GetClientConfigResult,
+    ComponentAttributeItem,
     ResolveCompletionResult,
-    ComponentIdentifierInfo
+    ComponentIdentifierInfo,
+    GetCompletionForScriptParams,
+    GetCompletionForScriptResult
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { NumNum } from "../../../../types/common"
 import type { HTMLElementDataAttributeItem } from "../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
-import type { GetRangeFunc, GetSourceIndexFunc } from "../types/service"
-import type { Position, Range, CompletionItem } from "vscode-languageserver/node"
+import type { CachedCompileResultItem, GetRangeFunc } from "../types/service"
+import { Position, Range, CompletionItem, Command } from "vscode-languageserver/node"
 import type { CompletionHandler, ResolveCompletionHandler } from "../types/handlers"
 
 import {
@@ -33,13 +33,13 @@ import {
 } from "vscode-languageserver/node"
 import {
     COMMANDS,
-    INVALID_COMPLETION_TEXT_LABELS,
     KEY_RELATED_EVENT_MODIFIERS,
+    INVALID_COMPLETION_TEXT_LABELS,
     MAYBE_INVALID_COMPLETION_LABELS
 } from "../constants"
 import { getCompileRes } from "../compile"
 import { position2Range } from "../util/vscode"
-import { parseTemplate } from "qingkuai/compiler"
+import { parseTemplate, util } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
 import { camel2Kebab } from "../../../../shared-util/sundry"
@@ -65,7 +65,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
     }
 
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    const { templateNodes, document, getOffset, getRange, getPosition, getSourceIndex, config } = cr
+    const { templateNodes, document, getOffset, getRange, getPosition } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
@@ -78,105 +78,12 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         return null
     }
 
+    // 获取脚本块（包括插值表达式）的补全建议
     if (!isTestingEnv && inScript) {
         if (/[^\.\-@#<'"`:,_]/.test(triggerChar)) {
             return null
         }
-
-        const positionOfInterCode = cr.interIndexMap.stoi[offset]
-        const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<GetCompletionParams>(
-            "getCompletion",
-            {
-                fileName: cr.filePath,
-                pos: positionOfInterCode
-            }
-        )
-        if (isNull(tsCompletionRes)) {
-            return null
-        }
-
-        let completionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
-            const ret: CompletionItem = {
-                label: item.label,
-                sortText: item.sortText,
-                data: {
-                    _fromTS: true,
-                    ori: item.data,
-                    source: item.source,
-                    entryName: item.name,
-                    fileName: cr.filePath,
-                    pos: positionOfInterCode
-                },
-                kind: convertTsCompletionKind(item.kind)
-            }
-            optionalSameKeys.forEach(key => {
-                // @ts-expect-error
-                item[key] && (ret[key] = item[key])
-            })
-
-            if (item.source) {
-                ret.labelDetails = {
-                    description: item.source
-                }
-            }
-            if (item.isColor) {
-                ret.kind = CompletionItemKind.Color
-            }
-            if (item.deprecated) {
-                ret.tags = [CompletionItemTag.Deprecated]
-            }
-            if (item.isSnippet) {
-                ret.insertTextFormat = InsertTextFormat.Snippet
-            }
-            if (item.replacementSpan) {
-                const { start, length } = item.replacementSpan
-                ret.textEdit = TextEdit.del(
-                    getRange(getSourceIndex(start), getSourceIndex(start + length, true))
-                )
-            }
-
-            return ret
-        })
-
-        // 过滤无效的补全建议
-        completionItems = completionItems.filter(item => {
-            if (item.label === "__c__") {
-                return false
-            }
-
-            if (
-                item.kind === CompletionItemKind.Text &&
-                INVALID_COMPLETION_TEXT_LABELS.has(item.label)
-            ) {
-                return false
-            }
-
-            if (MAYBE_INVALID_COMPLETION_LABELS.has(item.label)) {
-                const ps = cr.code.slice(0, offset)
-                const lastDotIndex = ps.lastIndexOf(".")
-                if (lastDotIndex === -1) {
-                    return true
-                }
-                return !/__c__\s*$/.test(ps.slice(0, lastDotIndex))
-            }
-
-            return true
-        })
-
-        let defaultEditRange: Range | undefined = undefined
-        if (tsCompletionRes.defaultRepalcementSpan) {
-            const { start, length } = tsCompletionRes.defaultRepalcementSpan
-            defaultEditRange = getRange(getSourceIndex(start), getSourceIndex(start + length, true))
-        }
-
-        return {
-            items: completionItems,
-            isIncomplete: tsCompletionRes.isIncomplete,
-            itemDefaults: {
-                editRange: defaultEditRange,
-                commitCharacters: tsCompletionRes.defaultCommitCharacters
-            }
-        }
+        return doScriptBlockComplete(cr, offset)
     }
 
     // 文本节点范围内启用emmet、实体字符及自定义标签补全建议支持
@@ -195,18 +102,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
 
         const completions = [
             ...doCharacterEntityComplete(getRange, source, offset),
-
-            // prettier-ignore
-            ...doCustomTagComplete(
-                getRange,
-                source,
-                offset,
-                currentNode,
-                config,
-                getSourceIndex,
-                cr.componentIdentifierInfos,
-
-            )
+            ...doCustomTagComplete(cr, offset, currentNode, cr.componentInfos)
         ]
 
         // 如果是由<触发的补全建议获取，则列举所有标签名建议
@@ -214,13 +110,10 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             completions.push(
                 ...doTagComplete(
                     position2Range(position),
-                    getRange,
-                    source,
+                    cr,
                     offset,
                     currentNode,
-                    config,
-                    getSourceIndex,
-                    cr.componentIdentifierInfos
+                    cr.componentInfos
                 )
             )
         }
@@ -239,13 +132,10 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
     if (offset > nodeStartIndex + 1 && offset <= tagNameEndIndex) {
         return doTagComplete(
             getRange(nodeStartIndex + 1, tagNameEndIndex),
-            getRange,
-            source,
+            cr,
             offset,
             currentNode,
-            config,
-            getSourceIndex,
-            cr.componentIdentifierInfos
+            cr.componentInfos
         )
     }
 
@@ -283,22 +173,33 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         const keyStartIndex = attr?.key.loc.start.index || offset
         const valueStartIndex = attr?.value.loc.start.index ?? Infinity
 
+        // 当前节点若是组件，则找到它的属性信息
+        const componentAttributes = cr.componentInfos.filter(info => {
+            return info.name === currentNode.componentTag
+        })[0]?.attributes
+
         let hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
         // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
-        // 如果属性为非动态/引用/指令/事件且htmlData中该属性valueSet不为v则在此请求补全建议
+        // 如果属性为非动态/引用/指令/事件且htmlData中该属性valueSet不为v或当前为组件节点则在次请求补全建议
         if (attr && valueStartIndex === attr.loc.end.index && source[offset - 1] === "=") {
             const snippetItem: InsertSnippetParam = {
                 text: isInterpolation ? "{$0}" : '"$0"'
             }
             if (!isInterpolation) {
-                const atttData = findTagAttributeData(currentNode.tag, attrKey)
-                if (atttData?.valueSet && atttData.valueSet !== "v") {
-                    snippetItem.command = COMMANDS.TriggerCommand
+                if (componentAttributes) {
+                    const foundAttr = componentAttributes.filter(a => a.name === attrKey)[0]
+                    if (foundAttr?.stringCandidates.length) {
+                        snippetItem.command = COMMANDS.TriggerSuggest
+                    }
+                } else {
+                    const atttData = findTagAttributeData(currentNode.tag, attrKey)
+                    if (atttData?.valueSet && atttData.valueSet !== "v") {
+                        snippetItem.command = COMMANDS.TriggerSuggest
+                    }
                 }
             }
-            connection.sendNotification("qingkuai/insertSnippet", snippetItem)
-            return null
+            return connection.sendNotification("qingkuai/insertSnippet", snippetItem), null
         }
 
         // 如果光标在属性值处，返回属性值的补全建议列表
@@ -315,27 +216,53 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                     return characterEntityCompletions
                 }
 
-                // 返回属性值建议
-                return doAttributeValueComplete(
-                    currentNode.tag,
-                    attr.key.raw,
-                    getRange(valueStartIndex, valueEndIndex)
-                )
+                // 当组件属性值为字符串字面量类型或字符串字面量联合类型时返回属性值建议
+                const valueRange = getRange(valueStartIndex, valueEndIndex)
+                if (componentAttributes) {
+                    const foundAttr = componentAttributes.filter(a => {
+                        return a.name === attrKey
+                    })[0]
+                    return (foundAttr?.stringCandidates || []).map(candidate => {
+                        return {
+                            label: candidate,
+                            kind: CompletionItemKind.Constant,
+                            textEdit: TextEdit.replace(valueRange, candidate)
+                        }
+                    })
+                }
+
+                // 返回普通标签属性值建议
+                return doAttributeValueComplete(currentNode.tag, attr.key.raw, valueRange)
             }
         } else if (isUndefined(attr) || offset <= keyEndIndex) {
             const keyRange = getRange(keyStartIndex, keyEndIndex)
+            const normalQuote = cr.config.prettierConfig.singleQuote ? "'" : '"'
 
             // 返回引用属性补全建议
             if (keyFirstChar === "&") {
-                return doReferenceAttributeComplete(
-                    currentNode,
-                    hasValue,
-                    getRange(keyStartIndex, keyEndIndex)
-                )
+                if (currentNode.componentTag) {
+                    return doComponentAttributeNameComplete(
+                        componentAttributes,
+                        normalQuote,
+                        "&",
+                        keyRange
+                    )
+                }
+
+                return doReferenceAttributeComplete(currentNode, hasValue, keyRange)
             }
 
-            // 如果处于事件修饰符范围内，则提返回事件修饰符补全建议
+            // 如果处于事件修饰符范围内，则返回事件修饰符补全建议
             if (keyFirstChar === "@") {
+                if (currentNode.componentTag) {
+                    return doComponentAttributeNameComplete(
+                        componentAttributes,
+                        normalQuote,
+                        "@",
+                        keyRange
+                    )
+                }
+
                 const firstModifierStartIndex = attrKey.indexOf("|")
                 const modifier = findEventModifier(source, offset, [keyStartIndex, keyEndIndex])
 
@@ -365,6 +292,15 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                     hasValue = true
                     keyRange.end = getPosition(keyStartIndex + firstModifierStartIndex)
                 }
+            }
+
+            if (currentNode.componentTag) {
+                return doComponentAttributeNameComplete(
+                    componentAttributes,
+                    normalQuote,
+                    keyFirstChar,
+                    keyRange
+                )
             }
 
             return doAttributeNameComplete(currentNode.tag, keyRange, hasValue, keyFirstChar)
@@ -426,16 +362,15 @@ function doTagComplete(range: Range, ...restArgs: Parameters<typeof doCustomTagC
 
 // 自定义HTML标签补全建议（模拟emmet行为）
 function doCustomTagComplete(
-    getRange: GetRangeFunc,
-    source: string,
+    cr: CachedCompileResultItem,
     offset: number,
     node: TemplateNode,
-    config: GetClientConfigResult,
-    getSourceIndex: GetSourceIndexFunc,
-    componentIdentifierInfos: ComponentIdentifierInfo[]
+    componentInfos: ComponentIdentifierInfo[]
 ) {
     const ret: CompletionItem[] = []
+    const { source } = cr.inputDescriptor
     const emmetTagNameIndex = source.slice(0, offset).search(emmetTagNameRE)
+    const { config, getSourceIndex, builtInTypeDeclarationEndIndex, getRange } = cr
 
     if (emmetTagNameIndex !== -1) {
         const startWithLT = source[emmetTagNameIndex] === "<"
@@ -455,7 +390,7 @@ function doCustomTagComplete(
                         kind: "markdown",
                         value:
                             (isString(description) ? description : description.value) +
-                            (startWithLT ? "" : "\n\n" + mdCodeBlockGen("qingkuai-emmet", `<${name}>\n\t|\n</${name}>`))
+                            (startWithLT ? "" : "\n\n" + mdCodeBlockGen("qke", `<${name}>\n\t|\n</${name}>`))
                     },
                     textEdit: TextEdit.replace(range, (startWithLT ? "" : "<") + name + (startWithLT ? "" : `>\n\t$0\n</${name}>`))
                 })
@@ -472,10 +407,10 @@ function doCustomTagComplete(
             })
         }
 
-        componentIdentifierInfos.forEach(item => {
+        componentInfos.forEach(item => {
             let additionalTextEdits: TextEdit[] | undefined = undefined
-            if (item.builtInTypeDeclarationEndIndex) {
-                const pos = getSourceIndex(item.builtInTypeDeclarationEndIndex, true)
+            if (!item.imported) {
+                const pos = getSourceIndex(builtInTypeDeclarationEndIndex, true)
                 additionalTextEdits = [
                     {
                         range: getRange(pos),
@@ -489,10 +424,7 @@ function doCustomTagComplete(
                 ]
             }
 
-            const tag =
-                useKebab || config.extensionConfig.componentTagFormatPreference === "kebab"
-                    ? camel2Kebab(item.name)
-                    : item.name
+            const tag = useKebab ? camel2Kebab(item.name) : item.name
 
             // prettier-ignore
             ret.push({
@@ -501,10 +433,10 @@ function doCustomTagComplete(
                 insertTextFormat: InsertTextFormat.Snippet,
                 documentation: {
                     kind: "markdown",
-                    value: mdCodeBlockGen("typescript", `(component) class ${item.name}`)
+                    value: mdCodeBlockGen("ts", `(component) class ${item.name}`)
                 },
                 detail: item.relativePath ? `Add import from "${item.relativePath}"` : undefined,
-                textEdit: TextEdit.replace(range, (startWithLT ? "" : "<") + tag + (startWithLT ? "" : item.hasSlot ? `>$0</${tag}>` : ` $0 />`)),
+                textEdit: TextEdit.replace(range, (startWithLT ? "" : "<") + tag + (startWithLT ? "" : item.slotNams.length ? `>$0</${tag}>` : ` $0 />`)),
             })
         })
     }
@@ -587,7 +519,7 @@ function doAttributeNameComplete(tag: string, range: Range, hasValue: boolean, s
         if (valueSet !== "v" && !isDynamicOrEvent && !hasValue) {
             extraRet.command = {
                 title: "suggest",
-                command: COMMANDS.TriggerCommand
+                command: COMMANDS.TriggerSuggest
             }
         }
         return {
@@ -748,6 +680,150 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
             } as CompletionItem
         })
     }
+}
+
+async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number) {
+    const { getRange, getSourceIndex } = cr
+    const positionOfInterCode = cr.interIndexMap.stoi[offset]
+    const tsCompletionRes: GetCompletionForScriptResult = await tpic.sendRequest(
+        "getCompletionForScriptBlock",
+        {
+            fileName: cr.filePath,
+            pos: positionOfInterCode
+        } satisfies GetCompletionForScriptParams
+    )
+
+    if (isNull(tsCompletionRes)) {
+        return null
+    }
+
+    let completionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
+        const ret: CompletionItem = {
+            label: item.label,
+            sortText: item.sortText,
+            data: {
+                _fromTS: true,
+                ori: item.data,
+                source: item.source,
+                entryName: item.name,
+                fileName: cr.filePath,
+                pos: positionOfInterCode
+            },
+            kind: convertTsCompletionKind(item.kind)
+        }
+        optionalSameKeys.forEach(key => {
+            // @ts-expect-error
+            item[key] && (ret[key] = item[key])
+        })
+
+        if (item.source) {
+            ret.labelDetails = {
+                description: item.source
+            }
+        }
+        if (item.isColor) {
+            ret.kind = CompletionItemKind.Color
+        }
+        if (item.deprecated) {
+            ret.tags = [CompletionItemTag.Deprecated]
+        }
+        if (item.isSnippet) {
+            ret.insertTextFormat = InsertTextFormat.Snippet
+        }
+        if (item.replacementSpan) {
+            const { start, length } = item.replacementSpan
+            ret.textEdit = TextEdit.del(
+                getRange(getSourceIndex(start), getSourceIndex(start + length, true))
+            )
+        }
+
+        return ret
+    })
+
+    // 过滤无效的补全建议
+    completionItems = completionItems.filter(item => {
+        if (item.label === "__c__") {
+            return false
+        }
+
+        if (
+            item.kind === CompletionItemKind.Text &&
+            INVALID_COMPLETION_TEXT_LABELS.has(item.label)
+        ) {
+            return false
+        }
+
+        if (MAYBE_INVALID_COMPLETION_LABELS.has(item.label)) {
+            const ps = cr.code.slice(0, offset)
+            const lastDotIndex = ps.lastIndexOf(".")
+            if (lastDotIndex === -1) {
+                return true
+            }
+            return !/__c__\s*$/.test(ps.slice(0, lastDotIndex))
+        }
+
+        return true
+    })
+
+    let defaultEditRange: Range | undefined = undefined
+    if (tsCompletionRes.defaultRepalcementSpan) {
+        const { start, length } = tsCompletionRes.defaultRepalcementSpan
+        defaultEditRange = getRange(getSourceIndex(start), getSourceIndex(start + length, true))
+    }
+
+    return {
+        items: completionItems,
+        isIncomplete: tsCompletionRes.isIncomplete,
+        itemDefaults: {
+            editRange: defaultEditRange,
+            commitCharacters: tsCompletionRes.defaultCommitCharacters
+        }
+    }
+}
+
+function doComponentAttributeNameComplete(
+    attributes: ComponentAttributeItem[],
+    normalQuote: string,
+    startChar: string,
+    range: Range
+) {
+    const completions: CompletionItem[] = []
+    attributes?.forEach(attr => {
+        const label = util.camel2Kebab(attr.name)
+        const useStartChar =
+            (startChar === "@" && attr.isEvent) ||
+            (startChar === "&" && attr.kind === "Ref") ||
+            (startChar === "!" && attr.kind === "Prop")
+
+        if (useStartChar || (!/[!@&]/.test(startChar) && attr.kind === "Prop")) {
+            const prefix = useStartChar ? startChar : ""
+
+            let suffix = ""
+            if (useStartChar) {
+                suffix = "={$0}"
+            } else if (attr.type !== "boolean") {
+                suffix = `=${normalQuote}$0${normalQuote}`
+            }
+
+            let command: Command | undefined = undefined
+            if (attr.stringCandidates.length) {
+                command = {
+                    title: "suggest",
+                    command: COMMANDS.TriggerSuggest
+                }
+            }
+
+            completions.push({
+                command,
+                label: prefix + label,
+                insertTextFormat: InsertTextFormat.Snippet,
+                detail: `(property) ${attr.name}: ${attr.type}`,
+                textEdit: TextEdit.replace(range, prefix + label + suffix),
+                kind: attr.isEvent ? CompletionItemKind.Event : CompletionItemKind.Property
+            })
+        }
+    })
+    return completions
 }
 
 // 将ts补全建议的kind转换为LSP需要的kind

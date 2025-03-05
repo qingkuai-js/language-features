@@ -38,8 +38,12 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     }
 
     const source = document.getText()
+    const compileRes = compile(source, {
+        check: true,
+        typeRefStatement
+    })
     const getOffset = document.offsetAt.bind(document)
-    const compileRes = compile(source, { check: true, typeRefStatement })
+    const isTS = compileRes.inputDescriptor.script.isTS
     const filePath = isTestingEnv ? document.uri : fileURLToPath(document.uri)
 
     // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
@@ -98,10 +102,11 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         getInterIndex,
         getSourceIndex,
         isPositionFlagSet,
+        componentInfos: [],
         config: null as any,
         isSynchronized: false,
-        componentIdentifierInfos: [],
-        version: document.version
+        version: document.version,
+        builtInTypeDeclarationEndIndex: typeRefStatement.length + (isTS ? 119 : 114)
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
@@ -114,16 +119,13 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     // 将编译结果同步到typescript-plugin-qingkuai
     async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
         if (!isTestingEnv && synchronize && !cr.isSynchronized) {
-            cr.componentIdentifierInfos = await tpic.sendRequest<UpdateSnapshotParams>(
-                "updateSnapshot",
-                {
-                    interCode: cr.code,
-                    fileName: cr.filePath,
-                    itos: cr.interIndexMap.itos,
-                    scriptKindKey: getScriptKindKey(cr),
-                    slotInfo: cr.inputDescriptor.slotInfo
-                }
-            )
+            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
+                interCode: cr.code,
+                fileName: cr.filePath,
+                itos: cr.interIndexMap.itos,
+                scriptKindKey: getScriptKindKey(cr),
+                slotInfo: cr.inputDescriptor.slotInfo
+            })
         }
     }
 

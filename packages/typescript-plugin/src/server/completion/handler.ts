@@ -1,19 +1,22 @@
 import type {
-    TextEditParam,
-    GetCompletionParams,
-    GetCompletionResult,
     ResolveCompletionResult,
     ResolveCompletionParams,
-    GetCompletionResultEntry
+    GetCompletionResultEntry,
+    ResolveCompletionTextEdit,
+    GetCompletionForScriptParams,
+    GetCompletionForScriptResult
 } from "../../../../../types/communication"
 import type { Command } from "vscode-languageserver"
-import type { DocumentSpan, UserPreferences, CompletionEntry, SymbolDisplayPart } from "typescript"
+import type { UserPreferences, CompletionEntry } from "typescript"
 
+import {
+    getDefaultLanguageServiceByFileName,
+    convertDisplayPartsToPlainTextWithLink
+} from "../../util/typescript"
 import { scriptExensions } from "../../constant"
 import { projectService, server, ts } from "../../state"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { excludeProperty } from "../../../../../shared-util/sundry"
-import { getDefaultLanguageServiceByFileName } from "../../util/typescript"
 
 const optionalSameKeys = [
     "data",
@@ -27,54 +30,57 @@ const optionalSameKeys = [
 ] as const
 
 export function attachGetCompletion() {
-    server.onRequest<GetCompletionParams, GetCompletionResult>("getCompletion", params => {
-        const languageService = getDefaultLanguageServiceByFileName(params.fileName)
-        const completionRes = languageService?.getCompletionsAtPosition(
-            params.fileName,
-            params.pos,
-            getUserPreferencesByFileName(params.fileName),
-            getFormatCodeSettingsByFileName(params.fileName)
-        )
+    server.onRequest<GetCompletionForScriptParams, GetCompletionForScriptResult>(
+        "getCompletionForScriptBlock",
+        params => {
+            const languageService = getDefaultLanguageServiceByFileName(params.fileName)
+            const completionRes = languageService?.getCompletionsAtPosition(
+                params.fileName,
+                params.pos,
+                getUserPreferencesByFileName(params.fileName),
+                getFormatCodeSettingsByFileName(params.fileName)
+            )
 
-        if (isUndefined(completionRes)) {
-            return null
-        }
+            if (isUndefined(completionRes)) {
+                return null
+            }
 
-        const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
-            const kindModifiers = parseKindModifier(item.kindModifiers)
-            const ret: GetCompletionResultEntry = {
-                name: item.name,
-                kind: item.kind,
-                source: item.source,
-                detail: getScriptKindDetails(item),
-                label: item.name || (item.insertText ?? "")
-            }
-            if (item.isRecommended) {
-                ret.preselect = true
-            }
-            if (kindModifiers.has("color")) {
-                ret.isColor = true
-            }
-            if (kindModifiers.has("optional")) {
-                ret.label += "?"
-            }
-            if (kindModifiers.has("deprecated")) {
-                ret.deprecated = true
-            }
-            optionalSameKeys.forEach(key => {
-                // @ts-expect-error
-                item[key] && (ret[key] = item[key])
+            const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
+                const kindModifiers = parseKindModifier(item.kindModifiers)
+                const ret: GetCompletionResultEntry = {
+                    name: item.name,
+                    kind: item.kind,
+                    source: item.source,
+                    detail: getScriptKindDetails(item),
+                    label: item.name || (item.insertText ?? "")
+                }
+                if (item.isRecommended) {
+                    ret.preselect = true
+                }
+                if (kindModifiers.has("color")) {
+                    ret.isColor = true
+                }
+                if (kindModifiers.has("optional")) {
+                    ret.label += "?"
+                }
+                if (kindModifiers.has("deprecated")) {
+                    ret.deprecated = true
+                }
+                optionalSameKeys.forEach(key => {
+                    // @ts-expect-error
+                    item[key] && (ret[key] = item[key])
+                })
+                return ret
             })
-            return ret
-        })
 
-        return {
-            entries: completionItems,
-            isIncomplete: !!completionRes.isIncomplete,
-            defaultRepalcementSpan: completionRes.optionalReplacementSpan,
-            defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
+            return {
+                entries: completionItems,
+                isIncomplete: !!completionRes.isIncomplete,
+                defaultRepalcementSpan: completionRes.optionalReplacementSpan,
+                defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
+            }
         }
-    })
+    )
 
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
         "resolveCompletion",
@@ -94,7 +100,7 @@ export function attachGetCompletion() {
             )
 
             let command: Command | undefined = undefined
-            const [detailSections, textEdits]: [string[], TextEditParam[]] = [[], []]
+            const [detailSections, textEdits]: [string[], ResolveCompletionTextEdit[]] = [[], []]
 
             if (detailRes?.codeActions) {
                 for (
@@ -150,7 +156,8 @@ export function attachGetCompletion() {
                 command,
                 textEdits,
                 detail: detailSections.join("") || undefined,
-                documentation: convertToPlainTextWithLink(detailRes?.documentation) || undefined
+                documentation:
+                    convertDisplayPartsToPlainTextWithLink(detailRes?.documentation) || undefined
             }
         }
     )
@@ -179,34 +186,6 @@ function parseKindModifier(kindModifiers: string | undefined) {
         kindModifiers = ""
     }
     return new Set(kindModifiers.split(/,|\s+/g))
-}
-
-// 将SymbolDisplayPart[]类型转换为带有链接的markdown纯文本
-function convertToPlainTextWithLink(parts: SymbolDisplayPart[] | undefined) {
-    if (isUndefined(parts)) {
-        return ""
-    }
-
-    return parts.reduce((ret, part) => {
-        if (part.kind === "linkText") {
-            let spaceIndex = part.text.indexOf(" ")
-            if (spaceIndex === -1) {
-                spaceIndex = part.text.length
-            }
-            return ret + `[${part.text.slice(spaceIndex)}](${part.text.slice(0, spaceIndex)})`
-        } else if (part.kind === "linkName") {
-            const target: DocumentSpan = (part as any).target
-            const args = encodeURIComponent(
-                JSON.stringify({
-                    path: target.fileName,
-                    end: target.textSpan.start,
-                    start: target.textSpan.start
-                })
-            )
-            return ret + `[${part.text}](command:qingkuai.openFileByFilePath?${args})`
-        }
-        return ret + (part.kind === "link" ? "" : part.text)
-    }, "")
 }
 
 function getUserPreferencesByFileName(fileName: string): UserPreferences {

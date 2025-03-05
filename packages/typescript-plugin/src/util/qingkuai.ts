@@ -2,9 +2,9 @@ import fs from "fs"
 import assert from "assert"
 import { compile } from "qingkuai/compiler"
 import { QingKuaiSnapShot } from "../snapshot"
-import { projectService, snapshotCache, ts, typeRefStatement } from "../state"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
 import { updateQingkuaiSnapshot } from "../server/content/snapshot"
+import { projectService, snapshotCache, ts, typeRefStatement } from "../state"
 
 export function isQingkuaiFileName(fileName: string) {
     return fileName.endsWith(".qk")

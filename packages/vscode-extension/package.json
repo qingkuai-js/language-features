@@ -17,7 +17,10 @@
     "contributes": {
         "languages": [
             {
-                "id": "qingkuai-emmet"
+                "id": "qingkuai-emmet",
+                "aliases": [
+                    "qke"
+                ]
             },
             {
                 "id": "qingkuai",
@@ -25,7 +28,8 @@
                     ".qk"
                 ],
                 "aliases": [
-                    "QingKuai"
+                    "QingKuai",
+                    "qk"
                 ],
                 "icon": {
                     "light": "./imgs/qingkuai.svg",
@@ -136,7 +140,7 @@
     "scripts": {
         "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
         "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
-        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qk-emmet.tmLanguage.json"
+        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0"

@@ -1,7 +1,7 @@
 import type { SlotInfo } from "qingkuai/compiler"
 import type { Options as PrettierConfiguration } from "prettier"
-import type { ExtensionConfiguration, TSClientConfiguration } from "./common"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
+import type { ExtensionConfiguration, NumNum, TSClientConfiguration } from "./common"
 import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
 
 export interface RetransmissionParams<T = any> {
@@ -9,14 +9,33 @@ export interface RetransmissionParams<T = any> {
     name: string
 }
 
-export interface ComponentIdentifierInfo {
-    name: string
-    hasSlot: boolean
-    relativePath?: string
-    builtInTypeDeclarationEndIndex?: number
+export interface HoverTipParams {
+    fileName: string
+    pos: number
 }
 
-export interface GetCompletionParams {
+export interface HoverTipResult {
+    content: string
+    posRange: NumNum
+}
+
+export interface ComponentAttributeItem {
+    kind: "Prop" | "Ref"
+    name: string
+    type: string
+    isEvent: boolean
+    stringCandidates: string[]
+}
+
+export interface ComponentIdentifierInfo {
+    name: string
+    imported: boolean
+    slotNams: string[]
+    relativePath: string
+    attributes: ComponentAttributeItem[]
+}
+
+export interface GetCompletionForScriptParams {
     pos: number
     fileName: string
 }
@@ -47,7 +66,7 @@ export interface ResolveCompletionParams {
     ori?: CompletionEntryData
 }
 
-export interface TextEditParam {
+export interface ResolveCompletionTextEdit {
     start: number
     end: number
     newText: string
@@ -57,7 +76,7 @@ export interface ResolveCompletionResult {
     detail?: string
     command?: Command
     documentation?: string
-    textEdits?: TextEditParam[]
+    textEdits?: ResolveCompletionTextEdit[]
 }
 
 export interface GetCompletionResultEntry {
@@ -79,7 +98,7 @@ export interface GetCompletionResultEntry {
     labelDetails?: CompletionItemLabelDetails
 }
 
-export type GetCompletionResult = null | {
+export type GetCompletionForScriptResult = null | {
     isIncomplete: boolean
     defaultCommitCharacters: string[]
     defaultRepalcementSpan?: TextSpan
