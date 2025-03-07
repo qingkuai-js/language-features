@@ -13,7 +13,6 @@ export type CachedCompileResultItem = CompileResult & {
     version: number
     filePath: string
     getRange: GetRangeFunc
-    document: TextDocument
     isSynchronized: boolean
     config: GetClientConfigResult
     builtInTypeDeclarationEndIndex: number

@@ -4,12 +4,16 @@ import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescrip
 import type { ExtensionConfiguration, NumNum, TSClientConfiguration } from "./common"
 import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
 
+export interface ProviderState {
+    lastNewNameForTSRename: string
+}
+
 export interface RetransmissionParams<T = any> {
     data: T
     name: string
 }
 
-export interface HoverTipParams {
+export interface TPICCommonRequestParams {
     fileName: string
     pos: number
 }
@@ -27,17 +31,24 @@ export interface ComponentAttributeItem {
     stringCandidates: string[]
 }
 
+export interface RenameLocationItem {
+    range: NumNum
+    prefix?: string
+    suffix?: string
+    fileName?: string
+}
+
+export interface RenameResult {
+    locations: RenameLocationItem[]
+    changedComponentName: string
+}
+
 export interface ComponentIdentifierInfo {
     name: string
     imported: boolean
     slotNams: string[]
     relativePath: string
     attributes: ComponentAttributeItem[]
-}
-
-export interface GetCompletionForScriptParams {
-    pos: number
-    fileName: string
 }
 
 export interface GetClientConfigParams {
@@ -98,7 +109,7 @@ export interface GetCompletionResultEntry {
     labelDetails?: CompletionItemLabelDetails
 }
 
-export type GetCompletionForScriptResult = null | {
+export type GetCompletionResult = null | {
     isIncomplete: boolean
     defaultCommitCharacters: string[]
     defaultRepalcementSpan?: TextSpan

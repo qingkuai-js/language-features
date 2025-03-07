@@ -449,7 +449,7 @@ export function updateQingkuaiSnapshot(
 
     // 为中间代码添加全局类型声明及默认导出语句
     if (!isTS) {
-        content += `export default class ${getComponentName(fileName)} {
+        content += `export default function ${getComponentName(fileName)} {
             /**
              * @param {Props} _
              * @param {Refs} __
@@ -539,7 +539,12 @@ function getComponentAttributes(componentFileName: string) {
     // @ts-expect-error: access private property
     for (const [name, symbol] of sourceFile.locals) {
         if (globalTypeIdentifierRE.test(name)) {
-            const type = typeChecker.getDeclaredTypeOfSymbol(symbol)
+            let type: TS.Type
+            if (!ts.isJSDocTypedefTag(symbol.declarations[0])) {
+                type = typeChecker.getDeclaredTypeOfSymbol(symbol)
+            } else {
+                type = typeChecker.getTypeFromTypeNode(symbol.declarations[0].typeExpression)
+            }
 
             if (!(type.symbol.flags & ts.SymbolFlags.Type)) {
                 continue

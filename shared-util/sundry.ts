@@ -57,6 +57,7 @@ export function debounce<T extends GeneralFunc>(
             id,
             setTimeout(() => {
                 fn.apply(this, args)
+                timers.delete(id)
             }, delay)
         )
     }

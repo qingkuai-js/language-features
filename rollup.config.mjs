@@ -14,6 +14,7 @@ export default defineConfig(() => {
                 "@vscode/emmet-helper",
                 "vscode-languageclient",
                 "vscode-languageserver",
+                "prettier-plugin-qingkuai",
                 "vscode-languageclient/node",
                 "vscode-languageserver/node",
                 "vscode-languageserver-textdocument"

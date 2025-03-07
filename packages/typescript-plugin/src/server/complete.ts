@@ -1,22 +1,23 @@
 import type {
+    GetCompletionResult,
     ResolveCompletionResult,
+    TPICCommonRequestParams,
     ResolveCompletionParams,
     GetCompletionResultEntry,
-    ResolveCompletionTextEdit,
-    GetCompletionForScriptParams,
-    GetCompletionForScriptResult
-} from "../../../../../types/communication"
+    ResolveCompletionTextEdit
+} from "../../../../types/communication"
+import type { CompletionEntry } from "typescript"
 import type { Command } from "vscode-languageserver"
-import type { UserPreferences, CompletionEntry } from "typescript"
 
 import {
+    getUserPreferencesByFileName,
+    getFormatCodeSettingsByFileName,
     getDefaultLanguageServiceByFileName,
     convertDisplayPartsToPlainTextWithLink
-} from "../../util/typescript"
-import { scriptExensions } from "../../constant"
-import { projectService, server, ts } from "../../state"
-import { isUndefined } from "../../../../../shared-util/assert"
-import { excludeProperty } from "../../../../../shared-util/sundry"
+} from "../util/typescript"
+import { server, ts } from "../state"
+import { scriptExensions } from "../constant"
+import { isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
     "data",
@@ -30,57 +31,54 @@ const optionalSameKeys = [
 ] as const
 
 export function attachGetCompletion() {
-    server.onRequest<GetCompletionForScriptParams, GetCompletionForScriptResult>(
-        "getCompletionForScriptBlock",
-        params => {
-            const languageService = getDefaultLanguageServiceByFileName(params.fileName)
-            const completionRes = languageService?.getCompletionsAtPosition(
-                params.fileName,
-                params.pos,
-                getUserPreferencesByFileName(params.fileName),
-                getFormatCodeSettingsByFileName(params.fileName)
-            )
+    server.onRequest<TPICCommonRequestParams, GetCompletionResult>("getCompletion", params => {
+        const languageService = getDefaultLanguageServiceByFileName(params.fileName)
+        const completionRes = languageService?.getCompletionsAtPosition(
+            params.fileName,
+            params.pos,
+            getUserPreferencesByFileName(params.fileName),
+            getFormatCodeSettingsByFileName(params.fileName)
+        )
 
-            if (isUndefined(completionRes)) {
-                return null
-            }
-
-            const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
-                const kindModifiers = parseKindModifier(item.kindModifiers)
-                const ret: GetCompletionResultEntry = {
-                    name: item.name,
-                    kind: item.kind,
-                    source: item.source,
-                    detail: getScriptKindDetails(item),
-                    label: item.name || (item.insertText ?? "")
-                }
-                if (item.isRecommended) {
-                    ret.preselect = true
-                }
-                if (kindModifiers.has("color")) {
-                    ret.isColor = true
-                }
-                if (kindModifiers.has("optional")) {
-                    ret.label += "?"
-                }
-                if (kindModifiers.has("deprecated")) {
-                    ret.deprecated = true
-                }
-                optionalSameKeys.forEach(key => {
-                    // @ts-expect-error
-                    item[key] && (ret[key] = item[key])
-                })
-                return ret
-            })
-
-            return {
-                entries: completionItems,
-                isIncomplete: !!completionRes.isIncomplete,
-                defaultRepalcementSpan: completionRes.optionalReplacementSpan,
-                defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
-            }
+        if (isUndefined(completionRes)) {
+            return null
         }
-    )
+
+        const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
+            const kindModifiers = parseKindModifier(item.kindModifiers)
+            const ret: GetCompletionResultEntry = {
+                name: item.name,
+                kind: item.kind,
+                source: item.source,
+                detail: getScriptKindDetails(item),
+                label: item.name || (item.insertText ?? "")
+            }
+            if (item.isRecommended) {
+                ret.preselect = true
+            }
+            if (kindModifiers.has("color")) {
+                ret.isColor = true
+            }
+            if (kindModifiers.has("optional")) {
+                ret.label += "?"
+            }
+            if (kindModifiers.has("deprecated")) {
+                ret.deprecated = true
+            }
+            optionalSameKeys.forEach(key => {
+                // @ts-expect-error
+                item[key] && (ret[key] = item[key])
+            })
+            return ret
+        })
+
+        return {
+            entries: completionItems,
+            isIncomplete: !!completionRes.isIncomplete,
+            defaultRepalcementSpan: completionRes.optionalReplacementSpan,
+            defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
+        }
+    })
 
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
         "resolveCompletion",
@@ -186,20 +184,4 @@ function parseKindModifier(kindModifiers: string | undefined) {
         kindModifiers = ""
     }
     return new Set(kindModifiers.split(/,|\s+/g))
-}
-
-function getUserPreferencesByFileName(fileName: string): UserPreferences {
-    const userPreferences = excludeProperty(
-        projectService.getPreferences(ts.server.toNormalizedPath(fileName)),
-        "lazyConfiguredProjectsFromExternalProject"
-    )
-    return {
-        ...userPreferences,
-        includeCompletionsWithInsertText: true,
-        includeCompletionsForModuleExports: true
-    }
-}
-
-function getFormatCodeSettingsByFileName(fileName: string) {
-    return projectService.getFormatCodeOptions(ts.server.toNormalizedPath(fileName))
 }

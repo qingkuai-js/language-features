@@ -4,8 +4,8 @@ import type {
     GetClientConfigResult,
     ConfigureFileParams
 } from "../../../types/communication"
-import type { PositionFlagKeys } from "qingkuai/compiler"
 import type { CachedCompileResultItem } from "./types/service"
+import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
 import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
@@ -96,7 +96,6 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         ...compileRes,
         getRange,
         filePath,
-        document,
         getOffset,
         getPosition,
         getInterIndex,
@@ -153,6 +152,14 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     }
 
     return compileResultCache.set(document.uri, pms), await pms
+}
+
+// 递归遍历qingkuai编译结果的Template Node AST
+export function walk(nodes: TemplateNode[], cb: (node: TemplateNode) => void) {
+    nodes.forEach(node => {
+        cb(node)
+        walk(node.children, cb)
+    })
 }
 
 // 获取未打开的文档的编译结果

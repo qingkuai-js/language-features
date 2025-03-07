@@ -11,7 +11,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:qingkuai"
+        "workspaceContains:**/*.qk"
     ],
     "main": "../../dist/client.js",
     "contributes": {

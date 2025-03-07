@@ -1,5 +1,5 @@
-import type { TS, TSProjectService, QingKuaiDiagnostic, TSPluginCreateInfo } from "./types"
 import type { QingKuaiSnapShot } from "./snapshot"
+import type { TS, TSProjectService, QingKuaiDiagnostic, TSPluginCreateInfo } from "./types"
 
 import path from "path"
 import { inspect } from "../../../shared-util/log"

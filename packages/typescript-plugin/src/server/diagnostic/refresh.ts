@@ -32,12 +32,7 @@ export const refreshDiagnostics = debounce(
                 referenceFileNames.push(projectService.getScriptInfo(path)!.fileName)
             })
         } else {
-            getContainingProjectsByFileName(byFileName).forEach(project => {
-                const languageService = project.getLanguageService()
-                languageService?.getFileReferences(byFileName).forEach(entry => {
-                    isFileOpening(entry.fileName) && referenceFileNames.push(entry.fileName)
-                })
-            })
+            referenceFileNames.push(...getFileReferencesRecursive(byFileName))
         }
 
         referenceFileNames.forEach(fileName => {
@@ -105,3 +100,19 @@ export const refreshDiagnostics = debounce(
     300,
     fileName => fileName // use fileName as debounce id
 )
+
+function getFileReferencesRecursive(fileName: string) {
+    const referenceFileNames = new Set<string>()
+    getContainingProjectsByFileName(fileName).forEach(project => {
+        const languageService = project.getLanguageService()
+        languageService.getFileReferences(fileName).forEach(entry => {
+            if (isFileOpening(entry.fileName)) {
+                referenceFileNames.add(entry.fileName)
+            }
+            getFileReferencesRecursive(entry.fileName).forEach(item => {
+                referenceFileNames.add(item)
+            })
+        })
+    })
+    return Array.from(referenceFileNames)
+}

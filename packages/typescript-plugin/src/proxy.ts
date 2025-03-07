@@ -1,23 +1,31 @@
 import type TS from "typescript"
 import type { TSPluginCreateInfo } from "./types"
+import type { RenameLocationItem } from "../../../types/communication"
 
 import {
     ts,
     projectService,
     resolvedQingkuaiModule,
     triggerQingkuaiFileName,
-    setTriggerQingkuaiFileName
+    setTriggerQingkuaiFileName,
+    server
 } from "./state"
 import fs from "fs"
 import path from "path"
 import { runAll } from "../../../shared-util/sundry"
+import { HasBeenProxiedByQingKuai } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getConfigByFileName } from "./server/configuration/method"
 import { isEmptyString, isUndefined } from "../../../shared-util/assert"
-import { ensureGetSnapshotOfQingkuaiFile, isQingkuaiFileName } from "./util/qingkuai"
+import {
+    ensureGetSnapshotOfQingkuaiFile,
+    getSourceIndex,
+    isQingkuaiFileName
+} from "./util/qingkuai"
 
 export function proxyTypescriptProjectServiceMethods() {
     runAll([
+        proxyEditContent,
         proxyCloseClientFile,
         proxyOnConfigFileChanged,
         proxyGetOrCreateScriptInfoForNormalizedPath,
@@ -30,6 +38,7 @@ export function proxyTypescriptLanguageServiceMethods(info: TSPluginCreateInfo) 
     runAll([
         () => proxyGetScriptKind(languageServiceHost),
         () => proxyGetScriptVersion(languageServiceHost),
+        () => proxyFindRenameLocations(info.languageService),
         () => proxyResolveModuleNameLiterals(languageServiceHost),
         () => proxyGetScriptSnapshot(project, languageServiceHost)
     ])
@@ -86,6 +95,94 @@ function proxyOnConfigFileChanged() {
 
         return onConfigFileChanged.bind(projectService, ...args)
     }
+}
+
+// 代理文件编辑，非qk文件修改时应刷新qk文件的诊断信息
+function proxyEditContent() {
+    const getScriptInfo = projectService.getScriptInfo.bind(projectService)
+    projectService.getScriptInfo = fileName => {
+        const scriptInfo = getScriptInfo(fileName)
+
+        const scriptInfoAny: any = scriptInfo
+        if (
+            scriptInfo &&
+            !isQingkuaiFileName(fileName) &&
+            !scriptInfoAny[HasBeenProxiedByQingKuai]
+        ) {
+            const editContent = scriptInfo.editContent.bind(scriptInfo)
+            scriptInfo.editContent = (start, end, newText) => {
+                editContent(start, end, newText)
+
+                // 确保不是其他qk文件修改时刷新诊断时导致的更改
+                const snapshot = scriptInfo.getSnapshot()
+                const contentLen = snapshot.getLength()
+                if (
+                    end !== contentLen ||
+                    !(
+                        (start === end && newText === " ") ||
+                        (start === end - 1 && isEmptyString(newText))
+                    )
+                ) {
+                    refreshDiagnostics(fileName, false)
+                }
+            }
+            scriptInfoAny[HasBeenProxiedByQingKuai] = true
+        }
+
+        return scriptInfo
+    }
+}
+
+function proxyFindRenameLocations(languageService: TS.LanguageService) {
+    // @ts-expect-error: access attached property
+    if (languageService.findRenameLocations[HasBeenProxiedByQingKuai]) {
+        return
+    }
+
+    const findRenameLocations = languageService.findRenameLocations.bind(languageService)
+    languageService.findRenameLocations = (fileName, ...rest) => {
+        // @ts-ignore
+        const locations = findRenameLocations(fileName, ...rest)
+
+        if (!locations || isQingkuaiFileName(fileName)) {
+            return locations
+        }
+
+        const qingkuaiLocations: RenameLocationItem[] = []
+        const notQingkuaiLocations: TS.RenameLocation[] = []
+        locations.forEach(item => {
+            if (!isQingkuaiFileName(item.fileName)) {
+                return notQingkuaiLocations.push(item)
+            }
+
+            const { start, length } = item.textSpan
+            const ss = getSourceIndex(item.fileName, start)
+            const se = getSourceIndex(item.fileName, start + length, true)
+            if (ss !== -1 && se !== -1) {
+                const locationItem: RenameLocationItem = {
+                    range: [ss, se],
+                    fileName: item.fileName
+                }
+                qingkuaiLocations.push(locationItem)
+
+                if (item.prefixText) {
+                    locationItem.prefix = item.prefixText
+                }
+                if (item.suffixText) {
+                    locationItem.suffix = item.suffixText
+                }
+            }
+        })
+
+        if (Object.keys(qingkuaiLocations).length) {
+            server.sendNotification("excuteRename", qingkuaiLocations)
+        }
+
+        return notQingkuaiLocations
+    }
+
+    // @ts-expect-error: attach property
+    languageService.findRenameLocations[HasBeenProxiedByQingKuai] = true
 }
 
 function proxyGetScriptSnapshot(

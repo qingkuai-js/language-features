@@ -1,10 +1,10 @@
 import type {
     InsertSnippetParam,
+    GetCompletionResult,
     ComponentAttributeItem,
     ResolveCompletionResult,
     ComponentIdentifierInfo,
-    GetCompletionForScriptParams,
-    GetCompletionForScriptResult
+    TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { NumNum } from "../../../../types/common"
@@ -60,12 +60,13 @@ const optionalSameKeys = [
 ] as const
 
 export const complete: CompletionHandler = async ({ position, textDocument, context }, token) => {
-    if (token.isCancellationRequested) {
+    const document = documents.get(textDocument.uri)
+    if (!document || token.isCancellationRequested) {
         return
     }
 
-    const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    const { templateNodes, document, getOffset, getRange, getPosition } = cr
+    const cr = await getCompileRes(document)
+    const { templateNodes, getOffset, getRange, getPosition } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
@@ -187,16 +188,18 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                 text: isInterpolation ? "{$0}" : '"$0"'
             }
             if (!isInterpolation) {
+                let shouldTriggerSuggest = false
                 if (componentAttributes) {
                     const foundAttr = componentAttributes.filter(a => a.name === attrKey)[0]
-                    if (foundAttr?.stringCandidates.length) {
-                        snippetItem.command = COMMANDS.TriggerSuggest
-                    }
+                    shouldTriggerSuggest = foundAttr?.stringCandidates.length > 0
+                } else if (attrKey === "slot" && currentNode.parent?.componentTag) {
+                    shouldTriggerSuggest = true
                 } else {
                     const atttData = findTagAttributeData(currentNode.tag, attrKey)
-                    if (atttData?.valueSet && atttData.valueSet !== "v") {
-                        snippetItem.command = COMMANDS.TriggerSuggest
-                    }
+                    shouldTriggerSuggest = !!(atttData?.valueSet && atttData.valueSet !== "v")
+                }
+                if (shouldTriggerSuggest) {
+                    snippetItem.command = COMMANDS.TriggerSuggest
                 }
             }
             return connection.sendNotification("qingkuai/insertSnippet", snippetItem), null
@@ -216,14 +219,31 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                     return characterEntityCompletions
                 }
 
-                // 当组件属性值为字符串字面量类型或字符串字面量联合类型时返回属性值建议
                 const valueRange = getRange(valueStartIndex, valueEndIndex)
+                if (attrKey === "slot" && currentNode.parent?.componentTag) {
+                    for (const info of cr.componentInfos) {
+                        if (info.name === currentNode.parent.componentTag) {
+                            return info.slotNams.map(name => {
+                                return {
+                                    label: name,
+                                    sortText: "!",
+                                    kind: CompletionItemKind.Constant,
+                                    textEdit: TextEdit.replace(valueRange, name)
+                                }
+                            })
+                        }
+                    }
+                    return null
+                }
+
+                // 当组件属性值为字符串字面量类型或字符串字面量联合类型时返回属性值建议
                 if (componentAttributes) {
                     const foundAttr = componentAttributes.filter(a => {
                         return a.name === attrKey
                     })[0]
                     return (foundAttr?.stringCandidates || []).map(candidate => {
                         return {
+                            sortText: "!",
                             label: candidate,
                             kind: CompletionItemKind.Constant,
                             textEdit: TextEdit.replace(valueRange, candidate)
@@ -232,7 +252,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                 }
 
                 // 返回普通标签属性值建议
-                return doAttributeValueComplete(currentNode.tag, attr.key.raw, valueRange)
+                return doAttributeValueComplete(currentNode.tag, attrKey, valueRange)
             }
         } else if (isUndefined(attr) || offset <= keyEndIndex) {
             const keyRange = getRange(keyStartIndex, keyEndIndex)
@@ -521,7 +541,11 @@ function doAttributeNameComplete(
             assignText = isDynamicOrEvent ? "={$0}" : '="$0"'
             extraRet.insertTextFormat = InsertTextFormat.Snippet
         }
-        if (valueSet !== "v" && !isDynamicOrEvent && !hasValue) {
+        if (
+            !hasValue &&
+            !isDynamicOrEvent &&
+            (valueSet !== "v" || (attribute.name === "slot" && node.parent?.componentTag))
+        ) {
             extraRet.command = {
                 title: "suggest",
                 command: COMMANDS.TriggerSuggest
@@ -588,7 +612,10 @@ function doAttributeNameComplete(
                     insertTextFormat: InsertTextFormat.Snippet,
                     documentation: getDirectiveDocumentation(item, true)
                 }
-                ret.push(completion, { ...completion, filterText: item.name })
+                if (item.name !== "slot") {
+                    ret.push({ ...completion, filterText: item.name })
+                }
+                ret.push(completion)
             }
         })
     }
@@ -685,12 +712,12 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
 async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number) {
     const { getRange, getSourceIndex } = cr
     const positionOfInterCode = cr.interIndexMap.stoi[offset]
-    const tsCompletionRes: GetCompletionForScriptResult = await tpic.sendRequest(
-        "getCompletionForScriptBlock",
+    const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
+        "getCompletion",
         {
             fileName: cr.filePath,
             pos: positionOfInterCode
-        } satisfies GetCompletionForScriptParams
+        }
     )
 
     if (isNull(tsCompletionRes)) {

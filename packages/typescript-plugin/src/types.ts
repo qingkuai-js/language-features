@@ -1,7 +1,7 @@
 import type Typescript from "typescript"
 import type { OriSourceFile } from "./constant"
+import type { Diagnostic, SourceFile } from "typescript"
 import type { commonMessage, SlotInfo } from "qingkuai/compiler"
-import type { Diagnostic, ResolvedModuleWithFailedLookupLocations, SourceFile } from "typescript"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"

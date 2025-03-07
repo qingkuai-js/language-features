@@ -2,23 +2,24 @@ import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
 import { stringifyRange } from "../util/vscode"
+import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
 import { connection, documents, isTestingEnv, tpic } from "../state"
-import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
-        // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
-        const existingTsDiagnostics = new Set<string>()
-        if (isTestingEnv) {
-            return
+        const document = documents.get(uri)
+        if (!document || isTestingEnv) {
+            return null
         }
 
-        const textDocument = documents.get(uri)!
-        const cr = await getCompileRes(textDocument)
+        // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
+        const existingTsDiagnostics = new Set<string>()
+
+        const cr = await getCompileRes(document)
         const { Error, Warning } = DiagnosticSeverity
         const { messages, getRange, filePath, getSourceIndex, config } = cr
 
@@ -90,20 +91,11 @@ export const publishDiagnostics = debounce(
             // 为指定的诊断信息添加qingkuai相关解释
             if (config.extensionConfig.typescriptDiagnosticsExplain) {
                 if (
-                    item.code === 2345 &&
-                    item.source === "ts" &&
-                    cr.isPositionFlagSet(ss, "isSlotAttrStart") &&
-                    badSlotNameDiagnosticRE.test(item.message)
-                ) {
-                    item.message += `\n(Qingkuai explain): There is no slot with the same name in the component.`
-                }
-
-                if (
                     item.code === 2353 &&
                     item.source === "ts" &&
-                    cr.isPositionFlagSet(ss, "isComponentAttrStart")
+                    cr.isPositionFlagSet(ss, "isAttributeStart")
                 ) {
-                    const m = badComponentAttrRE.exec(item.message)
+                    const m = badComponentAttrMessageRE.exec(item.message)
                     if (!isNull(m)) {
                         item.message += `\n(Qingkuai explain): The attribute name is not a property of component's ${m[1]} type.`
                     }

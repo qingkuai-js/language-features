@@ -2,6 +2,11 @@ import type { ExtensionContext } from "vscode"
 
 import * as vsc from "vscode"
 import {
+    getInitQingkuaiConfig,
+    startPrettierConfigWatcher,
+    startQingkuaiConfigWatcher
+} from "./config"
+import {
     ServerOptions,
     TransportKind,
     LanguageClient,
@@ -10,11 +15,6 @@ import {
 import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
-import {
-    getInitQingkuaiConfig,
-    startPrettierConfigWatcher,
-    startQingkuaiConfigWatcher
-} from "./config"
 
 let client: LanguageClient
 

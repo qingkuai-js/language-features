@@ -1,4 +1,4 @@
-import type { LanguageClient } from "vscode-languageclient/node"
+import type { LanguageClient, WorkspaceEdit } from "vscode-languageclient/node"
 import type { GetClientConfigParams, InsertSnippetParam } from "../../../types/communication"
 
 import fs from "fs"
@@ -56,4 +56,20 @@ export function attachCustomHandlers(client: LanguageClient) {
             }
         }
     )
+
+    // 应用工作区更改
+    client.onNotification("qingkuai/applyEdit", (param: WorkspaceEdit) => {
+        const changes = param.changes!
+        const workspaceEdit = new vsc.WorkspaceEdit()
+        Object.keys(changes).forEach(uri => {
+            changes[uri].forEach(({ range, newText }) => {
+                const vscodeRange = new vsc.Range(
+                    new vsc.Position(range.start.line, range.start.character),
+                    new vsc.Position(range.end.line, range.end.character)
+                )
+                workspaceEdit.replace(vsc.Uri.parse(uri), vscodeRange, newText)
+            })
+        })
+        vsc.workspace.applyEdit(workspaceEdit)
+    })
 }

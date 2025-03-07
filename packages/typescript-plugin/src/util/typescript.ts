@@ -1,8 +1,9 @@
 import type TS from "typescript"
-import type { DocumentSpan, SymbolDisplayPart } from "typescript"
+import type { DocumentSpan, Node, SymbolDisplayPart, UserPreferences } from "typescript"
 
 import path from "path"
 import { projectService, ts } from "../state"
+import { excludeProperty } from "../../../../shared-util/sundry"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
 export function isEventType(type: TS.Type) {
@@ -51,6 +52,37 @@ export function getDefaultSourceFileByScriptInfo(info: TS.server.ScriptInfo) {
 
 export function getDefaultProjectByFileName(fileName: string) {
     return projectService.getDefaultProjectForFile(ts.server.toNormalizedPath(fileName), true)
+}
+
+// 从指定节点中查找指定位置的节点（深度优先遍历）
+export function getNodeAt(node: Node, pos: number): Node | undefined {
+    const [start, len] = [node.getStart(), node.getWidth()]
+    if (pos >= start && pos <= start + len) {
+        for (const child of node.getChildren()) {
+            const foundInChild = getNodeAt(child, pos)
+            if (foundInChild) {
+                return foundInChild
+            }
+        }
+        return node
+    }
+    return undefined
+}
+
+export function getUserPreferencesByFileName(fileName: string): UserPreferences {
+    const userPreferences = excludeProperty(
+        projectService.getPreferences(ts.server.toNormalizedPath(fileName)),
+        "lazyConfiguredProjectsFromExternalProject"
+    )
+    return {
+        ...userPreferences,
+        includeCompletionsWithInsertText: true,
+        includeCompletionsForModuleExports: true
+    }
+}
+
+export function getFormatCodeSettingsByFileName(fileName: string) {
+    return projectService.getFormatCodeOptions(ts.server.toNormalizedPath(fileName))
 }
 
 // 将SymbolDisplayPart[]类型转换为带有链接的markdown纯文本

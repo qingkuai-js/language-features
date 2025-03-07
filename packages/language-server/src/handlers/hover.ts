@@ -1,4 +1,5 @@
 import type { HoverHandler } from "../types/handlers"
+import type { TPICCommonRequestParams, HoverTipResult } from "../../../../types/communication"
 
 import {
     findTagData,
@@ -16,7 +17,6 @@ import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { HoverTipParams, HoverTipResult } from "../../../../types/communication"
 
 export const hover: HoverHandler = async ({ textDocument, position }, token) => {
     if (token.isCancellationRequested) {
@@ -34,7 +34,7 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
     }
 
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
-        const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<HoverTipParams>(
+        const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<TPICCommonRequestParams>(
             "hoverTip",
             {
                 fileName: cr.filePath,

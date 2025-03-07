@@ -3,11 +3,10 @@ import type { FormatHandler } from "../types/handlers"
 import prettier from "prettier"
 import { getCompileRes } from "../compile"
 import { documents, Logger } from "../state"
-import { isUndefined } from "../../../../shared-util/assert"
 
-export const format: FormatHandler = async ({ textDocument }) => {
+export const format: FormatHandler = async ({ textDocument }, token) => {
     const document = documents.get(textDocument.uri)
-    if (isUndefined(document)) {
+    if (!document || token.isCancellationRequested) {
         return null
     }
 
