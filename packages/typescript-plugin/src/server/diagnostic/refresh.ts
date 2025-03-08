@@ -1,11 +1,15 @@
-import { updateQingkuaiSnapshot } from "../content/snapshot"
+import {
+    isQingkuaiFileName,
+    compileQingkuaiFileToInterCode,
+    ensureGetSnapshotOfQingkuaiFile
+} from "../../util/qingkuai"
+import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
+import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
-import { ts, projectService, server, snapshotCache } from "../../state"
 import { getContainingProjectsByFileName, isFileOpening } from "../../util/typescript"
-import { compileQingkuaiFileToInterCode, isQingkuaiFileName } from "../../util/qingkuai"
 
 // 刷新引用文件的诊断信息，如果目标文件是.qk文件，则通知qingkuai语言服务器重新推送诊断信息，第二个参数用于
 // 描述当前文档的脚本类型是否发生了变化，如果发生了变化，需要模拟编辑目标文档以触发重新解析导入语句：查看文档最后
@@ -55,10 +59,11 @@ export const refreshDiagnostics = debounce(
                             compileRes.code,
                             compileRes.interIndexMap.itos,
                             compileRes.inputDescriptor.slotInfo,
-                            ts.ScriptKind[getScriptKindKey(compileRes)]
+                            ts.ScriptKind[getScriptKindKey(compileRes)],
+                            compileRes.inputDescriptor.positions
                         )
                     } else {
-                        const qingkuaiSnapshot = snapshotCache.get(fileName)!
+                        const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
                         const content = qingkuaiSnapshot.getFullText()
                         const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
                         editQingKuaiScriptInfo(
@@ -66,7 +71,8 @@ export const refreshDiagnostics = debounce(
                             newContent,
                             qingkuaiSnapshot.itos,
                             qingkuaiSnapshot.slotInfo,
-                            qingkuaiSnapshot.scriptKind
+                            qingkuaiSnapshot.scriptKind,
+                            qingkuaiSnapshot.positions
                         )
                     }
                 }

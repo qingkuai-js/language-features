@@ -1,7 +1,8 @@
 import type Typescript from "typescript"
 import type { OriSourceFile } from "./constant"
-import type { Diagnostic, SourceFile } from "typescript"
+import type { Diagnostic, SourceFile, Type } from "typescript"
 import type { commonMessage, SlotInfo } from "qingkuai/compiler"
+import { IpcParticipant } from "../../../shared-util/ipc/types"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -19,6 +20,12 @@ export interface QingKuaiFileInfo {
     getPos(pos: number): number
     scriptKind: Typescript.ScriptKind
 }
+
+export type SetStateParams = Partial<{
+    ts: TS
+    server: IpcParticipant
+    projectService: Typescript.server.ProjectService
+}>
 
 export type RelatedInfoFile =
     | SourceFile

@@ -1,17 +1,22 @@
 import type {
+    ConfigureFileParams,
     UpdateSnapshotParams,
     GetClientConfigParams,
-    GetClientConfigResult,
-    ConfigureFileParams
+    GetClientConfigResult
 } from "../../../types/communication"
 import type { CachedCompileResultItem } from "./types/service"
 import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
+import {
+    compressItos,
+    compressPosition,
+    compressPositionFlags,
+    getScriptKindKey
+} from "../../../shared-util/qingkuai"
 import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
-import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
@@ -121,9 +126,11 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
                 interCode: cr.code,
                 fileName: cr.filePath,
-                itos: cr.interIndexMap.itos,
                 scriptKindKey: getScriptKindKey(cr),
-                slotInfo: cr.inputDescriptor.slotInfo
+                slotInfo: cr.inputDescriptor.slotInfo,
+                citos: compressItos(cr.interIndexMap.itos),
+                cp: compressPosition(cr.inputDescriptor.positions),
+                cpf: compressPositionFlags(cr.inputDescriptor.positions)
             })
         }
     }

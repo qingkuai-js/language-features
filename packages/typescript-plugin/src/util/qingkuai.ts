@@ -1,18 +1,47 @@
 import type TS from "typescript"
+import { QingKuaiSnapShot } from "../snapshot"
 
-import {
-    ts,
-    snapshotCache,
-    projectService,
-    typeRefStatement,
-    resolvedQingkuaiModule
-} from "../state"
 import fs from "fs"
 import assert from "assert"
-import { compile } from "qingkuai/compiler"
-import { QingKuaiSnapShot } from "../snapshot"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
-import { updateQingkuaiSnapshot } from "../server/content/snapshot"
+import { compile, PositionFlag, PositionFlagKeys } from "qingkuai/compiler"
+import { ts, typeRefStatement, resolvedQingkuaiModule, snapshotCache } from "../state"
+
+// 通过中间代码索引换取源码索引
+export function getSourceIndex(
+    snapshot: QingKuaiSnapShot,
+    interIndex: number,
+    isEnd = false
+): number | undefined {
+    const sourceIndex = snapshot.itos[interIndex]
+    if (sourceIndex !== -1) {
+        return sourceIndex
+    }
+    return isEnd ? snapshot.itos[interIndex + 1] : -1
+}
+
+// 通过源码索引验证位置是否设置指定标志
+export function isPositionFlagSetBySourceIndex(
+    snapshot: QingKuaiSnapShot,
+    sourceIndex: number,
+    key: PositionFlagKeys
+) {
+    return !!(snapshot.positions[sourceIndex].flag & PositionFlag[key])
+}
+
+// 通过中间代码索引验证位置是否设置指定标志
+export function isPositionFlagSetByInterIndex(
+    snapshot: QingKuaiSnapShot,
+    interIndex: number,
+    key: PositionFlagKeys,
+    isEnd = false
+) {
+    const sourceIndex = getSourceIndex(snapshot, interIndex, isEnd)
+    if (!sourceIndex || sourceIndex === -1) {
+        return false
+    }
+    return isPositionFlagSetBySourceIndex(snapshot, sourceIndex, key)
+}
 
 export function isQingkuaiFileName(fileName: string) {
     return fileName.endsWith(".qk")
@@ -27,16 +56,26 @@ export function compileQingkuaiFileToInterCode(fileName: string) {
     })
 }
 
-// 通过中间代码索引换取指定文件的源码索引
-export function getSourceIndex(fileName: string, interIndex: number, isEnd = false) {
-    if (!isQingkuaiFileName(fileName)) {
-        return -1
+export function ensureGetSnapshotOfQingkuaiFile(fileName: string) {
+    if (snapshotCache.has(fileName)) {
+        return snapshotCache.get(fileName)!
     }
-    const itos = ensureGetSnapshotOfQingkuaiFile(fileName).itos
-    if (itos[interIndex] !== -1) {
-        return itos[interIndex]
-    }
-    return isEnd ? itos[interIndex + 1] || -1 : itos[interIndex] || -1
+
+    const compileRes = compileQingkuaiFileToInterCode(fileName)
+    const scriptKind = ts.ScriptKind[getScriptKindKey(compileRes)]
+    snapshotCache.set(
+        fileName,
+        new QingKuaiSnapShot(
+            compileRes.code,
+            true,
+            scriptKind,
+            compileRes.interIndexMap.itos,
+            compileRes.inputDescriptor.slotInfo,
+            compileRes.inputDescriptor.positions
+        )
+    )
+
+    return snapshotCache.get(fileName)!
 }
 
 // 判断标识符节点是否是导入的组件名称标识符
@@ -61,45 +100,4 @@ export function isComponentIdentifier(
         }
     }
     return false
-}
-
-export function ensureGetSnapshotOfQingkuaiFile(fileName: string) {
-    if (snapshotCache.has(fileName)) {
-        return initialEditScriptInfo(fileName), snapshotCache.get(fileName)!
-    }
-
-    const compileRes = compileQingkuaiFileToInterCode(fileName)
-    const scriptKind = ts.ScriptKind[getScriptKindKey(compileRes)]
-    snapshotCache.set(
-        fileName,
-        new QingKuaiSnapShot(
-            compileRes.code,
-            true,
-            scriptKind,
-            compileRes.interIndexMap.itos,
-            compileRes.inputDescriptor.slotInfo
-        )
-    )
-
-    return initialEditScriptInfo(fileName), snapshotCache.get(fileName)!
-}
-
-function initialEditScriptInfo(fileName: string) {
-    const qingkuaiSnapshot = snapshotCache.get(fileName)!
-    const scriptInfo = projectService.getScriptInfo(fileName)
-
-    if (qingkuaiSnapshot.initial && scriptInfo) {
-        qingkuaiSnapshot.initial = false
-
-        const oldLength = scriptInfo.getSnapshot().getLength()
-        const qingkuaiSnapshotContent = qingkuaiSnapshot.getFullText()
-        scriptInfo.editContent(0, oldLength, qingkuaiSnapshotContent)
-        updateQingkuaiSnapshot(
-            fileName,
-            qingkuaiSnapshotContent,
-            qingkuaiSnapshot.itos,
-            qingkuaiSnapshot.slotInfo,
-            qingkuaiSnapshot.scriptKind
-        )
-    }
 }

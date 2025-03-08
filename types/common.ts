@@ -1,7 +1,9 @@
 import type TS from "typescript"
 import type { FixedArray } from "./util"
 
+export type NumNumArray = NumNum[]
 export type NumNum = FixedArray<number, 2>
+
 export interface OpenFileParams {
     path: string
     start: number

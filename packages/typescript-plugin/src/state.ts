@@ -1,5 +1,5 @@
 import type { QingKuaiSnapShot } from "./snapshot"
-import type { TS, TSProjectService, QingKuaiDiagnostic, TSPluginCreateInfo } from "./types"
+import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams } from "./types"
 
 import path from "path"
 import { inspect } from "../../../shared-util/log"
@@ -8,7 +8,6 @@ import { defaultParticipant } from "../../../shared-util/ipc/participant"
 export let server = defaultParticipant
 
 export let ts: TS
-export let triggerQingkuaiFileName = ""
 export let projectService: TSProjectService
 
 // 快照缓存，键为映射文件名称，值为QingkuaiSnapshot
@@ -20,16 +19,16 @@ export const resolvedQingkuaiModule = new Map<string, Set<string>>()
 // qingkuai自定义错误缓存
 export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
 
-export function setServer(v: typeof server) {
-    server = v
-}
-
-export function setTriggerQingkuaiFileName(fileName: string) {
-    triggerQingkuaiFileName = fileName
-}
-
-export function setTSState(t: TS, info: TSPluginCreateInfo) {
-    ;[ts, projectService] = [t, info.project.projectService]
+export function setState(value: SetStateParams) {
+    if (value.ts) {
+        ts = value.ts
+    }
+    if (value.server) {
+        server = value.server
+    }
+    if (value.projectService) {
+        projectService = value.projectService
+    }
 }
 
 // 通过qingkuai语言服务器输出日志

@@ -11,8 +11,12 @@ import {
     getUserPreferencesByFileName,
     getDefaultLanguageServiceByFileName
 } from "../util/typescript"
+import {
+    getSourceIndex,
+    isComponentIdentifier,
+    ensureGetSnapshotOfQingkuaiFile
+} from "../util/qingkuai"
 import { server, ts } from "../state"
-import { getSourceIndex, isComponentIdentifier } from "../util/qingkuai"
 
 export function attachPrepareRename() {
     server.onRequest<TPICCommonRequestParams, NumNum>("prepareRename", ({ fileName, pos }) => {
@@ -64,15 +68,16 @@ export function attachRename() {
         const changes: RenameLocationItem[] = []
         renameLocations.forEach(item => {
             const { start, length } = item.textSpan
-            const ss = getSourceIndex(fileName, start)
-            const se = getSourceIndex(fileName, start + length, true)
-            if (ss !== -1 && se !== -1) {
+            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(item.fileName)
+            const ss = getSourceIndex(qingkuaiSnapshot, start)
+            const se = getSourceIndex(qingkuaiSnapshot, start + length, true)
+            if (ss && se && ss !== -1 && se !== -1) {
                 const locationItem: RenameLocationItem = {
                     range: [ss, se],
                     fileName: item.fileName
                 }
                 changes.push(locationItem)
-                
+
                 if (item.prefixText) {
                     locationItem.prefix = item.prefixText
                 }

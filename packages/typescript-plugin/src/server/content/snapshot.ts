@@ -3,7 +3,7 @@ import type {
     ComponentIdentifierInfo
 } from "../../../../../types/communication"
 import type TS from "typescript"
-import type { SlotInfo } from "qingkuai/compiler"
+import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { QingKuaiCommonMessage, QingKuaiDiagnostic } from "../../types"
 
 import {
@@ -55,13 +55,15 @@ import { compilerFuncs } from "../../constant"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { getConfigByFileName } from "../configuration/method"
+import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 
 export function updateQingkuaiSnapshot(
     fileName: string,
     content: string,
     itos: number[],
     slotInfo: SlotInfo,
-    scriptKind: TS.ScriptKind
+    scriptKind: TS.ScriptKind,
+    positions: ASTPositionWithFlag[]
 ): ComponentIdentifierInfo[] {
     const dirPath = path.dirname(fileName)
     const slotInfoKeys = Object.keys(slotInfo)
@@ -74,14 +76,14 @@ export function updateQingkuaiSnapshot(
     const typeRefStatementLen = typeRefStatement.length
     const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
     const componentIdentifierInfos: ComponentIdentifierInfo[] = []
-    const originalScriptKind = snapshotCache.get(fileName)!.scriptKind
+    const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
     const builtInTypeDeclarationEndIndex = typeRefStatement.length + (isTS ? 119 : 114)
 
     const editScriptInfoCommon = (content: string) => {
         if (originalScriptKind !== scriptKind) {
             updateScriptKindOfQingkuaiFile(fileName, scriptKind)
         }
-        editQingKuaiScriptInfo(fileName, content, itos, slotInfo, scriptKind)
+        editQingKuaiScriptInfo(fileName, content, itos, slotInfo, scriptKind, positions)
     }
 
     // 标记已声明的全局类型标识符

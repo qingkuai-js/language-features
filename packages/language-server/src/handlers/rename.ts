@@ -8,10 +8,12 @@ import type { PrepareRename, RenameHandler } from "../types/handlers"
 
 import { pathToFileURL } from "url"
 import { util } from "qingkuai/compiler"
+import { existsSync, readFileSync } from "fs"
 import { getCompileRes, walk } from "../compile"
 import { TextEdit } from "vscode-languageserver/node"
-import { documents, isTestingEnv, tpic } from "../state"
+import { documents, isTestingEnv, tempDocuments, tpic } from "../state"
 import { findNodeAt, findTagRanges } from "../util/qingkuai"
+import { TextDocument } from "vscode-languageserver-textdocument"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 
 export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
@@ -128,30 +130,43 @@ async function converRenameLocationItemsToTextEdits(
     const textEdits: Record<string, TextEdit[]> = {}
 
     for (const item of locations) {
-        const uri = pathToFileURL(item.fileName || "").toString()
-        const document = documents.get(uri)
-        let [start, end] = item.range
-
-        if (!document) {
+        if (!item.fileName.endsWith(".qk")) {
             continue
         }
 
-        let newText = newName
-        if (item.fileName?.endsWith(".qk")) {
-            const cr = await getCompileRes(document, false)
-            if (!cr.isPositionFlagSet(start, "inScript")) {
-                // 如果重命名目标为组件标识符，则移除
-                if (cr.isPositionFlagSet(start, "isComponentStart")) {
-                    continue
-                }
+        const uri = pathToFileURL(item.fileName || "").toString()
+        let document = documents.get(uri) || tempDocuments.get(uri)
+        if (!document) {
+            if (!existsSync(item.fileName)) {
+                continue
+            }
 
-                // 若修改项目为组件属性修改，则将属性名修改为驼峰格式（若为插值属性需将开始位置+1）
-                if (cr.isPositionFlagSet(start, "isAttributeStart")) {
-                    if (/[!@&]/.test(document.getText()[start])) {
-                        start++
-                    }
-                    newText = util.camel2Kebab(newText)
+            tempDocuments.set(
+                uri,
+                (document = TextDocument.create(
+                    uri,
+                    "qingkuai",
+                    1,
+                    readFileSync(item.fileName, "utf-8")
+                ))
+            )
+        }
+
+        let newText = newName
+        let [start, end] = item.range
+        const cr = await getCompileRes(document, false)
+        if (!cr.isPositionFlagSet(start, "inScript")) {
+            // 如果重命名目标为组件标识符，则移除
+            if (cr.isPositionFlagSet(start, "isComponentStart")) {
+                continue
+            }
+
+            // 若修改项目为组件属性修改，则将属性名修改为驼峰格式（若为插值属性需将开始位置+1）
+            if (cr.isPositionFlagSet(start, "isAttributeStart")) {
+                if (/[!@&]/.test(document.getText()[start])) {
+                    start++
                 }
+                newText = util.camel2Kebab(newText)
             }
         }
 

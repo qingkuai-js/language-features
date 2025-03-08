@@ -175,9 +175,9 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         const valueStartIndex = attr?.value.loc.start.index ?? Infinity
 
         // 当前节点若是组件，则找到它的属性信息
-        const componentAttributes = cr.componentInfos.filter(info => {
+        const componentAttributes = cr.componentInfos.find(info => {
             return info.name === currentNode.componentTag
-        })[0]?.attributes
+        })?.attributes
 
         let hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
@@ -190,8 +190,10 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             if (!isInterpolation) {
                 let shouldTriggerSuggest = false
                 if (componentAttributes) {
-                    const foundAttr = componentAttributes.filter(a => a.name === attrKey)[0]
-                    shouldTriggerSuggest = foundAttr?.stringCandidates.length > 0
+                    const foundAttr = componentAttributes.find(attr => {
+                        return attr.name === attrKey
+                    })
+                    shouldTriggerSuggest = !!foundAttr?.stringCandidates.length
                 } else if (attrKey === "slot" && currentNode.parent?.componentTag) {
                     shouldTriggerSuggest = true
                 } else {
@@ -221,26 +223,41 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
 
                 const valueRange = getRange(valueStartIndex, valueEndIndex)
                 if (attrKey === "slot" && currentNode.parent?.componentTag) {
-                    for (const info of cr.componentInfos) {
-                        if (info.name === currentNode.parent.componentTag) {
-                            return info.slotNams.map(name => {
-                                return {
-                                    label: name,
-                                    sortText: "!",
-                                    kind: CompletionItemKind.Constant,
-                                    textEdit: TextEdit.replace(valueRange, name)
-                                }
-                            })
-                        }
+                    const componentInfo = cr.componentInfos.find(info => {
+                        return info.name === currentNode.parent!.componentTag
+                    })
+                    if (!componentInfo) {
+                        return null
                     }
-                    return null
+
+                    const existing = new Set<string>()
+                    currentNode.parent.children.forEach(child => {
+                        const slotAttr = child.attributes.find(attr => {
+                            return attr.key.raw === "slot"
+                        })
+                        if (slotAttr) {
+                            existing.add(slotAttr.value.raw)
+                        }
+                    })
+
+                    const filteredSlotNames = componentInfo.slotNams.filter(name => {
+                        return !existing.has(name)
+                    })
+                    return filteredSlotNames.map(name => {
+                        return {
+                            label: name,
+                            sortText: "!",
+                            kind: CompletionItemKind.Constant,
+                            textEdit: TextEdit.replace(valueRange, name)
+                        }
+                    })
                 }
 
                 // 当组件属性值为字符串字面量类型或字符串字面量联合类型时返回属性值建议
                 if (componentAttributes) {
-                    const foundAttr = componentAttributes.filter(a => {
-                        return a.name === attrKey
-                    })[0]
+                    const foundAttr = componentAttributes.find(attr => {
+                        return attr.name === attrKey
+                    })
                     return (foundAttr?.stringCandidates || []).map(candidate => {
                         return {
                             sortText: "!",
@@ -263,6 +280,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                 if (!isTestingEnv && currentNode.componentTag) {
                     return doComponentAttributeNameComplete(
                         componentAttributes,
+                        currentNode,
                         normalQuote,
                         "&",
                         keyRange
@@ -277,6 +295,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                 if (!isTestingEnv && currentNode.componentTag) {
                     return doComponentAttributeNameComplete(
                         componentAttributes,
+                        currentNode,
                         normalQuote,
                         "@",
                         keyRange
@@ -317,6 +336,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             if (!isTestingEnv && currentNode.componentTag) {
                 return doComponentAttributeNameComplete(
                     componentAttributes,
+                    currentNode,
                     normalQuote,
                     keyFirstChar,
                     keyRange
@@ -809,13 +829,27 @@ async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number
 }
 
 function doComponentAttributeNameComplete(
-    attributes: ComponentAttributeItem[],
+    attributes: ComponentAttributeItem[] | undefined,
+    node: TemplateNode,
     normalQuote: string,
     startChar: string,
     range: Range
 ) {
+    if (!attributes) {
+        return null
+    }
+
+    const existing = new Set(
+        node.attributes.map(item => {
+            return util.kebab2Camel(item.key.raw.replace(/^[!@#&]/, ""))
+        })
+    )
     const completions: CompletionItem[] = []
     attributes?.forEach(attr => {
+        if (existing.has(attr.name)) {
+            return
+        }
+
         const label = util.camel2Kebab(attr.name)
         const useStartChar =
             (startChar === "@" && attr.isEvent) ||

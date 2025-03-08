@@ -1,58 +1,66 @@
 import type TS from "typescript"
 import type { TSPluginCreateInfo } from "./types"
-import type { RenameLocationItem } from "../../../types/communication"
+import type { PositionFlagKeys } from "qingkuai/compiler"
 
 import {
-    ts,
-    projectService,
-    resolvedQingkuaiModule,
-    triggerQingkuaiFileName,
-    setTriggerQingkuaiFileName,
-    server
-} from "./state"
+    getSourceIndex,
+    isQingkuaiFileName,
+    isPositionFlagSetBySourceIndex,
+    ensureGetSnapshotOfQingkuaiFile
+} from "./util/qingkuai"
 import fs from "fs"
 import path from "path"
+import assert from "assert"
 import { runAll } from "../../../shared-util/sundry"
 import { HasBeenProxiedByQingKuai } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
+import { getDefaultSourceFileByFileName } from "./util/typescript"
 import { getConfigByFileName } from "./server/configuration/method"
+import { ts, projectService, resolvedQingkuaiModule } from "./state"
 import { isEmptyString, isUndefined } from "../../../shared-util/assert"
-import {
-    ensureGetSnapshotOfQingkuaiFile,
-    getSourceIndex,
-    isQingkuaiFileName
-} from "./util/qingkuai"
+import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
 
-export function proxyTypescriptProjectServiceMethods() {
+export function proxyTypescriptProjectServiceAndSystemMethods() {
     runAll([
+        proxyReadFile,
+        proxyGetFileSize,
         proxyEditContent,
-        proxyCloseClientFile,
         proxyOnConfigFileChanged,
-        proxyGetOrCreateScriptInfoForNormalizedPath,
         proxyUpdateRootAndOptionsOfNonInferredProject
     ])
 }
 
 export function proxyTypescriptLanguageServiceMethods(info: TSPluginCreateInfo) {
-    const { project, languageServiceHost } = info
+    const { project, languageServiceHost, session } = info
     runAll([
+        () => proxyGetScriptSnapshot(project),
+        () => proxyRenameSessionHandler(session),
         () => proxyGetScriptKind(languageServiceHost),
         () => proxyGetScriptVersion(languageServiceHost),
-        () => proxyFindRenameLocations(info.languageService),
-        () => proxyResolveModuleNameLiterals(languageServiceHost),
-        () => proxyGetScriptSnapshot(project, languageServiceHost)
+        () => proxyResolveModuleNameLiterals(languageServiceHost)
     ])
 }
 
-function proxyCloseClientFile() {
-    const closeClientFile = projectService.closeClientFile
-
-    projectService.closeClientFile = fileName => {
-        if (fileName === triggerQingkuaiFileName) {
-            return setTriggerQingkuaiFileName(""), false
+function proxyGetFileSize() {
+    const getFileSize = ts.sys.getFileSize
+    if (!getFileSize) {
+        return
+    }
+    ts.sys.getFileSize = path => {
+        if (!isQingkuaiFileName(path)) {
+            return getFileSize.call(ts.sys, path)
         }
+        return ensureGetSnapshotOfQingkuaiFile(path).getLength()
+    }
+}
 
-        return closeClientFile.call(projectService, fileName)
+function proxyReadFile() {
+    const readFile = ts.sys.readFile.bind(ts.sys)
+    ts.sys.readFile = (fileName, encoding) => {
+        if (!isQingkuaiFileName(fileName)) {
+            return readFile(fileName, encoding)
+        }
+        return ensureGetSnapshotOfQingkuaiFile(fileName).getFullText()
     }
 }
 
@@ -103,11 +111,10 @@ function proxyEditContent() {
     projectService.getScriptInfo = fileName => {
         const scriptInfo = getScriptInfo(fileName)
 
-        const scriptInfoAny: any = scriptInfo
         if (
             scriptInfo &&
             !isQingkuaiFileName(fileName) &&
-            !scriptInfoAny[HasBeenProxiedByQingKuai]
+            !(scriptInfo.editContent as any)[HasBeenProxiedByQingKuai]
         ) {
             const editContent = scriptInfo.editContent.bind(scriptInfo)
             scriptInfo.editContent = (start, end, newText) => {
@@ -126,113 +133,143 @@ function proxyEditContent() {
                     refreshDiagnostics(fileName, false)
                 }
             }
-            scriptInfoAny[HasBeenProxiedByQingKuai] = true
+
+            // @ts-expect-error: attach supplementary property
+            scriptInfo.editContent[HasBeenProxiedByQingKuai] = true
         }
 
         return scriptInfo
     }
 }
 
-function proxyFindRenameLocations(languageService: TS.LanguageService) {
-    // @ts-expect-error: access attached property
-    if (languageService.findRenameLocations[HasBeenProxiedByQingKuai]) {
+function proxyGetScriptSnapshot(project: TS.server.Project) {
+    if ((project.getScriptSnapshot as any)[HasBeenProxiedByQingKuai]) {
         return
     }
 
-    const findRenameLocations = languageService.findRenameLocations.bind(languageService)
-    languageService.findRenameLocations = (fileName, ...rest) => {
-        // @ts-ignore
-        const locations = findRenameLocations(fileName, ...rest)
-
-        if (!locations || isQingkuaiFileName(fileName)) {
-            return locations
-        }
-
-        const qingkuaiLocations: RenameLocationItem[] = []
-        const notQingkuaiLocations: TS.RenameLocation[] = []
-        locations.forEach(item => {
-            if (!isQingkuaiFileName(item.fileName)) {
-                return notQingkuaiLocations.push(item)
-            }
-
-            const { start, length } = item.textSpan
-            const ss = getSourceIndex(item.fileName, start)
-            const se = getSourceIndex(item.fileName, start + length, true)
-            if (ss !== -1 && se !== -1) {
-                const locationItem: RenameLocationItem = {
-                    range: [ss, se],
-                    fileName: item.fileName
-                }
-                qingkuaiLocations.push(locationItem)
-
-                if (item.prefixText) {
-                    locationItem.prefix = item.prefixText
-                }
-                if (item.suffixText) {
-                    locationItem.suffix = item.suffixText
-                }
-            }
-        })
-
-        if (Object.keys(qingkuaiLocations).length) {
-            server.sendNotification("excuteRename", qingkuaiLocations)
-        }
-
-        return notQingkuaiLocations
-    }
-
-    // @ts-expect-error: attach property
-    languageService.findRenameLocations[HasBeenProxiedByQingKuai] = true
-}
-
-function proxyGetScriptSnapshot(
-    project: TS.server.Project,
-    languageServiceHost: TS.LanguageServiceHost
-) {
     const getScriptSnapshot = project.getScriptSnapshot.bind(project)
-
     project.getScriptSnapshot = fileName => {
         if (!isQingkuaiFileName(fileName)) {
             return getScriptSnapshot(fileName)
         }
 
-        if (!languageServiceHost.fileExists(fileName)) {
+        if (!fs.existsSync(fileName)) {
             return undefined
         }
 
-        if (!projectService.getScriptInfo(fileName)) {
-            const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
-                ts.server.toNormalizedPath(fileName),
-                false
-            )
-            scriptInfo?.attachToProject(project)
-        }
-
+        const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
+            ts.server.toNormalizedPath(fileName),
+            false
+        )
+        scriptInfo?.attachToProject(project)
+        initialEditQingkuaiFileSnapshot(fileName)
         return ensureGetSnapshotOfQingkuaiFile(fileName)
     }
+
+    // @ts-expect-error: attach supplementary property
+    project.getScriptSnapshot[HasBeenProxiedByQingKuai] = true
 }
 
-function proxyGetOrCreateScriptInfoForNormalizedPath() {
-    const { getOrCreateScriptInfoForNormalizedPath } = projectService
+function proxyRenameSessionHandler(session: TS.server.Session | undefined) {
+    if (isUndefined(session)) {
+        return
+    }
 
-    projectService.getOrCreateScriptInfoForNormalizedPath = (fileName, ...rest) => {
-        const originalRet = getOrCreateScriptInfoForNormalizedPath.call(
-            projectService,
-            fileName,
-            ...rest
-        )
+    const sessionAny = session as any
+    const originalHandler = sessionAny.handlers.get("rename")
+    if (originalHandler[HasBeenProxiedByQingKuai]) {
+        return
+    }
 
-        if (isUndefined(originalRet) || !isQingkuaiFileName(fileName)) {
+    const proxiedHandler = (request: any) => {
+        const originalRet = originalHandler(request)
+
+        if (!originalRet?.response.locs.length) {
             return originalRet
         }
 
-        const originalSnapshotLen = originalRet.getSnapshot().getLength()
-        const cachedQingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
-        originalRet.editContent(0, originalSnapshotLen, cachedQingkuaiSnapshot.getFullText())
+        const retLocs: any[] = []
+        for (const { file, locs } of originalRet.response.locs) {
+            if (!isQingkuaiFileName(file)) {
+                retLocs.push({ file, locs })
+                continue
+            }
 
-        // @ts-expect-error: change read-only property
-        return (originalRet.scriptKind = cachedQingkuaiSnapshot.scriptKind), originalRet
+            const dealtLocs: any[] = []
+            const sourceFile = getDefaultSourceFileByFileName(file)
+            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(file)
+            assert(!!sourceFile)
+
+            const checkPositionFlag = (pos: number, key: PositionFlagKeys) => {
+                return isPositionFlagSetBySourceIndex(qingkuaiSnapshot, pos, key)
+            }
+
+            const getSourcePos = (line: number, character: number, isEnd = false) => {
+                const interIndex = ts.getPositionOfLineAndCharacter(
+                    sourceFile,
+                    line - 1,
+                    character - 1
+                )
+                return getSourceIndex(qingkuaiSnapshot, interIndex, isEnd)
+            }
+
+            locs.forEach((loc: any) => {
+                const startPos = getSourcePos(loc.start.line, loc.start.offset)
+                const endPos = getSourcePos(loc.end.line, loc.end.offset, true)
+                const ctxStartPos = getSourcePos(loc.contextStart.line, loc.contextStart.offset)
+                const ctxEndPos = getSourcePos(loc.contextEnd.line, loc.contextEnd.offset, true)
+
+                // prettier-ignore
+                if (
+                    !endPos ||
+                    !startPos ||
+                    !ctxEndPos ||
+                    !ctxStartPos ||
+                    startPos === -1 ||
+                    endPos === -1 ||
+                    ctxEndPos === -1 ||
+                    ctxStartPos === -1 ||
+                    (
+                        !checkPositionFlag(startPos, "inScript") &&
+                        !checkPositionFlag(startPos, "isAttributeStart")
+                    )
+                ) {
+                    return
+                }
+
+                const delta = +checkPositionFlag(startPos, "isInterpolationAttributeStart")
+                dealtLocs.push({
+                    start: {
+                        line: qingkuaiSnapshot.positions[startPos].line,
+                        offset: qingkuaiSnapshot.positions[startPos].column + 1 + delta
+                    },
+                    end: {
+                        line: qingkuaiSnapshot.positions[endPos].line,
+                        offset: qingkuaiSnapshot.positions[endPos].column + 1
+                    }
+
+                    // unnecessary
+                    // contextStart: {
+                    //     line: qingkuaiSnapshot.positions[ctxStartPos].line,
+                    //     offset: qingkuaiSnapshot.positions[ctxStartPos].column
+                    // },
+                    // contextEnd: {
+                    //     line: qingkuaiSnapshot.positions[ctxEndPos].line,
+                    //     offset: qingkuaiSnapshot.positions[ctxEndPos].column
+                    // }
+                })
+            })
+            dealtLocs.length && retLocs.push({ file, locs: dealtLocs })
+        }
+
+        return {
+            ...originalRet,
+            response: { ...originalRet.response, locs: retLocs }
+        }
     }
+
+    proxiedHandler[HasBeenProxiedByQingKuai] = true
+    sessionAny.handlers.set("rename", proxiedHandler)
 }
 
 // 在typescript源码中的插件启用时机不正确，这里判断出这种情况不调用updateRootAndOptionsOfNonInferredProject
@@ -254,7 +291,11 @@ function proxyUpdateRootAndOptionsOfNonInferredProject() {
 function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceHost) {
     const resolveModuleLiterals = languageServiceHost.resolveModuleNameLiterals
 
-    if (isUndefined(resolveModuleLiterals)) {
+    if (
+        isUndefined(resolveModuleLiterals) ||
+        // @ts-expect-error: access supplementary property
+        languageServiceHost.resolveModuleNameLiterals[HasBeenProxiedByQingKuai]
+    ) {
         return
     }
 
@@ -283,8 +324,8 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
             }
             resolvedQingkuaiModule.get(containingFile)!.add(moduleText)
 
-            const snapshot = ensureGetSnapshotOfQingkuaiFile(modulePath)
-            const extension = snapshot.scriptKind === ts.ScriptKind.TS ? ".ts" : ".js"
+            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(modulePath)
+            const extension = qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS ? ".ts" : ".js"
             return {
                 ...item,
                 resolvedModule: {
@@ -297,4 +338,7 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
             }
         })
     }
+
+    // @ts-expect-error: attach supplementary property
+    languageServiceHost.resolveModuleNameLiterals[HasBeenProxiedByQingKuai] = true
 }

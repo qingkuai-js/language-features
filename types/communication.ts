@@ -1,12 +1,8 @@
 import type { SlotInfo } from "qingkuai/compiler"
 import type { Options as PrettierConfiguration } from "prettier"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
-import type { ExtensionConfiguration, NumNum, TSClientConfiguration } from "./common"
+import type { ExtensionConfiguration, NumNum, NumNumArray, TSClientConfiguration } from "./common"
 import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
-
-export interface ProviderState {
-    lastNewNameForTSRename: string
-}
 
 export interface RetransmissionParams<T = any> {
     data: T
@@ -32,10 +28,10 @@ export interface ComponentAttributeItem {
 }
 
 export interface RenameLocationItem {
+    fileName: string
     range: NumNum
     prefix?: string
     suffix?: string
-    fileName?: string
 }
 
 export interface RenameResult {
@@ -122,11 +118,13 @@ export interface InsertSnippetParam {
 }
 
 export interface UpdateSnapshotParams {
-    itos: number[]
     fileName: string
     interCode: string
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
+    cp: NumNumArray // compressed positions
+    citos: NumNumArray // compressed itos
+    cpf: NumNumArray // compressed position flags
 }
 
 export interface TSDiagnosticRelatedInformation {

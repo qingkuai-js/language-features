@@ -1,5 +1,5 @@
 import type { ScriptKind } from "typescript"
-import type { SlotInfo } from "qingkuai/compiler"
+import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 
 import { QingKuaiSnapShot } from "../../snapshot"
 import { projectService, snapshotCache } from "../../state"
@@ -10,11 +10,12 @@ export function editQingKuaiScriptInfo(
     content: string,
     itos: number[],
     slotInfo: SlotInfo,
-    scriptKind: ScriptKind
+    scriptKind: ScriptKind,
+    positions: ASTPositionWithFlag[]
 ) {
     const oldSnapshot = snapshotCache.get(fileName)!
     const scriptInfo = projectService.getScriptInfo(fileName)!
-    const newSnapshot = new QingKuaiSnapShot(content, false, scriptKind, itos, slotInfo)
+    const newSnapshot = new QingKuaiSnapShot(content, false, scriptKind, itos, slotInfo, positions)
 
     const change = newSnapshot.getChangeRange(oldSnapshot)
     const changeStart = change.span.start
