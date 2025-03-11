@@ -1,5 +1,6 @@
 import type TS from "typescript"
 import type { FixedArray } from "./util"
+import type { Options as PrettierOptions } from "prettier"
 
 export type NumNumArray = NumNum[]
 export type NumNum = FixedArray<number, 2>
@@ -15,6 +16,7 @@ export interface ExtensionConfiguration {
     insertSpaceAroundInterpolation: boolean
     componentTagFormatPreference: "camel" | "kebab"
     htmlHoverTip: ("tag" | "entity" | "attribute")[]
+    componentAttributeFormatPreference: "camel" | "kebab"
 }
 
 export interface TSFormattingOptions {
@@ -32,6 +34,13 @@ export interface TSClientConfiguration {
     preference: TSUserPreferences
     formatCodeSettings: TSFormatCodeSettings
 }
+
+export type PrettierConfiguration = PrettierOptions &
+    Partial<{
+        spaceAroundInterpolation: boolean
+        componentTagFormatPreference: "camel" | "kebab"
+        componentAttributeFormatPreference: "camel" | "kebab"
+    }>
 
 export type QingkuaiConfigurationWithDir = QingkuaiConfiguration & {
     dir: string

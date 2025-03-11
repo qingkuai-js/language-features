@@ -10,6 +10,9 @@ export let server = defaultParticipant
 export let ts: TS
 export let projectService: TSProjectService
 
+// 已打开的文件列表
+export const openQingkuaiFiles = new Set<string>()
+
 // 快照缓存，键为映射文件名称，值为QingkuaiSnapshot
 export const snapshotCache = new Map<string, QingKuaiSnapShot>()
 
@@ -18,6 +21,9 @@ export const resolvedQingkuaiModule = new Map<string, Set<string>>()
 
 // qingkuai自定义错误缓存
 export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
+
+// typescript扩展客户端命令执行状态
+export const commandStatus = new Map<string, readonly [Promise<any>, GeneralFunc]>()
 
 export function setState(value: SetStateParams) {
     if (value.ts) {

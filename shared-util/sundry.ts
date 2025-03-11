@@ -17,13 +17,6 @@ export function toCamelCase(s: string) {
     })
 }
 
-// 驼峰命名转串型命名格式
-export function camel2Kebab(s: string) {
-    return s.replace(/[A-Z]/g, (m, i) => {
-        return (i === 0 ? "" : "-") + m.toLocaleLowerCase()
-    })
-}
-
 // 生成一个稍后解决的Promise，此方法返回一个Promise和它的resovle方法
 // 返回的Promise是经过包装的，可以访问其state属性获取它当前所处的状态
 export function generatePromiseAndResolver() {

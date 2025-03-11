@@ -10,6 +10,9 @@ export function isEventType(type: TS.Type) {
     if (type.isClass()) {
         return false
     }
+    if (type.isUnion()) {
+        return type.types.some(isEventType)
+    }
     return !!(type.getCallSignatures().length || type.symbol?.name === "Function")
 }
 

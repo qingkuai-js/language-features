@@ -2,18 +2,18 @@ import type {
     TSFormattingOptions,
     TSFormatCodeSettings,
     QingkuaiConfiguration,
+    PrettierConfiguration,
     QingkuaiConfigurationWithDir
 } from "../../../types/common"
 import type TS from "typescript"
 import type { LanguageClient } from "vscode-languageclient/node"
-import type { Options as PrettierConfiguration } from "prettier"
 import type { RetransmissionParams } from "../../../types/communication"
 
 import fs from "fs"
 import path from "path"
 import * as vsc from "vscode"
 import prettier from "prettier"
-import { isBoolean, isNull, isNumber, isString, isUndefined } from "../../../shared-util/assert"
+import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util/assert"
 
 // 获取扩展配置项
 export function getExtensionConfig(uri: vsc.Uri) {
@@ -104,7 +104,7 @@ export async function getPrettierConfig(uri: vsc.Uri) {
         useCache: false,
         editorconfig: true
     })
-    return Object.assign({}, byVscode, byConfigFile || {}) as PrettierConfiguration
+    return Object.assign({}, byVscode as any, byConfigFile || {}) as PrettierConfiguration
 }
 
 async function loadQingkuaiConfig(path: string) {

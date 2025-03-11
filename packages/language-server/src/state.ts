@@ -16,6 +16,7 @@ export const setTypeRefStatement = (v: string) => (typeRefStatement = v)
 
 export const Logger = createLogger(console)
 export const documents = new TextDocuments(TextDocument)
+export const waittingCommands = new Map<string, string>()
 export const tempDocuments = new Map<string, TextDocument>()
 export const connection = createConnection(ProposedFeatures.all)
 

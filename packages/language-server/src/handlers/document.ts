@@ -1,5 +1,6 @@
-import { clearDiagnostics, publishDiagnostics } from "./diagnostic"
+import { getCompileRes } from "../compile"
 import { documents, tpic, tpicConnectedPromise } from "../state"
+import { clearDiagnostics, publishDiagnostics } from "./diagnostic"
 
 export function attachDocumentHandlers() {
     documents.onDidChangeContent(({ document }) => {
@@ -17,6 +18,7 @@ export function attachDocumentHandlers() {
         if (tpicConnectedPromise.state === "pending") {
             await tpicConnectedPromise
         }
+        await getCompileRes(document)
         clearDiagnostics(document.uri)
         tpic.sendNotification("onDidClose", document.uri)
     })

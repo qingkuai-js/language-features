@@ -3,7 +3,6 @@ import type {
     ComponentIdentifierInfo
 } from "../../../../types/communication"
 import type { Position, Range } from "vscode-languageserver"
-import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
 
 export type GetRangeFunc = (start: number, end?: number) => Range

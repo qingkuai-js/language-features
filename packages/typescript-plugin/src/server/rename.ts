@@ -1,22 +1,18 @@
-import type {
-    RenameResult,
-    RenameLocationItem,
-    TPICCommonRequestParams
-} from "../../../../types/communication"
 import type { NumNum } from "../../../../types/common"
+import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
 import {
-    getNodeAt,
-    getDefaultProjectByFileName,
-    getUserPreferencesByFileName,
-    getDefaultLanguageServiceByFileName
-} from "../util/typescript"
-import {
     getSourceIndex,
-    isComponentIdentifier,
+    isQingkuaiFileName,
     ensureGetSnapshotOfQingkuaiFile
 } from "../util/qingkuai"
-import { server, ts } from "../state"
+import {
+    isFileOpening,
+    getUserPreferencesByFileName,
+    getDefaultSourceFileByFileName,
+    getDefaultLanguageServiceByFileName
+} from "../util/typescript"
+import { projectService, server, ts } from "../state"
 
 export function attachPrepareRename() {
     server.onRequest<TPICCommonRequestParams, NumNum>("prepareRename", ({ fileName, pos }) => {
@@ -38,45 +34,29 @@ export function attachPrepareRename() {
 }
 
 export function attachRename() {
-    server.onRequest<TPICCommonRequestParams, RenameResult>("rename", ({ fileName, pos }) => {
-        const project = getDefaultProjectByFileName(fileName)!
-        const languageService = project.getLanguageService()
-        const program = languageService.getProgram()!
+    server.onRequest<TPICCommonRequestParams, RenameLocationItem[]>(
+        "rename",
+        ({ fileName, pos }) => {
+            const locations: RenameLocationItem[] = []
+            const existringMap = new Map<string, Set<string>>()
+            const languageService = getDefaultLanguageServiceByFileName(fileName)
+            const renameLocations = languageService?.findRenameLocations(
+                fileName,
+                pos,
+                false,
+                false,
+                getUserPreferencesByFileName(fileName)
+            )
 
-        let changedComponentName = ""
-        const node = getNodeAt(program.getSourceFile(fileName)!, pos)
-        if (
-            node &&
-            ts.isIdentifier(node) &&
-            isComponentIdentifier(fileName, node, program.getTypeChecker())
-        ) {
-            changedComponentName = node.text
-        }
+            if (!renameLocations) {
+                return locations
+            }
 
-        const renameLocations = languageService?.findRenameLocations(
-            fileName,
-            pos,
-            false,
-            false,
-            getUserPreferencesByFileName(fileName)
-        )
-
-        if (!renameLocations) {
-            return { locations: [], changedComponentName }
-        }
-
-        const changes: RenameLocationItem[] = []
-        renameLocations.forEach(item => {
-            const { start, length } = item.textSpan
-            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(item.fileName)
-            const ss = getSourceIndex(qingkuaiSnapshot, start)
-            const se = getSourceIndex(qingkuaiSnapshot, start + length, true)
-            if (ss && se && ss !== -1 && se !== -1) {
+            renameLocations.forEach(item => {
+                const { start, length } = item.textSpan
                 const locationItem: RenameLocationItem = {
-                    range: [ss, se],
                     fileName: item.fileName
                 }
-                changes.push(locationItem)
 
                 if (item.prefixText) {
                     locationItem.prefix = item.prefixText
@@ -84,8 +64,40 @@ export function attachRename() {
                 if (item.suffixText) {
                     locationItem.suffix = item.suffixText
                 }
-            }
-        })
-        return { locations: changes, changedComponentName }
-    })
+
+                if (isQingkuaiFileName(item.fileName)) {
+                    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(item.fileName)
+                    const sourceEnd = getSourceIndex(qingkuaiSnapshot, start + length, true)
+                    const sourceStart = getSourceIndex(qingkuaiSnapshot, start)
+                    const existringKey = `${sourceStart},${sourceEnd}`
+                    const existing = existringMap.get(item.fileName) || new Set()
+                    if (
+                        !sourceEnd ||
+                        !sourceStart ||
+                        sourceEnd === -1 ||
+                        sourceStart === -1 ||
+                        existing.has(existringKey)
+                    ) {
+                        return
+                    }
+                    existing.add(existringKey)
+                    existringMap.set(item.fileName, existing)
+                    locationItem.range = [sourceStart, sourceEnd]
+                } else {
+                    const sourceFile = getDefaultSourceFileByFileName(item.fileName)
+                    if (!sourceFile) {
+                        return
+                    }
+                    locationItem.loc = {
+                        start: ts.getLineAndCharacterOfPosition(sourceFile, start),
+                        end: ts.getLineAndCharacterOfPosition(sourceFile, start + length)
+                    }
+                }
+
+                locations.push(locationItem)
+            })
+
+            return locations
+        }
+    )
 }

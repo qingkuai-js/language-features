@@ -16,15 +16,22 @@ import { HasBeenProxiedByQingKuai } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getDefaultSourceFileByFileName } from "./util/typescript"
 import { getConfigByFileName } from "./server/configuration/method"
-import { ts, projectService, resolvedQingkuaiModule } from "./state"
 import { isEmptyString, isUndefined } from "../../../shared-util/assert"
 import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
+import {
+    ts,
+    projectService,
+    resolvedQingkuaiModule,
+    openQingkuaiFiles,
+    commandStatus
+} from "./state"
 
 export function proxyTypescriptProjectServiceAndSystemMethods() {
     runAll([
         proxyReadFile,
         proxyGetFileSize,
         proxyEditContent,
+        proxyCloseClientFile,
         proxyOnConfigFileChanged,
         proxyUpdateRootAndOptionsOfNonInferredProject
     ])
@@ -33,6 +40,7 @@ export function proxyTypescriptProjectServiceAndSystemMethods() {
 export function proxyTypescriptLanguageServiceMethods(info: TSPluginCreateInfo) {
     const { project, languageServiceHost, session } = info
     runAll([
+        () => proxyExecuteCommand(session),
         () => proxyGetScriptSnapshot(project),
         () => proxyRenameSessionHandler(session),
         () => proxyGetScriptKind(languageServiceHost),
@@ -61,6 +69,29 @@ function proxyReadFile() {
             return readFile(fileName, encoding)
         }
         return ensureGetSnapshotOfQingkuaiFile(fileName).getFullText()
+    }
+}
+
+function proxyCloseClientFile() {
+    const closeClientFile = projectService.closeClientFile
+    projectService.closeClientFile = fileName => {
+        if (openQingkuaiFiles.has(fileName)) {
+            return
+        }
+        return closeClientFile.call(projectService, fileName)
+    }
+}
+
+function proxyExecuteCommand(session: TS.server.Session | undefined) {
+    if (isUndefined(session)) {
+        return
+    }
+
+    const executeCommand = session.executeCommand
+    session.executeCommand = request => {
+        const originalRet = executeCommand.call(session, request)
+        commandStatus.get(request.command)?.[1]()
+        return originalRet
     }
 }
 

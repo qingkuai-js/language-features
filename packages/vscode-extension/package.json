@@ -111,11 +111,19 @@
                     "type": "string",
                     "enum": [
                         "camel",
-                        "kebab",
-                        "none"
+                        "kebab"
                     ],
                     "default": "camel",
-                    "description": "Your preferred component tag format for completion suggestions."
+                    "description": "Your preferred component tag format for formatting and completion suggestions."
+                },
+                "qingkuai.componentAttributeFormatPreference": {
+                    "type": "string",
+                    "enum": [
+                        "camel",
+                        "kebab"
+                    ],
+                    "default": "camel",
+                    "description": "Your preferred component attribute format for formatting and completion suggestions."
                 },
                 "qingkuai.htmlHoverTip": {
                     "type": "array",

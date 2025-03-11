@@ -42,7 +42,6 @@ import { position2Range } from "../util/vscode"
 import { parseTemplate, util } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
-import { camel2Kebab } from "../../../../shared-util/sundry"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { connection, documents, isTestingEnv, tpic } from "../state"
@@ -274,6 +273,8 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         } else if (isUndefined(attr) || offset <= keyEndIndex) {
             const keyRange = getRange(keyStartIndex, keyEndIndex)
             const normalQuote = cr.config.prettierConfig.singleQuote ? "'" : '"'
+            const { componentAttributeFormatPreference } = cr.config.prettierConfig
+            const useKebab = attrKey.includes("-") || componentAttributeFormatPreference === "kebab"
 
             // 返回引用属性补全建议
             if (keyFirstChar === "&") {
@@ -283,6 +284,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                         currentNode,
                         normalQuote,
                         "&",
+                        useKebab,
                         keyRange
                     )
                 }
@@ -298,6 +300,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                         currentNode,
                         normalQuote,
                         "@",
+                        useKebab,
                         keyRange
                     )
                 }
@@ -339,6 +342,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                     currentNode,
                     normalQuote,
                     keyFirstChar,
+                    useKebab,
                     keyRange
                 )
             }
@@ -417,7 +421,7 @@ function doCustomTagComplete(
         const startWithSpace = /\s/.test(source[emmetTagNameIndex])
         const useKebab =
             source.slice(emmetTagNameIndex, offset).includes("-") ||
-            config.extensionConfig.componentTagFormatPreference === "kebab"
+            config.prettierConfig.componentTagFormatPreference === "kebab"
         const range = getRange(emmetTagNameIndex + Number(startWithSpace || startWithLT), offset)
 
         // prettier-ignore
@@ -464,7 +468,7 @@ function doCustomTagComplete(
                 ]
             }
 
-            const tag = useKebab ? camel2Kebab(item.name) : item.name
+            const tag = useKebab ? util.camel2Kebab(item.name, false) : item.name
 
             // prettier-ignore
             ret.push({
@@ -833,6 +837,7 @@ function doComponentAttributeNameComplete(
     node: TemplateNode,
     normalQuote: string,
     startChar: string,
+    useKebab: boolean,
     range: Range
 ) {
     if (!attributes) {
@@ -850,7 +855,7 @@ function doComponentAttributeNameComplete(
             return
         }
 
-        const label = util.camel2Kebab(attr.name)
+        const label = useKebab ? util.camel2Kebab(attr.name) : util.kebab2Camel(attr.name)
         const useStartChar =
             (startChar === "@" && attr.isEvent) ||
             (startChar === "&" && attr.kind === "Ref") ||

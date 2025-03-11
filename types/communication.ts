@@ -1,7 +1,12 @@
+import type {
+    NumNum,
+    NumNumArray,
+    PrettierConfiguration,
+    TSClientConfiguration,
+    ExtensionConfiguration
+} from "./common"
 import type { SlotInfo } from "qingkuai/compiler"
-import type { Options as PrettierConfiguration } from "prettier"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
-import type { ExtensionConfiguration, NumNum, NumNumArray, TSClientConfiguration } from "./common"
 import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
 
 export interface RetransmissionParams<T = any> {
@@ -29,14 +34,10 @@ export interface ComponentAttributeItem {
 
 export interface RenameLocationItem {
     fileName: string
-    range: NumNum
+    loc?: Range
+    range?: NumNum
     prefix?: string
     suffix?: string
-}
-
-export interface RenameResult {
-    locations: RenameLocationItem[]
-    changedComponentName: string
 }
 
 export interface ComponentIdentifierInfo {

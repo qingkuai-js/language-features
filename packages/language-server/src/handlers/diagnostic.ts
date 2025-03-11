@@ -6,8 +6,8 @@ import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
-import { connection, documents, isTestingEnv, tpic } from "../state"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
+import { connection, documents, isTestingEnv, tpic, waittingCommands } from "../state"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -21,7 +21,13 @@ export const publishDiagnostics = debounce(
 
         const cr = await getCompileRes(document)
         const { Error, Warning } = DiagnosticSeverity
+        const waittingForCommand = waittingCommands.get("diagnostic")
         const { messages, getRange, filePath, getSourceIndex, config } = cr
+
+        if (waittingForCommand) {
+            await tpic.sendRequest("waitCommand", waittingForCommand)
+            waittingCommands.delete("diagnostic")
+        }
 
         // 将ts语言服务的诊断信息添加到诊断结果
         const extendDiagnostic = (item: Diagnostic) => {

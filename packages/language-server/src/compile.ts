@@ -146,6 +146,8 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
                 } satisfies GetClientConfigParams
             )
+            updatePrettierConfigurationForQingkuaiFile(res)
+
             if (res.typescriptConfig) {
                 updateTypescriptConfigurationForQingkuaiFile(res)
                 tpic.sendNotification<ConfigureFileParams>("configureFile", {
@@ -188,6 +190,19 @@ export async function getCompileResByPath(path: string) {
 // 清空已缓存的配置内容
 export function clearConfigCache() {
     extensionConfigCache.clear()
+}
+
+function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+    const { prettierConfig: pc, extensionConfig: ec } = config
+    if (isUndefined(pc.spaceAroundInterpolation)) {
+        pc.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
+    }
+    if (isUndefined(pc.componentTagFormatPreference)) {
+        pc.componentTagFormatPreference = ec.componentTagFormatPreference
+    }
+    if (isUndefined(pc.componentAttributeFormatPreference)) {
+        pc.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
+    }
 }
 
 // prettier-ignore

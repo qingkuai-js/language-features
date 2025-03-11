@@ -555,7 +555,7 @@ function getComponentAttributes(componentFileName: string) {
             type.getProperties().forEach(property => {
                 const stringCandidates: string[] = []
                 const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
-
+                
                 if (propertyType.isUnion()) {
                     propertyType.types.forEach(t => {
                         if (t.flags & ts.TypeFlags.StringLiteral) {

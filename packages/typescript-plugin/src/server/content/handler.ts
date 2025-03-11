@@ -1,20 +1,24 @@
-import type { ASTPosition, ASTPositionWithFlag } from "qingkuai/compiler"
 import type { NumNumArray } from "../../../../../types/common"
+import type { ASTPosition, ASTPositionWithFlag } from "qingkuai/compiler"
 import type { UpdateSnapshotParams } from "../../../../../types/communication"
 
 import { fileURLToPath } from "url"
 import { updateQingkuaiSnapshot } from "./snapshot"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { isUndefined } from "../../../../../shared-util/assert"
-import { projectService, server, snapshotCache, ts } from "../../state"
+import { openQingkuaiFiles, projectService, server, snapshotCache, ts } from "../../state"
 
 export function attachDocumentManager() {
     server.onNotification("onDidOpen", (uri: string) => {
-        projectService.openClientFile(fileURLToPath(uri))
+        const fileName = fileURLToPath(uri)
+        openQingkuaiFiles.add(fileName)
+        projectService.openClientFile(fileName)
     })
 
     server.onNotification("onDidClose", (uri: string) => {
-        projectService.closeClientFile(fileURLToPath(uri))
+        const fileName = fileURLToPath(uri)
+        openQingkuaiFiles.delete(fileName)
+        projectService.closeClientFile(fileName)
     })
 }
 

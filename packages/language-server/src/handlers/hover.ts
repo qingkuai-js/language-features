@@ -8,6 +8,7 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
+import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
 import { findEventModifier } from "../util/search"
@@ -125,11 +126,18 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
                 return info.name === currentNode.componentTag
             })[0]
             for (const attr of componentInfo?.attributes || []) {
-                if (attr.name === attrKey.replace(/^[!@&]/, "")) {
+                if (
+                    (attrKey.startsWith("&") && attr.kind !== "Ref") ||
+                    (!attrKey.startsWith("&") && attr.kind !== "Prop")
+                ) {
+                    continue
+                }
+                if (attr.name === util.kebab2Camel(attrKey.replace(/^[!@&]/, ""))) {
+                    const desc = `${attr.kind === "Ref" ? "reference " : ""}property`
                     return {
                         contents: {
                             kind: "markdown",
-                            value: mdCodeBlockGen("ts", `(property) ${attr.name}: ${attr.type}`)
+                            value: mdCodeBlockGen("ts", `(${desc}) ${attr.name}: ${attr.type}`)
                         },
                         range: getRange(keyStartIndex, KeyEndIndex)
                     }

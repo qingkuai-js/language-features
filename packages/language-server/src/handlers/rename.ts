@@ -1,20 +1,18 @@
-import type {
-    RenameResult,
-    RenameLocationItem,
-    TPICCommonRequestParams
-} from "../../../../types/communication"
 import type { NumNum } from "../../../../types/common"
+import type { WorkspaceEdit } from "vscode-languageserver/node"
+import type { CachedCompileResultItem } from "../types/service"
 import type { PrepareRename, RenameHandler } from "../types/handlers"
+import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
+import { readFileSync } from "fs"
 import { pathToFileURL } from "url"
 import { util } from "qingkuai/compiler"
-import { existsSync, readFileSync } from "fs"
-import { getCompileRes, walk } from "../compile"
+import { getCompileRes } from "../compile"
 import { TextEdit } from "vscode-languageserver/node"
-import { documents, isTestingEnv, tempDocuments, tpic } from "../state"
-import { findNodeAt, findTagRanges } from "../util/qingkuai"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
+import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { documents, isTestingEnv, tempDocuments, tpic, waittingCommands } from "../state"
 
 export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
     const document = documents.get(textDocument.uri)
@@ -26,46 +24,8 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
     const { getRange, getOffset, templateNodes } = cr
 
     const offset = getOffset(position)
-    if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
-        const res: RenameResult = await tpic.sendRequest<TPICCommonRequestParams>("rename", {
-            fileName: cr.filePath,
-            pos: cr.interIndexMap.stoi[offset]
-        })
-
-        if (!res.locations.length) {
-            return null
-        }
-
-        const textEdits = await converRenameLocationItemsToTextEdits(res.locations, newName)
-
-        // 如果修改的是当前文件导入的组件标识符，则修改模板中所有的同名组件标签
-        if (res.changedComponentName) {
-            walk(cr.templateNodes, node => {
-                if (node.componentTag === res.changedComponentName) {
-                    const existing =
-                        textEdits[textDocument.uri] || (textEdits[textDocument.uri] = [])
-                    if (node.endTagStartPos.index !== -1) {
-                        existing.push(
-                            TextEdit.replace(
-                                cr.getRange(
-                                    node.endTagStartPos.index + 2,
-                                    node.endTagStartPos.index + node.tag.length + 2
-                                ),
-                                newName
-                            )
-                        )
-                    }
-                    existing.push(
-                        TextEdit.replace(
-                            cr.getRange(node.range[0] + 1, node.range[0] + node.tag.length + 1),
-                            newName
-                        )
-                    )
-                }
-            })
-        }
-
-        return { changes: textEdits }
+    if (cr.isPositionFlagSet(offset, "inScript")) {
+        return doScriptBlockRename(cr, offset, newName)
     }
 
     const currentNode = findNodeAt(templateNodes, offset)
@@ -75,7 +35,26 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
 
     // 重命名HTML标签名
     const textEdits: TextEdit[] = []
-    findTagRanges(currentNode, offset, true).forEach(range => {
+    const tagRanges = findTagRanges(currentNode, offset, true)
+
+    // 组件标签重命名
+    if (currentNode.componentTag) {
+        let interIndex: number | undefined = undefined
+        if (tagRanges[0]) {
+            interIndex = cr.interIndexMap.stoi[currentNode.range[0]]
+        }
+
+        const currentAttribute = findAttribute(offset, currentNode)
+        if (currentAttribute) {
+            interIndex = cr.interIndexMap.stoi[currentAttribute.key.loc.start.index]
+        }
+        if (isUndefined(interIndex)) {
+            return null
+        }
+        return doScriptBlockRename(cr, interIndex, util.kebab2Camel(newName), true)
+    }
+
+    tagRanges.forEach(range => {
         if (!isUndefined(range)) {
             textEdits.push(TextEdit.replace(getRange(...range), newName))
         }
@@ -117,30 +96,58 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
         return null
     }
 
+    if (currentNode.componentTag) {
+        const currentAttribute = findAttribute(offset, currentNode)
+        if (currentAttribute && currentAttribute.key.raw[0] !== "#") {
+            const delta = +/[!@&]/.test(currentAttribute.key.raw)
+            return getRange(
+                currentAttribute.key.loc.start.index + delta,
+                currentAttribute.key.loc.end.index
+            )
+        }
+    }
+
     const tagRanges = findTagRanges(currentNode, offset, true)
     if (!isUndefined(tagRanges[0])) {
         return getRange(...tagRanges[offset <= tagRanges[0][1] ? 0 : 1]!)
     }
 }
 
-async function converRenameLocationItemsToTextEdits(
-    locations: RenameLocationItem[],
-    newName: string
+async function doScriptBlockRename(
+    cr: CachedCompileResultItem,
+    offset: number,
+    newName: string,
+    isInterOffset = false
 ) {
+    if (isTestingEnv) {
+        return null
+    }
+
     const textEdits: Record<string, TextEdit[]> = {}
+    const locations: RenameLocationItem[] = await tpic.sendRequest<TPICCommonRequestParams>(
+        "rename",
+        {
+            fileName: cr.filePath,
+            pos: isInterOffset ? offset : cr.interIndexMap.stoi[offset]
+        }
+    )
+
+    if (!locations.length) {
+        return null
+    }
 
     for (const item of locations) {
-        if (!item.fileName.endsWith(".qk")) {
+        const uri = pathToFileURL(item.fileName || "").toString()
+        const existing = textEdits[uri] || (textEdits[uri] = [])
+        let newText = (item.prefix || "") + newName + (item.suffix || "")
+        if (item.loc) {
+            waittingCommands.set("diagnostic", "updateOpen")
+            existing.push(TextEdit.replace(item.loc, util.kebab2Camel(newText)))
             continue
         }
 
-        const uri = pathToFileURL(item.fileName || "").toString()
         let document = documents.get(uri) || tempDocuments.get(uri)
         if (!document) {
-            if (!existsSync(item.fileName)) {
-                continue
-            }
-
             tempDocuments.set(
                 uri,
                 (document = TextDocument.create(
@@ -152,35 +159,44 @@ async function converRenameLocationItemsToTextEdits(
             )
         }
 
-        let newText = newName
-        let [start, end] = item.range
+        let [start, end] = item.range!
         const cr = await getCompileRes(document, false)
-        if (!cr.isPositionFlagSet(start, "inScript")) {
-            // 如果重命名目标为组件标识符，则移除
-            if (cr.isPositionFlagSet(start, "isComponentStart")) {
+        const prettierConfig = cr.config.prettierConfig
+        const { isPositionFlagSet, getRange, templateNodes } = cr
+        if (!isPositionFlagSet(start, "inScript")) {
+            if (isPositionFlagSet(start, "isComponentStart")) {
+                const currentNode = findNodeAt(templateNodes, start + 1)
+                if (!currentNode) {
+                    continue
+                }
+
+                findTagRanges(currentNode, start + 1, true).forEach(range => {
+                    const useKebab = prettierConfig.componentTagFormatPreference === "kebab"
+                    if (range) {
+                        range &&
+                            existing.push(
+                                TextEdit.replace(
+                                    getRange(...range),
+                                    useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
+                                )
+                            )
+                    }
+                })
                 continue
             }
 
             // 若修改项目为组件属性修改，则将属性名修改为驼峰格式（若为插值属性需将开始位置+1）
-            if (cr.isPositionFlagSet(start, "isAttributeStart")) {
+            if (isPositionFlagSet(start, "isAttributeStart")) {
+                const useKebab = prettierConfig.componentAttributeFormatPreference === "kebab"
+                newText = useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
                 if (/[!@&]/.test(document.getText()[start])) {
                     start++
                 }
-                newText = util.camel2Kebab(newText)
             }
         }
 
-        const existing = textEdits[uri] || (textEdits[uri] = [])
-        existing.push(
-            TextEdit.replace(
-                {
-                    start: document.positionAt(start),
-                    end: document.positionAt(end)
-                },
-                newText
-            )
-        )
+        existing.push(TextEdit.replace(getRange(start, end), newText))
     }
 
-    return textEdits
+    return { changes: textEdits } satisfies WorkspaceEdit
 }
