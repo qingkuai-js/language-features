@@ -164,11 +164,14 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
 }
 
 // 递归遍历qingkuai编译结果的Template Node AST
-export function walk(nodes: TemplateNode[], cb: (node: TemplateNode) => void) {
-    nodes.forEach(node => {
-        cb(node)
+export function walk<T>(nodes: TemplateNode[], cb: (node: TemplateNode) => T | undefined) {
+    for (const node of nodes) {
+        const ret = cb(node)
+        if (ret) {
+            return ret
+        }
         walk(node.children, cb)
-    })
+    }
 }
 
 // 获取未打开的文档的编译结果

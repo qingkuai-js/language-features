@@ -1,4 +1,4 @@
-export const connectSuccess = `The QingKuai language server starts successfully.`
+export const connectSuccess = `QingKuai language server starts successfully.`
 
 export const connectTsPluginServerSuccess = `Connect to typescript-plugin-qingkuai ipc server successfully.`
 

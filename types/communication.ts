@@ -106,12 +106,12 @@ export interface GetCompletionResultEntry {
     labelDetails?: CompletionItemLabelDetails
 }
 
-export type GetCompletionResult = null | {
+export type GetCompletionResult = {
     isIncomplete: boolean
     defaultCommitCharacters: string[]
     defaultRepalcementSpan?: TextSpan
     entries: GetCompletionResultEntry[]
-}
+} | null
 
 export interface InsertSnippetParam {
     text: string
@@ -145,4 +145,17 @@ export interface TSDiagnostic {
     deprecated: boolean
     unnecessary: boolean
     relatedInformation: TSDiagnosticRelatedInformation[]
+}
+
+export type FindDefinitionParams = TPICCommonRequestParams & {
+    preferGoToSourceDefinition: boolean
+}
+
+export type FindDefinitionResult = {
+    definitions: {
+        fileName: string
+        targetRange: NumNum | Range
+        targetSelectionRange?: NumNum | Range
+    }[]
+    range: NumNum
 }

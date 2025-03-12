@@ -3,6 +3,14 @@ import type { TSPluginCreateInfo } from "./types"
 import type { PositionFlagKeys } from "qingkuai/compiler"
 
 import {
+    ts,
+    commandStatus,
+    projectService,
+    openQingkuaiFiles,
+    resolvedQingkuaiModule,
+    session
+} from "./state"
+import {
     getSourceIndex,
     isQingkuaiFileName,
     isPositionFlagSetBySourceIndex,
@@ -18,31 +26,24 @@ import { getDefaultSourceFileByFileName } from "./util/typescript"
 import { getConfigByFileName } from "./server/configuration/method"
 import { isEmptyString, isUndefined } from "../../../shared-util/assert"
 import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
-import {
-    ts,
-    projectService,
-    resolvedQingkuaiModule,
-    openQingkuaiFiles,
-    commandStatus
-} from "./state"
 
 export function proxyTypescriptProjectServiceAndSystemMethods() {
     runAll([
         proxyReadFile,
         proxyGetFileSize,
         proxyEditContent,
+        proxyExecuteCommand,
         proxyCloseClientFile,
         proxyOnConfigFileChanged,
+        proxyRenameSessionHandler,
         proxyUpdateRootAndOptionsOfNonInferredProject
     ])
 }
 
 export function proxyTypescriptLanguageServiceMethods(info: TSPluginCreateInfo) {
-    const { project, languageServiceHost, session } = info
+    const { project, languageServiceHost } = info
     runAll([
-        () => proxyExecuteCommand(session),
         () => proxyGetScriptSnapshot(project),
-        () => proxyRenameSessionHandler(session),
         () => proxyGetScriptKind(languageServiceHost),
         () => proxyGetScriptVersion(languageServiceHost),
         () => proxyResolveModuleNameLiterals(languageServiceHost)
@@ -72,17 +73,7 @@ function proxyReadFile() {
     }
 }
 
-function proxyCloseClientFile() {
-    const closeClientFile = projectService.closeClientFile
-    projectService.closeClientFile = fileName => {
-        if (openQingkuaiFiles.has(fileName)) {
-            return
-        }
-        return closeClientFile.call(projectService, fileName)
-    }
-}
-
-function proxyExecuteCommand(session: TS.server.Session | undefined) {
+function proxyExecuteCommand() {
     if (isUndefined(session)) {
         return
     }
@@ -92,6 +83,16 @@ function proxyExecuteCommand(session: TS.server.Session | undefined) {
         const originalRet = executeCommand.call(session, request)
         commandStatus.get(request.command)?.[1]()
         return originalRet
+    }
+}
+
+function proxyCloseClientFile() {
+    const closeClientFile = projectService.closeClientFile
+    projectService.closeClientFile = fileName => {
+        if (openQingkuaiFiles.has(fileName)) {
+            return
+        }
+        return closeClientFile.call(projectService, fileName)
     }
 }
 
@@ -173,35 +174,7 @@ function proxyEditContent() {
     }
 }
 
-function proxyGetScriptSnapshot(project: TS.server.Project) {
-    if ((project.getScriptSnapshot as any)[HasBeenProxiedByQingKuai]) {
-        return
-    }
-
-    const getScriptSnapshot = project.getScriptSnapshot.bind(project)
-    project.getScriptSnapshot = fileName => {
-        if (!isQingkuaiFileName(fileName)) {
-            return getScriptSnapshot(fileName)
-        }
-
-        if (!fs.existsSync(fileName)) {
-            return undefined
-        }
-
-        const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
-            ts.server.toNormalizedPath(fileName),
-            false
-        )
-        scriptInfo?.attachToProject(project)
-        initialEditQingkuaiFileSnapshot(fileName)
-        return ensureGetSnapshotOfQingkuaiFile(fileName)
-    }
-
-    // @ts-expect-error: attach supplementary property
-    project.getScriptSnapshot[HasBeenProxiedByQingKuai] = true
-}
-
-function proxyRenameSessionHandler(session: TS.server.Session | undefined) {
+function proxyRenameSessionHandler() {
     if (isUndefined(session)) {
         return
     }
@@ -301,6 +274,34 @@ function proxyRenameSessionHandler(session: TS.server.Session | undefined) {
 
     proxiedHandler[HasBeenProxiedByQingKuai] = true
     sessionAny.handlers.set("rename", proxiedHandler)
+}
+
+function proxyGetScriptSnapshot(project: TS.server.Project) {
+    if ((project.getScriptSnapshot as any)[HasBeenProxiedByQingKuai]) {
+        return
+    }
+
+    const getScriptSnapshot = project.getScriptSnapshot.bind(project)
+    project.getScriptSnapshot = fileName => {
+        if (!isQingkuaiFileName(fileName)) {
+            return getScriptSnapshot(fileName)
+        }
+
+        if (!fs.existsSync(fileName)) {
+            return undefined
+        }
+
+        const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
+            ts.server.toNormalizedPath(fileName),
+            false
+        )
+        scriptInfo?.attachToProject(project)
+        initialEditQingkuaiFileSnapshot(fileName)
+        return ensureGetSnapshotOfQingkuaiFile(fileName)
+    }
+
+    // @ts-expect-error: attach supplementary property
+    project.getScriptSnapshot[HasBeenProxiedByQingKuai] = true
 }
 
 // 在typescript源码中的插件启用时机不正确，这里判断出这种情况不调用updateRootAndOptionsOfNonInferredProject

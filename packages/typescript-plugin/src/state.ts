@@ -1,5 +1,5 @@
 import type { QingKuaiSnapShot } from "./snapshot"
-import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams } from "./types"
+import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams, TSSession } from "./types"
 
 import path from "path"
 import { inspect } from "../../../shared-util/log"
@@ -8,6 +8,7 @@ import { defaultParticipant } from "../../../shared-util/ipc/participant"
 export let server = defaultParticipant
 
 export let ts: TS
+export let session: TSSession | undefined
 export let projectService: TSProjectService
 
 // 已打开的文件列表
@@ -31,6 +32,9 @@ export function setState(value: SetStateParams) {
     }
     if (value.server) {
         server = value.server
+    }
+    if (value.session) {
+        session = value.session
     }
     if (value.projectService) {
         projectService = value.projectService

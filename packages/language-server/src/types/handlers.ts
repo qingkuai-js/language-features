@@ -5,7 +5,9 @@ export type RenameHandler = ExtractHandler<"onRenameRequest">
 export type PrepareRename = ExtractHandler<"onPrepareRename">
 export type CompletionHandler = ExtractHandler<"onCompletion">
 export type InitializeHandler = ExtractHandler<"onInitialize">
+export type DefinitionHandler = ExtractHandler<"onDefinition">
 export type FormatHandler = ExtractHandler<"onDocumentFormatting">
+export type SignatureHelpHandler = ExtractHandler<"onSignatureHelp">
 export type ResolveCompletionHandler = ExtractHandler<"onCompletionResolve">
 
 type ExtractHandler<T extends keyof Connection> = Connection[T] extends (...args: any) => any

@@ -13,11 +13,16 @@ export const initialize: InitializeHandler = () => {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             hoverProvider: true,
+            definitionProvider: true,
             renameProvider: {
                 prepareProvider: true
             },
             documentFormattingProvider: {
                 workDoneProgress: true
+            },
+            signatureHelpProvider: {
+                triggerCharacters: ["(", "<", ","],
+                retriggerCharacters: [")"]
             },
             completionProvider: {
                 resolveProvider: true,

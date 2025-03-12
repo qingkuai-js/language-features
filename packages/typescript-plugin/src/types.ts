@@ -23,6 +23,7 @@ export interface QingKuaiFileInfo {
 
 export type SetStateParams = Partial<{
     ts: TS
+    session: TSSession
     server: IpcParticipant
     projectService: Typescript.server.ProjectService
 }>
@@ -39,5 +40,6 @@ export type QingKuaiCommonMessage = typeof commonMessage
 export type QingKuaiDiagnostic = Omit<Diagnostic, "file">
 
 export type TS = typeof Typescript
+export type TSSession = Typescript.server.Session
 export type TSProjectService = Typescript.server.ProjectService
 export type TSPluginCreateInfo = Typescript.server.PluginCreateInfo

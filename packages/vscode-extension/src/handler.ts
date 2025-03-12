@@ -57,6 +57,14 @@ export function attachCustomHandlers(client: LanguageClient) {
         }
     )
 
+    // 获取客户端配置
+    client.onRequest(
+        "qingkuai/getConfiguration",
+        ([languageId, name, defaultValue]: [string, string, any]) => {
+            return vsc.workspace.getConfiguration(languageId).get(name, defaultValue)
+        }
+    )
+
     // 应用工作区更改
     client.onNotification("qingkuai/applyEdit", (param: WorkspaceEdit) => {
         const changes = param.changes!

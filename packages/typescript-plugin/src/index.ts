@@ -19,6 +19,7 @@ export = function init(modules: { typescript: typeof TS }) {
         create(info: TS.server.PluginCreateInfo) {
             if (isUndefined(ts)) {
                 setState({
+                    session: info.session,
                     ts: modules.typescript,
                     projectService: info.project.projectService
                 })

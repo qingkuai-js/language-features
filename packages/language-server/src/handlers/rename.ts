@@ -4,15 +4,14 @@ import type { CachedCompileResultItem } from "../types/service"
 import type { PrepareRename, RenameHandler } from "../types/handlers"
 import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
-import { readFileSync } from "fs"
 import { pathToFileURL } from "url"
 import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
+import { ensureGetTextDocument } from "./document"
 import { TextEdit } from "vscode-languageserver/node"
-import { TextDocument } from "vscode-languageserver-textdocument"
+import { documents, isTestingEnv, tpic, waittingCommands } from "../state"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { documents, isTestingEnv, tempDocuments, tpic, waittingCommands } from "../state"
 
 export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
     const document = documents.get(textDocument.uri)
@@ -146,20 +145,8 @@ async function doScriptBlockRename(
             continue
         }
 
-        let document = documents.get(uri) || tempDocuments.get(uri)
-        if (!document) {
-            tempDocuments.set(
-                uri,
-                (document = TextDocument.create(
-                    uri,
-                    "qingkuai",
-                    1,
-                    readFileSync(item.fileName, "utf-8")
-                ))
-            )
-        }
-
         let [start, end] = item.range!
+        const document = ensureGetTextDocument(uri)
         const cr = await getCompileRes(document, false)
         const prettierConfig = cr.config.prettierConfig
         const { isPositionFlagSet, getRange, templateNodes } = cr
@@ -173,13 +160,12 @@ async function doScriptBlockRename(
                 findTagRanges(currentNode, start + 1, true).forEach(range => {
                     const useKebab = prettierConfig.componentTagFormatPreference === "kebab"
                     if (range) {
-                        range &&
-                            existing.push(
-                                TextEdit.replace(
-                                    getRange(...range),
-                                    useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
-                                )
+                        existing.push(
+                            TextEdit.replace(
+                                getRange(...range),
+                                useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
                             )
+                        )
                     }
                 })
                 continue
