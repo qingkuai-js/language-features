@@ -1,4 +1,4 @@
-import path from "path"
+import path from "node:path"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { QingkuaiConfiguration, QingkuaiConfigurationWithDir } from "../../../../../types/common"
 

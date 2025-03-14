@@ -7,7 +7,7 @@ import type {
 } from "typescript"
 import type TS from "typescript"
 
-import path from "path"
+import path from "node:path"
 import { projectService, ts } from "../state"
 import { excludeProperty } from "../../../../shared-util/sundry"
 import { isString, isUndefined } from "../../../../shared-util/assert"

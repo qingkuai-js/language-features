@@ -16,7 +16,7 @@ import {
     convertDisplayPartsToPlainTextWithLink
 } from "../util/typescript"
 import { server, ts } from "../state"
-import { scriptExensions } from "../constant"
+import { SCRIPT_EXTENSIONS } from "../constant"
 import { isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
@@ -167,7 +167,7 @@ function getScriptKindDetails(entry: CompletionEntry) {
     }
 
     const kindModifiers = parseKindModifier(entry.kindModifiers)
-    for (const extModifier of scriptExensions) {
+    for (const extModifier of SCRIPT_EXTENSIONS) {
         if (kindModifiers.has(extModifier)) {
             if (entry.name.toLowerCase().endsWith(extModifier)) {
                 return entry.name

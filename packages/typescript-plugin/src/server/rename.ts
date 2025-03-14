@@ -2,17 +2,13 @@ import type { NumNum } from "../../../../types/common"
 import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
 import {
-    getSourceIndex,
-    isQingkuaiFileName,
-    ensureGetSnapshotOfQingkuaiFile
-} from "../util/qingkuai"
-import {
-    isFileOpening,
     getUserPreferencesByFileName,
     getDefaultSourceFileByFileName,
     getDefaultLanguageServiceByFileName
 } from "../util/typescript"
-import { projectService, server, ts } from "../state"
+import { server, ts } from "../state"
+import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { getSourceIndex, ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
 
 export function attachPrepareRename() {
     server.onRequest<TPICCommonRequestParams, NumNum>("prepareRename", ({ fileName, pos }) => {

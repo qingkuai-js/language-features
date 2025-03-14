@@ -5,14 +5,14 @@ import {
     proxyTypescriptLanguageServiceMethods,
     proxyTypescriptProjectServiceAndSystemMethods
 } from "./proxy"
-import fs from "fs"
-import { isUndefined } from "../../../shared-util/assert"
+import fs from "node:fs"
 import { attachLanguageServerIPCHandlers } from "./server"
+import { ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { ts, setState, typeRefStatement, projectService } from "./state"
 import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
-import { ensureGetSnapshotOfQingkuaiFile, isQingkuaiFileName } from "./util/qingkuai"
+import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {

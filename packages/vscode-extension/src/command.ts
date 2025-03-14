@@ -1,6 +1,6 @@
 import type { OpenFileParams } from "../../../types/common"
 
-import fs from "fs"
+import fs from "node:fs"
 import * as vsc from "vscode"
 
 export class QingkuaiCommands {

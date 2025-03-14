@@ -6,6 +6,7 @@ import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
+import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 import { connection, documents, isTestingEnv, tpic, waittingCommands } from "../state"
 
@@ -63,7 +64,7 @@ export const publishDiagnostics = debounce(
             const se = getSourceIndex(item.start + item.length, true)
             const relatedInformation: DiagnosticRelatedInformation[] = []
 
-            if (isSourceIndexesIvalid(ss, se)) {
+            if (isSourceIndexesInvalid(ss, se)) {
                 continue
             }
 
@@ -80,7 +81,7 @@ export const publishDiagnostics = debounce(
                     const cr = await getCompileResByPath(relatedInfo.filePath)
                     const rss = cr.getSourceIndex(relatedInfo.start)
                     const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length, true)
-                    if (isSourceIndexesIvalid(rss, rse)) {
+                    if (isSourceIndexesInvalid(rss, rse)) {
                         continue
                     }
                     range = cr.getRange(rss, rse)
@@ -147,11 +148,4 @@ function transTsDiagnosticSeverity(n: number) {
         default:
             return DiagnosticSeverity.Information
     }
-}
-
-// 检查传入的源码索引是否是无效的
-function isSourceIndexesIvalid(...items: (number | undefined)[]) {
-    return items.some(item => {
-        return isUndefined(item) || item === -1
-    })
 }

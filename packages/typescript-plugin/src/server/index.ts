@@ -1,6 +1,7 @@
 import { attachHoverTip } from "./hover"
 import { attachWaitCommand } from "./command"
 import { attachGetCompletion } from "./complete"
+import { attachFindReference } from "./reference"
 import { attachFindDefinition } from "./definition"
 import { attachGetSignatureHelp } from "./signature"
 import { runAll } from "../../../../shared-util/sundry"
@@ -15,6 +16,7 @@ export function attachLanguageServerIPCHandlers() {
         attachHoverTip,
         attachWaitCommand,
         attachChangeConfig,
+        attachFindReference,
         attachGetDiagnostic,
         attachPrepareRename,
         attachGetCompletion,

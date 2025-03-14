@@ -49,9 +49,9 @@ import {
     bannedIdentifierFormatRE,
     existingTopScopeIdentifierRE
 } from "../../regular"
-import path from "path"
-import assert from "assert"
-import { compilerFuncs } from "../../constant"
+import path from "node:path"
+import assert from "node:assert"
+import { COMPILER_FUNCS } from "../../constant"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { getConfigByFileName } from "../configuration/method"
@@ -306,7 +306,7 @@ export function updateQingkuaiSnapshot(
         if (
             ts.isCallExpression(node) &&
             ts.isIdentifier(node.expression) &&
-            compilerFuncs.has(node.expression.text) &&
+            COMPILER_FUNCS.has(node.expression.text) &&
             isDeclarationOfGlobalType(typeChecker.getSymbolAtLocation(node.expression))
         ) {
             const funcName = node.expression.text
@@ -555,7 +555,7 @@ function getComponentAttributes(componentFileName: string) {
             type.getProperties().forEach(property => {
                 const stringCandidates: string[] = []
                 const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
-                
+
                 if (propertyType.isUnion()) {
                     propertyType.types.forEach(t => {
                         if (t.flags & ts.TypeFlags.StringLiteral) {

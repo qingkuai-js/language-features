@@ -1,41 +1,37 @@
 import type TS from "typescript"
-import type { TSPluginCreateInfo } from "./types"
-import type { PositionFlagKeys } from "qingkuai/compiler"
+import type { ConvertProtocolTextSpanWithContextVerifier, TSPluginCreateInfo } from "./types"
 
 import {
     ts,
+    session,
     commandStatus,
     projectService,
     openQingkuaiFiles,
-    resolvedQingkuaiModule,
-    session
+    resolvedQingkuaiModule
 } from "./state"
-import {
-    getSourceIndex,
-    isQingkuaiFileName,
-    isPositionFlagSetBySourceIndex,
-    ensureGetSnapshotOfQingkuaiFile
-} from "./util/qingkuai"
-import fs from "fs"
-import path from "path"
-import assert from "assert"
+import fs from "node:fs"
+import path from "node:path"
 import { runAll } from "../../../shared-util/sundry"
-import { HasBeenProxiedByQingKuai } from "./constant"
+import { HAS_BEEN_PROXIED_BY_QINGKUAI } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
-import { getDefaultSourceFileByFileName } from "./util/typescript"
 import { getConfigByFileName } from "./server/configuration/method"
-import { isEmptyString, isUndefined } from "../../../shared-util/assert"
 import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
+import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
+import { convertProtocolDefinitions, convertProtocolTextSpanWithContext } from "./util/protocol"
+import { isPositionFlagSetBySourceIndex, ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 
 export function proxyTypescriptProjectServiceAndSystemMethods() {
     runAll([
         proxyReadFile,
         proxyGetFileSize,
         proxyEditContent,
+        proxyGetReferences,
         proxyExecuteCommand,
         proxyCloseClientFile,
         proxyOnConfigFileChanged,
         proxyRenameSessionHandler,
+        proxyFindSourceDefinition,
+        proxyGetDefinitionAndBoundSpan,
         proxyUpdateRootAndOptionsOfNonInferredProject
     ])
 }
@@ -98,8 +94,7 @@ function proxyCloseClientFile() {
 
 function proxyGetScriptKind(languageServiceHost: TS.LanguageServiceHost) {
     const getScriptKind = languageServiceHost.getScriptKind
-
-    if (isUndefined(getScriptKind)) {
+    if (isUndefined(getScriptKind) || (getScriptKind as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
 
@@ -110,18 +105,26 @@ function proxyGetScriptKind(languageServiceHost: TS.LanguageServiceHost) {
 
         return ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
     }
+
+    // @ts-expect-error: attach supplementary property
+    languageServiceHost.getScriptKind[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 function proxyGetScriptVersion(languageServiceHost: TS.LanguageServiceHost) {
     const getScriptVersion = languageServiceHost.getScriptVersion
+    if ((getScriptVersion as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
 
     languageServiceHost.getScriptVersion = fileName => {
         if (!isQingkuaiFileName(fileName)) {
             return getScriptVersion.call(languageServiceHost, fileName)
         }
-
         return ensureGetSnapshotOfQingkuaiFile(fileName).version.toString()
     }
+
+    // @ts-expect-error: attach supplementary property
+    languageServiceHost.getScriptVersion[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 function proxyOnConfigFileChanged() {
@@ -137,6 +140,60 @@ function proxyOnConfigFileChanged() {
     }
 }
 
+function proxyGetReferences() {
+    const sessionAny = session as any
+    const getReferences = sessionAny.getReferences
+    if (!session || getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
+
+    sessionAny.getReferences = (...args: any) => {
+        const dealtRefs: any[] = []
+        const originalRet = getReferences.call(session, ...args)
+        for (let i = 0; i < (originalRet.refs?.length || 0); i++) {
+            const ref: TS.server.protocol.FileSpan = originalRet.refs[i]
+            const convertRes = convertProtocolTextSpanWithContext(ref.file, ref)
+            convertRes && dealtRefs.push({ ...ref, ...convertRes })
+        }
+        return (originalRet.refs = dealtRefs), originalRet
+    }
+
+    // @ts-expect-error: attach supplementary property
+    session.getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+}
+
+function proxyGetDefinitionAndBoundSpan() {
+    const sessionAny = session as any
+    const getDefinitionAndBoundSpan = sessionAny?.getDefinitionAndBoundSpan
+    if (!session || getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
+
+    sessionAny.getDefinitionAndBoundSpan = (...args: any) => {
+        const originalRet = getDefinitionAndBoundSpan.call(session, ...args)
+        return convertProtocolDefinitions(originalRet.definitions), originalRet
+    }
+
+    // @ts-expect-error: attach supplementary property
+    session.getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+}
+
+function proxyFindSourceDefinition() {
+    const sessionAny = session as any
+    const findSourceDefinition = sessionAny.findSourceDefinition
+    if (!session || findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
+
+    sessionAny.findSourceDefinition = (...args: any) => {
+        const originalRet = findSourceDefinition.call(session, ...args)
+        return convertProtocolDefinitions(originalRet), originalRet
+    }
+
+    // @ts-expect-error: attach supplementary property
+    session.findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+}
+
 // 代理文件编辑，非qk文件修改时应刷新qk文件的诊断信息
 function proxyEditContent() {
     const getScriptInfo = projectService.getScriptInfo.bind(projectService)
@@ -146,7 +203,7 @@ function proxyEditContent() {
         if (
             scriptInfo &&
             !isQingkuaiFileName(fileName) &&
-            !(scriptInfo.editContent as any)[HasBeenProxiedByQingKuai]
+            !(scriptInfo.editContent as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]
         ) {
             const editContent = scriptInfo.editContent.bind(scriptInfo)
             scriptInfo.editContent = (start, end, newText) => {
@@ -167,7 +224,7 @@ function proxyEditContent() {
             }
 
             // @ts-expect-error: attach supplementary property
-            scriptInfo.editContent[HasBeenProxiedByQingKuai] = true
+            scriptInfo.editContent[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
         }
 
         return scriptInfo
@@ -181,7 +238,7 @@ function proxyRenameSessionHandler() {
 
     const sessionAny = session as any
     const originalHandler = sessionAny.handlers.get("rename")
-    if (originalHandler[HasBeenProxiedByQingKuai]) {
+    if (originalHandler[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
 
@@ -200,69 +257,33 @@ function proxyRenameSessionHandler() {
             }
 
             const dealtLocs: any[] = []
-            const sourceFile = getDefaultSourceFileByFileName(file)
-            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(file)
-            assert(!!sourceFile)
-
-            const checkPositionFlag = (pos: number, key: PositionFlagKeys) => {
-                return isPositionFlagSetBySourceIndex(qingkuaiSnapshot, pos, key)
-            }
-
-            const getSourcePos = (line: number, character: number, isEnd = false) => {
-                const interIndex = ts.getPositionOfLineAndCharacter(
-                    sourceFile,
-                    line - 1,
-                    character - 1
-                )
-                return getSourceIndex(qingkuaiSnapshot, interIndex, isEnd)
-            }
-
-            locs.forEach((loc: any) => {
-                const startPos = getSourcePos(loc.start.line, loc.start.offset)
-                const endPos = getSourcePos(loc.end.line, loc.end.offset, true)
-                const ctxStartPos = getSourcePos(loc.contextStart.line, loc.contextStart.offset)
-                const ctxEndPos = getSourcePos(loc.contextEnd.line, loc.contextEnd.offset, true)
-
-                // prettier-ignore
-                if (
-                    !endPos ||
-                    !startPos ||
-                    !ctxEndPos ||
-                    !ctxStartPos ||
-                    startPos === -1 ||
-                    endPos === -1 ||
-                    ctxEndPos === -1 ||
-                    ctxStartPos === -1 ||
-                    (
-                        !checkPositionFlag(startPos, "inScript") &&
-                        !checkPositionFlag(startPos, "isAttributeStart")
+            for (let i = 0, delta = 0; i < locs.length; i++) {
+                const verifier: ConvertProtocolTextSpanWithContextVerifier = (
+                    index,
+                    snapshot,
+                    itemKind
+                ) => {
+                    if (itemKind !== "start") {
+                        return true
+                    }
+                    delta = +isPositionFlagSetBySourceIndex(
+                        snapshot,
+                        index,
+                        "isInterpolationAttributeStart"
                     )
-                ) {
-                    return
+                    return (
+                        isPositionFlagSetBySourceIndex(snapshot, index, "inScript") ||
+                        isPositionFlagSetBySourceIndex(snapshot, index, "isAttributeStart")
+                    )
                 }
 
-                const delta = +checkPositionFlag(startPos, "isInterpolationAttributeStart")
-                dealtLocs.push({
-                    start: {
-                        line: qingkuaiSnapshot.positions[startPos].line,
-                        offset: qingkuaiSnapshot.positions[startPos].column + 1 + delta
-                    },
-                    end: {
-                        line: qingkuaiSnapshot.positions[endPos].line,
-                        offset: qingkuaiSnapshot.positions[endPos].column + 1
-                    }
-
-                    // unnecessary
-                    // contextStart: {
-                    //     line: qingkuaiSnapshot.positions[ctxStartPos].line,
-                    //     offset: qingkuaiSnapshot.positions[ctxStartPos].column
-                    // },
-                    // contextEnd: {
-                    //     line: qingkuaiSnapshot.positions[ctxEndPos].line,
-                    //     offset: qingkuaiSnapshot.positions[ctxEndPos].column
-                    // }
-                })
-            })
+                const convertRes = convertProtocolTextSpanWithContext(file, locs[i], verifier)
+                if (!convertRes) {
+                    continue
+                }
+                dealtLocs.push(convertRes)
+                convertRes.start.offset += delta
+            }
             dealtLocs.length && retLocs.push({ file, locs: dealtLocs })
         }
 
@@ -272,19 +293,19 @@ function proxyRenameSessionHandler() {
         }
     }
 
-    proxiedHandler[HasBeenProxiedByQingKuai] = true
+    proxiedHandler[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
     sessionAny.handlers.set("rename", proxiedHandler)
 }
 
 function proxyGetScriptSnapshot(project: TS.server.Project) {
-    if ((project.getScriptSnapshot as any)[HasBeenProxiedByQingKuai]) {
+    const getScriptSnapshot = project.getScriptSnapshot
+    if ((getScriptSnapshot as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
 
-    const getScriptSnapshot = project.getScriptSnapshot.bind(project)
     project.getScriptSnapshot = fileName => {
         if (!isQingkuaiFileName(fileName)) {
-            return getScriptSnapshot(fileName)
+            return getScriptSnapshot.call(project, fileName)
         }
 
         if (!fs.existsSync(fileName)) {
@@ -301,7 +322,7 @@ function proxyGetScriptSnapshot(project: TS.server.Project) {
     }
 
     // @ts-expect-error: attach supplementary property
-    project.getScriptSnapshot[HasBeenProxiedByQingKuai] = true
+    project.getScriptSnapshot[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 // 在typescript源码中的插件启用时机不正确，这里判断出这种情况不调用updateRootAndOptionsOfNonInferredProject
@@ -326,7 +347,7 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
     if (
         isUndefined(resolveModuleLiterals) ||
         // @ts-expect-error: access supplementary property
-        languageServiceHost.resolveModuleNameLiterals[HasBeenProxiedByQingKuai]
+        languageServiceHost.resolveModuleNameLiterals[HAS_BEEN_PROXIED_BY_QINGKUAI]
     ) {
         return
     }
@@ -372,5 +393,5 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
     }
 
     // @ts-expect-error: attach supplementary property
-    languageServiceHost.resolveModuleNameLiterals[HasBeenProxiedByQingKuai] = true
+    languageServiceHost.resolveModuleNameLiterals[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }

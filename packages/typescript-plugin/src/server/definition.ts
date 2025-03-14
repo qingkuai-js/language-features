@@ -1,11 +1,23 @@
+import type {
+    FindDefinitionParams,
+    TPICCommonRequestParams,
+    FindDefinitionResultItem
+} from "../../../../types/communication"
 import type TS from "typescript"
 import type { NumNum } from "../../../../types/common"
 import type { Range } from "vscode-languageserver/node"
-import type { FindDefinitionParams } from "../../../../types/communication"
 
+import {
+    convertProtocolTextSpanToRange,
+    convertProtocolTextSpanWithContext
+} from "../util/protocol"
+import {
+    getDefaultSourceFileByFileName,
+    getDefaultLanguageServiceByFileName
+} from "../util/typescript"
 import { server, session, ts } from "../state"
-import { isQingkuaiFileName } from "../util/qingkuai"
-import { getDefaultSourceFileByFileName } from "../util/typescript"
+import { convertTextSpanToRange } from "../util/service"
+import { DEFAULT_RANGE } from "../../../../shared-util/constant"
 
 export function attachFindDefinition() {
     server.onRequest<FindDefinitionParams>(
@@ -49,51 +61,61 @@ export function attachFindDefinition() {
                 )
             ]
 
-            const dealtDefinitions = definitions.map((item: any) => {
-                const range = getRnageByFileName(item.file, item.start, item.end)
-                if (item.contextStart && item.contextEnd) {
+            // 这里可以直接使用 convertProtocolTextSpanWithContext 解决
+            const dealtDefinitions = definitions.map(
+                (item: TS.server.protocol.FileSpanWithContext) => {
+                    const range = convertProtocolTextSpanToRange(item)
+                    if (item.contextStart && item.contextEnd) {
+                        const contextRange = convertProtocolTextSpanToRange({
+                            start: item.contextStart,
+                            end: item.contextEnd
+                        })
+                        return {
+                            fileName: item.file,
+                            targetRange: contextRange,
+                            targetSelectionRange: range
+                        }
+                    }
                     return {
                         fileName: item.file,
-                        targetRange: getRnageByFileName(
-                            item.file,
-                            item.contextStart,
-                            item.contextEnd
-                        ),
+                        targetRange: range,
                         targetSelectionRange: range
                     }
                 }
-                return {
-                    fileName: item.file,
-                    targetRange: range
-                }
-            })
+            )
 
             return { range: originRange, definitions: dealtDefinitions }
         }
     )
-}
 
-export function getRnageByFileName(
-    fileName: string,
-    start: TS.server.protocol.Location,
-    end: TS.server.protocol.Location
-): NumNum | Range {
-    if (!isQingkuaiFileName(fileName)) {
-        return {
-            start: {
-                line: start.line - 1,
-                character: start.offset - 1
-            },
-            end: {
-                line: end.line - 1,
-                character: end.offset - 1
+    server.onRequest<TPICCommonRequestParams, FindDefinitionResultItem[] | null>(
+        "findTypeDefinition",
+        ({ fileName, pos }) => {
+            const languageService = getDefaultLanguageServiceByFileName(fileName)
+            const definitions = languageService?.getTypeDefinitionAtPosition(fileName, pos)
+            if (!definitions?.length) {
+                return null
             }
-        }
-    }
 
-    const sourceFile = getDefaultSourceFileByFileName(fileName)!
-    return [
-        sourceFile.getPositionOfLineAndCharacter(start.line - 1, start.offset - 1),
-        sourceFile.getPositionOfLineAndCharacter(end.line - 1, end.offset - 1)
-    ]
+            return definitions.map(definition => {
+                const range =
+                    convertTextSpanToRange(definition.fileName, definition.textSpan) ||
+                    DEFAULT_RANGE
+
+                let contextRange: Range | undefined = undefined
+                if (definition.contextSpan) {
+                    contextRange = convertTextSpanToRange(
+                        definition.fileName,
+                        definition.contextSpan
+                    )
+                }
+
+                return {
+                    fileName: definition.fileName,
+                    targetRange: range,
+                    targetSelectionRange: contextRange || range
+                }
+            })
+        }
+    )
 }

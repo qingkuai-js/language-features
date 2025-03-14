@@ -51,3 +51,10 @@ export function compressPositionFlags(positions: ASTPositionWithFlag[]) {
     }
     return compressed
 }
+
+// 检查传入的源码索引是否是无效的
+export function isSourceIndexesInvalid(...items: (number | undefined)[]) {
+    return items.some(item => {
+        return !item || item === -1
+    })
+}

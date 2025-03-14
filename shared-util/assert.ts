@@ -33,3 +33,7 @@ export function isPromise(v: any): v is Promise<any> {
 export function isBoolean(v: any): v is boolean {
     return typeof v === "boolean"
 }
+
+export function isQingkuaiFileName(fileName: string) {
+    return fileName.endsWith(".qk")
+}

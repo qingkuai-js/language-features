@@ -1,4 +1,4 @@
-import path from "path"
+import path from "node:path"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
 // JSON.stringify别名

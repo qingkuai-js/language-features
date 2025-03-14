@@ -5,7 +5,7 @@ import type {
 import type { DiagnosticKind } from "../../types"
 import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
-import { OriSourceFile } from "../../constant"
+import { ORI_SOURCE_FILE } from "../../constant"
 import { isString, isUndefined } from "../../../../../shared-util/assert"
 import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
 
@@ -43,7 +43,7 @@ export function attachGetDiagnostic() {
 
                 const getRange = (offset: number) => {
                     // @ts-expect-error: access additional custom property
-                    const sourceFile: SourceFile = ri.file[OriSourceFile] ?? ri.file
+                    const sourceFile: SourceFile = ri.file[ORI_SOURCE_FILE] ?? ri.file
                     return sourceFile.getLineAndCharacterOfPosition(offset)
                 }
 

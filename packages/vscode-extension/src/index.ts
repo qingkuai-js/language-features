@@ -1,6 +1,5 @@
 import type { ExtensionContext } from "vscode"
 
-import * as vsc from "vscode"
 import {
     getInitQingkuaiConfig,
     startPrettierConfigWatcher,
@@ -12,6 +11,7 @@ import {
     LanguageClient,
     LanguageClientOptions
 } from "vscode-languageclient/node"
+import * as vsc from "vscode"
 import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"

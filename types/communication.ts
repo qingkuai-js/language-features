@@ -74,6 +74,22 @@ export interface ResolveCompletionParams {
     ori?: CompletionEntryData
 }
 
+export interface FindReferenceResultItem {
+    fileName: string
+    range: Range
+}
+
+export interface FindDefinitionResultItem {
+    fileName: string
+    targetRange: Range
+    targetSelectionRange: Range
+}
+
+export interface FindDefinitionResult {
+    range: NumNum
+    definitions: FindDefinitionResultItem[]
+}
+
 export interface ResolveCompletionTextEdit {
     start: number
     end: number
@@ -149,13 +165,4 @@ export interface TSDiagnostic {
 
 export type FindDefinitionParams = TPICCommonRequestParams & {
     preferGoToSourceDefinition: boolean
-}
-
-export type FindDefinitionResult = {
-    definitions: {
-        fileName: string
-        targetRange: NumNum | Range
-        targetSelectionRange?: NumNum | Range
-    }[]
-    range: NumNum
 }

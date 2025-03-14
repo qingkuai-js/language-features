@@ -1,8 +1,9 @@
 import type Typescript from "typescript"
-import type { OriSourceFile } from "./constant"
-import type { Diagnostic, SourceFile, Type } from "typescript"
+import type { ORI_SOURCE_FILE } from "./constant"
+import type { QingKuaiSnapShot } from "./snapshot"
+import type { Diagnostic, SourceFile } from "typescript"
 import type { commonMessage, SlotInfo } from "qingkuai/compiler"
-import { IpcParticipant } from "../../../shared-util/ipc/types"
+import type { IpcParticipant } from "../../../shared-util/ipc/types"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -33,8 +34,14 @@ export type RelatedInfoFile =
     | undefined
     | {
           fileName: string
-          [OriSourceFile]: SourceFile
+          [ORI_SOURCE_FILE]: SourceFile
       }
+
+export type ConvertProtocolTextSpanWithContextVerifier = (
+    sourceIndex: number,
+    qingkuaiSnapshot: QingKuaiSnapShot,
+    itemKind: "start" | "end" | "contextStart" | "contextEnd"
+) => boolean
 
 export type QingKuaiCommonMessage = typeof commonMessage
 export type QingKuaiDiagnostic = Omit<Diagnostic, "file">

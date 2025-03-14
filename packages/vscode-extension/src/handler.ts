@@ -1,7 +1,7 @@
 import type { LanguageClient, WorkspaceEdit } from "vscode-languageclient/node"
 import type { GetClientConfigParams, InsertSnippetParam } from "../../../types/communication"
 
-import fs from "fs"
+import fs from "node:fs"
 import * as vsc from "vscode"
 import { isUndefined } from "../../../shared-util/assert"
 import { getExtensionConfig, getPrettierConfig, getTypescriptConfig } from "./config"

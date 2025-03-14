@@ -1,8 +1,8 @@
 import type TS from "typescript"
 import { QingKuaiSnapShot } from "../snapshot"
 
-import fs from "fs"
-import assert from "assert"
+import fs from "node:fs"
+import assert from "node:assert"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
 import { compile, PositionFlag, PositionFlagKeys } from "qingkuai/compiler"
 import { ts, typeRefStatement, resolvedQingkuaiModule, snapshotCache } from "../state"
@@ -41,10 +41,6 @@ export function isPositionFlagSetByInterIndex(
         return false
     }
     return isPositionFlagSetBySourceIndex(snapshot, sourceIndex, key)
-}
-
-export function isQingkuaiFileName(fileName: string) {
-    return fileName.endsWith(".qk")
 }
 
 export function compileQingkuaiFileToInterCode(fileName: string) {

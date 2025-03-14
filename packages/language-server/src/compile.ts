@@ -13,8 +13,8 @@ import {
     compressPositionFlags,
     getScriptKindKey
 } from "../../../shared-util/qingkuai"
-import { readFileSync } from "fs"
-import { fileURLToPath } from "url"
+import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
@@ -170,7 +170,7 @@ export function walk<T>(nodes: TemplateNode[], cb: (node: TemplateNode) => T | u
         if (ret) {
             return ret
         }
-        walk(node.children, cb)
+        node.children.length && walk(node.children, cb)
     }
 }
 

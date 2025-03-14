@@ -1,5 +1,4 @@
 import {
-    isQingkuaiFileName,
     compileQingkuaiFileToInterCode,
     ensureGetSnapshotOfQingkuaiFile
 } from "../../util/qingkuai"
@@ -7,8 +6,8 @@ import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
 import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
-import { isUndefined } from "../../../../../shared-util/assert"
 import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
+import { isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
 import { getContainingProjectsByFileName, isFileOpening } from "../../util/typescript"
 
 // 刷新引用文件的诊断信息，如果目标文件是.qk文件，则通知qingkuai语言服务器重新推送诊断信息，第二个参数用于

@@ -1,7 +1,7 @@
 import type { QingKuaiSnapShot } from "./snapshot"
 import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams, TSSession } from "./types"
 
-import path from "path"
+import path from "node:path"
 import { inspect } from "../../../shared-util/log"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
 

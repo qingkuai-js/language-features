@@ -4,7 +4,7 @@ import type {
 } from "../../../../../types/common"
 import type { ConfigureFileParams } from "../../../../../types/communication"
 
-import path from "path"
+import path from "node:path"
 import { relativePathRE } from "../../regular"
 import { projectService, server, ts } from "../../state"
 import { refreshDiagnostics } from "../diagnostic/refresh"

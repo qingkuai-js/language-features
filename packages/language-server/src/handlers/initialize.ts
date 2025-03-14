@@ -13,7 +13,9 @@ export const initialize: InitializeHandler = () => {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             hoverProvider: true,
+            referencesProvider:true,
             definitionProvider: true,
+            typeDefinitionProvider: true,
             renameProvider: {
                 prepareProvider: true
             },

@@ -1,14 +1,17 @@
-import type { DefinitionHandler } from "../types/handlers"
-import type { LocationLink, Position, Range } from "vscode-languageserver"
-import type { FindDefinitionParams, FindDefinitionResult } from "../../../../types/communication"
+import type {
+    FindDefinitionParams,
+    FindDefinitionResult,
+    TPICCommonRequestParams,
+    FindDefinitionResultItem
+} from "../../../../types/communication"
+import type { LocationLink, Range } from "vscode-languageserver/node"
+import type { DefinitionHandler, TypeDefinitionHandler } from "../types/handlers"
 
-import { resolve } from "path"
-import { pathToFileURL } from "url"
+import { resolve } from "node:path"
 import { getCompileRes, walk } from "../compile"
 import { NumNum } from "../../../../types/common"
 import { ensureGetTextDocument } from "./document"
 import { connection, documents, tpic } from "../state"
-import { isArray } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const findDefinition: DefinitionHandler = async ({ textDocument, position }, token) => {
@@ -19,12 +22,12 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
 
     const cr = await getCompileRes(document)
     const offset = document.offsetAt(position)
-    const { interIndexMap, isPositionFlagSet, templateNodes, getRange, getSourceIndex } = cr
+    const { interIndexMap, getRange, getSourceIndex } = cr
 
     let interIndex = interIndexMap.stoi[offset]
     let originSelectionRange: Range | undefined = undefined
-    if (!isPositionFlagSet(offset, "inScript")) {
-        const currentNode = findNodeAt(templateNodes, offset)
+    if (!cr.isPositionFlagSet(offset, "inScript")) {
+        const currentNode = findNodeAt(cr.templateNodes, offset)
         if (!currentNode || !(currentNode.componentTag || currentNode.parent?.componentTag)) {
             return null
         }
@@ -81,7 +84,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
         ]
     )
 
-    const res = await tpic.sendRequest<FindDefinitionParams, FindDefinitionResult | null>(
+    const res: FindDefinitionResult | null = await tpic.sendRequest<FindDefinitionParams>(
         "findDefinition",
         {
             pos: interIndex,
@@ -89,7 +92,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
             preferGoToSourceDefinition
         }
     )
-    if (!res) {
+    if (!res?.definitions.length) {
         return null
     }
 
@@ -100,49 +103,48 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
         )
     }
 
-    const locationLinks: LocationLink[] = []
-    const defaultPosition: Position = { line: 0, character: 0 }
-    const defaultRange: Range = { start: defaultPosition, end: defaultPosition }
-    for (const definition of res.definitions) {
-        let targetRange: Range
-        let targetSelectionRange: Range | undefined = undefined
-        if (!isArray(definition.targetRange)) {
-            targetRange = definition.targetRange
-            targetSelectionRange = definition.targetSelectionRange as any
-        } else {
-            const document = ensureGetTextDocument(pathToFileURL(definition.fileName).toString())
-            const { getRange, getSourceIndex } = await getCompileRes(document)
-            const ss1 = getSourceIndex(definition.targetRange[0])
-            const se1 = getSourceIndex(definition.targetRange[1], true)
-            if (!ss1 || !se1 || ss1 === -1 || se1 === -1) {
-                targetRange = defaultRange
-            } else {
-                targetRange = getRange(ss1, se1)
-            }
-
-            if (definition.targetSelectionRange) {
-                const ss2 = getSourceIndex((definition.targetSelectionRange as NumNum)[0])
-                const se2 = getSourceIndex((definition.targetSelectionRange as NumNum)[1], true)
-                if (!ss2 || !se2 || ss2 === -1 || se2 === -1) {
-                    targetSelectionRange = defaultRange
-                } else {
-                    targetSelectionRange = getRange(ss2, se2)
-                }
-            }
-        }
-
-        if (!targetSelectionRange) {
-            targetSelectionRange = targetRange
-        }
-
-        locationLinks.push({
-            targetRange,
-            targetSelectionRange,
+    return res.definitions.map(item => {
+        return {
             originSelectionRange,
-            targetUri: `file://${definition.fileName}`
-        })
+            targetUri: `file://${item.fileName}`,
+            targetRange: item.targetRange,
+            targetSelectionRange: item.targetSelectionRange
+        }
+    })
+}
+
+export const findTypeDefinition: TypeDefinitionHandler = async (
+    { textDocument, position },
+    token
+) => {
+    const document = documents.get(textDocument.uri)
+    if (!document || token.isCancellationRequested) {
+        return null
     }
-    return locationLinks
+
+    const cr = await getCompileRes(document)
+    const offset = document.offsetAt(position)
+    if (!cr.isPositionFlagSet(offset, "inScript")) {
+        return null
+    }
+
+    const definitions: FindDefinitionResultItem[] | null =
+        await tpic.sendRequest<TPICCommonRequestParams>("findTypeDefinition", {
+            fileName: cr.filePath,
+            pos: cr.interIndexMap.stoi[offset]
+        })
+
+    if (!definitions?.length) {
+        return null
+    }
+
+    return definitions.map(item => {
+        return {
+            targetRange: item.targetRange,
+            targetUri: `file://${item.fileName}`,
+            targetSelectionRange: item.targetSelectionRange
+        }
+    })
 }
 
 async function getComponentSlotDefinition(
