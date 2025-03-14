@@ -5,17 +5,19 @@ import type {
 import type { DiagnosticKind } from "../../types"
 import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
-import { OriSourceFile } from "../../constant"
+import { ORI_SOURCE_FILE } from "../../constant"
 import { isString, isUndefined } from "../../../../../shared-util/assert"
-import { getMappingFileInfo, isMappingFileName } from "../content/document"
-import { ts, server, projectService, languageService, qingkuaiDiagnostics } from "../../state"
+import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
 
 export function attachGetDiagnostic() {
     server.onRequest<string, TSDiagnostic[]>("getDiagnostic", fileName => {
-        const mappingFileInfo = getMappingFileInfo(fileName)!
-        const mappingFileName = mappingFileInfo.mappingFileName
+        const project = projectService.getDefaultProjectForFile(
+            ts.server.toNormalizedPath(fileName),
+            false
+        )!
+        const languageService = project.getLanguageService()
         const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
-        const oriDiagnostics = Array.from(qingkuaiDiagnostics.get(mappingFileName) || [])
+        const oriDiagnostics = Array.from(qingkuaiDiagnostics.get(fileName) || [])
 
         // Semtic模式下进行全部诊断，PartialSemantic/Syntactic模式下只进行语法检查
         if (projectService.serverMode === ts.LanguageServiceMode.Semantic) {
@@ -23,7 +25,7 @@ export function attachGetDiagnostic() {
         }
 
         diagnosticMethods.forEach(m => {
-            oriDiagnostics.push(...languageService[m](mappingFileName))
+            oriDiagnostics.push(...languageService[m](fileName))
         })
 
         return oriDiagnostics.map(item => {
@@ -41,12 +43,12 @@ export function attachGetDiagnostic() {
 
                 const getRange = (offset: number) => {
                     // @ts-expect-error: access additional custom property
-                    const sourceFile: SourceFile = ri.file[OriSourceFile] ?? ri.file
+                    const sourceFile: SourceFile = ri.file[ORI_SOURCE_FILE] ?? ri.file
                     return sourceFile.getLineAndCharacterOfPosition(offset)
                 }
 
                 // 非qk文件时需要返回诊断相关信息范围
-                if (!(res.filePath.endsWith(".qk") || isMappingFileName(res.filePath))) {
+                if (!res.filePath.endsWith(".qk")) {
                     res.range = {
                         start: getRange(res.start),
                         end: getRange(res.start + res.length)
@@ -60,11 +62,11 @@ export function attachGetDiagnostic() {
                 relatedInformation,
                 code: item.code,
                 kind: item.category,
+                start: item.start || 0,
                 length: item.length || 0,
                 source: item.source || "ts",
                 deprecated: Boolean(item.reportsDeprecated),
                 unnecessary: Boolean(item.reportsUnnecessary),
-                start: mappingFileInfo.getPos(item.start || 0),
                 message: formatDiagnosticMessage(item.messageText)
             }
         })

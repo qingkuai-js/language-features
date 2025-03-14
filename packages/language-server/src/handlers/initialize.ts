@@ -13,13 +13,29 @@ export const initialize: InitializeHandler = () => {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             hoverProvider: true,
+            referencesProvider:true,
+            definitionProvider: true,
+            typeDefinitionProvider: true,
             renameProvider: {
                 prepareProvider: true
             },
+            documentFormattingProvider: {
+                workDoneProgress: true
+            },
+            signatureHelpProvider: {
+                triggerCharacters: ["(", "<", ","],
+                retriggerCharacters: [")"]
+            },
             completionProvider: {
                 resolveProvider: true,
+                completionItem: {
+                    labelDetailsSupport: true
+                },
                 triggerCharacters: [
                     ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
+
+                    // script needs trigger characters
+                    [".", "'", '"', "`", ":", ",", "_"],
 
                     // prettier-ignore
                     // emmet needs trigger characters

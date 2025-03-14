@@ -1,4 +1,4 @@
-import fs from "fs"
+import fs from "node:fs"
 import { createConnection } from "net"
 import { createRandomHash } from "../sundry"
 

@@ -1,52 +1,44 @@
-import type {
-    TS,
-    TSProject,
-    TSProjectService,
-    TSLanguageService,
-    QingKuaiDiagnostic,
-    TSPluginCreateInfo,
-    TSLanguageServerHost,
-    TSLanguageServiceHost
-} from "./types"
 import type { QingKuaiSnapShot } from "./snapshot"
+import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams, TSSession } from "./types"
 
-import path from "path"
+import path from "node:path"
 import { inspect } from "../../../shared-util/log"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
-import { QingkuaiConfiguration } from "../../../types/common"
 
 export let server = defaultParticipant
 
 export let ts: TS
-export let project: TSProject
+export let session: TSSession | undefined
 export let projectService: TSProjectService
-export let languageService: TSLanguageService
-export let languageServerHost: TSLanguageServerHost
-export let languageServiceHost: TSLanguageServiceHost
+
+// 已打开的文件列表
+export const openQingkuaiFiles = new Set<string>()
 
 // 快照缓存，键为映射文件名称，值为QingkuaiSnapshot
 export const snapshotCache = new Map<string, QingKuaiSnapShot>()
 
-// 已解析的qingkuai模块，键为映射文件名，值为导入路径
+// import语句导入目标为目录时解析为qingkuai源文件的记录
 export const resolvedQingkuaiModule = new Map<string, Set<string>>()
-
-// .qingkuairc文件配置内容，键为其所在的目录
-export const configurations = new Map<string, QingkuaiConfiguration>()
 
 // qingkuai自定义错误缓存
 export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
 
-export function setServer(v: typeof server) {
-    server = v
-}
+// typescript扩展客户端命令执行状态
+export const commandStatus = new Map<string, readonly [Promise<any>, GeneralFunc]>()
 
-export function setTSState(t: TS, info: TSPluginCreateInfo) {
-    ts = t
-    project = info.project
-    languageServerHost = info.serverHost
-    languageService = info.languageService
-    projectService = project.projectService
-    languageServiceHost = info.languageServiceHost
+export function setState(value: SetStateParams) {
+    if (value.ts) {
+        ts = value.ts
+    }
+    if (value.server) {
+        server = value.server
+    }
+    if (value.session) {
+        session = value.session
+    }
+    if (value.projectService) {
+        projectService = value.projectService
+    }
 }
 
 // 通过qingkuai语言服务器输出日志

@@ -1,3 +1,4 @@
+import path from "node:path"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
 // JSON.stringify别名
@@ -5,10 +6,14 @@ export function stringify(v: any) {
     return JSON.stringify(v)
 }
 
-// 驼峰命名转串型命名格式
-export function camel2Kebab(s: string) {
-    return s.replace(/[A-Z]/g, (m, i) => {
-        return (i === 0 ? "" : "-") + m.toLocaleLowerCase()
+export function runAll(funcs: GeneralFunc[]) {
+    funcs.forEach(func => func())
+}
+
+// 将字符串转换为驼峰格式
+export function toCamelCase(s: string) {
+    return s.replace(/[\.\-_]([a-zA-Z])/g, m => {
+        return m[1].toUpperCase()
     })
 }
 
@@ -45,6 +50,7 @@ export function debounce<T extends GeneralFunc>(
             id,
             setTimeout(() => {
                 fn.apply(this, args)
+                timers.delete(id)
             }, delay)
         )
     }
@@ -84,4 +90,9 @@ export function excludeProperty<T extends AnyObject, K extends keyof T>(
         }
     }
     return ret
+}
+
+export function getRelativePathWithStartDot(from: string, to: string) {
+    const relativePath = path.relative(from, to)
+    return /\.{1,2}\//.test(relativePath) ? relativePath : `./${relativePath}`
 }

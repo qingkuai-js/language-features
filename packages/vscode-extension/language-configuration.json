@@ -41,21 +41,36 @@
         ["\"", "\""],
         ["`", "`"]
     ],
+    "folding": {
+        "markers": {
+            "start": "^\\s*<!--\\s*#region\\b.*-->",
+            "end": "^\\s*<!--\\s*#endregion\\b.*-->"
+        }
+    },
+    "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\@\\$\\^\\*\\(\\)\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\s]+)",
     "onEnterRules": [
         {
-            "beforeText": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
-            "afterText": "^\\s+",
-            "action": {
-                "indent": "indent"
-            }
-        },
-        {
-            "beforeText": "<(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)[a-z][a-zA-Z_.:\\d\\-]*[^>]*(?<!/)>",
-            "afterText": "^</[a-z][a-zA-Z_.:\\d\\-]*",
+            "beforeText": {
+                "pattern": "<(?!(?:br|img|input|meta|link|hr|base|area|col|keygen|menuitem|embed|param|source|track|wbr))([_:\\w][_:\\w-.\\d]*)(?:(?:[^'\"/>]|\"[^\"]*\"|'[^']*')*?(?!\\/)>)[^<]*$",
+                "flags": "i"
+            },
+            "afterText": { "pattern": "^<\\/([_:\\w][_:\\w-.\\d]*)\\s*>", "flags": "i" },
             "action": {
                 "indent": "indentOutdent"
             }
+        },
+        {
+            "beforeText": {
+                "pattern": "<(?!(?:br|img|input|meta|link|hr|base|area|col|keygen|menuitem|embed|param|source|track|wbr))([_:\\w][_:\\w-.\\d]*)(?:(?:[^'\"/>]|\"[^\"]*\"|'[^']*')*?(?!\\/)>)[^<]*$",
+                "flags": "i"
+            },
+            "action": {
+                "indent": "indent"
+            }
         }
     ],
-    "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\-\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
+    "indentationRules": {
+        "increaseIndentPattern": "<(?!\\?|(?:area|base|br|col|frame|hr|html|img|input|keygen|link|menuitem|meta|param|source|track|wbr)\\b|[^>]*\\/>)([-_\\.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}\"']*$",
+        "decreaseIndentPattern": "^\\s*(<\\/(?!html)[-_\\.A-Za-z0-9]+\\b[^>]*>|-->|\\})"
+    }
 }

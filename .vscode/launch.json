@@ -6,8 +6,8 @@
             "type": "extensionHost",
             "request": "launch",
             "autoAttachChildProcesses": true,
-            "skipFiles": ["<node_internals>/**"],
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
             "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"]
         }
     ]

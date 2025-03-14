@@ -1,22 +1,27 @@
 import type {
+    ConfigureFileParams,
     UpdateSnapshotParams,
     GetClientConfigParams,
     GetClientConfigResult
 } from "../../../types/communication"
-import type { PositionFlagKeys } from "qingkuai/compiler"
 import type { CachedCompileResultItem } from "./types/service"
+import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
-import { readFileSync } from "fs"
-import { fileURLToPath } from "url"
+import {
+    compressItos,
+    compressPosition,
+    compressPositionFlags,
+    getScriptKindKey
+} from "../../../shared-util/qingkuai"
+import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
-import { ExtensionConfiguration } from "../../../types/common"
-import { getScriptKindKey } from "../../../shared-util/qingkuai"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
 // 文档的扩展配置项，键为TextDocument.uri（string）
-const extensionConfigCache = new Map<string, ExtensionConfiguration>()
+const extensionConfigCache = new Map<string, GetClientConfigResult>()
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
 const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
@@ -32,15 +37,18 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             await tpicConnectedPromise
         }
         if (document.version === cached?.version) {
-            await getClientConfiguration(cached)
-            await syncToTsPlugin(cached)
+            await getConfigurationOfFile(cached)
             return cached
         }
     }
 
     const source = document.getText()
+    const compileRes = compile(source, {
+        check: true,
+        typeRefStatement
+    })
     const getOffset = document.offsetAt.bind(document)
-    const compileRes = compile(source, { check: true, typeRefStatement })
+    const isTS = compileRes.inputDescriptor.script.isTS
     const filePath = isTestingEnv ? document.uri : fileURLToPath(document.uri)
 
     // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
@@ -65,8 +73,14 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     }
 
     // 通过中间代码索引换取源码索引
-    const getSourceIndex = (interIndex: number) => {
-        return compileRes.interIndexMap.itos[interIndex]
+    const getSourceIndex = (interIndex: number, isEnd = false) => {
+        const sourceIndex = compileRes.interIndexMap.itos[interIndex]
+        if (sourceIndex !== -1 || !isEnd) {
+            return sourceIndex
+        }
+
+        const preSourceIndex = compileRes.interIndexMap.itos[interIndex - 1]
+        return preSourceIndex === -1 ? -1 : preSourceIndex + 1
     }
 
     // 通过源码索引换取中间代码索引
@@ -87,47 +101,44 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         ...compileRes,
         getRange,
         filePath,
-        document,
         getOffset,
         getPosition,
         getInterIndex,
         getSourceIndex,
         isPositionFlagSet,
+        componentInfos: [],
+        config: null as any,
         isSynchronized: false,
-        componentIdentifiers: [],
         version: document.version,
-        config: {
-            htmlHoverTip: [],
-            typescriptDiagnosticsExplain: false,
-            componentTagFormatPreference: "camel"
-        }
+        builtInTypeDeclarationEndIndex: typeRefStatement.length + (isTS ? 119 : 114)
     }
 
-    // 非测试环境下需要将最新的中间代码发送给typescript-qingkuai-plugin以更新快照
+    // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
     const pms = new Promise<CachedCompileResultItem>(async resolve => {
-        await getClientConfiguration(ccri)
-        await syncToTsPlugin(ccri)
+        await synchronizeContentToTypescriptPlugin(ccri)
+        await getConfigurationOfFile(ccri)
         resolve(ccri)
     })
 
-    // 将编译结果同步到typescript-qingkuai-plugin
-    async function syncToTsPlugin(cr: CachedCompileResultItem) {
+    // 将编译结果同步到typescript-plugin-qingkuai
+    async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
         if (!isTestingEnv && synchronize && !cr.isSynchronized) {
-            cr.componentIdentifiers = await tpic.sendRequest<UpdateSnapshotParams, string[]>(
-                "updateSnapshot",
-                {
-                    interCode: cr.code,
-                    fileName: cr.filePath,
-                    itos: cr.interIndexMap.itos,
-                    scriptKindKey: getScriptKindKey(cr),
-                    slotInfo: cr.inputDescriptor.slotInfo
-                }
-            )
+            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
+                interCode: cr.code,
+                fileName: cr.filePath,
+                scriptKindKey: getScriptKindKey(cr),
+                slotInfo: cr.inputDescriptor.slotInfo,
+                citos: compressItos(cr.interIndexMap.itos),
+                cp: compressPosition(cr.inputDescriptor.positions),
+                cpf: compressPositionFlags(cr.inputDescriptor.positions)
+            })
         }
     }
 
-    async function getClientConfiguration(cr: CachedCompileResultItem) {
-        if (!extensionConfigCache.has(document.uri)) {
+    async function getConfigurationOfFile(cr: CachedCompileResultItem) {
+        if (extensionConfigCache.has(document.uri)) {
+            cr.config = extensionConfigCache.get(document.uri)!
+        } else {
             const res: GetClientConfigResult = await connection.sendRequest(
                 "qingkuai/getClientConfig",
                 {
@@ -135,12 +146,32 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
                 } satisfies GetClientConfigParams
             )
+            updatePrettierConfigurationForQingkuaiFile(res)
 
-            extensionConfigCache.set(document.uri, (cr.config = res.extensionConfig))
+            if (res.typescriptConfig) {
+                updateTypescriptConfigurationForQingkuaiFile(res)
+                tpic.sendNotification<ConfigureFileParams>("configureFile", {
+                    fileName: cr.filePath,
+                    config: res.typescriptConfig,
+                    workspacePath: res.workspacePath
+                })
+            }
+            extensionConfigCache.set(document.uri, (cr.config = res))
         }
     }
 
     return compileResultCache.set(document.uri, pms), await pms
+}
+
+// 递归遍历qingkuai编译结果的Template Node AST
+export function walk<T>(nodes: TemplateNode[], cb: (node: TemplateNode) => T | undefined) {
+    for (const node of nodes) {
+        const ret = cb(node)
+        if (ret) {
+            return ret
+        }
+        node.children.length && walk(node.children, cb)
+    }
 }
 
 // 获取未打开的文档的编译结果
@@ -162,4 +193,26 @@ export async function getCompileResByPath(path: string) {
 // 清空已缓存的配置内容
 export function clearConfigCache() {
     extensionConfigCache.clear()
+}
+
+function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+    const { prettierConfig: pc, extensionConfig: ec } = config
+    if (isUndefined(pc.spaceAroundInterpolation)) {
+        pc.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
+    }
+    if (isUndefined(pc.componentTagFormatPreference)) {
+        pc.componentTagFormatPreference = ec.componentTagFormatPreference
+    }
+    if (isUndefined(pc.componentAttributeFormatPreference)) {
+        pc.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
+    }
+}
+
+// prettier-ignore
+function updateTypescriptConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+    // @ts-expect-error: change read-only property
+    config.typescriptConfig.formatCodeSettings.semicolons = config.prettierConfig.semi ? "insert" : "remove"
+
+    // @ts-expect-error: change read-only property
+    config.typescriptConfig.preference.quotePreference = config.prettierConfig.singleQuote ? "single" : "double"
 }

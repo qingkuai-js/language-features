@@ -1,39 +1,28 @@
-import TS from "typescript"
+import type TS from "typescript"
+import type { FixedArray } from "./util"
+import type { Options as PrettierOptions } from "prettier"
+
+export type NumNumArray = NumNum[]
+export type NumNum = FixedArray<number, 2>
+
+export interface OpenFileParams {
+    path: string
+    start: number
+    end: number
+}
 
 export interface ExtensionConfiguration {
     typescriptDiagnosticsExplain: boolean
+    insertSpaceAroundInterpolation: boolean
     componentTagFormatPreference: "camel" | "kebab"
     htmlHoverTip: ("tag" | "entity" | "attribute")[]
+    componentAttributeFormatPreference: "camel" | "kebab"
 }
 
 export interface TSFormattingOptions {
     tabSize: number | undefined
     insertSpaces: boolean | undefined
 }
-
-export type PrettierConfiguration = Partial<{
-    semi: boolean
-    filepath: string
-    rangeEnd: number
-    rangeStart: number
-    singleQuote: boolean
-    insertPragma: boolean
-    requirePragma: boolean
-    jsxSingleQuote: boolean
-    bracketSpacing: boolean
-    bracketSameLine: boolean
-    experimentalTernaries: boolean
-    singleAttributePerLine: boolean
-    vueIndentScriptAndStyle: boolean
-    arrowParens: "avoid" | "always"
-    trailingComma: "none" | "es5" | "all"
-    endOfLine: "auto" | "lf" | "crlf" | "cr"
-    proseWrap: "always" | "never" | "preserve"
-    embeddedLanguageFormatting: "auto" | "off"
-    quoteProps: "as-needed" | "consistent" | "preserve"
-    htmlWhitespaceSensitivity: "css" | "strict" | "ignore"
-    jsxBracketSameLine?: boolean
-}>
 
 export type QingkuaiConfiguration = Partial<{
     resolveImportExtension: boolean
@@ -45,6 +34,13 @@ export interface TSClientConfiguration {
     preference: TSUserPreferences
     formatCodeSettings: TSFormatCodeSettings
 }
+
+export type PrettierConfiguration = PrettierOptions &
+    Partial<{
+        spaceAroundInterpolation: boolean
+        componentTagFormatPreference: "camel" | "kebab"
+        componentAttributeFormatPreference: "camel" | "kebab"
+    }>
 
 export type QingkuaiConfigurationWithDir = QingkuaiConfiguration & {
     dir: string

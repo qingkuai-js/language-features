@@ -1,15 +1,14 @@
-import type { QingKuaiSnapShot } from "../../snapshot"
-
 import {
-    getRealName,
-    isMappingFileName,
-    getMappingFileInfo,
-    getOpenQkFileInfos
-} from "../content/document"
-import { updateQingkuaiSnapshot } from "../content/snapshot"
+    compileQingkuaiFileToInterCode,
+    ensureGetSnapshotOfQingkuaiFile
+} from "../../util/qingkuai"
+import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
+import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
-import { languageService, languageServiceHost, projectService, server } from "../../state"
+import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
+import { isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
+import { getContainingProjectsByFileName, isFileOpening } from "../../util/typescript"
 
 // 刷新引用文件的诊断信息，如果目标文件是.qk文件，则通知qingkuai语言服务器重新推送诊断信息，第二个参数用于
 // 描述当前文档的脚本类型是否发生了变化，如果发生了变化，需要模拟编辑目标文档以触发重新解析导入语句：查看文档最后
@@ -22,61 +21,61 @@ import { languageService, languageServiceHost, projectService, server } from "..
 export const refreshDiagnostics = debounce(
     (byFileName: string, scriptKindChanged: boolean) => {
         const referenceFileNames: string[] = []
-        const byQingKuaiFile = byFileName.endsWith(".qk")
+        const waitingTsFileNames: string[] = []
         const byConfigChanged = byFileName.startsWith("///")
+        const byQingKuaiFile = isQingkuaiFileName(byFileName)
 
-        if (byQingKuaiFile) {
-            const mappingFileInfo = getMappingFileInfo(byFileName)
-            if (mappingFileInfo?.isOpen) {
-                byFileName = mappingFileInfo.mappingFileName
-            } else return
+        if (byQingKuaiFile && !isFileOpening(byFileName)) {
+            return
         }
 
-        if (!byConfigChanged) {
-            languageService.getFileReferences(byFileName).forEach(({ fileName }) => {
-                if (
-                    getMappingFileInfo(fileName)?.isOpen ||
-                    projectService.getScriptInfo(fileName)?.isScriptOpen()
-                ) {
-                    referenceFileNames.push(fileName)
-                }
+        if (byConfigChanged) {
+            scriptKindChanged = true
+            projectService.openFiles.forEach((_, path) => {
+                referenceFileNames.push(projectService.getScriptInfo(path)!.fileName)
             })
         } else {
-            getOpenQkFileInfos().forEach(fileInfo => {
-                referenceFileNames.push(fileInfo.mappingFileName)
-            })
-            projectService.openFiles.forEach((_, path) => {
-                referenceFileNames.push(projectService.getScriptInfoForPath(path)!.fileName)
-            })
-            scriptKindChanged = true
+            referenceFileNames.push(...getFileReferencesRecursive(byFileName))
         }
 
         referenceFileNames.forEach(fileName => {
-            const scriptInfo = projectService.getScriptInfo(fileName)!
-            const snapshot = languageServiceHost.getScriptSnapshot(fileName)!
+            const scriptInfo = projectService.getScriptInfo(fileName)
 
+            if (isUndefined(scriptInfo)) {
+                return
+            }
+
+            const snapshot = scriptInfo.getSnapshot()
             const contentLength = snapshot.getLength()
             const endsWithSpace = snapshot.getText(contentLength - 1, contentLength) === " "
 
-            if (isMappingFileName(fileName)) {
-                const realFileName = getRealName(fileName)!
+            if (isQingkuaiFileName(fileName)) {
                 if (scriptKindChanged) {
                     if (byFileName === "///qk") {
-                        const mappingFileInfo = getMappingFileInfo(realFileName)!
+                        const compileRes = compileQingkuaiFileToInterCode(fileName)
                         updateQingkuaiSnapshot(
-                            realFileName,
-                            mappingFileInfo.interCode,
-                            mappingFileInfo.itos,
-                            mappingFileInfo.slotInfo,
-                            mappingFileInfo.scriptKind
+                            fileName,
+                            compileRes.code,
+                            compileRes.interIndexMap.itos,
+                            compileRes.inputDescriptor.slotInfo,
+                            ts.ScriptKind[getScriptKindKey(compileRes)],
+                            compileRes.inputDescriptor.positions
                         )
                     } else {
-                        const content = (snapshot as QingKuaiSnapShot).getFullText()
+                        const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
+                        const content = qingkuaiSnapshot.getFullText()
                         const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
-                        editQingKuaiScriptInfo(realFileName, newContent, scriptInfo.scriptKind)
+                        editQingKuaiScriptInfo(
+                            fileName,
+                            newContent,
+                            qingkuaiSnapshot.itos,
+                            qingkuaiSnapshot.slotInfo,
+                            qingkuaiSnapshot.scriptKind,
+                            qingkuaiSnapshot.positions
+                        )
                     }
                 }
-                server.sendNotification("publishDiagnostics", realFileName)
+                server.sendNotification("publishDiagnostics", fileName)
             } else {
                 if (!byConfigChanged && !byQingKuaiFile) {
                     return
@@ -90,16 +89,35 @@ export const refreshDiagnostics = debounce(
                     }
                 }
 
-                // @ts-expect-error: access private method
-                projectService.eventHandler({
-                    eventName: "projectsUpdatedInBackground",
-                    data: {
-                        openFiles: [fileName]
-                    }
-                })
+                waitingTsFileNames.push(fileName)
+            }
+        })
+
+        // prettier-ignore
+        // @ts-expect-error: access private method
+        waitingTsFileNames.length && projectService.eventHandler({
+            eventName: "projectsUpdatedInBackground",
+            data: {
+                openFiles: waitingTsFileNames
             }
         })
     },
     300,
     fileName => fileName // use fileName as debounce id
 )
+
+function getFileReferencesRecursive(fileName: string) {
+    const referenceFileNames = new Set<string>()
+    getContainingProjectsByFileName(fileName).forEach(project => {
+        const languageService = project.getLanguageService()
+        languageService.getFileReferences(fileName).forEach(entry => {
+            if (isFileOpening(entry.fileName)) {
+                referenceFileNames.add(entry.fileName)
+            }
+            getFileReferencesRecursive(entry.fileName).forEach(item => {
+                referenceFileNames.add(item)
+            })
+        })
+    })
+    return Array.from(referenceFileNames)
+}

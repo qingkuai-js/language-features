@@ -11,17 +11,17 @@ import type { Socket } from "net"
 import type { GeneralFunc } from "../../types/util"
 
 import net from "net"
-import { noop } from "../constant"
+import { NOOP } from "../constant"
 import { getReleaseId, releaseId } from "./id"
 import { isUndefined, isPromise } from "../assert"
 import { createMessageBuffer, createBufferReader } from "./buffer"
 
 export const defaultParticipant: IpcParticipant = {
-    close: noop,
-    onRequest: noop,
-    sendRequest: noop,
-    onNotification: noop,
-    sendNotification: noop
+    close: NOOP,
+    onRequest: NOOP,
+    sendRequest: NOOP,
+    onNotification: NOOP,
+    sendNotification: NOOP
 }
 
 export function createServer(sockPath: string) {

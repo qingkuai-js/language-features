@@ -19,7 +19,7 @@ class Logger {
     }
 
     error(msg: string) {
-        this.target.warn(`${this.time} [Error] ${msg}`)
+        this.target.warn(`\n${this.time} [Error] ${msg}\n`)
     }
 }
 

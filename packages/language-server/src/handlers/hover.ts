@@ -1,4 +1,5 @@
-import type { HoverHander } from "../types/handlers"
+import type { HoverHandler } from "../types/handlers"
+import type { TPICCommonRequestParams, HoverTipResult } from "../../../../types/communication"
 
 import {
     findTagData,
@@ -7,18 +8,24 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
-import { documents } from "../state"
+import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
 import { MarkupKind } from "vscode-languageserver"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
+import { documents, isTestingEnv, tpic } from "../state"
+import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
-export const hover: HoverHander = async ({ textDocument, position }) => {
+export const hover: HoverHandler = async ({ textDocument, position }, token) => {
+    if (token.isCancellationRequested) {
+        return
+    }
+
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    const { templateNodes, getOffset, getRange, config } = cr
+    const { templateNodes, getOffset, getRange, config, getSourceIndex } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
@@ -27,44 +34,119 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
         return null
     }
 
+    if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
+        const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<TPICCommonRequestParams>(
+            "hoverTip",
+            {
+                fileName: cr.filePath,
+                pos: cr.interIndexMap.stoi[offset]
+            }
+        )
+
+        if (!tsHoverTip) {
+            return null
+        }
+
+        return {
+            contents: {
+                kind: "markdown",
+                value: tsHoverTip.content
+            },
+            range: getRange(
+                getSourceIndex(tsHoverTip.posRange[0]),
+                getSourceIndex(tsHoverTip.posRange[1], true)
+            )
+        }
+    }
+
     // HTML标签悬停提示
     const tagRanges = findTagRanges(currentNode, offset)
     const [nodeStartIndex, nodeEndIndex] = currentNode.range
-    const tagTip = config.htmlHoverTip.includes("tag")
+    const tagTip = config.extensionConfig.htmlHoverTip.includes("tag")
     if (tagTip && !isUndefined(tagRanges[0])) {
         const isStart = offset <= tagRanges[0][1]
+        const hoverRange = getRange(...tagRanges[isStart ? 0 : 1]!)
+
+        if (!isTestingEnv && currentNode.componentTag) {
+            for (const info of cr.componentInfos) {
+                if (info.name === currentNode.componentTag) {
+                    return {
+                        range: hoverRange,
+                        contents: {
+                            kind: "markdown",
+                            value: mdCodeBlockGen(
+                                "ts",
+                                `(component) class ${currentNode.componentTag}`
+                            )
+                        }
+                    }
+                }
+            }
+            return null
+        }
+
         const tagData = findTagData(currentNode.tag)
         if (isUndefined(tagData)) {
             return null
         }
         return {
-            contents: getDocumentation(tagData),
-            range: getRange(...tagRanges[isStart ? 0 : 1]!)
+            range: hoverRange,
+            contents: getDocumentation(tagData)
         }
     }
 
     // HTML属性名悬停提示
     const attribute = findAttribute(offset, currentNode)
-    const attrTip = config.htmlHoverTip.includes("attribute")
-    if (attrTip && attribute) {
+    if (attribute) {
         let attrKey = attribute.key.raw
-        const keyStartIndex = attribute.key.loc.start.index
         const KeyEndIndex = attribute.key.loc.end.index
+        const keyStartIndex = attribute.key.loc.start.index
+        const attrTip = config.extensionConfig.htmlHoverTip.includes("attribute")
+
         if (offset < keyStartIndex || offset >= KeyEndIndex) {
             return null
         }
 
         // 指令名的提示单独处理
-        if (attrKey[0] === "#") {
+        if (attrTip && attrKey[0] === "#") {
             attrKey = attrKey.slice(1)
             for (const item of htmlDirectives) {
                 if (attrKey === item.name) {
                     return {
                         range: getRange(keyStartIndex, KeyEndIndex),
-                        contents: getDirectiveDocumentation(item, false)
+                        contents: getDirectiveDocumentation(item, true)
                     }
                 }
             }
+            return null
+        }
+
+        if (!isTestingEnv && currentNode.componentTag) {
+            const componentInfo = cr.componentInfos.filter(info => {
+                return info.name === currentNode.componentTag
+            })[0]
+            for (const attr of componentInfo?.attributes || []) {
+                if (
+                    (attrKey.startsWith("&") && attr.kind !== "Ref") ||
+                    (!attrKey.startsWith("&") && attr.kind !== "Prop")
+                ) {
+                    continue
+                }
+                if (attr.name === util.kebab2Camel(attrKey.replace(/^[!@&]/, ""))) {
+                    const desc = `${attr.kind === "Ref" ? "reference " : ""}property`
+                    return {
+                        contents: {
+                            kind: "markdown",
+                            value: mdCodeBlockGen("ts", `(${desc}) ${attr.name}: ${attr.type}`)
+                        },
+                        range: getRange(keyStartIndex, KeyEndIndex)
+                    }
+                }
+            }
+            return null
+        }
+
+        if (!attrTip) {
             return null
         }
 
@@ -118,12 +200,11 @@ export const hover: HoverHander = async ({ textDocument, position }) => {
     }
 
     // HTML实体字符悬停提示
-    const entityTip = config.htmlHoverTip.includes("entity")
     if (
-        entityTip &&
         offset < nodeEndIndex &&
         offset >= nodeStartIndex &&
-        isEmptyString(currentNode.tag)
+        isEmptyString(currentNode.tag) &&
+        config.extensionConfig.htmlHoverTip.includes("entity")
     ) {
         let startIndex = offset
         let endIndex = offset + 1

@@ -11,13 +11,16 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:qingkuai"
+        "workspaceContains:**/*.qk"
     ],
     "main": "../../dist/client.js",
     "contributes": {
         "languages": [
             {
-                "id": "qingkuai-emmet"
+                "id": "qingkuai-emmet",
+                "aliases": [
+                    "qke"
+                ]
             },
             {
                 "id": "qingkuai",
@@ -25,7 +28,8 @@
                     ".qk"
                 ],
                 "aliases": [
-                    "QingKuai"
+                    "QingKuai",
+                    "qk"
                 ],
                 "icon": {
                     "light": "./imgs/qingkuai.svg",
@@ -75,7 +79,7 @@
         ],
         "typescriptServerPlugins": [
             {
-                "name": "typescript-qingkuai-plugin",
+                "name": "typescript-plugin-qingkuai",
                 "enableForWorkspaceTypeScriptVersions": true
             }
         ],
@@ -98,6 +102,11 @@
                     "default": true,
                     "description": "Allow to add explain to ambiguous typescript diagnostic message."
                 },
+                "qingkuai.insertSpaceAroundInterpolation": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Whether to insert a space around interpolation block."
+                },
                 "qingkuai.componentTagFormatPreference": {
                     "type": "string",
                     "enum": [
@@ -105,7 +114,16 @@
                         "kebab"
                     ],
                     "default": "camel",
-                    "description": "Your preferred component tag format for completion suggestions."
+                    "description": "Your preferred component tag format for formatting and completion suggestions."
+                },
+                "qingkuai.componentAttributeFormatPreference": {
+                    "type": "string",
+                    "enum": [
+                        "camel",
+                        "kebab"
+                    ],
+                    "default": "camel",
+                    "description": "Your preferred component attribute format for formatting and completion suggestions."
                 },
                 "qingkuai.htmlHoverTip": {
                     "type": "array",
@@ -130,13 +148,13 @@
     "scripts": {
         "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
         "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
-        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qk-emmet.tmLanguage.json"
+        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0"
     },
     "dependencies": {
-        "typescript-qingkuai-plugin": "workspace:^",
+        "typescript-plugin-qingkuai": "workspace:^",
         "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
     }
 }

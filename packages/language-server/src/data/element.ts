@@ -6280,7 +6280,7 @@ export const htmlElements: HTMLElementData = {
 export const htmlDirectives = [
     {
         name: "for",
-        useage: "<tag #for={{a,b}, index in arr}>\n\t{index}: {a}, {b})\n</tag>",
+        useage: "<tag #for={{a,b}, index of arr}>\n\t{index}: {a}, {b})\n</tag>",
         description:
             "The for directive is used to create a list of elements that are rendered through a loop, it dependents on an iterable value or a number and can generate context identifiers(destructible) for keys and values under the current element scope."
     },

@@ -2,25 +2,33 @@ import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
 import { stringifyRange } from "../util/vscode"
+import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
-import { connection, documents, isTestingEnv, tpic } from "../state"
-import { badComponentAttrRE, badSlotNameDiagnosticRE } from "../regular"
+import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
+import { connection, documents, isTestingEnv, tpic, waittingCommands } from "../state"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
-        // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
-        const existingTsDiagnostics = new Set<string>()
-        if (isTestingEnv) {
-            return
+        const document = documents.get(uri)
+        if (!document || isTestingEnv) {
+            return null
         }
 
-        const textDocument = documents.get(uri)!
-        const cr = await getCompileRes(textDocument)
+        // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
+        const existingTsDiagnostics = new Set<string>()
+
+        const cr = await getCompileRes(document)
         const { Error, Warning } = DiagnosticSeverity
+        const waittingForCommand = waittingCommands.get("diagnostic")
         const { messages, getRange, filePath, getSourceIndex, config } = cr
+
+        if (waittingForCommand) {
+            await tpic.sendRequest("waitCommand", waittingForCommand)
+            waittingCommands.delete("diagnostic")
+        }
 
         // 将ts语言服务的诊断信息添加到诊断结果
         const extendDiagnostic = (item: Diagnostic) => {
@@ -53,10 +61,10 @@ export const publishDiagnostics = debounce(
         for (const item of tsDiagnostics) {
             const tags: DiagnosticTag[] = []
             const ss = getSourceIndex(item.start)
-            const se = getSourceIndex(item.start + item.length)
+            const se = getSourceIndex(item.start + item.length, true)
             const relatedInformation: DiagnosticRelatedInformation[] = []
 
-            if (isSourceIndexesIvalid(ss, se)) {
+            if (isSourceIndexesInvalid(ss, se)) {
                 continue
             }
 
@@ -71,9 +79,9 @@ export const publishDiagnostics = debounce(
                 let range = relatedInfo.range
                 if (isUndefined(range)) {
                     const cr = await getCompileResByPath(relatedInfo.filePath)
-                    const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length)
                     const rss = cr.getSourceIndex(relatedInfo.start)
-                    if (isSourceIndexesIvalid(rss, rse)) {
+                    const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length, true)
+                    if (isSourceIndexesInvalid(rss, rse)) {
                         continue
                     }
                     range = cr.getRange(rss, rse)
@@ -88,22 +96,13 @@ export const publishDiagnostics = debounce(
             }
 
             // 为指定的诊断信息添加qingkuai相关解释
-            if (config.typescriptDiagnosticsExplain) {
-                if (
-                    item.code === 2345 &&
-                    item.source === "ts" &&
-                    cr.isPositionFlagSet(ss, "isSlotAttrStart") &&
-                    badSlotNameDiagnosticRE.test(item.message)
-                ) {
-                    item.message += `\n(Qingkuai explain): There is no slot with the same name in the component.`
-                }
-
+            if (config.extensionConfig.typescriptDiagnosticsExplain) {
                 if (
                     item.code === 2353 &&
                     item.source === "ts" &&
-                    cr.isPositionFlagSet(ss, "isComponentAttrStart")
+                    cr.isPositionFlagSet(ss, "isAttributeStart")
                 ) {
-                    const m = badComponentAttrRE.exec(item.message)
+                    const m = badComponentAttrMessageRE.exec(item.message)
                     if (!isNull(m)) {
                         item.message += `\n(Qingkuai explain): The attribute name is not a property of component's ${m[1]} type.`
                     }
@@ -149,11 +148,4 @@ function transTsDiagnosticSeverity(n: number) {
         default:
             return DiagnosticSeverity.Information
     }
-}
-
-// 检查传入的源码索引是否是无效的
-function isSourceIndexesIvalid(...items: (number | undefined)[]) {
-    return items.some(item => {
-        return isUndefined(item) || item === -1
-    })
 }

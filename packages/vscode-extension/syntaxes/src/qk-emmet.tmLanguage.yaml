@@ -1,7 +1,7 @@
-name: qingkuai
-fileTypes: [qk]
+name: qingkuai-emmet
+fileTypes: [qke]
 scopeName: source.qke
-uuid: AC4C66D8-55E8-4871-93C8-87A6AFB7ECDC
+uuid: ac4c66d8-55e8-4871-93c8-87a6afb7ecdc
 
 patterns:
   # 模拟emmet提示中的嵌入语言语法规则：标签中的内容都会被认作注释，这样处理是为了让模拟光标的字符显示为灰色

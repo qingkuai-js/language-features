@@ -1,7 +1,7 @@
 import type { Node, SourceFile, Symbol } from "typescript"
 
-import { ts, typeDeclarationFilePath } from "./state"
-import { isUndefined } from "../../../shared-util/assert"
+import { ts, typeDeclarationFilePath } from "../state"
+import { isUndefined } from "../../../../shared-util/assert"
 
 export function getKindName(node: Node) {
     return ts.SyntaxKind[node.kind]
