@@ -22,7 +22,7 @@ export const findImplementation: ImplementationHandler = async ({ textDocument, 
     const implementations: FindReferenceResultItem[] | null =
         await tpic.sendRequest<TPICCommonRequestParams>("findImplementation", {
             fileName: cr.filePath,
-            pos: cr.interIndexMap.stoi[offset]
+            pos: cr.getInterIndex(offset)
         })
     return implementations?.map(item => {
         return {

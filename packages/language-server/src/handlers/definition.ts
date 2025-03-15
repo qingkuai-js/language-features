@@ -23,9 +23,9 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
 
     const cr = await getCompileRes(document)
     const offset = document.offsetAt(position)
-    const { interIndexMap, getRange, getSourceIndex } = cr
+    const { getRange, getSourceIndex, getInterIndex } = cr
 
-    let interIndex = interIndexMap.stoi[offset]
+    let interIndex = getInterIndex(offset)
     let originSelectionRange: Range | undefined = undefined
     if (!cr.isPositionFlagSet(offset, "inScript")) {
         const currentNode = findNodeAt(cr.templateNodes, offset)
@@ -38,7 +38,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
             if (!currentNode.componentTag) {
                 return null
             }
-            interIndex = interIndexMap.stoi[currentNode.range[0]]
+            interIndex = getInterIndex(currentNode.range[0])
             originSelectionRange = getRange(...tagRanges[offset < tagRanges[0][1] ? 0 : 1]!)
         } else {
             const attribute = findAttribute(offset, currentNode)
@@ -67,7 +67,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
             if (offset >= keyEndIndex || offset < keyStartIndex) {
                 return null
             }
-            interIndex = interIndexMap.stoi[keyStartIndex]
+            interIndex = getInterIndex(keyStartIndex)
             originSelectionRange = getRange(keyStartIndex, keyEndIndex)
         }
     }
@@ -105,7 +105,6 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
         )
     }
 
-
     return res.definitions.map(item => {
         return {
             originSelectionRange,
@@ -134,7 +133,7 @@ export const findTypeDefinition: TypeDefinitionHandler = async (
     const definitions: FindDefinitionResultItem[] | null =
         await tpic.sendRequest<TPICCommonRequestParams>("findTypeDefinition", {
             fileName: cr.filePath,
-            pos: cr.interIndexMap.stoi[offset]
+            pos: cr.getInterIndex(offset)
         })
 
     if (!definitions?.length) {

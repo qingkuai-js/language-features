@@ -1,6 +1,4 @@
 export const relativePathRE = /^\.\.?($|[\/\\])/
-export const componentInvalidCharRE = /[^a-zA-Z\d\.\-_]|\.qk$/g
-
 export const endingInvalidStr = /\s*;?$/
 export const globalTypeIdentifierRE = /^(Props|Refs)$/
 export const reactCompilerFuncRE = /^(?:rea|stc|der)$/

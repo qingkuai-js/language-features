@@ -39,7 +39,7 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
             "hoverTip",
             {
                 fileName: cr.filePath,
-                pos: cr.interIndexMap.stoi[offset]
+                pos: cr.getInterIndex(offset)
             }
         )
 

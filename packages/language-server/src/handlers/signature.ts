@@ -22,7 +22,7 @@ export const signatureHelp: SignatureHelpHandler = async (params, token) => {
         "getSignatureHelp",
         {
             fileName: cr.filePath,
-            pos: cr.interIndexMap.stoi[offset]
+            pos: cr.getInterIndex(offset)
         }
     )
     if (!signatureHelp) {

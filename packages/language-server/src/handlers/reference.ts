@@ -5,12 +5,11 @@ import type {
 import type { ReferenceHandler } from "../types/handlers"
 import type { Location } from "vscode-languageserver/node"
 
-import { util } from "qingkuai/compiler"
 import { documents, tpic } from "../state"
-import { basename, extname } from "node:path"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
 import { EXPORT_DEFAULT_OFFSET } from "../../../../shared-util/constant"
+import { filePathToComponentName } from "../../../../shared-util/qingkuai"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
@@ -23,7 +22,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     const offset = document.offsetAt(position)
 
     let searchingSlotName = ""
-    let interIndex = cr.interIndexMap.stoi[offset]
+    let interIndex = cr.getInterIndex(offset)
     if (!cr.isPositionFlagSet(interIndex, "inScript")) {
         const currentNode = findNodeAt(cr.templateNodes, offset)
         const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET // Export Identifier Start Inter Index
@@ -56,7 +55,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
         return await findSlotReferences(
             references,
             searchingSlotName,
-            util.kebab2Camel(basename(cr.filePath, extname(cr.filePath)), true)
+            filePathToComponentName(cr.filePath)
         )
     }
 
@@ -68,7 +67,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     })
 }
 
-async function findSlotReferences(
+export async function findSlotReferences(
     references: FindReferenceResultItem[],
     slotName: string,
     componentTag: string

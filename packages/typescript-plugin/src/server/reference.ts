@@ -6,12 +6,11 @@ import type {
 import type TS from "typescript"
 import type { Range } from "vscode-languageserver"
 
-import { util } from "qingkuai/compiler"
-import { basename, extname } from "node:path"
 import { server, session, ts } from "../state"
 import { findNodeAtPosition } from "../util/ast"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { filePathToComponentName } from "../../../../shared-util/qingkuai"
 import { getDefaultSourceFileByFileName, getFileReferences } from "../util/typescript"
 
 export function attachFindReference() {
@@ -33,7 +32,7 @@ export function attachFindReference() {
                     "findComponentTagRange",
                     {
                         fileName: refFileName,
-                        componentTag: util.kebab2Camel(basename(fileName, extname(fileName)), true)
+                        componentTag: filePathToComponentName(fileName)
                     }
                 )
                 ranges.forEach(range => result.push({ range, fileName: refFileName }))

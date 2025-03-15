@@ -740,7 +740,7 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
 
 async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number) {
     const { getRange, getSourceIndex } = cr
-    const positionOfInterCode = cr.interIndexMap.stoi[offset]
+    const positionOfInterCode = cr.getInterIndex(offset)
     const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
         "getCompletion",
         {

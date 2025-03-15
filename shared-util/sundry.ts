@@ -10,13 +10,6 @@ export function runAll(funcs: GeneralFunc[]) {
     funcs.forEach(func => func())
 }
 
-// 将字符串转换为驼峰格式
-export function toCamelCase(s: string) {
-    return s.replace(/[\.\-_]([a-zA-Z])/g, m => {
-        return m[1].toUpperCase()
-    })
-}
-
 export function escapeRegExp(text: string) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
 }

@@ -1,9 +1,21 @@
 import type { NumNumArray } from "../types/common"
 import type { ASTPosition, ASTPositionWithFlag, CompileResult } from "qingkuai/compiler"
 
-// 通过qingkuai编译结果获取 typescript.ScriptKind 对应的键
+import { util } from "qingkuai/compiler"
+import { basename, extname } from "path"
+
 export function getScriptKindKey(cr: CompileResult) {
     return cr.inputDescriptor.script.isTS ? "TS" : "JS"
+}
+
+export function filePathToComponentName(p: string) {
+    let base = basename(p, extname(p))
+    base = base.replace(/[^a-zA-Z]*/, "")
+    base = base.replace(/[^a-zA-Z\d]/g, "")
+    if (!base) {
+        return "Anonymous"
+    }
+    return util.kebab2Camel(base, true)
 }
 
 // 压缩中间代码索引到源码索引的映射信息

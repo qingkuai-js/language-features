@@ -26,11 +26,6 @@ import {
     TS_TYPE_DECLARATION_LEN
 } from "../../../../../shared-util/constant"
 import {
-    stringify,
-    toCamelCase,
-    getRelativePathWithStartDot
-} from "../../../../../shared-util/sundry"
-import {
     walk,
     isInTopScope,
     isDeclarationOfGlobalType,
@@ -48,7 +43,6 @@ import {
     validIdentifierRE,
     reactCompilerFuncRE,
     watchCompilerFuncRE,
-    componentInvalidCharRE,
     globalTypeIdentifierRE,
     bannedIdentifierFormatRE,
     existingTopScopeIdentifierRE
@@ -60,6 +54,8 @@ import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { getConfigByFileName } from "../configuration/method"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
+import { stringify, getRelativePathWithStartDot } from "../../../../../shared-util/sundry"
+import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
 
 export function updateQingkuaiSnapshot(
     fileName: string,
@@ -78,6 +74,7 @@ export function updateQingkuaiSnapshot(
     const diagnosticsCache: QingKuaiDiagnostic[] = []
     const importedQingkuaiFileNames = new Set<string>()
     const typeRefStatementLen = typeRefStatement.length
+    const componentName = filePathToComponentName(fileName)
     const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
     const componentIdentifierInfos: ComponentIdentifierInfo[] = []
     const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
@@ -456,7 +453,7 @@ export function updateQingkuaiSnapshot(
 
     // 为中间代码添加全局类型声明及默认导出语句
     if (!isTS) {
-        content += `export default function ${getComponentName(fileName)} {
+        content += `export default function ${componentName} {
             /**
              * @param {Props} _
              * @param {Refs} __
@@ -465,7 +462,7 @@ export function updateQingkuaiSnapshot(
             constructor(_, __, ___){}
         }`
     } else {
-        content += `export default class ${getComponentName(fileName)} {
+        content += `export default class ${componentName} {
             constructor(_: Props, __: Refs, ___: {${slotType}}){}
         }`
     }
@@ -476,13 +473,12 @@ export function updateQingkuaiSnapshot(
             normalizedPath.endsWith(".qk") &&
             !importedQingkuaiFileNames.has(normalizedPath)
         ) {
-            const componentName = getComponentName(normalizedPath)
             const relativePath = getRelativePathWithStartDot(dirPath, normalizedPath)
             componentIdentifierInfos.push({
                 imported: false,
                 attributes: [],
-                name: componentName,
                 relativePath: relativePath,
+                name: filePathToComponentName(normalizedPath),
                 slotNams: getComponentSlotNames(normalizedPath)
             })
         }
@@ -490,19 +486,6 @@ export function updateQingkuaiSnapshot(
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
     return editScriptInfoCommon(content), componentIdentifierInfos
-}
-
-function getComponentName(fileName: string) {
-    let name = path.basename(fileName, path.extname(fileName))
-    if (/\d/.test(name[0])) {
-        name = name.slice(1)
-    }
-    name = toCamelCase(name.replace(componentInvalidCharRE, ""))
-
-    if (isEmptyString(name)) {
-        return ""
-    }
-    return name[0].toUpperCase() + name.slice(1)
 }
 
 // 获取commonMessage中的诊断信息

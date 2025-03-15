@@ -16,6 +16,15 @@ export type CodeLensConfig = {
     }
 }
 
+export type CodeLensData = {
+    fileName: string
+    interIndex: number
+    position: Position
+    slotName?: string
+    componentName?: string
+    type: "reference" | "implementation"
+}
+
 export type CachedCompileResultItem = CompileResult & {
     version: number
     filePath: string

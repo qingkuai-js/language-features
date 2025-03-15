@@ -1,18 +1,20 @@
-import {
+import type {
+    GetConfigurationParams,
     FindReferenceResultItem,
-    TPICCommonRequestParams,
-    type GetConfigurationParams
+    TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { NavigationTree } from "typescript"
 import type { CodeLens, Location, Position } from "vscode-languageserver"
-import type { CachedCompileResultItem, CodeLensConfig } from "../types/service"
 import type { CodeLensHandler, ResolveCodeLensHandler } from "../types/handlers"
+import type { CachedCompileResultItem, CodeLensConfig, CodeLensData } from "../types/service"
 
-import { getCompileRes } from "../compile"
+import { getCompileRes, walk } from "../compile"
 import { connection, documents, tpic } from "../state"
 import { escapeRegExp } from "../../../../shared-util/sundry"
-import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { ShowReferencesCommandParams } from "../../../../types/command"
+import { EXPORT_DEFAULT_OFFSET } from "../../../../shared-util/constant"
+import { filePathToComponentName, isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
+import { findSlotReferences } from "./reference"
 
 export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const document = documents.get(textDocument.uri)
@@ -21,6 +23,7 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     }
 
     const cr = await getCompileRes(document)
+    const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET
     const navtree = await tpic.sendRequest<string, NavigationTree | undefined>(
         "getNavigationTree",
         cr.filePath
@@ -50,22 +53,55 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
                             type,
                             fileName: cr.filePath,
                             position: range.start,
-                            interIndex: cr.interIndexMap.stoi[document.offsetAt(range.start)]
-                        }
+                            interIndex: cr.getInterIndex(document.offsetAt(range.start))
+                        } satisfies CodeLensData
                     })
                 })
             }
         }
     })
+
+    // 在嵌入script标签和slot标签处添加代码镜头（引用）
+    walk(cr.templateNodes, node => {
+        const tagNameEndIndex = node.range[0] + node.tag.length + 1
+        if (node.isEmbedded && /[jt]s$/.test(node.tag)) {
+            codeLenses.push({
+                range: cr.getRange(node.range[0], tagNameEndIndex),
+                data: {
+                    interIndex: e29x,
+                    type: "reference",
+                    fileName: cr.filePath,
+                    position: cr.getPosition(node.range[0])
+                } satisfies CodeLensData
+            })
+        } else if (node.tag === "slot") {
+            const nameAttribute = node.attributes.find(attr => {
+                return attr.key.raw === "name"
+            })
+            if (nameAttribute) {
+                codeLenses.push({
+                    range: cr.getRange(node.range[0], tagNameEndIndex),
+                    data: {
+                        interIndex: e29x,
+                        type: "reference",
+                        fileName: cr.filePath,
+                        slotName: nameAttribute.value.raw,
+                        componentName: filePathToComponentName(cr.filePath),
+                        position: cr.getPosition(nameAttribute.key.loc.start.index)
+                    } satisfies CodeLensData
+                })
+            }
+        }
+    })
+
     return codeLenses
 }
 
 export const resolveCodeLens: ResolveCodeLensHandler = async codeLens => {
     const locations: Location[] = []
-    const fileName: string = codeLens.data.fileName
-    const position: Position = codeLens.data.position
-    const interIndex: number = codeLens.data.interIndex
-    const type: "reference" | "implementation" = codeLens.data.type
+    const data: CodeLensData = codeLens.data
+    const { type, fileName, interIndex, position } = data
+    const label = data.componentName ? "useage" : type
     const handlerName = "find" + type[0].toUpperCase() + type.slice(1)
 
     let findResult: FindReferenceResultItem[] | [] =
@@ -85,17 +121,24 @@ export const resolveCodeLens: ResolveCodeLensHandler = async codeLens => {
         })
     }
 
-    findResult?.forEach(item => {
-        locations.push({
-            range: item.range,
-            uri: `file://${item.fileName}`
-        })
-    })
+    if (findResult?.length) {
+        if (!data.componentName) {
+            findResult.forEach(item => {
+                locations.push({
+                    range: item.range,
+                    uri: `file://${item.fileName}`
+                })
+            })
+        } else {
+            const useages = await findSlotReferences(findResult, data.slotName!, data.componentName)
+            useages?.length && locations.push(...useages)
+        }
+    }
     return {
         ...codeLens,
         command: {
             command: locations.length ? "qingkuai.showReferences" : "",
-            title: `${locations.length} ${type}${locations.length === 1 ? "" : "s"}`,
+            title: `${locations.length} ${label}${locations.length === 1 ? "" : "s"}`,
             arguments: [{ fileName, locations, position } satisfies ShowReferencesCommandParams]
         }
     }

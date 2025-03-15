@@ -39,11 +39,11 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
     if (currentNode.componentTag) {
         let interIndex: number | undefined = undefined
         if (tagRanges[0]) {
-            interIndex = cr.interIndexMap.stoi[currentNode.range[0]]
+            interIndex = cr.getInterIndex(currentNode.range[0])
         } else {
             const currentAttribute = findAttribute(offset, currentNode)
             if (currentAttribute) {
-                interIndex = cr.interIndexMap.stoi[currentAttribute.key.loc.start.index]
+                interIndex = cr.getInterIndex(currentAttribute.key.loc.start.index)
             }
         }
         if (isUndefined(interIndex)) {
@@ -80,7 +80,7 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
         const posRange = await tpic.sendRequest<TPICCommonRequestParams, NumNum>("prepareRename", {
             fileName: cr.filePath,
-            pos: cr.interIndexMap.stoi[offset]
+            pos: cr.getInterIndex(offset)
         })
         const ss = getSourceIndex(posRange[0])
         const se = getSourceIndex(posRange[1], true)
@@ -127,7 +127,7 @@ async function doScriptBlockRename(
         "rename",
         {
             fileName: cr.filePath,
-            pos: isInterOffset ? offset : cr.interIndexMap.stoi[offset]
+            pos: isInterOffset ? offset : cr.getInterIndex(offset)
         }
     )
 
