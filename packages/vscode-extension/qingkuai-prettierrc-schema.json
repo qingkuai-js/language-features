@@ -1,0 +1,46 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "allOf": [{ "$ref": "https://json.schemastore.org/prettierrc" }],
+    "properties": {
+        "qingkuai": {
+            "properties": {
+                "spaceAroundInterpolation": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Insert spaces at both ends of interpolation block."
+                },
+                "componentTagFormatPreference": {
+                    "type": "string",
+                    "default": "camel",
+                    "oneOf": [
+                        {
+                            "const": "camel",
+                            "description": "Prefer camel tag format, likes: &lt;MyComponent&gt;&lt;/MyComponent&gt;."
+                        },
+                        {
+                            "const": "kebab",
+                            "description": "Prefer kebab tag format, likes: &lt;my-component&gt;&lt;/my-component&gt;."
+                        }
+                    ],
+                    "description": "Your prefered fomat of component tag in the qingkuai template."
+                },
+                "componentAttributeFormatPreference": {
+                    "type": "string",
+                    "default": "camel",
+                    "oneOf": [
+                        {
+                            "const": "camel",
+                            "description": "Prefer camel attribute format, likes: &lt;MyComponent MyCustomAttribute&gt;&lt;/MyComponent&gt;."
+                        },
+                        {
+                            "const": "kebab",
+                            "description": "Prefer kebab attribute format, likes: &lt;my-component my-custom-attribute&gt;&lt;/my-component&gt;."
+                        }
+                    ],
+                    "description": "Your prefered fomat of component attribute in the qingkuai template."
+                }
+            },
+            "description": "prettier-plugin-qingkuai used configuration options when formatting .qk file."
+        }
+    }
+}

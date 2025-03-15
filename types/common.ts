@@ -35,12 +35,13 @@ export interface TSClientConfiguration {
     formatCodeSettings: TSFormatCodeSettings
 }
 
-export type PrettierConfiguration = PrettierOptions &
-    Partial<{
+export type PrettierConfiguration = PrettierOptions & {
+    qingkuai: Partial<{
         spaceAroundInterpolation: boolean
         componentTagFormatPreference: "camel" | "kebab"
         componentAttributeFormatPreference: "camel" | "kebab"
     }>
+}
 
 export type QingkuaiConfigurationWithDir = QingkuaiConfiguration & {
     dir: string

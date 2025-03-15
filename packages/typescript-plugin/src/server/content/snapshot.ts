@@ -11,7 +11,7 @@ import {
     isNumber,
     isString,
     isUndefined,
-    isEmptyString
+    isQingkuaiFileName
 } from "../../../../../shared-util/assert"
 import {
     ts,
@@ -54,8 +54,8 @@ import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { getConfigByFileName } from "../configuration/method"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
-import { stringify, getRelativePathWithStartDot } from "../../../../../shared-util/sundry"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
+import { stringify, getRelativePathWithStartDot } from "../../../../../shared-util/sundry"
 
 export function updateQingkuaiSnapshot(
     fileName: string,
@@ -215,7 +215,10 @@ export function updateQingkuaiSnapshot(
                     ts.isStringLiteral(node.moduleSpecifier) &&
                     qingkuaiModules?.has(node.moduleSpecifier.text)
                 ) {
-                    const componentFileName = path.resolve(dirPath, node.moduleSpecifier.text)
+                    let componentFileName = path.resolve(dirPath, node.moduleSpecifier.text)
+                    if (!isQingkuaiFileName(componentFileName)) {
+                        componentFileName += ".qk"
+                    }
                     componentIdentifierInfos.push({
                         imported: true,
                         name: identifierName,

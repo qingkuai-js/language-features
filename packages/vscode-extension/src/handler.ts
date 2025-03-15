@@ -5,10 +5,15 @@ import type {
     InsertSnippetParam
 } from "../../../types/communication"
 
+import {
+    getExtensionConfig,
+    getPrettierConfig,
+    getTypescriptConfig,
+    notifyServerCleanConfigCache
+} from "./config"
 import fs from "node:fs"
 import * as vsc from "vscode"
 import { isUndefined } from "../../../shared-util/assert"
-import { getExtensionConfig, getPrettierConfig, getTypescriptConfig } from "./config"
 
 export function attachCustomHandlers(client: LanguageClient) {
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
@@ -29,7 +34,7 @@ export function attachCustomHandlers(client: LanguageClient) {
             affectsConfiguration("typescript") ||
             affectsConfiguration("javascript")
         ) {
-            client.sendNotification("qingkuai/cleanConfigurationCache", null)
+            notifyServerCleanConfigCache(client)
         }
     })
 

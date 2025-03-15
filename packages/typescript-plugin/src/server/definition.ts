@@ -8,16 +8,13 @@ import type { NumNum } from "../../../../types/common"
 import type { Range } from "vscode-languageserver/node"
 
 import {
-    convertProtocolTextSpanToRange,
-    convertProtocolTextSpanWithContext
-} from "../util/protocol"
-import {
     getDefaultSourceFileByFileName,
     getDefaultLanguageServiceByFileName
 } from "../util/typescript"
 import { server, session, ts } from "../state"
 import { convertTextSpanToRange } from "../util/service"
 import { DEFAULT_RANGE } from "../../../../shared-util/constant"
+import { convertProtocolTextSpanToRange } from "../util/protocol"
 
 export function attachFindDefinition() {
     server.onRequest<FindDefinitionParams>(
@@ -61,7 +58,6 @@ export function attachFindDefinition() {
                 )
             ]
 
-            // 这里可以直接使用 convertProtocolTextSpanWithContext 解决
             const dealtDefinitions = definitions.map(
                 (item: TS.server.protocol.FileSpanWithContext) => {
                     const range = convertProtocolTextSpanToRange(item)

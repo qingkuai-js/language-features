@@ -20,19 +20,20 @@ export function getExtensionConfig(uri: vsc.Uri) {
     return vsc.workspace.getConfiguration("qingkuai", uri)
 }
 
-// 获取初始化时由.qingkuairc配置文件定义的配置项
-export function getInitQingkuaiConfig() {
-    const configurations: QingkuaiConfigurationWithDir[] = []
+// 向语言服务器发送清空配置缓存的通知
+export function notifyServerCleanConfigCache(client: LanguageClient) {
+    client.sendNotification("qingkuai/cleanConfigurationCache", null)
+}
 
-    // 查找所有已存在的配置文件
-    vsc.workspace.workspaceFolders?.forEach(folder => {
-        const folderPath = folder.uri.path
-        fs.readdirSync(folderPath, {
-            recursive: true
-        }).forEach(filePath => {
+// 获取初始化时由.qingkuairc配置文件定义的配置项
+export async function getInitQingkuaiConfig() {
+    const configurations: QingkuaiConfigurationWithDir[] = []
+    for (const folder of vsc.workspace.workspaceFolders ?? []) {
+        const folderPath = folder.uri.fsPath
+        for (const filePath of fs.readdirSync(folderPath, { recursive: true })) {
             if (isString(filePath) && filePath.endsWith(".qingkuairc")) {
                 const fileAbsPath = path.join(folderPath, filePath)
-                const config = loadQingkuaiConfig(fileAbsPath)
+                const config = await loadQingkuaiConfig(fileAbsPath)
                 if (!isUndefined(config)) {
                     configurations.push({
                         ...config,
@@ -40,9 +41,8 @@ export function getInitQingkuaiConfig() {
                     })
                 }
             }
-        })
-    })
-
+        }
+    }
     return configurations
 }
 
@@ -50,6 +50,7 @@ export function getInitQingkuaiConfig() {
 export function startQingkuaiConfigWatcher(client: LanguageClient) {
     const watcher = vsc.workspace.createFileSystemWatcher("**/.qingkuairc", true)
     watcher.onDidChange(uri => {
+        notifyServerCleanConfigCache(client)
         client.sendNotification("qingkuai/retransmission", {
             name: "updateConfig",
             data: {
@@ -59,6 +60,7 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
         } satisfies RetransmissionParams)
     })
     watcher.onDidDelete(uri => {
+        notifyServerCleanConfigCache(client)
         client.sendNotification("qingkuai/retransmission", {
             name: "deleteConfig",
             data: path.dirname(uri.path)
@@ -70,12 +72,8 @@ export function startPrettierConfigWatcher(client: LanguageClient) {
     const watcher = vsc.workspace.createFileSystemWatcher(
         "**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}"
     )
-    watcher.onDidChange(() => {
-        client.sendNotification("qingkuai/updateExtensionConfig", null)
-    })
-    watcher.onDidDelete(() => {
-        client.sendNotification("qingkuai/updateExtensionConfig", null)
-    })
+    watcher.onDidChange(() => notifyServerCleanConfigCache(client))
+    watcher.onDidDelete(() => notifyServerCleanConfigCache(client))
 }
 
 // 获取typescript配置项

@@ -87,7 +87,11 @@
         "jsonValidation": [
             {
                 "fileMatch": ".qingkuairc",
-                "url": "./config-validation.json"
+                "url": "./qingkuairc-schema.json"
+            },
+            {
+                "fileMatch": ".prettierrc",
+                "url": "./qingkuai-prettierrc-schema.json"
             }
         ],
         "configurationDefaults": {

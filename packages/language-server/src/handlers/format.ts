@@ -21,8 +21,7 @@ export const format: FormatHandler = async ({ textDocument }, token) => {
             ...config.prettierConfig,
             parser: "qingkuai",
             plugins: [pluginPath],
-            spaceAroundInterpolation: config.extensionConfig.insertSpaceAroundInterpolation,
-            componentTagFormatPreference: config.extensionConfig.componentTagFormatPreference
+            ...config.prettierConfig.qingkuai
         })
 
         return [

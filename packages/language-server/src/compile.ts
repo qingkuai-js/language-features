@@ -21,8 +21,8 @@ import { TextDocument } from "vscode-languageserver-textdocument"
 import { JS_TYPE_DECLARATION_LEN, TS_TYPE_DECLARATION_LEN } from "../../../shared-util/constant"
 import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
-// 文档的扩展配置项，键为TextDocument.uri（string）
-const extensionConfigCache = new Map<string, GetClientConfigResult>()
+// 文档配置项，键为TextDocument.uri（string）
+const clientConfigCache = new Map<string, GetClientConfigResult>()
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
 const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
@@ -139,8 +139,8 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     }
 
     async function getConfigurationOfFile(cr: CachedCompileResultItem) {
-        if (extensionConfigCache.has(document.uri)) {
-            cr.config = extensionConfigCache.get(document.uri)!
+        if (clientConfigCache.has(document.uri)) {
+            cr.config = clientConfigCache.get(document.uri)!
         } else {
             const res: GetClientConfigResult = await connection.sendRequest(
                 "qingkuai/getClientConfig",
@@ -159,7 +159,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
                     workspacePath: res.workspacePath
                 })
             }
-            extensionConfigCache.set(document.uri, (cr.config = res))
+            clientConfigCache.set(document.uri, (cr.config = res))
         }
     }
 
@@ -194,20 +194,23 @@ export async function getCompileResByPath(path: string) {
 }
 
 // 清空已缓存的配置内容
-export function clearConfigCache() {
-    extensionConfigCache.clear()
+export function cleanConfigCache() {
+    clientConfigCache.clear()
 }
 
 function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResult) {
     const { prettierConfig: pc, extensionConfig: ec } = config
-    if (isUndefined(pc.spaceAroundInterpolation)) {
-        pc.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
+    if (isUndefined(pc.qingkuai)) {
+        pc.qingkuai = {}
     }
-    if (isUndefined(pc.componentTagFormatPreference)) {
-        pc.componentTagFormatPreference = ec.componentTagFormatPreference
+    if (isUndefined(pc.qingkuai.spaceAroundInterpolation)) {
+        pc.qingkuai.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
     }
-    if (isUndefined(pc.componentAttributeFormatPreference)) {
-        pc.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
+    if (isUndefined(pc.qingkuai.componentTagFormatPreference)) {
+        pc.qingkuai.componentTagFormatPreference = ec.componentTagFormatPreference
+    }
+    if (isUndefined(pc.qingkuai.componentAttributeFormatPreference)) {
+        pc.qingkuai.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
     }
 }
 

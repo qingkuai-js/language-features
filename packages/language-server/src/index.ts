@@ -2,7 +2,7 @@ import { connection } from "./state"
 import { hover } from "./handlers/hover"
 import { format } from "./handlers/format"
 import { connectTsServer } from "./client"
-import { clearConfigCache } from "./compile"
+import { cleanConfigCache } from "./compile"
 import { initialize } from "./handlers/initialize"
 import { findReference } from "./handlers/reference"
 import { signatureHelp } from "./handlers/signature"
@@ -37,4 +37,4 @@ connection.onCompletionResolve(resolveCompletion)
 connection.onRequest("ping", _ => "pong")
 connection.onRequest("qingkuai/extensionLoaded", connectTsServer)
 connection.onNotification("qingkuai/publishDiagnostics", publishDiagnostics)
-connection.onNotification("qingkuai/cleanConfigurationCache", clearConfigCache)
+connection.onNotification("qingkuai/cleanConfigurationCache", cleanConfigCache)

@@ -22,7 +22,7 @@ export function attachChangeConfig() {
         setQingkuaiConfig(config.dir, config)
     })
 
-    // 此方法用于将typescript相关的配置项与文件关联，qk文件不会经过ts的客户端扩展处理需要手动添加配置信息
+    // 此方法用于将typescript相关的配置项与文件关联，qingkuai文件不会经过ts的客户端扩展处理需要手动添加配置信息
     server.onNotification("configureFile", (params: ConfigureFileParams) => {
         convertImportFileExcludePatternsPreferences(
             params.config.preference.autoImportFileExcludePatterns!,

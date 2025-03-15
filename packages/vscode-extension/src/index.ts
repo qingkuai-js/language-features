@@ -49,7 +49,7 @@ export async function activate(context: ExtensionContext) {
     const sockPath = await getValidPathWithHash("qingkuai")
     tsExtenstionAPI.configurePlugin("typescript-plugin-qingkuai", {
         sockPath,
-        configurations: getInitQingkuaiConfig(),
+        configurations: await getInitQingkuaiConfig(),
         triggerFileName: shouldToggleLanguageId ? doc.fileName : ""
     })
 

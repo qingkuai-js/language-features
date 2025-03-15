@@ -2,6 +2,7 @@ import type TS from "typescript"
 import type { Position, Range } from "vscode-languageserver"
 import type { ConvertProtocolTextSpanWithContextVerifier } from "../types"
 
+import { projectService } from "../state"
 import { DEFAULT_PROTOCOL_LOCATION } from "../constant"
 import { getDefaultSourceFileByFileName } from "./typescript"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
@@ -21,6 +22,10 @@ export function convertProtocolTextSpanWithContext(
 
     if (!verify) {
         verify = () => !0
+    }
+
+    if (!projectService.getScriptInfo(fileName)) {
+        return textSpanWithContext
     }
 
     const sourceFile = getDefaultSourceFileByFileName(fileName)!
