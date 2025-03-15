@@ -11,6 +11,7 @@ export type DefinitionHandler = ExtractHandler<"onDefinition">
 export type FormatHandler = ExtractHandler<"onDocumentFormatting">
 export type SignatureHelpHandler = ExtractHandler<"onSignatureHelp">
 export type TypeDefinitionHandler = ExtractHandler<"onTypeDefinition">
+export type ImplementationHandler = ExtractHandler<"onImplementation">
 export type ResolveCodeLensHandler = ExtractHandler<"onCodeLensResolve">
 export type ResolveCompletionHandler = ExtractHandler<"onCompletionResolve">
 

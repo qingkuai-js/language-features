@@ -28,6 +28,7 @@ export function proxyTypescriptProjectServiceAndSystemMethods() {
         proxyGetReferences,
         proxyExecuteCommand,
         proxyCloseClientFile,
+        proxyGetImplementation,
         proxyOnConfigFileChanged,
         proxyRenameSessionHandler,
         proxyFindSourceDefinition,
@@ -146,7 +147,6 @@ function proxyGetReferences() {
     if (!session || getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
-
     sessionAny.getReferences = (...args: any) => {
         const dealtRefs: any[] = []
         const originalRet = getReferences.call(session, ...args)
@@ -157,9 +157,7 @@ function proxyGetReferences() {
         }
         return (originalRet.refs = dealtRefs), originalRet
     }
-
-    // @ts-expect-error: attach supplementary property
-    session.getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+    sessionAny.getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 function proxyGetDefinitionAndBoundSpan() {
@@ -168,14 +166,11 @@ function proxyGetDefinitionAndBoundSpan() {
     if (!session || getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
-
     sessionAny.getDefinitionAndBoundSpan = (...args: any) => {
         const originalRet = getDefinitionAndBoundSpan.call(session, ...args)
         return convertProtocolDefinitions(originalRet.definitions), originalRet
     }
-
-    // @ts-expect-error: attach supplementary property
-    session.getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+    sessionAny.getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 function proxyFindSourceDefinition() {
@@ -184,14 +179,29 @@ function proxyFindSourceDefinition() {
     if (!session || findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
-
     sessionAny.findSourceDefinition = (...args: any) => {
         const originalRet = findSourceDefinition.call(session, ...args)
         return convertProtocolDefinitions(originalRet), originalRet
     }
+    sessionAny.findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+}
 
-    // @ts-expect-error: attach supplementary property
-    session.findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+function proxyGetImplementation() {
+    const sessionAny = session as any
+    const getImplementation = sessionAny.getImplementation
+    if (!session || getImplementation[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
+    sessionAny.getImplementation = (...args: any) => {
+        const originalRet = getImplementation.call(session, ...args)
+        return originalRet?.map((item: TS.server.protocol.FileSpan) => {
+            return {
+                ...item,
+                ...convertProtocolTextSpanWithContext(item.file, item)
+            }
+        })
+    }
+    sessionAny.getImplementation[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 // 代理文件编辑，非qk文件修改时应刷新qk文件的诊断信息

@@ -10,8 +10,8 @@ import { documents, tpic } from "../state"
 import { basename, extname } from "node:path"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
-import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 import { EXPORT_DEFAULT_OFFSET } from "../../../../shared-util/constant"
+import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)

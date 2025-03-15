@@ -16,6 +16,7 @@ export const initialize: InitializeHandler = () => {
             referencesProvider: true,
             definitionProvider: true,
             typeDefinitionProvider: true,
+            implementationProvider: true,
             renameProvider: {
                 prepareProvider: true
             },
