@@ -41,6 +41,14 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
             filter: ["referencesCodeLens", "implementationsCodeLens"]
         } satisfies GetConfigurationParams
     )
+
+    if (
+        !codeLensConfig.referencesCodeLens.enabled &&
+        !codeLensConfig.implementationsCodeLens?.enabled
+    ) {
+        return null
+    }
+
     walkNavigationTree(navtree.childItems, undefined, (item, parent) => {
         const types = getCodeLensTypesForNavigationTree(codeLensConfig, item, parent)
         if (types.length) {
@@ -171,14 +179,14 @@ function getCodeLensTypesForNavigationTree(
         if (
             "method" === item.kind &&
             "interface" === parent.kind &&
-            config.implementationsCodeLens.enabled &&
-            config.implementationsCodeLens.showOnInterfaceMethods
+            config.implementationsCodeLens?.enabled &&
+            config.implementationsCodeLens?.showOnInterfaceMethods
         ) {
             types.push("implementation")
         }
     }
 
-    if (config.implementationsCodeLens.enabled && !types.includes("implementation")) {
+    if (config.implementationsCodeLens?.enabled && !types.includes("implementation")) {
         switch (item.kind) {
             case "interface":
                 types.push("implementation")

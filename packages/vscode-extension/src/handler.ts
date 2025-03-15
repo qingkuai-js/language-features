@@ -26,9 +26,16 @@ export function attachCustomHandlers(client: LanguageClient) {
         if (
             affectsConfiguration("qingkuai") ||
             affectsConfiguration("prettier") ||
-            affectsConfiguration("typescript")
+            affectsConfiguration("typescript") ||
+            affectsConfiguration("javascript")
         ) {
             client.sendNotification("qingkuai/cleanConfigurationCache", null)
+        }
+    })
+
+    vsc.workspace.onDidRenameFiles(({ files }) => {
+        for (const { oldUri, newUri } of files) {
+            console.log(oldUri.fsPath, newUri.fsPath)
         }
     })
 

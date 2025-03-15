@@ -66,6 +66,7 @@ function newParticipant(
         })
     }
 
+    socket.setNoDelay(true)
     socket.on("data", buffer => {
         reader.read(buffer, ({ messageId, methodName, body }) => {
             const resolver = resolvers.get(messageId)

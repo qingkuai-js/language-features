@@ -1,5 +1,6 @@
 import type { FormatHandler } from "../types/handlers"
 
+import path from "node:path"
 import prettier from "prettier"
 import { getCompileRes } from "../compile"
 import { documents, Logger } from "../state"
@@ -12,12 +13,14 @@ export const format: FormatHandler = async ({ textDocument }, token) => {
 
     const { config } = await getCompileRes(document)
     try {
+        const pluginPath = path.resolve(
+            __dirname,
+            "../node_modules/prettier-plugin-qingkuai/dist/index.js"
+        )
         const formatedContent = await prettier.format(document.getText(), {
             ...config.prettierConfig,
             parser: "qingkuai",
-            plugins: [
-                "/Users/lianggaoqiang/Desktop/QingKuai/language-features/node_modules/prettier-plugin-qingkuai/dist/index.js"
-            ],
+            plugins: [pluginPath],
             spaceAroundInterpolation: config.extensionConfig.insertSpaceAroundInterpolation,
             componentTagFormatPreference: config.extensionConfig.componentTagFormatPreference
         })

@@ -15,7 +15,7 @@ import { ensureGetTextDocument } from "./document"
 import { connection, documents, tpic } from "../state"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
-export const findDefinition: DefinitionHandler = async ({ textDocument, position }, token) => {
+export const findDefinition: DefinitionHandler = async ({ textDocument, position, workDoneToken }, token) => {
     const document = documents.get(textDocument.uri)
     if (!document || token.isCancellationRequested) {
         return null

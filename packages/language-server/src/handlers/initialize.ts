@@ -3,7 +3,7 @@ import { Logger, setIsTestingEnv } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
 
-export const initialize: InitializeHandler = () => {
+export const initialize: InitializeHandler = params => {
     // 测试中不会调用initialize
     setIsTestingEnv(false)
 
@@ -17,14 +17,12 @@ export const initialize: InitializeHandler = () => {
             definitionProvider: true,
             typeDefinitionProvider: true,
             implementationProvider: true,
+            documentFormattingProvider: true,
             renameProvider: {
                 prepareProvider: true
             },
             codeLensProvider: {
                 resolveProvider: true
-            },
-            documentFormattingProvider: {
-                workDoneProgress: true
             },
             signatureHelpProvider: {
                 triggerCharacters: ["(", "<", ","],

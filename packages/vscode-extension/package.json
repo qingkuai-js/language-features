@@ -44,6 +44,7 @@
                 "scopeName": "source.qk",
                 "path": "./syntaxes/qk.tmLanguage.json",
                 "embeddedLanguages": {
+                    "source.jsdoc": "jsdoc",
                     "source.js": "javascript",
                     "source.ts": "typescript",
                     "source.css": "css",
@@ -100,7 +101,7 @@
                 "qingkuai.typescriptDiagnosticsExplain": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Allow to add explain to ambiguous typescript diagnostic message."
+                    "description": "Allow to add explain to ambiguous typescript diagnostic message for qingkuai file."
                 },
                 "qingkuai.insertSpaceAroundInterpolation": {
                     "type": "boolean",
@@ -140,6 +141,7 @@
                         "entity",
                         "attribute"
                     ],
+                    "uniqueItems": true,
                     "description": "Whether to enable hover tip for HTML tags, attributes and entity characters."
                 }
             }

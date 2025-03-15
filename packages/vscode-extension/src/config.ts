@@ -17,15 +17,7 @@ import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util
 
 // 获取扩展配置项
 export function getExtensionConfig(uri: vsc.Uri) {
-    const configuration = {
-        ...vsc.workspace.getConfiguration("qingkuai", uri)
-    }
-    Object.keys(configuration).forEach(key => {
-        if (key === "htmlHoverTip") {
-            configuration[key] = Array.from(new Set(configuration[key]))
-        }
-    })
-    return configuration
+    return vsc.workspace.getConfiguration("qingkuai", uri)
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项

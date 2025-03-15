@@ -10,7 +10,7 @@ export type CodeLensConfig = {
         enabled: boolean
         showOnAllFunctions: boolean
     }
-    implementationsCodeLens: {
+    implementationsCodeLens?: {
         enabled: boolean
         showOnInterfaceMethods: boolean
     }

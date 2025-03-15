@@ -1,4 +1,5 @@
 import type TS from "typescript"
+import type { QingKuaiSnapShot } from "./snapshot"
 import type { ConvertProtocolTextSpanWithContextVerifier, TSPluginCreateInfo } from "./types"
 
 import {
@@ -38,12 +39,13 @@ export function proxyTypescriptProjectServiceAndSystemMethods() {
 }
 
 export function proxyTypescriptLanguageServiceMethods(info: TSPluginCreateInfo) {
-    const { project, languageServiceHost } = info
+    const { project, languageServiceHost, languageService } = info
     runAll([
         () => proxyGetScriptSnapshot(project),
         () => proxyGetScriptKind(languageServiceHost),
         () => proxyGetScriptVersion(languageServiceHost),
-        () => proxyResolveModuleNameLiterals(languageServiceHost)
+        () => proxyResolveModuleNameLiterals(languageServiceHost),
+        () => proxyGetMoveToRefactoringFileSuggestions(languageService)
     ])
 }
 
@@ -85,11 +87,11 @@ function proxyExecuteCommand() {
 
 function proxyCloseClientFile() {
     const closeClientFile = projectService.closeClientFile
-    projectService.closeClientFile = fileName => {
-        if (openQingkuaiFiles.has(fileName)) {
+    projectService.closeClientFile = (...args) => {
+        if (openQingkuaiFiles.has(args[0])) {
             return
         }
-        return closeClientFile.call(projectService, fileName)
+        return closeClientFile.call(projectService, ...args)
     }
 }
 
@@ -387,15 +389,14 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
             }
             resolvedQingkuaiModule.get(containingFile)!.add(moduleText)
 
-            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(modulePath)
-            const extension = qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS ? ".ts" : ".js"
+            const snapshot = languageServiceHost.getScriptSnapshot(modulePath) as QingKuaiSnapShot
             return {
                 ...item,
                 resolvedModule: {
-                    extension,
                     resolvedFileName: modulePath,
                     isExternalLibraryImport: false,
-                    resolvedUsingTsExtension: false
+                    resolvedUsingTsExtension: false,
+                    extension: snapshot.scriptKind === ts.ScriptKind.TS ? ".ts" : ".js"
                 },
                 failedLookupLocations: undefined
             }
@@ -404,4 +405,40 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
 
     // @ts-expect-error: attach supplementary property
     languageServiceHost.resolveModuleNameLiterals[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+}
+
+// 在getMoveToRefactoringFileSuggestions执行期间过滤掉program.getSourceFiles结果中的qingkuai文件
+function proxyGetMoveToRefactoringFileSuggestions(languageService: TS.LanguageService) {
+    let getMoveToRefactoringFileSuggestionsIsRunning = false
+    const { getMoveToRefactoringFileSuggestions } = languageService
+    if ((getMoveToRefactoringFileSuggestions as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
+
+    function proxyGetSourceFiles(program: TS.Program) {
+        const getSourceFiles = program.getSourceFiles.bind(program)
+        if ((getSourceFiles as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+            return
+        }
+        program.getSourceFiles = () => {
+            const originalRet = getSourceFiles!()
+            if (!getMoveToRefactoringFileSuggestionsIsRunning) {
+                return originalRet
+            }
+            return originalRet.filter(item => !isQingkuaiFileName(item.fileName))
+        }
+        ;(program as any)[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+    }
+
+    languageService.getMoveToRefactoringFileSuggestions = (...args) => {
+        const program = languageService.getProgram()
+        program && proxyGetSourceFiles(program)
+        getMoveToRefactoringFileSuggestionsIsRunning = true
+
+        const originalRet = getMoveToRefactoringFileSuggestions.call(languageService, ...args)
+        return (getMoveToRefactoringFileSuggestionsIsRunning = false), originalRet
+    }
+
+    // @ts-expect-error: attach supplementary property
+    languageService.getMoveToRefactoringFileSuggestions[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }

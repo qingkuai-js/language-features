@@ -71,6 +71,12 @@ export interface ConfigureFileParams {
     config: TSClientConfiguration
 }
 
+export interface GetSemanticTokensParams {
+    fileName: string
+    start: number
+    length: number
+}
+
 export interface ResolveCompletionParams {
     pos: number
     fileName: string
@@ -137,7 +143,7 @@ export interface UpdateSnapshotParams {
     interCode: string
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
-    cp: NumNumArray // compressed positions
+    cp: number[] // compressed positions
     citos: NumNumArray // compressed itos
     cpf: NumNumArray // compressed position flags
 }

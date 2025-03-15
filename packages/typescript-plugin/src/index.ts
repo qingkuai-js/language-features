@@ -6,13 +6,12 @@ import {
     proxyTypescriptProjectServiceAndSystemMethods
 } from "./proxy"
 import fs from "node:fs"
+import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
 import { ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { ts, setState, typeRefStatement, projectService } from "./state"
-import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
-import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
@@ -35,13 +34,6 @@ export = function init(modules: { typescript: typeof TS }) {
                     ]
                 })
             }
-
-            info.project.getFileNames().forEach(fileName => {
-                if (!isQingkuaiFileName(fileName)) {
-                    return
-                }
-                initialEditQingkuaiFileSnapshot(fileName)
-            })
 
             proxyTypescriptLanguageServiceMethods(info)
 

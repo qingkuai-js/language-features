@@ -49,6 +49,7 @@ import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
 import { completeEntityCharacterRE, emmetTagNameRE, inEntityCharacterRE } from "../regular"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
+import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 
 const optionalSameKeys = [
     "preselect",
@@ -364,23 +365,25 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
 
     const document = documents.get(`file://${item.data.fileName}`)!
     const { getSourceIndex, getRange, inputDescriptor, config } = await getCompileRes(document)
-    const ret: ResolveCompletionResult = await tpic.sendRequest("resolveCompletion", item.data)
-    if (ret.detail) {
-        item.detail = ret.detail
+    const res: ResolveCompletionResult = await tpic.sendRequest("resolveCompletion", item.data)
+    if (res.detail) {
+        item.detail = res.detail
     }
-    if (ret.documentation) {
+    if (res.documentation) {
         item.documentation = {
             kind: "markdown",
-            value: ret.documentation
+            value: res.documentation
         }
     }
-    if (ret.textEdits) {
-        item.additionalTextEdits = ret.textEdits.map(item => {
-            const sourcePosRange: NumNum = [
+    if (res.textEdits) {
+        const additionalTextEdits: TextEdit[] = []
+        for (const item of res.textEdits) {
+            let sourcePosRange: NumNum = [
                 getSourceIndex(item.start),
                 getSourceIndex(item.end, true)
             ]
             if (item.newText.trimStart().startsWith("import")) {
+                sourcePosRange = Array(2).fill(inputDescriptor.script.loc.start.index) as NumNum
                 item.newText = formatImportStatement(
                     item.newText.trim(),
                     inputDescriptor.source,
@@ -388,11 +391,16 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
                     config.prettierConfig
                 )
             }
-            return {
-                newText: item.newText,
-                range: getRange(...sourcePosRange)
+            if (!isSourceIndexesInvalid(...sourcePosRange)) {
+                additionalTextEdits.push({
+                    newText: item.newText,
+                    range: getRange(...sourcePosRange)
+                })
             }
-        })
+        }
+        if (additionalTextEdits.length) {
+            item.additionalTextEdits = additionalTextEdits
+        }
     }
     return item
 }
