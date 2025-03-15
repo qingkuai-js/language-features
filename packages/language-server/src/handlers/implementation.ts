@@ -1,8 +1,11 @@
+import type {
+    FindReferenceResultItem,
+    TPICCommonRequestParams
+} from "../../../../types/communication"
 import type { ImplementationHandler } from "../types/handlers"
 
-import { documents, tpic } from "../state"
 import { getCompileRes } from "../compile"
-import { FindReferenceResultItem, TPICCommonRequestParams } from "../../../../types/communication"
+import { documents, tpic } from "../state"
 
 export const findImplementation: ImplementationHandler = async ({ textDocument, position }) => {
     const document = documents.get(textDocument.uri)

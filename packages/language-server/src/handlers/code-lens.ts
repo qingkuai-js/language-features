@@ -4,7 +4,7 @@ import {
     type GetConfigurationParams
 } from "../../../../types/communication"
 import type { NavigationTree } from "typescript"
-import type { CodeLens, Location } from "vscode-languageserver"
+import type { CodeLens, Location, Position } from "vscode-languageserver"
 import type { CachedCompileResultItem, CodeLensConfig } from "../types/service"
 import type { CodeLensHandler, ResolveCodeLensHandler } from "../types/handlers"
 
@@ -63,33 +63,42 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
 export const resolveCodeLens: ResolveCodeLensHandler = async codeLens => {
     const locations: Location[] = []
     const fileName: string = codeLens.data.fileName
+    const position: Position = codeLens.data.position
     const interIndex: number = codeLens.data.interIndex
     const type: "reference" | "implementation" = codeLens.data.type
-    if (type === "reference") {
-        const references: FindReferenceResultItem[] | null =
-            await tpic.sendRequest<TPICCommonRequestParams>("findReference", {
-                fileName,
-                pos: interIndex
-            })
-        references?.forEach(item => {
-            locations.push({
-                range: item.range,
-                uri: `file://${item.fileName}`
-            })
+    const handlerName = "find" + type[0].toUpperCase() + type.slice(1)
+
+    let findResult: FindReferenceResultItem[] | [] =
+        await tpic.sendRequest<TPICCommonRequestParams>(handlerName, {
+            fileName,
+            pos: interIndex
         })
-        codeLens.command = {
+
+    // 过滤实现中与现实codeLens开始位置形同的项目
+    if (findResult && type === "implementation") {
+        findResult = findResult.filter(item => {
+            return (
+                item.fileName !== fileName ||
+                item.range.start.line !== position.line ||
+                item.range.start.character !== position.character
+            )
+        })
+    }
+
+    findResult?.forEach(item => {
+        locations.push({
+            range: item.range,
+            uri: `file://${item.fileName}`
+        })
+    })
+    return {
+        ...codeLens,
+        command: {
             command: locations.length ? "qingkuai.showReferences" : "",
-            title: `${locations.length} reference${locations.length === 1 ? "" : "s"}`,
-            arguments: [
-                {
-                    fileName,
-                    locations,
-                    position: codeLens.data.position
-                } satisfies ShowReferencesCommandParams
-            ]
+            title: `${locations.length} ${type}${locations.length === 1 ? "" : "s"}`,
+            arguments: [{ fileName, locations, position } satisfies ShowReferencesCommandParams]
         }
     }
-    return codeLens
 }
 
 function walkNavigationTree(
