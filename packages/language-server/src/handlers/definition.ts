@@ -1,6 +1,7 @@
 import type {
     FindDefinitionParams,
     FindDefinitionResult,
+    GetConfigurationParams,
     TPICCommonRequestParams,
     FindDefinitionResultItem
 } from "../../../../types/communication"
@@ -77,11 +78,12 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
 
     const preferGoToSourceDefinition: boolean = await connection.sendRequest(
         "qingkuai/getConfiguration",
-        [
-            cr.inputDescriptor.script.isTS ? "typescript" : "javascript",
-            "preferGoToSourceDefinition",
-            false
-        ]
+        {
+            defaultValue: false,
+            uri: textDocument.uri,
+            section: cr.scriptLanguageId,
+            name: "preferGoToSourceDefinition"
+        } satisfies GetConfigurationParams<boolean>
     )
 
     const res: FindDefinitionResult | null = await tpic.sendRequest<FindDefinitionParams>(
@@ -102,6 +104,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
             getSourceIndex(res.range[1], true)
         )
     }
+
 
     return res.definitions.map(item => {
         return {

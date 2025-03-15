@@ -12,11 +12,13 @@ import { complete, resolveCompletion } from "./handlers/complete"
 import { attachRetransmissionHandlers } from "./handlers/retransmission"
 import { findDefinition, findTypeDefinition } from "./handlers/definition"
 import { findReference } from "./handlers/reference"
+import { codeLens, resolveCodeLens } from "./handlers/code-lens"
 
 attachDocumentHandlers()
 attachRetransmissionHandlers()
 
 connection.onHover(hover)
+connection.onCodeLens(codeLens)
 connection.onCompletion(complete)
 connection.onRenameRequest(rename)
 connection.onInitialize(initialize)
@@ -25,6 +27,7 @@ connection.onDocumentFormatting(format)
 connection.onDefinition(findDefinition)
 connection.onPrepareRename(prepareRename)
 connection.onSignatureHelp(signatureHelp)
+connection.onCodeLensResolve(resolveCodeLens)
 connection.onTypeDefinition(findTypeDefinition)
 connection.onCompletionResolve(resolveCompletion)
 

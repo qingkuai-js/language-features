@@ -80,8 +80,13 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
 
     // 获取脚本块（包括插值表达式）的补全建议
     if (!isTestingEnv && inScript) {
-        if (/[^\.\-@#<'"`:,_]/.test(triggerChar)) {
+        if (/[^\.\-@#<'"`:,_ ]/.test(triggerChar)) {
             return null
+        }
+        if (
+            triggerChar === " " &&
+            document.getText(cr.getRange(offset - 7, offset)) !== "import "
+        ) {
         }
         return doScriptBlockComplete(cr, offset)
     }

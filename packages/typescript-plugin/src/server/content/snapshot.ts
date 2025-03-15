@@ -22,6 +22,10 @@ import {
     resolvedQingkuaiModule
 } from "../../state"
 import {
+    JS_TYPE_DECLARATION_LEN,
+    TS_TYPE_DECLARATION_LEN
+} from "../../../../../shared-util/constant"
+import {
     stringify,
     toCamelCase,
     getRelativePathWithStartDot
@@ -77,7 +81,8 @@ export function updateQingkuaiSnapshot(
     const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
     const componentIdentifierInfos: ComponentIdentifierInfo[] = []
     const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
-    const builtInTypeDeclarationEndIndex = typeRefStatement.length + (isTS ? 119 : 114)
+    const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
+    const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
 
     const editScriptInfoCommon = (content: string) => {
         if (originalScriptKind !== scriptKind) {

@@ -17,6 +17,10 @@ export function toCamelCase(s: string) {
     })
 }
 
+export function escapeRegExp(text: string) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")
+}
+
 // 生成一个稍后解决的Promise，此方法返回一个Promise和它的resovle方法
 // 返回的Promise是经过包装的，可以访问其state属性获取它当前所处的状态
 export function generatePromiseAndResolver() {

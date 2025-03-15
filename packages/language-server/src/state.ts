@@ -17,7 +17,7 @@ export const setTypeRefStatement = (v: string) => (typeRefStatement = v)
 export const Logger = createLogger(console)
 export const documents = new TextDocuments(TextDocument)
 export const waittingCommands = new Map<string, string>()
-export const tempDocuments = new Map<string, TextDocument>()
+export const cachedDocuments = new Map<string, TextDocument>()
 export const connection = createConnection(ProposedFeatures.all)
 
 // 一个等待tpic连接连接成功才会解决的Promise，首次编译qk代码之前会等待tpic连接成功

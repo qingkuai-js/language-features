@@ -10,7 +10,8 @@ import { documents, tpic } from "../state"
 import { basename, extname } from "node:path"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
-import { findAttribute, findNodeAt } from "../util/qingkuai"
+import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { EXPORT_DEFAULT_OFFSET } from "../../../../shared-util/constant"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)
@@ -25,19 +26,19 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     let interIndex = cr.interIndexMap.stoi[offset]
     if (!cr.isPositionFlagSet(interIndex, "inScript")) {
         const currentNode = findNodeAt(cr.templateNodes, offset)
-        const exportIdentifierStartInterIndex = cr.interIndexMap.itos.length + 21
-        if (currentNode?.isEmbedded) {
+        const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET // Export Identifier Start Inter Index
+        if (currentNode?.isEmbedded && findTagRanges(currentNode, offset)[0]) {
             if (!/[jt]s$/.test(currentNode.tag)) {
                 return null
             }
-            interIndex = exportIdentifierStartInterIndex
+            interIndex = e29x
         } else if (currentNode?.tag === "slot") {
             const attribute = findAttribute(offset, currentNode)
             if (attribute?.key.raw !== "name") {
                 return null
             }
             searchingSlotName = attribute.value.raw
-            interIndex = exportIdentifierStartInterIndex
+            interIndex = e29x
         }
     }
 

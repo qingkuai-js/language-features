@@ -11,4 +11,8 @@ export const DEFAULT_RANGE: Range = {
     end: DEFAULT_POSITION
 }
 
+export const EXPORT_DEFAULT_OFFSET = 21
+export const TS_TYPE_DECLARATION_LEN = 119
+export const JS_TYPE_DECLARATION_LEN = 114
+
 export const NOOP: GeneralFunc = () => {}

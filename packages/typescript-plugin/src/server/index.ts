@@ -9,11 +9,13 @@ import { attachGetDiagnostic } from "./diagnostic/handler"
 import { attachChangeConfig } from "./configuration/handler"
 import { attachPrepareRename, attachRename } from "./rename"
 import { attachDocumentManager, attachUpdateSnapshot } from "./content/handler"
+import { attachCodeLens } from "./code-lens"
 
 export function attachLanguageServerIPCHandlers() {
     runAll([
         attachRename,
         attachHoverTip,
+        attachCodeLens,
         attachWaitCommand,
         attachChangeConfig,
         attachFindReference,

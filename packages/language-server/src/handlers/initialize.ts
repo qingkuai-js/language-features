@@ -13,11 +13,14 @@ export const initialize: InitializeHandler = () => {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             hoverProvider: true,
-            referencesProvider:true,
+            referencesProvider: true,
             definitionProvider: true,
             typeDefinitionProvider: true,
             renameProvider: {
                 prepareProvider: true
+            },
+            codeLensProvider: {
+                resolveProvider: true
             },
             documentFormattingProvider: {
                 workDoneProgress: true
@@ -35,7 +38,7 @@ export const initialize: InitializeHandler = () => {
                     ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
 
                     // script needs trigger characters
-                    [".", "'", '"', "`", ":", ",", "_"],
+                    [".", "'", '"', "`", ":", ",", "_", " "],
 
                     // prettier-ignore
                     // emmet needs trigger characters

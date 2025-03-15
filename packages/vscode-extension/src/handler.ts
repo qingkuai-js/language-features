@@ -1,5 +1,9 @@
 import type { LanguageClient, WorkspaceEdit } from "vscode-languageclient/node"
-import type { GetClientConfigParams, InsertSnippetParam } from "../../../types/communication"
+import type {
+    GetClientConfigParams,
+    GetConfigurationParams,
+    InsertSnippetParam
+} from "../../../types/communication"
 
 import fs from "node:fs"
 import * as vsc from "vscode"
@@ -58,12 +62,21 @@ export function attachCustomHandlers(client: LanguageClient) {
     )
 
     // 获取客户端配置
-    client.onRequest(
-        "qingkuai/getConfiguration",
-        ([languageId, name, defaultValue]: [string, string, any]) => {
-            return vsc.workspace.getConfiguration(languageId).get(name, defaultValue)
+    client.onRequest("qingkuai/getConfiguration", (params: GetConfigurationParams) => {
+        const config = vsc.workspace.getConfiguration(params.section, vsc.Uri.parse(params.uri))
+        if ("filter" in params) {
+            const needKeys = new Set(params.filter)
+            return Object.keys(config).reduce((ret, key) => {
+                if (!needKeys.has(key)) {
+                    return ret
+                }
+                return { ...ret, [key]: config[key] }
+            }, {} as any)
+        } else if ("name" in params) {
+            return config.get(params.name, params.defaultValue)
         }
-    )
+        return config
+    })
 
     // 应用工作区更改
     client.onNotification("qingkuai/applyEdit", (param: WorkspaceEdit) => {

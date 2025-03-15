@@ -32,7 +32,6 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
         return null
     }
 
-    // 重命名HTML标签名
     const textEdits: TextEdit[] = []
     const tagRanges = findTagRanges(currentNode, offset, true)
 
@@ -41,11 +40,11 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
         let interIndex: number | undefined = undefined
         if (tagRanges[0]) {
             interIndex = cr.interIndexMap.stoi[currentNode.range[0]]
-        }
-
-        const currentAttribute = findAttribute(offset, currentNode)
-        if (currentAttribute) {
-            interIndex = cr.interIndexMap.stoi[currentAttribute.key.loc.start.index]
+        } else {
+            const currentAttribute = findAttribute(offset, currentNode)
+            if (currentAttribute) {
+                interIndex = cr.interIndexMap.stoi[currentAttribute.key.loc.start.index]
+            }
         }
         if (isUndefined(interIndex)) {
             return null
@@ -53,6 +52,7 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
         return doScriptBlockRename(cr, interIndex, util.kebab2Camel(newName), true)
     }
 
+    // HTML标签重命名
     tagRanges.forEach(range => {
         if (!isUndefined(range)) {
             textEdits.push(TextEdit.replace(getRange(...range), newName))

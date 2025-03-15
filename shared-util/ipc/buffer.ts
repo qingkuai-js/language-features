@@ -2,7 +2,7 @@ import { isUndefined } from "../assert"
 import { Message } from "./types"
 
 // 将消息体转为buffer，此方法转换后的buffer前4个字节是消息体的长度
-export function createMessageBuffer(data: any, name: string, id = 0) {
+export function createMessageBuffer(data: any, name: string, id = "") {
     const messageBody = Buffer.from(
         JSON.stringify({
             body: data,

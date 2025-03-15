@@ -2,8 +2,10 @@ import type { OpenFileParams } from "../../../types/common"
 
 import fs from "node:fs"
 import * as vsc from "vscode"
+import { ShowReferencesCommandParams } from "../../../types/command"
 
 export class QingkuaiCommands {
+    public showReferences = "qingkuai.showReferences"
     public openFileByPath = "qingkuai.openFileByFilePath"
     public viewServerLogs = "qingkuai.viewLanguageServerLogs"
 
@@ -27,5 +29,24 @@ export class QingkuaiCommands {
                 })
             }
         )
+
+        vsc.commands.registerCommand(this.showReferences, (params: ShowReferencesCommandParams) => {
+            const locations: vsc.Location[] = params.locations.map(location => {
+                return new vsc.Location(
+                    vsc.Uri.parse(location.uri),
+                    new vsc.Range(
+                        new vsc.Position(location.range.start.line, location.range.start.character),
+                        new vsc.Position(location.range.end.line, location.range.end.character)
+                    )
+                )
+            })
+            const position = new vsc.Position(params.position.line, params.position.character)
+            vsc.commands.executeCommand(
+                "editor.action.showReferences",
+                vsc.Uri.file(params.fileName),
+                position,
+                locations
+            )
+        })
     }
 }

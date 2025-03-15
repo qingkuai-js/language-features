@@ -1,15 +1,47 @@
+import type {
+    FindReferenceResultItem,
+    TPICCommonRequestParams,
+    FindComponentTagRangeParams
+} from "../../../../types/communication"
 import type TS from "typescript"
-import type { TPICCommonRequestParams } from "../../../../types/communication"
+import type { Range } from "vscode-languageserver"
 
-import { server, session } from "../state"
+import { util } from "qingkuai/compiler"
+import { basename, extname } from "node:path"
+import { server, session, ts } from "../state"
+import { findNodeAtPosition } from "../util/ast"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
-import { getDefaultSourceFileByFileName } from "../util/typescript"
+import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { getDefaultSourceFileByFileName, getFileReferences } from "../util/typescript"
 
 export function attachFindReference() {
-    server.onRequest<TPICCommonRequestParams>("findReference", ({ fileName, pos }) => {
+    server.onRequest<TPICCommonRequestParams>("findReference", async ({ fileName, pos }) => {
+        const result: FindReferenceResultItem[] = []
+        const sourceFile = getDefaultSourceFileByFileName(fileName)!
+        const node = findNodeAtPosition(sourceFile, pos)
+        if (
+            node?.parent &&
+            ["Refs", "Props"].includes(node.getText()) &&
+            (ts.isTypeAliasDeclaration(node.parent) || ts.isInterfaceDeclaration(node.parent))
+        ) {
+            for (const refFileName of getFileReferences(fileName)) {
+                if (!isQingkuaiFileName(fileName)) {
+                    continue
+                }
+
+                const ranges: Range[] = await server.sendRequest<FindComponentTagRangeParams>(
+                    "findComponentTagRange",
+                    {
+                        fileName: refFileName,
+                        componentTag: util.kebab2Camel(basename(fileName, extname(fileName)), true)
+                    }
+                )
+                ranges.forEach(range => result.push({ range, fileName: refFileName }))
+            }
+        }
+
         // @ts-expect-error: access private method
         const getReferences = session.getReferences.bind(session)
-        const sourceFile = getDefaultSourceFileByFileName(fileName)!
         const lineAndCharacter = sourceFile.getLineAndCharacterOfPosition(pos)
         const res = getReferences(
             {
@@ -27,12 +59,12 @@ export function attachFindReference() {
         res.refs = res.refs.filter((item: any) => {
             return !item.isDefinition
         })
-
-        return res.refs.map((item: TS.server.protocol.FileSpan) => {
-            return {
+        res.refs.forEach((item: TS.server.protocol.FileSpan) => {
+            result.push({
                 fileName: item.file,
                 range: convertProtocolTextSpanToRange(item)
-            }
+            })
         })
+        return result
     })
 }

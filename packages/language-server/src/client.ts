@@ -1,12 +1,17 @@
-import { tpic, Logger, setTpic, setTypeRefStatement, tpicConnectedResolver } from "./state"
+import type { Range } from "vscode-languageserver"
+import type { FindComponentTagRangeParams } from "../../../types/communication"
+
 import {
     communicationWayInfo,
     connectTsPluginServerFailed,
     connectTsPluginServerSuccess
 } from "./messages"
-import { pathToFileURL } from "url"
+import { pathToFileURL } from "node:url"
+import { getCompileRes, walk } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
+import { ensureGetTextDocument } from "./handlers/document"
 import { connectTo } from "../../../shared-util/ipc/participant"
+import { tpic, Logger, setTpic, setTypeRefStatement, tpicConnectedResolver } from "./state"
 
 let connectTimes = 0
 
@@ -49,4 +54,18 @@ function attachClientHandlers() {
     tpic.onNotification("publishDiagnostics", (fileName: string) => {
         publishDiagnostics(pathToFileURL(fileName).toString())
     })
+
+    tpic.onRequest<FindComponentTagRangeParams>(
+        "findComponentTagRange",
+        async ({ fileName, componentTag }) => {
+            const ranges: Range[] = []
+            const cr = await getCompileRes(ensureGetTextDocument(`file://${fileName}`))
+            walk(cr.templateNodes, node => {
+                if (node.componentTag === componentTag) {
+                    ranges.push(cr.getRange(node.range[0], node.range[0] + node.tag.length + 1))
+                }
+            })
+            return ranges
+        }
+    )
 }

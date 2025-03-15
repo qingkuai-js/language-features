@@ -9,6 +9,11 @@ import type { SlotInfo } from "qingkuai/compiler"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
 import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
 
+export interface FindComponentTagRangeParams {
+    fileName: string
+    componentTag: string
+}
+
 export interface RetransmissionParams<T = any> {
     data: T
     name: string
@@ -122,13 +127,6 @@ export interface GetCompletionResultEntry {
     labelDetails?: CompletionItemLabelDetails
 }
 
-export type GetCompletionResult = {
-    isIncomplete: boolean
-    defaultCommitCharacters: string[]
-    defaultRepalcementSpan?: TextSpan
-    entries: GetCompletionResultEntry[]
-} | null
-
 export interface InsertSnippetParam {
     text: string
     command?: string
@@ -162,6 +160,26 @@ export interface TSDiagnostic {
     unnecessary: boolean
     relatedInformation: TSDiagnosticRelatedInformation[]
 }
+
+export type GetCompletionResult = {
+    isIncomplete: boolean
+    defaultCommitCharacters: string[]
+    defaultRepalcementSpan?: TextSpan
+    entries: GetCompletionResultEntry[]
+} | null
+
+export type GetConfigurationParams<T = any> = {
+    uri: string
+    section: string
+} & (
+    | {
+          filter?: string[]
+      }
+    | {
+          name: string
+          defaultValue: T
+      }
+)
 
 export type FindDefinitionParams = TPICCommonRequestParams & {
     preferGoToSourceDefinition: boolean

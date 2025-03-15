@@ -22,6 +22,31 @@ export function isEventType(type: TS.Type) {
     return !!(type.getCallSignatures().length || type.symbol?.name === "Function")
 }
 
+// 获取引用指定文件的文件名列表
+export function getFileReferences(
+    fileName: string,
+    options?: {
+        recursive?: boolean
+        justOpening?: boolean
+    }
+) {
+    const referenceFileNames = new Set<string>()
+    getContainingProjectsByFileName(fileName).forEach(project => {
+        const languageService = project.getLanguageService()
+        languageService.getFileReferences(fileName).forEach(entry => {
+            if (!options?.justOpening || isFileOpening(entry.fileName)) {
+                referenceFileNames.add(entry.fileName)
+            }
+            if (options?.recursive) {
+                getFileReferences(entry.fileName).forEach(item => {
+                    referenceFileNames.add(item)
+                })
+            }
+        })
+    })
+    return Array.from(referenceFileNames)
+}
+
 export function getProjectDirectory(project: TS.server.Project) {
     const compilerOptions = project.getCompilerOptions()
     if (!isString(compilerOptions.configFilePath)) {

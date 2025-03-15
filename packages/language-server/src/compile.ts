@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
+import { JS_TYPE_DECLARATION_LEN, TS_TYPE_DECLARATION_LEN } from "../../../shared-util/constant"
 import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
 // 文档的扩展配置项，键为TextDocument.uri（string）
@@ -50,6 +51,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     const getOffset = document.offsetAt.bind(document)
     const isTS = compileRes.inputDescriptor.script.isTS
     const filePath = isTestingEnv ? document.uri : fileURLToPath(document.uri)
+    const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
 
     // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
     // 如果未传入结束索引，返回的范围固定指向开始位置（Position）
@@ -110,7 +112,8 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         config: null as any,
         isSynchronized: false,
         version: document.version,
-        builtInTypeDeclarationEndIndex: typeRefStatement.length + (isTS ? 119 : 114)
+        scriptLanguageId: isTS ? "typescript" : "javascript",
+        builtInTypeDeclarationEndIndex: typeRefStatement.length + typeDeclarationLen
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
