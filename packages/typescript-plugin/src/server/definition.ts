@@ -13,12 +13,12 @@ import {
 } from "../util/typescript"
 import { server, session, ts } from "../state"
 import { convertTextSpanToRange } from "../util/service"
-import { DEFAULT_RANGE } from "../../../../shared-util/constant"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
+import { DEFAULT_RANGE, TPICHandler } from "../../../../shared-util/constant"
 
 export function attachFindDefinition() {
     server.onRequest<FindDefinitionParams>(
-        "findDefinition",
+        TPICHandler.findDefinition,
         async ({ fileName, pos, preferGoToSourceDefinition }) => {
             const sourceFile = getDefaultSourceFileByFileName(fileName)
             if (!session || !sourceFile) {

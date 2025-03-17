@@ -4,6 +4,7 @@ import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languagese
 import { stringifyRange } from "../util/vscode"
 import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
+import { TPICHandler } from "../../../../shared-util/constant"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
 import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
@@ -26,7 +27,7 @@ export const publishDiagnostics = debounce(
         const { messages, getRange, filePath, getSourceIndex, config } = cr
 
         if (waittingForCommand) {
-            await tpic.sendRequest("waitCommand", waittingForCommand)
+            await tpic.sendRequest(TPICHandler.waitForCommand, waittingForCommand)
             waittingCommands.delete("diagnostic")
         }
 
@@ -55,7 +56,7 @@ export const publishDiagnostics = debounce(
 
         // 处理javascript/typescript语言服务的诊断结果（通过请求ts插件的ipc服务器获取)
         const tsDiagnostics = await tpic.sendRequest<string, TSDiagnostic[]>(
-            "getDiagnostic",
+            TPICHandler.getDiagnostic,
             filePath
         )
         for (const item of tsDiagnostics) {

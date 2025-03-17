@@ -8,9 +8,9 @@ import type { Location } from "vscode-languageserver/node"
 import { documents, tpic } from "../state"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
-import { EXPORT_DEFAULT_OFFSET } from "../../../../shared-util/constant"
 import { filePathToComponentName } from "../../../../shared-util/qingkuai"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { EXPORT_DEFAULT_OFFSET, TPICHandler } from "../../../../shared-util/constant"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)
@@ -42,7 +42,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     }
 
     const references: FindReferenceResultItem[] | null =
-        await tpic.sendRequest<TPICCommonRequestParams>("findReference", {
+        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.findReference, {
             pos: interIndex,
             fileName: cr.filePath
         })

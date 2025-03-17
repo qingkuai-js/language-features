@@ -1,9 +1,9 @@
-import type { LanguageClient, WorkspaceEdit } from "vscode-languageclient/node"
 import type {
+    InsertSnippetParam,
     GetClientConfigParams,
-    GetConfigurationParams,
-    InsertSnippetParam
+    GetConfigurationParams
 } from "../../../types/communication"
+import type { LanguageClient, WorkspaceEdit } from "vscode-languageclient/node"
 
 import {
     getExtensionConfig,
@@ -13,6 +13,7 @@ import {
 } from "./config"
 import fs from "node:fs"
 import * as vsc from "vscode"
+import { LSHandler } from "../../../shared-util/constant"
 import { isUndefined } from "../../../shared-util/assert"
 
 export function attachCustomHandlers(client: LanguageClient) {
@@ -20,7 +21,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     vsc.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
             client.sendNotification(
-                "qingkuai/publishDiagnostics",
+                LSHandler.publishDiagnostic,
                 `file://${textEditor.document.uri.fsPath}`
             )
         }
@@ -45,14 +46,14 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 插入片段通知，qingkuai语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
-    client.onNotification("qingkuai/insertSnippet", (params: InsertSnippetParam) => {
+    client.onNotification(LSHandler.insertSnippet, (params: InsertSnippetParam) => {
         vsc.window.activeTextEditor?.insertSnippet(new vsc.SnippetString(params.text))
         params.command && vsc.commands.executeCommand(params.command)
     })
 
-    // 获取typescript配置
+    // 获取语言配置项
     client.onRequest(
-        "qingkuai/getClientConfig",
+        LSHandler.getLanguageConfig,
         async ({ filePath, scriptPartIsTypescript }: GetClientConfigParams) => {
             if (!fs.existsSync(filePath)) {
                 return
@@ -74,7 +75,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     )
 
     // 获取客户端配置
-    client.onRequest("qingkuai/getConfiguration", (params: GetConfigurationParams) => {
+    client.onRequest(LSHandler.getClientConfig, (params: GetConfigurationParams) => {
         const config = vsc.workspace.getConfiguration(params.section, vsc.Uri.parse(params.uri))
         if ("filter" in params) {
             const needKeys = new Set(params.filter)
@@ -91,7 +92,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 应用工作区更改
-    client.onNotification("qingkuai/applyEdit", (param: WorkspaceEdit) => {
+    client.onNotification(LSHandler.applyWorkspaceEdit, (param: WorkspaceEdit) => {
         const changes = param.changes!
         const workspaceEdit = new vsc.WorkspaceEdit()
         Object.keys(changes).forEach(uri => {

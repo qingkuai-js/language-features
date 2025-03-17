@@ -6,6 +6,7 @@ import type { ImplementationHandler } from "../types/handlers"
 
 import { getCompileRes } from "../compile"
 import { documents, tpic } from "../state"
+import { TPICHandler } from "../../../../shared-util/constant"
 
 export const findImplementation: ImplementationHandler = async ({ textDocument, position }) => {
     const document = documents.get(textDocument.uri)
@@ -20,7 +21,7 @@ export const findImplementation: ImplementationHandler = async ({ textDocument, 
     }
 
     const implementations: FindReferenceResultItem[] | null =
-        await tpic.sendRequest<TPICCommonRequestParams>("findImplementation", {
+        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.findImplemention, {
             fileName: cr.filePath,
             pos: cr.getInterIndex(offset)
         })

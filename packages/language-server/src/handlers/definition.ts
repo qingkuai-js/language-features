@@ -13,9 +13,13 @@ import { getCompileRes, walk } from "../compile"
 import { NumNum } from "../../../../types/common"
 import { ensureGetTextDocument } from "./document"
 import { connection, documents, tpic } from "../state"
+import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
-export const findDefinition: DefinitionHandler = async ({ textDocument, position, workDoneToken }, token) => {
+export const findDefinition: DefinitionHandler = async (
+    { textDocument, position, workDoneToken },
+    token
+) => {
     const document = documents.get(textDocument.uri)
     if (!document || token.isCancellationRequested) {
         return null
@@ -77,7 +81,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
     }
 
     const preferGoToSourceDefinition: boolean = await connection.sendRequest(
-        "qingkuai/getConfiguration",
+        LSHandler.getClientConfig,
         {
             defaultValue: false,
             uri: textDocument.uri,
@@ -87,7 +91,7 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
     )
 
     const res: FindDefinitionResult | null = await tpic.sendRequest<FindDefinitionParams>(
-        "findDefinition",
+        TPICHandler.findDefinition,
         {
             pos: interIndex,
             fileName: cr.filePath,

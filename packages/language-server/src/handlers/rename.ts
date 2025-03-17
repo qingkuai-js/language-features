@@ -12,6 +12,7 @@ import { TextEdit } from "vscode-languageserver/node"
 import { documents, isTestingEnv, tpic, waittingCommands } from "../state"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { TPICHandler } from "../../../../shared-util/constant"
 
 export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
     const document = documents.get(textDocument.uri)
@@ -78,10 +79,13 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
 
     const offset = getOffset(position)
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
-        const posRange = await tpic.sendRequest<TPICCommonRequestParams, NumNum>("prepareRename", {
-            fileName: cr.filePath,
-            pos: cr.getInterIndex(offset)
-        })
+        const posRange = await tpic.sendRequest<TPICCommonRequestParams, NumNum>(
+            TPICHandler.prepareRename,
+            {
+                fileName: cr.filePath,
+                pos: cr.getInterIndex(offset)
+            }
+        )
         const ss = getSourceIndex(posRange[0])
         const se = getSourceIndex(posRange[1], true)
         if (ss && se && ss !== -1 && se !== -1) {
@@ -124,7 +128,7 @@ async function doScriptBlockRename(
 
     const textEdits: Record<string, TextEdit[]> = {}
     const locations: RenameLocationItem[] = await tpic.sendRequest<TPICCommonRequestParams>(
-        "rename",
+        TPICHandler.rename,
         {
             fileName: cr.filePath,
             pos: isInterOffset ? offset : cr.getInterIndex(offset)

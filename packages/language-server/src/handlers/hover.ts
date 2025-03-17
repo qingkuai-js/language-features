@@ -15,6 +15,7 @@ import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
 import { documents, isTestingEnv, tpic } from "../state"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
+import { TPICHandler } from "../../../../shared-util/constant"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
@@ -36,7 +37,7 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
 
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
         const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<TPICCommonRequestParams>(
-            "hoverTip",
+            TPICHandler.hoverTip,
             {
                 fileName: cr.filePath,
                 pos: cr.getInterIndex(offset)

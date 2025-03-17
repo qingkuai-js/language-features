@@ -39,17 +39,18 @@ import {
 } from "../constants"
 import { getCompileRes } from "../compile"
 import { position2Range } from "../util/vscode"
-import { parseTemplate, util } from "qingkuai/compiler"
 import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
+import { parseTemplate, util } from "qingkuai/compiler"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { connection, documents, isTestingEnv, tpic } from "../state"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
+import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
+import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
 import { completeEntityCharacterRE, emmetTagNameRE, inEntityCharacterRE } from "../regular"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
-import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 
 const optionalSameKeys = [
     "preselect",
@@ -100,10 +101,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             currentNode.parent?.range[1] === -1 &&
             source.slice(offset - 2, offset) === "</"
         ) {
-            connection.sendNotification("qingkuai/insertSnippet", {
-                text: `${currentNode.parent.tag}>`
-            })
-            return null
+            return insertSnippet(`${currentNode.parent.tag}>`), null
         }
 
         const completions = [
@@ -152,18 +150,13 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         source[offset - 1] === ">" &&
         offset === startTagEndIndex
     ) {
-        connection.sendNotification("qingkuai/insertSnippet", {
-            text: `$0</${currentNode.tag}>`
-        })
-        return null
+        return insertSnippet(`$0</${currentNode.tag}>`), null
     }
 
     // 自动插入注释节点的闭合文本
     if (currentNode.tag === "!") {
         if (source.slice(offset - 4) === "<!--") {
-            connection.sendNotification("qingkuai/insertSnippet", {
-                text: `$0-->`
-            })
+            insertSnippet("$0-->")
         }
         return null
     }
@@ -209,7 +202,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
                     snippetItem.command = COMMANDS.TriggerSuggest
                 }
             }
-            return connection.sendNotification("qingkuai/insertSnippet", snippetItem), null
+            return insertSnippet(snippetItem), null
         }
 
         // 如果光标在属性值处，返回属性值的补全建议列表
@@ -365,7 +358,10 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
 
     const document = documents.get(`file://${item.data.fileName}`)!
     const { getSourceIndex, getRange, inputDescriptor, config } = await getCompileRes(document)
-    const res: ResolveCompletionResult = await tpic.sendRequest("resolveCompletion", item.data)
+    const res: ResolveCompletionResult = await tpic.sendRequest(
+        TPICHandler.resolveCompletionItem,
+        item.data
+    )
     if (res.detail) {
         item.detail = res.detail
     }
@@ -403,6 +399,14 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
         }
     }
     return item
+}
+
+// 在客户端活跃文档中插入代码片段
+function insertSnippet(snippet: string | InsertSnippetParam) {
+    connection.sendNotification(
+        LSHandler.insertSnippet,
+        isString(snippet) ? { text: snippet } : snippet
+    )
 }
 
 // HTML标签补全建议
@@ -750,7 +754,7 @@ async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number
     const { getRange, getSourceIndex } = cr
     const positionOfInterCode = cr.getInterIndex(offset)
     const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
-        "getCompletion",
+        TPICHandler.getCompletion,
         {
             fileName: cr.filePath,
             pos: positionOfInterCode

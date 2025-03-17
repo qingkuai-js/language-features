@@ -10,10 +10,11 @@ import { server, ts } from "../state"
 import { isComponentIdentifier } from "../util/qingkuai"
 import { isUndefined } from "../../../../shared-util/assert"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
+import { TPICHandler } from "../../../../shared-util/constant"
 
 export function attachHoverTip() {
     server.onRequest<TPICCommonRequestParams, HoverTipResult | null>(
-        "hoverTip",
+        TPICHandler.hoverTip,
         ({ fileName, pos }) => {
             const project = getDefaultProjectByFileName(fileName)!
             const languageService = project.getLanguageService()

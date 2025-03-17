@@ -13,16 +13,12 @@ import fs from "node:fs"
 import path from "node:path"
 import * as vsc from "vscode"
 import prettier from "prettier"
+import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util/assert"
 
 // 获取扩展配置项
 export function getExtensionConfig(uri: vsc.Uri) {
     return vsc.workspace.getConfiguration("qingkuai", uri)
-}
-
-// 向语言服务器发送清空配置缓存的通知
-export function notifyServerCleanConfigCache(client: LanguageClient) {
-    client.sendNotification("qingkuai/cleanConfigurationCache", null)
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项
@@ -46,13 +42,18 @@ export async function getInitQingkuaiConfig() {
     return configurations
 }
 
+// 向语言服务器发送清空配置缓存的通知
+export function notifyServerCleanConfigCache(client: LanguageClient) {
+    client.sendNotification(LSHandler.cleanLanguageConfigCache, null)
+}
+
 // 监听工作区范围内.qingkuairc配置文件的修改和删除事件
 export function startQingkuaiConfigWatcher(client: LanguageClient) {
     const watcher = vsc.workspace.createFileSystemWatcher("**/.qingkuairc", true)
     watcher.onDidChange(uri => {
         notifyServerCleanConfigCache(client)
-        client.sendNotification("qingkuai/retransmission", {
-            name: "updateConfig",
+        client.sendNotification(LSHandler.retransmission, {
+            name: TPICHandler.updateConfig,
             data: {
                 dir: path.dirname(uri.path),
                 ...loadQingkuaiConfig(uri.path)
@@ -61,8 +62,8 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
     })
     watcher.onDidDelete(uri => {
         notifyServerCleanConfigCache(client)
-        client.sendNotification("qingkuai/retransmission", {
-            name: "deleteConfig",
+        client.sendNotification(LSHandler.retransmission, {
+            name: TPICHandler.deleteConfig,
             data: path.dirname(uri.path)
         } satisfies RetransmissionParams)
     })

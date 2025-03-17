@@ -4,17 +4,17 @@ import type {
     TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { NavigationTree } from "typescript"
-import type { CodeLens, Location, Position } from "vscode-languageserver"
+import type { CodeLens, Location } from "vscode-languageserver"
 import type { CodeLensHandler, ResolveCodeLensHandler } from "../types/handlers"
 import type { CachedCompileResultItem, CodeLensConfig, CodeLensData } from "../types/service"
 
+import { findSlotReferences } from "./reference"
 import { getCompileRes, walk } from "../compile"
 import { connection, documents, tpic } from "../state"
 import { escapeRegExp } from "../../../../shared-util/sundry"
 import { ShowReferencesCommandParams } from "../../../../types/command"
-import { EXPORT_DEFAULT_OFFSET } from "../../../../shared-util/constant"
+import { EXPORT_DEFAULT_OFFSET, LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { filePathToComponentName, isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
-import { findSlotReferences } from "./reference"
 
 export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const document = documents.get(textDocument.uri)
@@ -25,7 +25,7 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const cr = await getCompileRes(document)
     const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET
     const navtree = await tpic.sendRequest<string, NavigationTree | undefined>(
-        "getNavigationTree",
+        TPICHandler.getNavigationTree,
         cr.filePath
     )
     if (!navtree?.childItems) {
@@ -33,14 +33,11 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     }
 
     const codeLenses: CodeLens[] = []
-    const codeLensConfig: CodeLensConfig = await connection.sendRequest(
-        "qingkuai/getConfiguration",
-        {
-            uri: textDocument.uri,
-            section: cr.scriptLanguageId,
-            filter: ["referencesCodeLens", "implementationsCodeLens"]
-        } satisfies GetConfigurationParams
-    )
+    const codeLensConfig: CodeLensConfig = await connection.sendRequest(LSHandler.getClientConfig, {
+        uri: textDocument.uri,
+        section: cr.scriptLanguageId,
+        filter: ["referencesCodeLens", "implementationsCodeLens"]
+    } satisfies GetConfigurationParams)
 
     if (
         !codeLensConfig.referencesCodeLens.enabled &&

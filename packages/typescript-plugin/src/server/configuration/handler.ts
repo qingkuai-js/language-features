@@ -9,21 +9,22 @@ import { relativePathRE } from "../../regular"
 import { projectService, server, ts } from "../../state"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { isUndefined } from "../../../../../shared-util/assert"
+import { TPICHandler } from "../../../../../shared-util/constant"
 import { deleteQingkuaiConfig, getQingkuaiConfig, setQingkuaiConfig } from "./method"
 
 export function attachChangeConfig() {
-    server.onNotification("deleteConfig", (dir: string) => {
+    server.onNotification(TPICHandler.deleteConfig, (dir: string) => {
         refreshDiagnosticsDelay()
         deleteQingkuaiConfig(dir)
     })
 
-    server.onNotification("updateConfig", (config: QingkuaiConfigurationWithDir) => {
+    server.onNotification(TPICHandler.updateConfig, (config: QingkuaiConfigurationWithDir) => {
         refreshDiagnosticsDelay()
         setQingkuaiConfig(config.dir, config)
     })
 
     // 此方法用于将typescript相关的配置项与文件关联，qingkuai文件不会经过ts的客户端扩展处理需要手动添加配置信息
-    server.onNotification("configureFile", (params: ConfigureFileParams) => {
+    server.onNotification(TPICHandler.configureFile, (params: ConfigureFileParams) => {
         convertImportFileExcludePatternsPreferences(
             params.config.preference.autoImportFileExcludePatterns!,
             params.workspacePath

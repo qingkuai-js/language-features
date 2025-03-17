@@ -18,6 +18,7 @@ import {
 import { server, ts } from "../state"
 import { SCRIPT_EXTENSIONS } from "../constant"
 import { isUndefined } from "../../../../shared-util/assert"
+import { TPICHandler } from "../../../../shared-util/constant"
 
 const optionalSameKeys = [
     "data",
@@ -31,57 +32,60 @@ const optionalSameKeys = [
 ] as const
 
 export function attachGetCompletion() {
-    server.onRequest<TPICCommonRequestParams, GetCompletionResult>("getCompletion", params => {
-        const languageService = getDefaultLanguageServiceByFileName(params.fileName)
-        const completionRes = languageService?.getCompletionsAtPosition(
-            params.fileName,
-            params.pos,
-            getUserPreferencesByFileName(params.fileName),
-            getFormatCodeSettingsByFileName(params.fileName)
-        )
+    server.onRequest<TPICCommonRequestParams, GetCompletionResult>(
+        TPICHandler.getCompletion,
+        params => {
+            const languageService = getDefaultLanguageServiceByFileName(params.fileName)
+            const completionRes = languageService?.getCompletionsAtPosition(
+                params.fileName,
+                params.pos,
+                getUserPreferencesByFileName(params.fileName),
+                getFormatCodeSettingsByFileName(params.fileName)
+            )
 
-        if (isUndefined(completionRes)) {
-            return null
-        }
+            if (isUndefined(completionRes)) {
+                return null
+            }
 
-        const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
-            const kindModifiers = parseKindModifier(item.kindModifiers)
-            const ret: GetCompletionResultEntry = {
-                name: item.name,
-                kind: item.kind,
-                source: item.source,
-                detail: getScriptKindDetails(item),
-                label: item.name || (item.insertText ?? "")
-            }
-            if (item.isRecommended) {
-                ret.preselect = true
-            }
-            if (kindModifiers.has("color")) {
-                ret.isColor = true
-            }
-            if (kindModifiers.has("optional")) {
-                ret.label += "?"
-            }
-            if (kindModifiers.has("deprecated")) {
-                ret.deprecated = true
-            }
-            optionalSameKeys.forEach(key => {
-                // @ts-expect-error
-                item[key] && (ret[key] = item[key])
+            const completionItems: GetCompletionResultEntry[] = completionRes.entries.map(item => {
+                const kindModifiers = parseKindModifier(item.kindModifiers)
+                const ret: GetCompletionResultEntry = {
+                    name: item.name,
+                    kind: item.kind,
+                    source: item.source,
+                    detail: getScriptKindDetails(item),
+                    label: item.name || (item.insertText ?? "")
+                }
+                if (item.isRecommended) {
+                    ret.preselect = true
+                }
+                if (kindModifiers.has("color")) {
+                    ret.isColor = true
+                }
+                if (kindModifiers.has("optional")) {
+                    ret.label += "?"
+                }
+                if (kindModifiers.has("deprecated")) {
+                    ret.deprecated = true
+                }
+                optionalSameKeys.forEach(key => {
+                    // @ts-expect-error
+                    item[key] && (ret[key] = item[key])
+                })
+                return ret
             })
-            return ret
-        })
 
-        return {
-            entries: completionItems,
-            isIncomplete: !!completionRes.isIncomplete,
-            defaultRepalcementSpan: completionRes.optionalReplacementSpan,
-            defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
+            return {
+                entries: completionItems,
+                isIncomplete: !!completionRes.isIncomplete,
+                defaultRepalcementSpan: completionRes.optionalReplacementSpan,
+                defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
+            }
         }
-    })
+    )
 
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
-        "resolveCompletion",
+        TPICHandler.resolveCompletionItem,
         ({ fileName, entryName, pos, ori, source }) => {
             const preferences = getUserPreferencesByFileName(fileName)
             const formatSettings = getFormatCodeSettingsByFileName(fileName)

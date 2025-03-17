@@ -12,10 +12,11 @@ import {
     convertDisplayPartsToPlainTextWithLink
 } from "../util/typescript"
 import { server } from "../state"
+import { TPICHandler } from "../../../../shared-util/constant"
 
 export function attachGetSignatureHelp() {
     server.onRequest<TPICCommonRequestParams, SignatureHelp | null>(
-        "getSignatureHelp",
+        TPICHandler.getSignatureHelp,
         ({ fileName, pos }) => {
             const languageService = getDefaultLanguageServiceByFileName(fileName)
             const getSignatureHelpRes = languageService?.getSignatureHelpItems(

@@ -10,15 +10,20 @@ import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 import {
     compressItos,
     compressPosition,
-    compressPositionFlags,
-    getScriptKindKey
+    getScriptKindKey,
+    compressPositionFlags
 } from "../../../shared-util/qingkuai"
+import {
+    LSHandler,
+    TPICHandler,
+    JS_TYPE_DECLARATION_LEN,
+    TS_TYPE_DECLARATION_LEN
+} from "../../../shared-util/constant"
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { JS_TYPE_DECLARATION_LEN, TS_TYPE_DECLARATION_LEN } from "../../../shared-util/constant"
 import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
 // 文档配置项，键为TextDocument.uri（string）
@@ -126,15 +131,18 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     // 将编译结果同步到typescript-plugin-qingkuai
     async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
         if (!isTestingEnv && synchronize && !cr.isSynchronized) {
-            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
-                interCode: cr.code,
-                fileName: cr.filePath,
-                scriptKindKey: getScriptKindKey(cr),
-                slotInfo: cr.inputDescriptor.slotInfo,
-                citos: compressItos(cr.interIndexMap.itos),
-                cp: compressPosition(cr.inputDescriptor.positions),
-                cpf: compressPositionFlags(cr.inputDescriptor.positions)
-            })
+            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>(
+                TPICHandler.updateSnapshot,
+                {
+                    interCode: cr.code,
+                    fileName: cr.filePath,
+                    scriptKindKey: getScriptKindKey(cr),
+                    slotInfo: cr.inputDescriptor.slotInfo,
+                    citos: compressItos(cr.interIndexMap.itos),
+                    cp: compressPosition(cr.inputDescriptor.positions),
+                    cpf: compressPositionFlags(cr.inputDescriptor.positions)
+                }
+            )
         }
     }
 
@@ -143,7 +151,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             cr.config = clientConfigCache.get(document.uri)!
         } else {
             const res: GetClientConfigResult = await connection.sendRequest(
-                "qingkuai/getClientConfig",
+                LSHandler.getLanguageConfig,
                 {
                     filePath: cr.filePath,
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
@@ -153,7 +161,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
 
             if (res.typescriptConfig) {
                 updateTypescriptConfigurationForQingkuaiFile(res)
-                tpic.sendNotification<ConfigureFileParams>("configureFile", {
+                tpic.sendNotification<ConfigureFileParams>(TPICHandler.configureFile, {
                     fileName: cr.filePath,
                     config: res.typescriptConfig,
                     workspacePath: res.workspacePath

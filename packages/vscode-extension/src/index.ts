@@ -14,11 +14,33 @@ import {
 import * as vsc from "vscode"
 import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
+import { LSHandler } from "../../../shared-util/constant"
+import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 
-let client: LanguageClient
+let client: LanguageClient | undefined = undefined
 
 export async function activate(context: ExtensionContext) {
+    if (isQingkuaiFileName(vsc.window.activeTextEditor?.document.uri.fsPath || "")) {
+        return activeLanguageServer(context)
+    }
+
+    const disposable = vsc.window.onDidChangeActiveTextEditor(e => {
+        if (isQingkuaiFileName(e?.document.uri.fsPath || "")) {
+            disposable.dispose()
+            activeLanguageServer(context)
+        }
+    })
+}
+
+export function deactivate(): Thenable<void> | undefined {
+    if (!client) {
+        return undefined
+    }
+    return client.stop()
+}
+
+async function activeLanguageServer(context: ExtensionContext) {
     const doc = vsc.window.activeTextEditor!.document
     const shouldToggleLanguageId = doc.languageId === "qingkuai"
     const serverModule = context.asAbsolutePath("../../dist/server.js")
@@ -26,7 +48,6 @@ export async function activate(context: ExtensionContext) {
     const outputChannel = vsc.window.createOutputChannel("QingKuai", "log")
     const languageStatusItem = vsc.languages.createLanguageStatusItem("ls", "qingkuai")
     const tsExtension = vsc.extensions.getExtension("vscode.typescript-language-features")!
-
     // 开启插件加载状态
     languageStatusItem.text = "QingKuai Language Server"
     context.subscriptions.push(languageStatusItem)
@@ -89,12 +110,5 @@ export async function activate(context: ExtensionContext) {
     languageStatusItem.busy = false
     startQingkuaiConfigWatcher(client)
     startPrettierConfigWatcher(client)
-    client.sendRequest("qingkuai/extensionLoaded", sockPath)
-}
-
-export function deactivate(): Thenable<void> | undefined {
-    if (!client) {
-        return undefined
-    }
-    return client.stop()
+    client.sendRequest(LSHandler.languageClientCreated, sockPath)
 }

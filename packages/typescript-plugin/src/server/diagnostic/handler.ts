@@ -6,11 +6,12 @@ import type { DiagnosticKind } from "../../types"
 import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
 import { ORI_SOURCE_FILE } from "../../constant"
+import { TPICHandler } from "../../../../../shared-util/constant"
 import { isString, isUndefined } from "../../../../../shared-util/assert"
 import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
 
 export function attachGetDiagnostic() {
-    server.onRequest<string, TSDiagnostic[]>("getDiagnostic", fileName => {
+    server.onRequest<string, TSDiagnostic[]>(TPICHandler.getDiagnostic, fileName => {
         const project = projectService.getDefaultProjectForFile(
             ts.server.toNormalizedPath(fileName),
             false

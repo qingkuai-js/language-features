@@ -4,6 +4,7 @@ import type { SignatureHelp } from "vscode-languageserver/node"
 import { documents, tpic } from "../state"
 import { getCompileRes } from "../compile"
 import { TPICCommonRequestParams } from "../../../../types/communication"
+import { TPICHandler } from "../../../../shared-util/constant"
 
 export const signatureHelp: SignatureHelpHandler = async (params, token) => {
     const document = documents.get(params.textDocument.uri)
@@ -19,7 +20,7 @@ export const signatureHelp: SignatureHelpHandler = async (params, token) => {
     }
 
     const signatureHelp = await tpic.sendRequest<TPICCommonRequestParams, SignatureHelp | null>(
-        "getSignatureHelp",
+        TPICHandler.getSignatureHelp,
         {
             fileName: cr.filePath,
             pos: cr.getInterIndex(offset)

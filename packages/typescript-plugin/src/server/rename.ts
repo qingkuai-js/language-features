@@ -7,31 +7,35 @@ import {
     getDefaultLanguageServiceByFileName
 } from "../util/typescript"
 import { server, ts } from "../state"
+import { TPICHandler } from "../../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { getSourceIndex, ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
 
 export function attachPrepareRename() {
-    server.onRequest<TPICCommonRequestParams, NumNum>("prepareRename", ({ fileName, pos }) => {
-        const languageService = getDefaultLanguageServiceByFileName(fileName)
-        const renameInfo = languageService?.getRenameInfo(
-            fileName,
-            pos,
-            getUserPreferencesByFileName(fileName)
-        )
-        if (!renameInfo || !renameInfo.canRename) {
-            return [-1, -1]
-        }
+    server.onRequest<TPICCommonRequestParams, NumNum>(
+        TPICHandler.prepareRename,
+        ({ fileName, pos }) => {
+            const languageService = getDefaultLanguageServiceByFileName(fileName)
+            const renameInfo = languageService?.getRenameInfo(
+                fileName,
+                pos,
+                getUserPreferencesByFileName(fileName)
+            )
+            if (!renameInfo || !renameInfo.canRename) {
+                return [-1, -1]
+            }
 
-        return [
-            renameInfo.triggerSpan.start,
-            renameInfo.triggerSpan.start + renameInfo.triggerSpan.length
-        ]
-    })
+            return [
+                renameInfo.triggerSpan.start,
+                renameInfo.triggerSpan.start + renameInfo.triggerSpan.length
+            ]
+        }
+    )
 }
 
 export function attachRename() {
     server.onRequest<TPICCommonRequestParams, RenameLocationItem[]>(
-        "rename",
+        TPICHandler.rename,
         ({ fileName, pos }) => {
             const locations: RenameLocationItem[] = []
             const existringMap = new Map<string, Set<string>>()

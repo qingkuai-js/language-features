@@ -8,7 +8,7 @@ import type {
 import type TS from "typescript"
 
 import path from "node:path"
-import { projectService, ts } from "../state"
+import { openQingkuaiFiles, projectService, ts } from "../state"
 import { excludeProperty } from "../../../../shared-util/sundry"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
@@ -61,7 +61,10 @@ export function getProgramByProject(project: TS.server.Project) {
 }
 
 export function isFileOpening(fileName: string) {
-    return projectService.openFiles.has(projectService.toPath(fileName))
+    return (
+        openQingkuaiFiles.has(fileName) ||
+        projectService.openFiles.has(projectService.toPath(fileName))
+    )
 }
 
 export function getContainingProjectsByFileName(fileName: string) {

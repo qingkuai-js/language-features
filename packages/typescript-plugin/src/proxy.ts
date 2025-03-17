@@ -384,19 +384,23 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
                 return item
             }
 
+            const snapshot = languageServiceHost.getScriptSnapshot(modulePath) as QingKuaiSnapShot
+            const compilationSettings = languageServiceHost.getCompilationSettings()
+            const isTS = snapshot.scriptKind === ts.ScriptKind.TS
+            if (!isTS && !compilationSettings.allowJs) {
+                return item
+            }
             if (!resolvedQingkuaiModule.has(containingFile)) {
                 resolvedQingkuaiModule.set(containingFile, new Set())
             }
             resolvedQingkuaiModule.get(containingFile)!.add(moduleText)
-
-            const snapshot = languageServiceHost.getScriptSnapshot(modulePath) as QingKuaiSnapShot
             return {
                 ...item,
                 resolvedModule: {
                     resolvedFileName: modulePath,
                     isExternalLibraryImport: false,
                     resolvedUsingTsExtension: false,
-                    extension: snapshot.scriptKind === ts.ScriptKind.TS ? ".ts" : ".js"
+                    extension: isTS ? ".ts" : ".js"
                 },
                 failedLookupLocations: undefined
             }

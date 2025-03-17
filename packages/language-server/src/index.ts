@@ -14,6 +14,7 @@ import { codeLens, resolveCodeLens } from "./handlers/code-lens"
 import { complete, resolveCompletion } from "./handlers/complete"
 import { attachRetransmissionHandlers } from "./handlers/retransmission"
 import { findDefinition, findTypeDefinition } from "./handlers/definition"
+import { LSHandler } from "../../../shared-util/constant"
 
 attachDocumentHandlers()
 attachRetransmissionHandlers()
@@ -35,6 +36,6 @@ connection.onCompletionResolve(resolveCompletion)
 
 // 自定义事件处理
 connection.onRequest("ping", _ => "pong")
-connection.onRequest("qingkuai/extensionLoaded", connectTsServer)
-connection.onNotification("qingkuai/publishDiagnostics", publishDiagnostics)
-connection.onNotification("qingkuai/cleanConfigurationCache", cleanConfigCache)
+connection.onRequest(LSHandler.languageClientCreated, connectTsServer)
+connection.onNotification(LSHandler.publishDiagnostic, publishDiagnostics)
+connection.onNotification(LSHandler.cleanLanguageConfigCache, cleanConfigCache)
