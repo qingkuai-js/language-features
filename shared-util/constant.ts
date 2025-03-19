@@ -27,7 +27,6 @@ export enum TPICHandler {
     findReference = "findReference",
     getDiagnostic = "getDiagnostic",
     getCompletion = "getCompletion",
-    waitForCommand = "waitForCommand",
     updateSnapshot = "updateSnapshot",
     findDefinition = "findDefinition",
     didOpen = "didOpenQingkuaiDocument",
@@ -35,6 +34,7 @@ export enum TPICHandler {
     getSignatureHelp = "getSignatureHelp",
     findImplemention = "findImplementation",
     getNavigationTree = "getNavigationTree",
+    waitForTSCommand = "waitForTypescriptCommand",
     resolveCompletionItem = "resolveCompletionItem"
 }
 

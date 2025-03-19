@@ -1,5 +1,6 @@
+import type TS from "typescript"
 import type { QingKuaiSnapShot } from "./snapshot"
-import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams, TSSession } from "./types"
+import type { QingKuaiDiagnostic, SetStateParams, FileSystemWatcherItem } from "./types"
 
 import path from "node:path"
 import { inspect } from "../../../shared-util/log"
@@ -7,9 +8,9 @@ import { defaultParticipant } from "../../../shared-util/ipc/participant"
 
 export let server = defaultParticipant
 
-export let ts: TS
-export let session: TSSession | undefined
-export let projectService: TSProjectService
+export let ts: typeof TS
+export let session: TS.server.Session | undefined
+export let projectService: TS.server.ProjectService
 
 // 已打开的文件列表
 export const openQingkuaiFiles = new Set<string>()

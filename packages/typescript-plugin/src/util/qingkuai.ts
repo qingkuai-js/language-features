@@ -1,11 +1,18 @@
 import type TS from "typescript"
 import { QingKuaiSnapShot } from "../snapshot"
 
+import {
+    ts,
+    snapshotCache,
+    projectService,
+    typeRefStatement,
+    openQingkuaiFiles,
+    resolvedQingkuaiModule
+} from "../state"
 import fs from "node:fs"
 import assert from "node:assert"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
 import { compile, PositionFlag, PositionFlagKeys } from "qingkuai/compiler"
-import { ts, typeRefStatement, resolvedQingkuaiModule, snapshotCache } from "../state"
 
 // 通过中间代码索引换取源码索引
 export function getSourceIndex(
@@ -18,6 +25,13 @@ export function getSourceIndex(
         return sourceIndex
     }
     return isEnd ? snapshot.itos[interIndex + 1] : -1
+}
+
+export function reopenQingkuaiFile(fileName: string) {
+    openQingkuaiFiles.delete(fileName)
+    projectService.closeClientFile(fileName)
+    projectService.openClientFile(fileName)
+    openQingkuaiFiles.add(fileName)
 }
 
 // 通过源码索引验证位置是否设置指定标志

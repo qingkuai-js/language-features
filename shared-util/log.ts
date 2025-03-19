@@ -1,6 +1,6 @@
 import type { LoggerTarget } from "../types/util"
 
-import util from "util"
+import util from "node:util"
 import { formatDate } from "./time"
 
 class Logger {

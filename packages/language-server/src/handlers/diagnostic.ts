@@ -27,7 +27,7 @@ export const publishDiagnostics = debounce(
         const { messages, getRange, filePath, getSourceIndex, config } = cr
 
         if (waittingForCommand) {
-            await tpic.sendRequest(TPICHandler.waitForCommand, waittingForCommand)
+            await tpic.sendRequest(TPICHandler.waitForTSCommand, waittingForCommand)
             waittingCommands.delete("diagnostic")
         }
 

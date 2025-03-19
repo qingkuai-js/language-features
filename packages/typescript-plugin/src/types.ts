@@ -1,14 +1,9 @@
-import type Typescript from "typescript"
+import type TS from "typescript"
 import type { ORI_SOURCE_FILE } from "./constant"
 import type { QingKuaiSnapShot } from "./snapshot"
 import type { Diagnostic, SourceFile } from "typescript"
 import type { commonMessage, SlotInfo } from "qingkuai/compiler"
 import type { IpcParticipant } from "../../../shared-util/ipc/types"
-
-export type DiagnosticKind =
-    | "getSemanticDiagnostics"
-    | "getSyntacticDiagnostics"
-    | "getSuggestionDiagnostics"
 
 export interface QingKuaiFileInfo {
     offset: number
@@ -18,15 +13,26 @@ export interface QingKuaiFileInfo {
     interCode: string
     slotInfo: SlotInfo
     mappingFileName: string
+    scriptKind: TS.ScriptKind
     getPos(pos: number): number
-    scriptKind: Typescript.ScriptKind
 }
 
+export interface FileSystemWatcherItem {
+    id: number
+    path: string
+    recursive: boolean
+}
+
+export type DiagnosticKind =
+    | "getSemanticDiagnostics"
+    | "getSyntacticDiagnostics"
+    | "getSuggestionDiagnostics"
+
 export type SetStateParams = Partial<{
-    ts: TS
-    session: TSSession
+    ts: typeof TS
     server: IpcParticipant
-    projectService: Typescript.server.ProjectService
+    session: TS.server.Session
+    projectService: TS.server.ProjectService
 }>
 
 export type RelatedInfoFile =
@@ -45,8 +51,3 @@ export type ConvertProtocolTextSpanWithContextVerifier = (
 
 export type QingKuaiCommonMessage = typeof commonMessage
 export type QingKuaiDiagnostic = Omit<Diagnostic, "file">
-
-export type TS = typeof Typescript
-export type TSSession = Typescript.server.Session
-export type TSProjectService = Typescript.server.ProjectService
-export type TSPluginCreateInfo = Typescript.server.PluginCreateInfo

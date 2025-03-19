@@ -3,7 +3,7 @@ import { TPICHandler } from "../../../../shared-util/constant"
 import { generatePromiseAndResolver } from "../../../../shared-util/sundry"
 
 export function attachWaitCommand() {
-    server.onRequest(TPICHandler.waitForCommand, async (name: string) => {
+    server.onRequest(TPICHandler.waitForTSCommand, async (name: string) => {
         let status = commandStatus.get(name)
         if (!status) {
             commandStatus.set(name, (status = generatePromiseAndResolver()))

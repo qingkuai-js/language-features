@@ -2,7 +2,7 @@ import type { NumNumArray } from "../types/common"
 import type { ASTPosition, ASTPositionWithFlag, CompileResult } from "qingkuai/compiler"
 
 import { util } from "qingkuai/compiler"
-import { basename, extname } from "path"
+import { basename, extname } from "node:path"
 
 export function getScriptKindKey(cr: CompileResult) {
     return cr.inputDescriptor.script.isTS ? "TS" : "JS"

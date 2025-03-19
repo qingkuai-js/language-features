@@ -1,4 +1,9 @@
 import {
+    isFileOpening,
+    getFileReferences,
+    getDefaultProjectByFileName
+} from "../../util/typescript"
+import {
     compileQingkuaiFileToInterCode,
     ensureGetSnapshotOfQingkuaiFile
 } from "../../util/qingkuai"
@@ -7,7 +12,6 @@ import { debounce } from "../../../../../shared-util/sundry"
 import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
 import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
-import { getFileReferences, isFileOpening } from "../../util/typescript"
 import { isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
 
 // 刷新引用文件的诊断信息，如果目标文件是.qk文件，则通知qingkuai语言服务器重新推送诊断信息，第二个参数用于
@@ -35,12 +39,20 @@ export const refreshDiagnostics = debounce(
                 referenceFileNames.push(projectService.getScriptInfo(path)!.fileName)
             })
         } else {
-            referenceFileNames.push(
-                ...getFileReferences(byFileName, {
-                    recursive: true,
-                    justOpening: true
+            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(byFileName)
+            if (scriptKindChanged && qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS) {
+                projectService.openFiles.forEach((_, tsPath) => {
+                    const scriptInfo = projectService.getScriptInfo(tsPath)
+                    scriptInfo && referenceFileNames.push(scriptInfo.fileName)
                 })
-            )
+            } else {
+                referenceFileNames.push(
+                    ...getFileReferences(byFileName, {
+                        recursive: true,
+                        justOpening: true
+                    })
+                )
+            }
         }
 
         referenceFileNames.forEach(fileName => {

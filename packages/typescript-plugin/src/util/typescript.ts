@@ -31,7 +31,7 @@ export function getFileReferences(
     }
 ) {
     const referenceFileNames = new Set<string>()
-    getContainingProjectsByFileName(fileName).forEach(project => {
+    forEachProject((project: TS.server.Project) => {
         const languageService = project.getLanguageService()
         languageService.getFileReferences(fileName).forEach(entry => {
             if (!options?.justOpening || isFileOpening(entry.fileName)) {
@@ -89,6 +89,11 @@ export function getDefaultSourceFileByScriptInfo(info: TS.server.ScriptInfo) {
 
 export function getDefaultProjectByFileName(fileName: string) {
     return projectService.getDefaultProjectForFile(ts.server.toNormalizedPath(fileName), true)
+}
+
+export function forEachProject(cb: (p: TS.server.Project) => void) {
+    // @ts-expect-error: access private method
+    projectService.forEachProject(cb)
 }
 
 // 从指定节点中查找指定位置的节点（深度优先遍历）

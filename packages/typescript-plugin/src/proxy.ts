@@ -1,6 +1,5 @@
 import type TS from "typescript"
-import type { QingKuaiSnapShot } from "./snapshot"
-import type { ConvertProtocolTextSpanWithContextVerifier, TSPluginCreateInfo } from "./types"
+import type { ConvertProtocolTextSpanWithContextVerifier } from "./types"
 
 import {
     ts,
@@ -22,23 +21,27 @@ import { convertProtocolDefinitions, convertProtocolTextSpanWithContext } from "
 import { isPositionFlagSetBySourceIndex, ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 
 export function proxyTypescriptProjectServiceAndSystemMethods() {
+    if (!isUndefined(session)) {
+        runAll([
+            proxyGetReferences,
+            proxyExecuteCommand,
+            proxyGetImplementation,
+            proxyRenameSessionHandler,
+            proxyFindSourceDefinition,
+            proxyGetDefinitionAndBoundSpan
+        ])
+    }
     runAll([
         proxyReadFile,
         proxyGetFileSize,
         proxyEditContent,
-        proxyGetReferences,
-        proxyExecuteCommand,
         proxyCloseClientFile,
-        proxyGetImplementation,
         proxyOnConfigFileChanged,
-        proxyRenameSessionHandler,
-        proxyFindSourceDefinition,
-        proxyGetDefinitionAndBoundSpan,
         proxyUpdateRootAndOptionsOfNonInferredProject
     ])
 }
 
-export function proxyTypescriptLanguageServiceMethods(info: TSPluginCreateInfo) {
+export function proxyTypescriptLanguageServiceMethods(info: TS.server.PluginCreateInfo) {
     const { project, languageServiceHost, languageService } = info
     runAll([
         () => proxyGetScriptSnapshot(project),
@@ -73,12 +76,8 @@ function proxyReadFile() {
 }
 
 function proxyExecuteCommand() {
-    if (isUndefined(session)) {
-        return
-    }
-
-    const executeCommand = session.executeCommand
-    session.executeCommand = request => {
+    const executeCommand = session!.executeCommand
+    session!.executeCommand = request => {
         const originalRet = executeCommand.call(session, request)
         commandStatus.get(request.command)?.[1]()
         return originalRet
@@ -146,7 +145,7 @@ function proxyOnConfigFileChanged() {
 function proxyGetReferences() {
     const sessionAny = session as any
     const getReferences = sessionAny.getReferences
-    if (!session || getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+    if (getReferences[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
     sessionAny.getReferences = (...args: any) => {
@@ -165,7 +164,7 @@ function proxyGetReferences() {
 function proxyGetDefinitionAndBoundSpan() {
     const sessionAny = session as any
     const getDefinitionAndBoundSpan = sessionAny?.getDefinitionAndBoundSpan
-    if (!session || getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+    if (getDefinitionAndBoundSpan[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
     sessionAny.getDefinitionAndBoundSpan = (...args: any) => {
@@ -178,7 +177,7 @@ function proxyGetDefinitionAndBoundSpan() {
 function proxyFindSourceDefinition() {
     const sessionAny = session as any
     const findSourceDefinition = sessionAny.findSourceDefinition
-    if (!session || findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+    if (findSourceDefinition[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
     sessionAny.findSourceDefinition = (...args: any) => {
@@ -191,7 +190,7 @@ function proxyFindSourceDefinition() {
 function proxyGetImplementation() {
     const sessionAny = session as any
     const getImplementation = sessionAny.getImplementation
-    if (!session || getImplementation[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+    if (getImplementation[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
     sessionAny.getImplementation = (...args: any) => {
@@ -244,10 +243,6 @@ function proxyEditContent() {
 }
 
 function proxyRenameSessionHandler() {
-    if (isUndefined(session)) {
-        return
-    }
-
     const sessionAny = session as any
     const originalHandler = sessionAny.handlers.get("rename")
     if (originalHandler[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
@@ -371,10 +366,11 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
             containingFile,
             ...rest
         )
+        const qingkuaiModules = new Set<string>()
         const curDir = path.dirname(containingFile)
         const config = getConfigByFileName(containingFile)
 
-        return originalRet.map((item, index) => {
+        const ret = originalRet.map((item, index) => {
             const moduleText = moduleLiterals[index].text
             const isDirectory = isEmptyString(path.extname(moduleText))
             const resolveAsQk = isDirectory && config.resolveImportExtension
@@ -384,16 +380,13 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
                 return item
             }
 
-            const snapshot = languageServiceHost.getScriptSnapshot(modulePath) as QingKuaiSnapShot
             const compilationSettings = languageServiceHost.getCompilationSettings()
+            const snapshot = ensureGetSnapshotOfQingkuaiFile(modulePath)
             const isTS = snapshot.scriptKind === ts.ScriptKind.TS
             if (!isTS && !compilationSettings.allowJs) {
                 return item
             }
-            if (!resolvedQingkuaiModule.has(containingFile)) {
-                resolvedQingkuaiModule.set(containingFile, new Set())
-            }
-            resolvedQingkuaiModule.get(containingFile)!.add(moduleText)
+            qingkuaiModules!.add(moduleText)
             return {
                 ...item,
                 resolvedModule: {
@@ -405,6 +398,10 @@ function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceH
                 failedLookupLocations: undefined
             }
         })
+        if (qingkuaiModules.size) {
+            resolvedQingkuaiModule.set(containingFile, qingkuaiModules)
+        }
+        return ret
     }
 
     // @ts-expect-error: attach supplementary property

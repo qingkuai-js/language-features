@@ -510,15 +510,17 @@ function getComponentSlotNames(componentFileName: string) {
 // 动态修改qk文件的脚本类型
 function updateScriptKindOfQingkuaiFile(fileName: string, scriptKind: TS.ScriptKind) {
     const scriptInfo = projectService.getScriptInfo(fileName)
+    if (!scriptInfo) {
+        return
+    }
 
     // @ts-expect-error: change read-only property
-    scriptInfo && (scriptInfo.scriptKind = scriptKind)
+    scriptInfo.scriptKind = scriptKind
 
-    getContainingProjectsByFileName(fileName).forEach(project => {
-        const sourceFile = getProgramByProject(project)?.getSourceFile(fileName)
-
-        // @ts-expect-error: change private property
-        sourceFile && (sourceFile.scriptKind = scriptKind)
+    // @ts-expect-error: access private property
+    projectService.documentRegistry.getBuckets().forEach(bucket => {
+        const entry = bucket.get(scriptInfo.path)
+        entry && (entry.sourceFile.scriptKind = scriptKind)
     })
 }
 
