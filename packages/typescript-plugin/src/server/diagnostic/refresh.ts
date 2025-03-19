@@ -1,18 +1,15 @@
 import {
-    isFileOpening,
-    getFileReferences,
-    getDefaultProjectByFileName
-} from "../../util/typescript"
-import {
     compileQingkuaiFileToInterCode,
     ensureGetSnapshotOfQingkuaiFile
 } from "../../util/qingkuai"
+import { RefreshDiagnosticKind } from "../../constant"
 import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
 import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
 import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
 import { isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
+import { isFileOpening, getFileReferences, pathToFileName } from "../../util/typescript"
 
 // 刷新引用文件的诊断信息，如果目标文件是.qk文件，则通知qingkuai语言服务器重新推送诊断信息，第二个参数用于
 // 描述当前文档的脚本类型是否发生了变化，如果发生了变化，需要模拟编辑目标文档以触发重新解析导入语句：查看文档最后
@@ -29,29 +26,31 @@ export const refreshDiagnostics = debounce(
         const byConfigChanged = byFileName.startsWith("///")
         const byQingKuaiFile = isQingkuaiFileName(byFileName)
 
+        const markOpenFilesAsReferences = () => {
+            projectService.openFiles.forEach((_, path) => {
+                referenceFileNames.push(pathToFileName(path))
+            })
+        }
+
+        let shouldEdit = scriptKindChanged
         if (byQingKuaiFile && !isFileOpening(byFileName)) {
             return
         }
 
         if (byConfigChanged) {
-            scriptKindChanged = true
-            projectService.openFiles.forEach((_, path) => {
-                referenceFileNames.push(projectService.getScriptInfo(path)!.fileName)
-            })
+            markOpenFilesAsReferences()
+            shouldEdit = byFileName === RefreshDiagnosticKind.typescriptConfig
         } else {
             const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(byFileName)
-            if (scriptKindChanged && qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS) {
-                projectService.openFiles.forEach((_, tsPath) => {
-                    const scriptInfo = projectService.getScriptInfo(tsPath)
-                    scriptInfo && referenceFileNames.push(scriptInfo.fileName)
-                })
-            } else {
+            if (!scriptKindChanged || qingkuaiSnapshot.scriptKind !== ts.ScriptKind.TS) {
                 referenceFileNames.push(
                     ...getFileReferences(byFileName, {
                         recursive: true,
                         justOpening: true
                     })
                 )
+            } else {
+                markOpenFilesAsReferences()
             }
         }
 
@@ -67,8 +66,8 @@ export const refreshDiagnostics = debounce(
             const endsWithSpace = snapshot.getText(contentLength - 1, contentLength) === " "
 
             if (isQingkuaiFileName(fileName)) {
-                if (scriptKindChanged) {
-                    if (byFileName === "///qk") {
+                if (shouldEdit) {
+                    if (byFileName === RefreshDiagnosticKind.qingkuaiConfig) {
                         const compileRes = compileQingkuaiFileToInterCode(fileName)
                         updateQingkuaiSnapshot(
                             fileName,
@@ -98,7 +97,7 @@ export const refreshDiagnostics = debounce(
                     return
                 }
 
-                if (scriptKindChanged) {
+                if (shouldEdit) {
                     if (!endsWithSpace) {
                         scriptInfo.editContent(contentLength, contentLength, " ")
                     } else {

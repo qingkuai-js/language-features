@@ -11,12 +11,14 @@ import { attachFindImplementation } from "./implementation"
 import { attachChangeConfig } from "./configuration/handler"
 import { attachPrepareRename, attachRename } from "./rename"
 import { attachDocumentManager, attachUpdateSnapshot } from "./content/handler"
+import { attachRenameFile } from "./rename-file"
 
 export function attachLanguageServerIPCHandlers() {
     runAll([
         attachRename,
         attachHoverTip,
         attachCodeLens,
+        attachRenameFile,
         attachWaitCommand,
         attachChangeConfig,
         attachFindReference,

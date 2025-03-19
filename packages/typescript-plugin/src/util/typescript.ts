@@ -1,16 +1,13 @@
-import type {
-    Node,
-    JSDocTagInfo,
-    DocumentSpan,
-    UserPreferences,
-    SymbolDisplayPart
-} from "typescript"
 import type TS from "typescript"
 
 import path from "node:path"
-import { openQingkuaiFiles, projectService, ts } from "../state"
 import { excludeProperty } from "../../../../shared-util/sundry"
+import { openQingkuaiFiles, projectService, ts } from "../state"
 import { isString, isUndefined } from "../../../../shared-util/assert"
+
+export function pathToFileName(p: TS.Path) {
+    return projectService.getScriptInfo(p)?.fileName || ""
+}
 
 export function isEventType(type: TS.Type) {
     if (type.isClass()) {
@@ -97,7 +94,7 @@ export function forEachProject(cb: (p: TS.server.Project) => void) {
 }
 
 // 从指定节点中查找指定位置的节点（深度优先遍历）
-export function getNodeAt(node: Node, pos: number): Node | undefined {
+export function getNodeAt(node: TS.Node, pos: number): TS.Node | undefined {
     const [start, len] = [node.getStart(), node.getWidth()]
     if (pos >= start && pos <= start + len) {
         for (const child of node.getChildren()) {
@@ -111,7 +108,7 @@ export function getNodeAt(node: Node, pos: number): Node | undefined {
     return undefined
 }
 
-export function getUserPreferencesByFileName(fileName: string): UserPreferences {
+export function getUserPreferencesByFileName(fileName: string): TS.UserPreferences {
     const userPreferences = excludeProperty(
         projectService.getPreferences(ts.server.toNormalizedPath(fileName)),
         "lazyConfiguredProjectsFromExternalProject"
@@ -127,7 +124,7 @@ export function getFormatCodeSettingsByFileName(fileName: string) {
     return projectService.getFormatCodeOptions(ts.server.toNormalizedPath(fileName))
 }
 
-export function convertJsDocTagsToMarkdown(tags: JSDocTagInfo[]) {
+export function convertJsDocTagsToMarkdown(tags: TS.JSDocTagInfo[]) {
     tags.map(tag => {
         switch (tag.name) {
             case "augments":
@@ -168,7 +165,7 @@ export function convertJsDocTagsToMarkdown(tags: JSDocTagInfo[]) {
 }
 
 // 将SymbolDisplayPart[]类型转换为带有链接的markdown纯文本
-export function convertDisplayPartsToPlainTextWithLink(parts: SymbolDisplayPart[] | undefined) {
+export function convertDisplayPartsToPlainTextWithLink(parts: TS.SymbolDisplayPart[] | undefined) {
     if (isUndefined(parts)) {
         return ""
     }
@@ -181,7 +178,7 @@ export function convertDisplayPartsToPlainTextWithLink(parts: SymbolDisplayPart[
             }
             return ret + `[${part.text.slice(spaceIndex)}](${part.text.slice(0, spaceIndex)})`
         } else if (part.kind === "linkName") {
-            const target: DocumentSpan = (part as any).target
+            const target: TS.DocumentSpan = (part as any).target
             const args = encodeURIComponent(
                 JSON.stringify({
                     path: target.fileName,
@@ -195,7 +192,7 @@ export function convertDisplayPartsToPlainTextWithLink(parts: SymbolDisplayPart[
     }, "")
 }
 
-function getTagBodyText(tag: JSDocTagInfo): string | undefined {
+function getTagBodyText(tag: TS.JSDocTagInfo): string | undefined {
     if (!tag.text) {
         return undefined
     }
@@ -238,7 +235,7 @@ function getTagBodyText(tag: JSDocTagInfo): string | undefined {
     }
 }
 
-function getTagBody(tag: JSDocTagInfo): Array<string> | undefined {
+function getTagBody(tag: TS.JSDocTagInfo): Array<string> | undefined {
     if (tag.name === "template") {
         const parts = tag.text
         if (parts && typeof parts !== "string") {

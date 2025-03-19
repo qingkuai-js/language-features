@@ -12,13 +12,15 @@ export function initialEditQingkuaiFileSnapshot(fileName: string) {
             scriptInfo.getSnapshot().getLength(),
             qingkuaiSnapshot.getFullText()
         )
-        updateQingkuaiSnapshot(
-            fileName,
-            qingkuaiSnapshot.getFullText(),
-            qingkuaiSnapshot.itos,
-            qingkuaiSnapshot.slotInfo,
-            qingkuaiSnapshot.scriptKind,
-            qingkuaiSnapshot.positions
-        )
+        setTimeout(() => {
+            updateQingkuaiSnapshot(
+                fileName,
+                qingkuaiSnapshot.getFullText(),
+                qingkuaiSnapshot.itos,
+                qingkuaiSnapshot.slotInfo,
+                qingkuaiSnapshot.scriptKind,
+                qingkuaiSnapshot.positions
+            )
+        })
     }
 }

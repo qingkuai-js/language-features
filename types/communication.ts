@@ -1,4 +1,10 @@
 import type {
+    Range,
+    Command,
+    WorkspaceEdit,
+    CompletionItemLabelDetails
+} from "vscode-languageserver"
+import type {
     NumNum,
     NumNumArray,
     PrettierConfiguration,
@@ -7,7 +13,25 @@ import type {
 } from "./common"
 import type { SlotInfo } from "qingkuai/compiler"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
-import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
+
+export interface RenameFileParams {
+    oldPath: string
+    newPath: string
+}
+
+export type RenameFileResult = Record<
+    string,
+    {
+        range: Range
+        newText: string
+    }[]
+>
+
+export interface ApplyWorkspaceEditParams {
+    edit: WorkspaceEdit
+    message?: string
+    isRefactoring?: boolean
+}
 
 export interface FindComponentTagRangeParams {
     fileName: string

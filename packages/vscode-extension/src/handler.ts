@@ -1,9 +1,10 @@
 import type {
     InsertSnippetParam,
     GetClientConfigParams,
-    GetConfigurationParams
+    GetConfigurationParams,
+    ApplyWorkspaceEditParams
 } from "../../../types/communication"
-import type { LanguageClient, WorkspaceEdit } from "vscode-languageclient/node"
+import type { LanguageClient } from "vscode-languageclient/node"
 
 import {
     getExtensionConfig,
@@ -12,13 +13,13 @@ import {
     notifyServerCleanConfigCache
 } from "./config"
 import fs from "node:fs"
-import * as vsc from "vscode"
+import * as vscode from "vscode"
 import { LSHandler } from "../../../shared-util/constant"
 import { isUndefined } from "../../../shared-util/assert"
 
 export function attachCustomHandlers(client: LanguageClient) {
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
-    vsc.window.onDidChangeActiveTextEditor(textEditor => {
+    vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
             client.sendNotification(
                 LSHandler.publishDiagnostic,
@@ -28,7 +29,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 监听扩展配置项变化，并通知qingkuai语言服务器
-    vsc.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
+    vscode.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
         if (
             affectsConfiguration("qingkuai") ||
             affectsConfiguration("prettier") ||
@@ -39,16 +40,10 @@ export function attachCustomHandlers(client: LanguageClient) {
         }
     })
 
-    vsc.workspace.onDidRenameFiles(({ files }) => {
-        for (const { oldUri, newUri } of files) {
-            console.log(oldUri.fsPath, newUri.fsPath)
-        }
-    })
-
     // 插入片段通知，qingkuai语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
     client.onNotification(LSHandler.insertSnippet, (params: InsertSnippetParam) => {
-        vsc.window.activeTextEditor?.insertSnippet(new vsc.SnippetString(params.text))
-        params.command && vsc.commands.executeCommand(params.command)
+        vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(params.text))
+        params.command && vscode.commands.executeCommand(params.command)
     })
 
     // 获取语言配置项
@@ -59,8 +54,8 @@ export function attachCustomHandlers(client: LanguageClient) {
                 return
             }
 
-            const fileUri = vsc.Uri.file(filePath)
-            const workspaceFolder = vsc.workspace.getWorkspaceFolder(fileUri)
+            const fileUri = vscode.Uri.file(filePath)
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
             if (isUndefined(workspaceFolder)) {
                 return
             }
@@ -76,7 +71,10 @@ export function attachCustomHandlers(client: LanguageClient) {
 
     // 获取客户端配置
     client.onRequest(LSHandler.getClientConfig, (params: GetConfigurationParams) => {
-        const config = vsc.workspace.getConfiguration(params.section, vsc.Uri.parse(params.uri))
+        const config = vscode.workspace.getConfiguration(
+            params.section,
+            vscode.Uri.parse(params.uri)
+        )
         if ("filter" in params) {
             const needKeys = new Set(params.filter)
             return Object.keys(config).reduce((ret, key) => {
@@ -92,18 +90,36 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 应用工作区更改
-    client.onNotification(LSHandler.applyWorkspaceEdit, (param: WorkspaceEdit) => {
-        const changes = param.changes!
-        const workspaceEdit = new vsc.WorkspaceEdit()
-        Object.keys(changes).forEach(uri => {
+    client.onNotification(LSHandler.applyWorkspaceEdit, (param: ApplyWorkspaceEditParams) => {
+        const changes = param.edit.changes!
+        const targetUris = Object.keys(changes)
+        const workspaceEdit = new vscode.WorkspaceEdit()
+        const filesConfig = vscode.workspace.getConfiguration("files")
+        targetUris.forEach(uri => {
             changes[uri].forEach(({ range, newText }) => {
-                const vscodeRange = new vsc.Range(
-                    new vsc.Position(range.start.line, range.start.character),
-                    new vsc.Position(range.end.line, range.end.character)
+                const vscodeUri = vscode.Uri.parse(uri)
+                const vscodeRange = new vscode.Range(
+                    new vscode.Position(range.start.line, range.start.character),
+                    new vscode.Position(range.end.line, range.end.character)
                 )
-                workspaceEdit.replace(vsc.Uri.parse(uri), vscodeRange, newText)
+                workspaceEdit.replace(vscodeUri, vscodeRange, newText)
             })
         })
-        vsc.workspace.applyEdit(workspaceEdit)
+
+        // 应用工作区修改前修改自动保存配置，并在应用完成后修改会原始值
+        const originalAutoSaveConfig = filesConfig.get("autoSave")
+        filesConfig.update("autoSave", "afterDelay")
+        vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Window,
+                title: param.message || "Workspace changes is being applied"
+            },
+            async () => {
+                await vscode.workspace.applyEdit(workspaceEdit, {
+                    isRefactoring: !!param.isRefactoring
+                })
+                filesConfig.update("autoSave", originalAutoSaveConfig)
+            }
+        )
     })
 }

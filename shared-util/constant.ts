@@ -30,6 +30,7 @@ export enum TPICHandler {
     updateSnapshot = "updateSnapshot",
     findDefinition = "findDefinition",
     didOpen = "didOpenQingkuaiDocument",
+    renameFile = "getEditsForFileRename",
     didClose = "didCloseQingkuaiDocument",
     getSignatureHelp = "getSignatureHelp",
     findImplemention = "findImplementation",
@@ -40,6 +41,7 @@ export enum TPICHandler {
 
 export enum LSHandler {
     testLog = "qingkuai/testLog",
+    renameFile = "qingkuai/renameFile",
     insertSnippet = "qingkuai/insertSnippet",
     getClientConfig = "qingkuai/getClientConfig",
     publishDiagnostic = "qingkuai/publishDiagnostics",

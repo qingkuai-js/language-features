@@ -11,21 +11,26 @@ import {
     LanguageClient,
     LanguageClientOptions
 } from "vscode-languageclient/node"
-import * as vsc from "vscode"
+import * as vscode from "vscode"
 import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
 import { LSHandler } from "../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
+import { attachFileSystemHandlers } from "./filesys"
 
 let client: LanguageClient | undefined = undefined
 
 export async function activate(context: ExtensionContext) {
-    if (isQingkuaiFileName(vsc.window.activeTextEditor?.document.uri.fsPath || "")) {
+    const tsExtension = vscode.extensions.getExtension("vscode.typescript-language-features")!
+    if (
+        tsExtension.isActive ||
+        isQingkuaiFileName(vscode.window.activeTextEditor?.document.uri.fsPath || "")
+    ) {
         return activeLanguageServer(context)
     }
 
-    const disposable = vsc.window.onDidChangeActiveTextEditor(e => {
+    const disposable = vscode.window.onDidChangeActiveTextEditor(e => {
         if (isQingkuaiFileName(e?.document.uri.fsPath || "")) {
             disposable.dispose()
             activeLanguageServer(context)
@@ -41,13 +46,13 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 async function activeLanguageServer(context: ExtensionContext) {
-    const doc = vsc.window.activeTextEditor!.document
+    const doc = vscode.window.activeTextEditor!.document
     const shouldToggleLanguageId = doc.languageId === "qingkuai"
     const serverModule = context.asAbsolutePath("../../dist/server.js")
-    const watcher = vsc.workspace.createFileSystemWatcher("**/.clientrc")
-    const outputChannel = vsc.window.createOutputChannel("QingKuai", "log")
-    const languageStatusItem = vsc.languages.createLanguageStatusItem("ls", "qingkuai")
-    const tsExtension = vsc.extensions.getExtension("vscode.typescript-language-features")!
+    const watcher = vscode.workspace.createFileSystemWatcher("**/.clientrc")
+    const outputChannel = vscode.window.createOutputChannel("QingKuai", "log")
+    const languageStatusItem = vscode.languages.createLanguageStatusItem("ls", "qingkuai")
+    const tsExtension = vscode.extensions.getExtension("vscode.typescript-language-features")!
     // 开启插件加载状态
     languageStatusItem.text = "QingKuai Language Server"
     context.subscriptions.push(languageStatusItem)
@@ -61,7 +66,7 @@ async function activeLanguageServer(context: ExtensionContext) {
 
     // 切换语言id以激活vscode内置ts服务器
     if ((await tsExtension.activate()) && shouldToggleLanguageId) {
-        await vsc.languages.setTextDocumentLanguage(doc, "typescript")
+        await vscode.languages.setTextDocumentLanguage(doc, "typescript")
     }
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
@@ -75,7 +80,7 @@ async function activeLanguageServer(context: ExtensionContext) {
     })
 
     if (shouldToggleLanguageId) {
-        vsc.languages.setTextDocumentLanguage(doc, "qingkuai")
+        vscode.languages.setTextDocumentLanguage(doc, "qingkuai")
     }
 
     const languageServerOptions: ServerOptions = {
@@ -106,8 +111,10 @@ async function activeLanguageServer(context: ExtensionContext) {
         languageClientOptions
     )).start()
 
-    attachCustomHandlers(client)
     languageStatusItem.busy = false
+
+    attachCustomHandlers(client)
+    attachFileSystemHandlers(client)
     startQingkuaiConfigWatcher(client)
     startPrettierConfigWatcher(client)
     client.sendRequest(LSHandler.languageClientCreated, sockPath)

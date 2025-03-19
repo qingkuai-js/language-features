@@ -6,6 +6,7 @@ import type { ConfigureFileParams } from "../../../../../types/communication"
 
 import path from "node:path"
 import { relativePathRE } from "../../regular"
+import { RefreshDiagnosticKind } from "../../constant"
 import { projectService, server, ts } from "../../state"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { isUndefined } from "../../../../../shared-util/assert"
@@ -52,7 +53,7 @@ export function getConfigByFileName(fileName: string): QingkuaiConfiguration {
 }
 
 function refreshDiagnosticsDelay() {
-    setTimeout(() => refreshDiagnostics("///qk", false), 1000)
+    setTimeout(() => refreshDiagnostics(RefreshDiagnosticKind.qingkuaiConfig, false), 1000)
 }
 
 // typescript版本低于5.4.0时autoImportFileExcludePatterns配置项

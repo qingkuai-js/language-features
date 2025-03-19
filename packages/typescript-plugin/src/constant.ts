@@ -1,5 +1,11 @@
 import type TS from "typescript"
 
+export enum RefreshDiagnosticKind {
+    fileSystem = "///fs",
+    qingkuaiConfig = "///qk",
+    typescriptConfig = "///ts"
+}
+
 export const ORI_SOURCE_FILE: unique symbol = Symbol()
 export const HAS_BEEN_PROXIED_BY_QINGKUAI: unique symbol = Symbol()
 

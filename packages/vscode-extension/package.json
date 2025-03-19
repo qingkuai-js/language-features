@@ -3,17 +3,17 @@
     "version": "1.0.0",
     "author": "lgq",
     "license": "MIT",
-    "description": "qingkuai language support for vscode",
     "engines": {
         "vscode": "^1.93.0"
     },
     "categories": [
-        "Other"
+        "Programming Languages"
     ],
     "activationEvents": [
         "workspaceContains:**/*.qk"
     ],
     "main": "../../dist/client.js",
+    "description": "qingkuai language support for vscode",
     "contributes": {
         "languages": [
             {

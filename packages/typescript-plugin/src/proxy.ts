@@ -12,10 +12,10 @@ import {
 import fs from "node:fs"
 import path from "node:path"
 import { runAll } from "../../../shared-util/sundry"
-import { HAS_BEEN_PROXIED_BY_QINGKUAI } from "./constant"
 import { refreshDiagnostics } from "./server/diagnostic/refresh"
 import { getConfigByFileName } from "./server/configuration/method"
 import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
+import { HAS_BEEN_PROXIED_BY_QINGKUAI, RefreshDiagnosticKind } from "./constant"
 import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
 import { convertProtocolDefinitions, convertProtocolTextSpanWithContext } from "./util/protocol"
 import { isPositionFlagSetBySourceIndex, ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
@@ -135,7 +135,7 @@ function proxyOnConfigFileChanged() {
 
     projectServiceAsAny.onConfigFileChanged = (...args: any) => {
         setTimeout(() => {
-            refreshDiagnostics("///ts", false)
+            refreshDiagnostics(RefreshDiagnosticKind.typescriptConfig, false)
         }, 2500)
 
         return onConfigFileChanged.bind(projectService, ...args)

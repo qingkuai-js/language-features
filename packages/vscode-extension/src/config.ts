@@ -11,20 +11,20 @@ import type { RetransmissionParams } from "../../../types/communication"
 
 import fs from "node:fs"
 import path from "node:path"
-import * as vsc from "vscode"
+import * as vscode from "vscode"
 import prettier from "prettier"
 import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util/assert"
 
 // 获取扩展配置项
-export function getExtensionConfig(uri: vsc.Uri) {
-    return vsc.workspace.getConfiguration("qingkuai", uri)
+export function getExtensionConfig(uri: vscode.Uri) {
+    return vscode.workspace.getConfiguration("qingkuai", uri)
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项
 export async function getInitQingkuaiConfig() {
     const configurations: QingkuaiConfigurationWithDir[] = []
-    for (const folder of vsc.workspace.workspaceFolders ?? []) {
+    for (const folder of vscode.workspace.workspaceFolders ?? []) {
         const folderPath = folder.uri.fsPath
         for (const filePath of fs.readdirSync(folderPath, { recursive: true })) {
             if (isString(filePath) && filePath.endsWith(".qingkuairc")) {
@@ -49,7 +49,7 @@ export function notifyServerCleanConfigCache(client: LanguageClient) {
 
 // 监听工作区范围内.qingkuairc配置文件的修改和删除事件
 export function startQingkuaiConfigWatcher(client: LanguageClient) {
-    const watcher = vsc.workspace.createFileSystemWatcher("**/.qingkuairc", true)
+    const watcher = vscode.workspace.createFileSystemWatcher("**/.qingkuairc", true)
     watcher.onDidChange(uri => {
         notifyServerCleanConfigCache(client)
         client.sendNotification(LSHandler.retransmission, {
@@ -70,15 +70,26 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
 }
 
 export function startPrettierConfigWatcher(client: LanguageClient) {
-    const watcher = vsc.workspace.createFileSystemWatcher(
+    const watcher = vscode.workspace.createFileSystemWatcher(
         "**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}"
     )
     watcher.onDidChange(() => notifyServerCleanConfigCache(client))
     watcher.onDidDelete(() => notifyServerCleanConfigCache(client))
 }
 
+export function getConfigTarget(config: vscode.WorkspaceConfiguration, section: string) {
+    const inspected = config.inspect(section)
+    if (inspected?.workspaceValue) {
+        return vscode.ConfigurationTarget.Workspace
+    }
+    if (inspected?.workspaceFolderValue) {
+        return vscode.ConfigurationTarget.WorkspaceFolder
+    }
+    return vscode.ConfigurationTarget.Global
+}
+
 // 获取typescript配置项
-export function getTypescriptConfig(uri: vsc.Uri, isTypescriptDocument: boolean) {
+export function getTypescriptConfig(uri: vscode.Uri, isTypescriptDocument: boolean) {
     const options = getFormattingOptions(uri)
     if (isUndefined(options)) {
         return
@@ -89,8 +100,8 @@ export function getTypescriptConfig(uri: vsc.Uri, isTypescriptDocument: boolean)
     }
 }
 
-export async function getPrettierConfig(uri: vsc.Uri) {
-    const byVscode = vsc.workspace.getConfiguration("prettier")
+export async function getPrettierConfig(uri: vscode.Uri) {
+    const byVscode = vscode.workspace.getConfiguration("prettier")
     const byConfigFile = await prettier.resolveConfig(uri.fsPath, {
         useCache: false,
         editorconfig: true
@@ -102,24 +113,24 @@ async function loadQingkuaiConfig(path: string) {
     try {
         return JSON.parse(fs.readFileSync(path, "utf-8") || "{}") as QingkuaiConfiguration
     } catch {
-        const value = await vsc.window.showWarningMessage(
+        const value = await vscode.window.showWarningMessage(
             `Load configuration from "${path}" is failed, please check its contents.`,
             "Open Config File"
         )
         if (value === "Open Config File") {
-            const document = await vsc.workspace.openTextDocument(path)
-            vsc.window.showTextDocument(document)
+            const document = await vscode.workspace.openTextDocument(path)
+            vscode.window.showTextDocument(document)
         }
     }
 }
 
 // prettier-ignore
 function getTSFormatCodeSettings(
-        uri: vsc.Uri,
+        uri: vscode.Uri,
         options: TSFormattingOptions,
         isTypescriptDocument: boolean
     ): TSFormatCodeSettings {
-        const config = vsc.workspace.getConfiguration(`${isTypescriptDocument?"type":"java"}script.format`, uri)
+        const config = vscode.workspace.getConfiguration(`${isTypescriptDocument?"type":"java"}script.format`, uri)
         return {
             newLineCharacter: "\n",
             tabSize: options.tabSize,
@@ -148,12 +159,12 @@ function getTSFormatCodeSettings(
 
 // prettier-ignore
 function getTSPreferences(
-        uri: vsc.Uri,
+        uri: vscode.Uri,
         isTypescriptDocument: boolean
     ): TS.UserPreferences {
         const scriptKindName = isTypescriptDocument? "typescript" : "javascript"
-        const config = vsc.workspace.getConfiguration(scriptKindName, uri)
-        const preferencesConfig = vsc.workspace.getConfiguration(`${scriptKindName}.preferences`, uri)
+        const config = vscode.workspace.getConfiguration(scriptKindName, uri)
+        const preferencesConfig = vscode.workspace.getConfiguration(`${scriptKindName}.preferences`, uri)
 
         const preferences: TS.UserPreferences = {
             ...config.get("unstable"),
@@ -188,8 +199,8 @@ function getTSPreferences(
         return preferences
     }
 
-function getFormattingOptions(uri: vsc.Uri): TSFormattingOptions | undefined {
-    const editor = vsc.window.visibleTextEditors.find(
+function getFormattingOptions(uri: vscode.Uri): TSFormattingOptions | undefined {
+    const editor = vscode.window.visibleTextEditors.find(
         editor => editor.document.uri.toString() === uri.toString()
     )
     if (!editor) {
@@ -204,7 +215,7 @@ function getFormattingOptions(uri: vsc.Uri): TSFormattingOptions | undefined {
     }
 }
 
-function getQuoteStylePreference(config: vsc.WorkspaceConfiguration) {
+function getQuoteStylePreference(config: vscode.WorkspaceConfiguration) {
     switch (config.get<string>("quoteStyle")) {
         case "single":
             return "single"
@@ -215,7 +226,7 @@ function getQuoteStylePreference(config: vsc.WorkspaceConfiguration) {
     }
 }
 
-function getOrganizeImportsPreferences(config: vsc.WorkspaceConfiguration): TS.UserPreferences {
+function getOrganizeImportsPreferences(config: vscode.WorkspaceConfiguration): TS.UserPreferences {
     return {
         organizeImportsTypeOrder: withDefaultAsUndefined(
             config.get<"auto" | "last" | "inline" | "first">("organizeImports.typeOrder", "auto"),
@@ -238,7 +249,7 @@ function getOrganizeImportsPreferences(config: vsc.WorkspaceConfiguration): TS.U
     }
 }
 
-function getInlayParameterNameHintsPreference(config: vsc.WorkspaceConfiguration) {
+function getInlayParameterNameHintsPreference(config: vscode.WorkspaceConfiguration) {
     switch (config.get<string>("inlayHints.parameterNames.enabled")) {
         case "none":
             return "none"
@@ -251,7 +262,7 @@ function getInlayParameterNameHintsPreference(config: vsc.WorkspaceConfiguration
     }
 }
 
-function getImportModuleSpecifierPreference(config: vsc.WorkspaceConfiguration) {
+function getImportModuleSpecifierPreference(config: vscode.WorkspaceConfiguration) {
     switch (config.get<string>("importModuleSpecifier")) {
         case "project-relative":
             return "project-relative"
@@ -264,7 +275,7 @@ function getImportModuleSpecifierPreference(config: vsc.WorkspaceConfiguration) 
     }
 }
 
-function getImportModuleSpecifierEndingPreference(config: vsc.WorkspaceConfiguration) {
+function getImportModuleSpecifierEndingPreference(config: vscode.WorkspaceConfiguration) {
     switch (config.get<string>("importModuleSpecifierEnding")) {
         case "minimal":
             return "minimal"
@@ -277,7 +288,7 @@ function getImportModuleSpecifierEndingPreference(config: vsc.WorkspaceConfigura
     }
 }
 
-function getJsxAttributeCompletionStyle(config: vsc.WorkspaceConfiguration) {
+function getJsxAttributeCompletionStyle(config: vscode.WorkspaceConfiguration) {
     switch (config.get<string>("jsxAttributeCompletionStyle")) {
         case "braces":
             return "braces"
@@ -288,7 +299,7 @@ function getJsxAttributeCompletionStyle(config: vsc.WorkspaceConfiguration) {
     }
 }
 
-function getInlayHintsPreferences(config: vsc.WorkspaceConfiguration) {
+function getInlayHintsPreferences(config: vscode.WorkspaceConfiguration) {
     return {
         includeInlayVariableTypeHints: config.get<boolean>(
             "inlayHints.variableTypes.enabled",
