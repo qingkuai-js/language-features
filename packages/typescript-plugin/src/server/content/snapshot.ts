@@ -11,6 +11,7 @@ import {
     isNumber,
     isString,
     isUndefined,
+    debugAssert,
     isQingkuaiFileName
 } from "../../../../../shared-util/assert"
 import {
@@ -35,8 +36,7 @@ import {
     isEventType,
     getProgramByProject,
     getDefaultProgramByFileName,
-    getDefaultProjectByFileName,
-    getContainingProjectsByFileName
+    getDefaultProjectByFileName
 } from "../../util/typescript"
 import {
     endingInvalidStr,
@@ -48,7 +48,6 @@ import {
     existingTopScopeIdentifierRE
 } from "../../regular"
 import path from "node:path"
-import assert from "node:assert"
 import { COMPILER_FUNCS } from "../../constant"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
@@ -151,7 +150,7 @@ export function updateQingkuaiSnapshot(
 
     const project = getDefaultProjectByFileName(fileName)!
     const program = getProgramByProject(project)!
-    assert(!isUndefined(program))
+    debugAssert(program)
 
     const sourceFile = program.getSourceFile(fileName)
     const typeChecker = program.getTypeChecker()

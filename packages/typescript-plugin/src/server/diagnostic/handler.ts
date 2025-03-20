@@ -1,14 +1,25 @@
-import type {
-    TSDiagnostic,
-    TSDiagnosticRelatedInformation
+import {
+    RefreshDiagnosticParams,
+    type TSDiagnostic,
+    type TSDiagnosticRelatedInformation
 } from "../../../../../types/communication"
 import type { DiagnosticKind } from "../../types"
 import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
+import { refreshDiagnostics } from "./refresh"
 import { ORI_SOURCE_FILE } from "../../constant"
 import { TPICHandler } from "../../../../../shared-util/constant"
 import { isString, isUndefined } from "../../../../../shared-util/assert"
 import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
+
+export function attachRefreshDiagnostic() {
+    server.onNotification<RefreshDiagnosticParams>(
+        TPICHandler.refreshDiagnostic,
+        ({ byFileName, scriptKindChanged }) => {
+            refreshDiagnostics(byFileName, scriptKindChanged)
+        }
+    )
+}
 
 export function attachGetDiagnostic() {
     server.onRequest<string, TSDiagnostic[]>(TPICHandler.getDiagnostic, fileName => {

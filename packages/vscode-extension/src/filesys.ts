@@ -1,32 +1,55 @@
+import type {
+    RenameFileParams,
+    RetransmissionParams,
+    RefreshDiagnosticParams
+} from "../../../types/communication"
 import type { LanguageClient } from "vscode-languageclient/node"
-import type { RenameFileParams } from "../../../types/communication"
 
 import * as vscode from "vscode"
 import { basename } from "node:path"
 import { getConfigTarget } from "./config"
-import { LSHandler } from "../../../shared-util/constant"
+import { isQingkuaiFileName } from "../../../shared-util/assert"
+import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 
 export async function attachFileSystemHandlers(client: LanguageClient) {
     vscode.workspace.onDidRenameFiles(async ({ files }) => {
         for (const { oldUri, newUri } of files) {
-            if (await shouldUpdateImports(newUri)) {
+            const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
+            if (!isQingkuaiFileName(oldPath) && !isQingkuaiFileName(newPath)) {
+                client.sendNotification(LSHandler.retransmission, {
+                    name: TPICHandler.refreshDiagnostic,
+                    data: {
+                        byFileName: "///fs",
+                        scriptKindChanged: false
+                    } satisfies RefreshDiagnosticParams
+                } satisfies RetransmissionParams)
+                return
+            }
+
+            if (await shouldUpdateImports(client, newUri)) {
                 client.sendNotification(LSHandler.renameFile, {
-                    oldPath: oldUri.fsPath,
-                    newPath: newUri.fsPath
+                    oldPath,
+                    newPath
                 } satisfies RenameFileParams)
             }
         }
     })
 }
 
-async function shouldUpdateImports(uri: vscode.Uri) {
+async function shouldUpdateImports(client: LanguageClient, uri: vscode.Uri) {
     enum ConfigValue {
         never = "never",
         always = "always"
     }
     const updateImportsConfigName = "updateImportsOnFileMove.enabled"
-    const tsConfig = vscode.workspace.getConfiguration("typescript", uri)
-    const updateImportsConfig: string = tsConfig.get(updateImportsConfigName, "prompt")
+    const languageConfig = vscode.workspace.getConfiguration(
+        await client.sendRequest(LSHandler.retransmission, {
+            data: uri.fsPath,
+            name: TPICHandler.getLanguageId
+        } satisfies RetransmissionParams),
+        uri
+    )
+    const updateImportsConfig: string = languageConfig.get(updateImportsConfigName, "prompt")
     if (updateImportsConfig === ConfigValue.always) {
         return true
     } else if (updateImportsConfig === ConfigValue.never) {
@@ -51,10 +74,10 @@ async function shouldUpdateImports(uri: vscode.Uri) {
     const choice = await vscode.window.showInformationMessage(message, { modal: true }, ...buttons)
 
     const updateConfig = (value: ConfigValue) => {
-        tsConfig.update(
+        languageConfig.update(
             updateImportsConfigName,
             value,
-            getConfigTarget(tsConfig, updateImportsConfigName)
+            getConfigTarget(languageConfig, updateImportsConfigName)
         )
     }
 

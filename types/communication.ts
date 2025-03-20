@@ -14,18 +14,23 @@ import type {
 import type { SlotInfo } from "qingkuai/compiler"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
 
+export interface RefreshDiagnosticParams {
+    byFileName: string
+    scriptKindChanged: boolean
+}
+
 export interface RenameFileParams {
     oldPath: string
     newPath: string
 }
 
-export type RenameFileResult = Record<
-    string,
-    {
+export type RenameFileResult = {
+    fileName: string
+    changes: {
         range: Range
         newText: string
     }[]
->
+}[]
 
 export interface ApplyWorkspaceEditParams {
     edit: WorkspaceEdit

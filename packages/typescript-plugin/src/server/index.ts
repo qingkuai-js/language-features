@@ -1,17 +1,17 @@
 import { attachHoverTip } from "./hover"
 import { attachCodeLens } from "./code-lens"
 import { attachWaitCommand } from "./command"
+import { attachRenameFile } from "./rename-file"
 import { attachGetCompletion } from "./complete"
 import { attachFindReference } from "./reference"
 import { attachFindDefinition } from "./definition"
 import { attachGetSignatureHelp } from "./signature"
 import { runAll } from "../../../../shared-util/sundry"
-import { attachGetDiagnostic } from "./diagnostic/handler"
 import { attachFindImplementation } from "./implementation"
 import { attachChangeConfig } from "./configuration/handler"
 import { attachPrepareRename, attachRename } from "./rename"
-import { attachDocumentManager, attachUpdateSnapshot } from "./content/handler"
-import { attachRenameFile } from "./rename-file"
+import { attachGetDiagnostic, attachRefreshDiagnostic } from "./diagnostic/handler"
+import { attachDocumentManager, attachGetLanguageId, attachUpdateSnapshot } from "./content/handler"
 
 export function attachLanguageServerIPCHandlers() {
     runAll([
@@ -21,6 +21,7 @@ export function attachLanguageServerIPCHandlers() {
         attachRenameFile,
         attachWaitCommand,
         attachChangeConfig,
+        attachGetLanguageId,
         attachFindReference,
         attachGetDiagnostic,
         attachPrepareRename,
@@ -29,6 +30,7 @@ export function attachLanguageServerIPCHandlers() {
         attachFindDefinition,
         attachDocumentManager,
         attachGetSignatureHelp,
+        attachRefreshDiagnostic,
         attachFindImplementation
     ])
 }

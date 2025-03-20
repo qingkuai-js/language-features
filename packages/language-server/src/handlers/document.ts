@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
-import { getCompileRes } from "../compile"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { clearDiagnostics, publishDiagnostics } from "./diagnostic"
@@ -22,7 +21,6 @@ export function attachDocumentHandlers() {
         if (tpicConnectedPromise.state === "pending") {
             await tpicConnectedPromise
         }
-        await getCompileRes(document)
         clearDiagnostics(document.uri)
         tpic.sendNotification(TPICHandler.didClose, document.uri)
     })

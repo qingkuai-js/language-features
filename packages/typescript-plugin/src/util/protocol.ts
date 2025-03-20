@@ -5,38 +5,36 @@ import type { ConvertProtocolTextSpanWithContextVerifier } from "../types"
 import { projectService } from "../state"
 import { DEFAULT_PROTOCOL_LOCATION } from "../constant"
 import { getDefaultSourceFileByFileName } from "./typescript"
-import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { ensureGetSnapshotOfQingkuaiFile, getSourceIndex } from "./qingkuai"
+import { debugAssert, isQingkuaiFileName } from "../../../../shared-util/assert"
 
-// 将typescript-language-features扩展与ts服务器通信结果中qingkuai文件的TextSpanWithContext
-// 的行列坐标修改到正确的源码位置（typescript语言服务获取到的qingkuai文件的坐标都是基于中间代码的）
-export function convertProtocolTextSpanWithContext(
+// 将typescript-language-features扩展与ts服务器通信结果中qingkuai文件的TextSpan的行列
+// 坐标修改到正确的源码位置（typescript语言服务获取到的qingkuai文件的坐标都是基于中间代码的）
+export function convertProtocolTextSpan(
     fileName: string,
-    textSpanWithContext: TS.server.protocol.TextSpanWithContext,
+    span: TS.server.protocol.TextSpan,
     verify?: ConvertProtocolTextSpanWithContextVerifier
 ) {
     if (!isQingkuaiFileName(fileName)) {
-        return textSpanWithContext
+        return span
     }
 
     if (!verify) {
         verify = () => !0
     }
 
-    if (!projectService.getScriptInfo(fileName)) {
-        return textSpanWithContext
-    }
+    debugAssert(projectService.getScriptInfo(fileName))
 
     const sourceFile = getDefaultSourceFileByFileName(fileName)!
     const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
     const interStartIndex = sourceFile.getPositionOfLineAndCharacter(
-        textSpanWithContext.start.line - 1,
-        textSpanWithContext.start.offset - 1
+        span.start.line - 1,
+        span.start.offset - 1
     )
     const interEndIndex = sourceFile.getPositionOfLineAndCharacter(
-        textSpanWithContext.end.line - 1,
-        textSpanWithContext.end.offset - 1
+        span.end.line - 1,
+        span.end.offset - 1
     )
     const sourceStartIndex = getSourceIndex(qingkuaiSnapshot, interStartIndex)
     const sourceEndIndex = getSourceIndex(qingkuaiSnapshot, interEndIndex, true)
@@ -50,7 +48,7 @@ export function convertProtocolTextSpanWithContext(
 
     const sourceEndPosition = qingkuaiSnapshot.positions[sourceEndIndex!]
     const sourceStartPosition = qingkuaiSnapshot.positions[sourceStartIndex!]
-    const result: TS.server.protocol.TextSpanWithContext = {
+    return {
         start: {
             line: sourceStartPosition.line,
             offset: sourceStartPosition.column + 1
@@ -59,11 +57,35 @@ export function convertProtocolTextSpanWithContext(
             line: sourceEndPosition.line,
             offset: sourceEndPosition.column + 1
         }
+    } satisfies TS.server.protocol.TextSpan
+}
+
+// 此方法作用与convertProtocolTextSpan相似，但它处理的目标是TextSpanWithContext
+export function convertProtocolTextSpanWithContext(
+    fileName: string,
+    span: TS.server.protocol.TextSpanWithContext,
+    verify?: ConvertProtocolTextSpanWithContextVerifier
+) {
+    if (!isQingkuaiFileName(fileName)) {
+        return span
     }
-    if (textSpanWithContext.contextStart) {
+
+    if (!verify) {
+        verify = () => !0
+    }
+
+    const convertTextSpan = convertProtocolTextSpan(fileName, span, verify)
+    if (!convertTextSpan) {
+        return void 0
+    }
+
+    const sourceFile = getDefaultSourceFileByFileName(fileName)!
+    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
+    const result: TS.server.protocol.TextSpanWithContext = convertTextSpan
+    if (span.contextStart) {
         const interContextStartIndex = sourceFile.getPositionOfLineAndCharacter(
-            textSpanWithContext.contextStart.line - 1,
-            textSpanWithContext.contextStart.offset - 1
+            span.contextStart.line - 1,
+            span.contextStart.offset - 1
         )
         const sourceContextStartIndex = getSourceIndex(qingkuaiSnapshot, interContextStartIndex)
         if (
@@ -77,10 +99,10 @@ export function convertProtocolTextSpanWithContext(
             }
         }
     }
-    if (textSpanWithContext.contextEnd) {
+    if (span.contextEnd) {
         const interContextEndIndex = sourceFile.getPositionOfLineAndCharacter(
-            textSpanWithContext.contextEnd.line - 1,
-            textSpanWithContext.contextEnd.offset - 1
+            span.contextEnd.line - 1,
+            span.contextEnd.offset - 1
         )
         const sourceContextEndIndex = getSourceIndex(qingkuaiSnapshot, interContextEndIndex, true)
         if (

@@ -9,8 +9,8 @@ import {
     openQingkuaiFiles,
     resolvedQingkuaiModule
 } from "../state"
-import fs from "node:fs"
-import assert from "node:assert"
+import { existsSync, readFileSync } from "node:fs"
+import { debugAssert } from "../../../../shared-util/assert"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
 import { compile, PositionFlag, PositionFlagKeys } from "qingkuai/compiler"
 
@@ -58,9 +58,9 @@ export function isPositionFlagSetByInterIndex(
 }
 
 export function compileQingkuaiFileToInterCode(fileName: string) {
-    assert(fs.existsSync(fileName))
+    debugAssert(existsSync(fileName))
 
-    return compile(fs.readFileSync(fileName, "utf-8")!, {
+    return compile(readFileSync(fileName, "utf-8")!, {
         check: true,
         typeRefStatement
     })

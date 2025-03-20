@@ -1,32 +1,30 @@
-import type {
-    RenameFileResult,
-    RenameFileParams,
-    ApplyWorkspaceEditParams
-} from "../../../../types/communication"
 import type { WorkspaceEdit } from "vscode-languageserver/node"
+import type {
+    RenameFileParams,
+    ApplyWorkspaceEditParams,
+    RenameFileResult
+} from "../../../../types/communication"
 
 import { TextEdit } from "vscode-languageserver/node"
 import { connection, tpic, tpicConnectedPromise } from "../state"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 
 export async function renameFile(params: RenameFileParams) {
-    await tpicConnectedPromise
+    if (tpicConnectedPromise.state === "pending") {
+        await tpicConnectedPromise
+    }
+
+    const workspaceEdit: WorkspaceEdit = { changes: {} }
     const res = await tpic.sendRequest<RenameFileParams, RenameFileResult>(
         TPICHandler.renameFile,
         params
     )
-
-    const fileNames = Object.keys(res)
-    const workspaceEdit: WorkspaceEdit = {
-        changes: {}
-    }
-    fileNames.forEach(fileName => {
-        const uri = `file://${fileName}`
-        workspaceEdit.changes![uri] = res[fileName].map(item => {
-            return TextEdit.replace(item.range, item.newText)
+    for (const item of res) {
+        workspaceEdit.changes![`file://${item.fileName}`] = item.changes.map(change => {
+            return TextEdit.replace(change.range, change.newText)
         })
-    })
-    if (fileNames.length) {
+    }
+    if (Object.keys(workspaceEdit.changes || {}).length) {
         connection.sendNotification(LSHandler.applyWorkspaceEdit, {
             edit: workspaceEdit,
             isRefactoring: true,

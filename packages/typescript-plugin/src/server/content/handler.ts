@@ -2,12 +2,6 @@ import type { ASTPositionWithFlag } from "qingkuai/compiler"
 import type { UpdateSnapshotParams } from "../../../../../types/communication"
 
 import {
-    ts,
-    server,
-    projectService,
-    openQingkuaiFiles,
-} from "../../state"
-import {
     recoverItos,
     recoverPositions,
     recoverPostionFlags
@@ -18,6 +12,8 @@ import { isFileOpening } from "../../util/typescript"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { TPICHandler } from "../../../../../shared-util/constant"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
+import { isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { ts, server, projectService, openQingkuaiFiles } from "../../state"
 
 export function attachDocumentManager() {
     server.onNotification(TPICHandler.didOpen, (uri: string) => {
@@ -63,5 +59,16 @@ export function attachUpdateSnapshot() {
         )
         refreshDiagnostics(fileName, scriptKindChanged)
         return componentIdentifiers
+    })
+}
+
+export function attachGetLanguageId() {
+    server.onRequest(TPICHandler.getLanguageId, (fileName: string) => {
+        if (!isQingkuaiFileName(fileName)) {
+            return void 0
+        }
+
+        const scriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
+        return scriptKind === ts.ScriptKind.TS ? "typescript" : "javascript"
     })
 }

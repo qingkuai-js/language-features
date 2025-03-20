@@ -3,9 +3,9 @@ import type { QingkuaiConfigurationWithDir } from "../../../types/common"
 
 import {
     proxyTypescriptLanguageServiceMethods,
-    proxyTypescriptProjectServiceAndSystemMethods
-} from "./proxy"
-import fs from "node:fs"
+    ProxyTypescriptSessionAndProjectServiceMethods
+} from "./proxies"
+import { existsSync } from "node:fs"
 import { ts, setState, typeRefStatement } from "./state"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
@@ -21,7 +21,7 @@ export = function init(modules: { typescript: typeof TS }) {
                     ts: modules.typescript,
                     projectService: info.project.projectService
                 })
-                proxyTypescriptProjectServiceAndSystemMethods()
+                ProxyTypescriptSessionAndProjectServiceMethods()
                 info.project.projectService.setHostConfiguration({
                     extraFileExtensions: [
                         {
@@ -44,7 +44,7 @@ export = function init(modules: { typescript: typeof TS }) {
             initQingkuaiConfig(params.configurations)
 
             // 创建ipc通道，并监听来自qingkuai语言服务器的请求
-            if (!fs.existsSync(params.sockPath)) {
+            if (!existsSync(params.sockPath)) {
                 createServer(params.sockPath).then(server => {
                     setState({ server })
                     attachLanguageServerIPCHandlers()

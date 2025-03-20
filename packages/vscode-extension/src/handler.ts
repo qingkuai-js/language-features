@@ -7,8 +7,9 @@ import type {
 import type { LanguageClient } from "vscode-languageclient/node"
 
 import {
-    getExtensionConfig,
+    getConfigTarget,
     getPrettierConfig,
+    getExtensionConfig,
     getTypescriptConfig,
     notifyServerCleanConfigCache
 } from "./config"
@@ -108,7 +109,8 @@ export function attachCustomHandlers(client: LanguageClient) {
 
         // 应用工作区修改前修改自动保存配置，并在应用完成后修改会原始值
         const originalAutoSaveConfig = filesConfig.get("autoSave")
-        filesConfig.update("autoSave", "afterDelay")
+        const autoSaveConfigTarget = getConfigTarget(filesConfig, "autoSave")
+        filesConfig.update("autoSave", "afterDelay", autoSaveConfigTarget)
         vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Window,
@@ -118,7 +120,7 @@ export function attachCustomHandlers(client: LanguageClient) {
                 await vscode.workspace.applyEdit(workspaceEdit, {
                     isRefactoring: !!param.isRefactoring
                 })
-                filesConfig.update("autoSave", originalAutoSaveConfig)
+                filesConfig.update("autoSave", originalAutoSaveConfig, autoSaveConfigTarget)
             }
         )
     })

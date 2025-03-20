@@ -22,6 +22,7 @@ export enum TPICHandler {
     rename = "getRenameInfo",
     updateConfig = "updateConfig",
     deleteConfig = "deleteConfig",
+    getLanguageId = "getLanguageId",
     configureFile = "configureFile",
     prepareRename = "prepareRename",
     findReference = "findReference",
@@ -29,12 +30,14 @@ export enum TPICHandler {
     getCompletion = "getCompletion",
     updateSnapshot = "updateSnapshot",
     findDefinition = "findDefinition",
+    retransmission = "retransmission",
     didOpen = "didOpenQingkuaiDocument",
     renameFile = "getEditsForFileRename",
     didClose = "didCloseQingkuaiDocument",
     getSignatureHelp = "getSignatureHelp",
     findImplemention = "findImplementation",
     getNavigationTree = "getNavigationTree",
+    refreshDiagnostic = "refreshDiagnostic",
     waitForTSCommand = "waitForTypescriptCommand",
     resolveCompletionItem = "resolveCompletionItem"
 }
