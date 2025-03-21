@@ -5,8 +5,8 @@
     "author": "lgq",
     "license": "MIT",
     "scripts": {
-        "dev": "rollup -c -w",
-        "update-qingkuai": "pnpm update qingkuai && cd ./packages/vscode-extension && pnpm update qingkuai && cd ../typescript-plugin && pnpm update qingkuai"
+        "build": "rollup -c",
+        "dev": "rollup -c -w"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^26.0.3",
@@ -15,8 +15,8 @@
         "@types/vscode": "^1.97.0",
         "@vscode/emmet-helper": "^2.11.0",
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.6",
-        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai",
+        "prettier-plugin-qingkuai": "^1.0.7",
+        "qingkuai": "^1.0.6",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
         "rollup-plugin-esbuild": "^6.2.1",

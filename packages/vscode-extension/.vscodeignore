@@ -1,0 +1,16 @@
+**/*.map
+**/*.d.ts
+
+src
+syntaxes/src
+node_modules/.bin
+node_modules/js-yaml
+node_modules/@babel/types
+node_modules/.package-lock.json
+
+../typescript-plugin/src
+../typescript-plugin/.npmignore
+../typescript-plugin/node_modules
+node_modules/typescript-plugin-qingkuai/src
+node_modules/typescript-plugin-qingkuai/.npmignore
+node_modules/typescript-plugin-qingkuai/node_modules

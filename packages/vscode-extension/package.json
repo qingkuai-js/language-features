@@ -1,8 +1,13 @@
 {
-    "name": "qingkuai-extension-vscode",
+    "name": "qingkuai-vscode-extension",
     "version": "1.0.0",
     "author": "lgq",
     "license": "MIT",
+    "publisher": "qingkuai-tools",
+    "main": "./dist/client.js",
+    "description": "qingkuai language support for vscode",
+    "displayName": "Qingkuai",
+    "icon": "imgs/logo.png",
     "engines": {
         "vscode": "^1.93.0"
     },
@@ -12,8 +17,6 @@
     "activationEvents": [
         "workspaceContains:**/*.qk"
     ],
-    "main": "../../dist/client.js",
-    "description": "qingkuai language support for vscode",
     "contributes": {
         "languages": [
             {
@@ -32,8 +35,8 @@
                     "qk"
                 ],
                 "icon": {
-                    "light": "./imgs/qingkuai.svg",
-                    "dark": "./imgs/qingkuai.svg"
+                    "light": "./imgs/qingkuai.png",
+                    "dark": "./imgs/qingkuai.png"
                 },
                 "configuration": "./language-configuration.json"
             }
@@ -151,8 +154,19 @@
             }
         }
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/qingkuai-js/language-features.git",
+        "directory": "packages/vscode-extension"
+    },
     "scripts": {
+        "publish": "vsce publish --no-dependencies",
+        "vsce:ls": "npm run vsce:pre && vsce ls && vsce:post",
+        "vsce:package": "npm run vsce:pre && vsce package && npm run vsce:post",
+        "vsce:publish": "npm run vsce:pre && vsce publish && npm run vsce:post",
         "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
+        "vsce:pre": "rimraf node_modules ../typescript-plugin/node_modules && npm install && cd ../typescript-plugin && npm install",
+        "vsce:post": "rimraf node_modules ../typescript-plugin/node_modules package-lock.json ../typescript-plugin/package-lock.json && pnpm install",
         "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
         "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json"
     },
@@ -160,7 +174,9 @@
         "js-yaml": "^4.1.0"
     },
     "dependencies": {
-        "typescript-plugin-qingkuai": "workspace:^",
-        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
+        "prettier": "^3.5.2",
+        "prettier-plugin-qingkuai": "^1.0.7",
+        "qingkuai": "^1.0.6",
+        "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }

@@ -3,31 +3,34 @@ import esbuild from "rollup-plugin-esbuild"
 import commonjs from "@rollup/plugin-commonjs"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 
-export default defineConfig(() => {
+export default defineConfig(options => {
+    const clientAndServerExternal = ["vscode", "prettier", "qingkuai/compiler"]
+
+    if (!!options.watch) {
+        clientAndServerExternal.push(
+            "@vscode/emmet-helper",
+            "vscode-languageclient",
+            "vscode-languageserver",
+            "prettier-plugin-qingkuai",
+            "vscode-languageclient/node",
+            "vscode-languageserver/node",
+            "vscode-languageserver-textdocument"
+        )
+    }
+
     return [
         // vscode extension and language server
         {
-            external: [
-                "vscode",
-                "prettier",
-                "qingkuai/compiler",
-                "@vscode/emmet-helper",
-                "vscode-languageclient",
-                "vscode-languageserver",
-                "prettier-plugin-qingkuai",
-                "vscode-languageclient/node",
-                "vscode-languageserver/node",
-                "vscode-languageserver-textdocument"
-            ],
+            external: clientAndServerExternal,
             input: {
                 server: "./packages/language-server/src/index.ts",
                 client: "./packages/vscode-extension/src/index.ts"
             },
             output: {
                 format: "cjs",
-                dir: "dist",
                 sourcemap: true,
-                chunkFileNames: "chunks/[name].js"
+                chunkFileNames: "chunks/[name].js",
+                dir: "packages/vscode-extension/dist"
             },
             plugins: [nodeResolve(), commonjs(), esbuild()],
 

@@ -14,10 +14,10 @@ import {
 import * as vscode from "vscode"
 import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
+import { attachFileSystemHandlers } from "./filesys"
 import { LSHandler } from "../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
-import { attachFileSystemHandlers } from "./filesys"
 
 let client: LanguageClient | undefined = undefined
 
@@ -48,7 +48,7 @@ export function deactivate(): Thenable<void> | undefined {
 async function activeLanguageServer(context: ExtensionContext) {
     const doc = vscode.window.activeTextEditor!.document
     const shouldToggleLanguageId = doc.languageId === "qingkuai"
-    const serverModule = context.asAbsolutePath("../../dist/server.js")
+    const serverModule = context.asAbsolutePath("./dist/server.js")
     const watcher = vscode.workspace.createFileSystemWatcher("**/.clientrc")
     const outputChannel = vscode.window.createOutputChannel("QingKuai", "log")
     const languageStatusItem = vscode.languages.createLanguageStatusItem("ls", "qingkuai")

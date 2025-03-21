@@ -12,6 +12,6 @@
     ],
     "description": "A Typescript plugin for Qingkuai.",
     "dependencies": {
-        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
+        "qingkuai": "^1.0.6"
     }
 }

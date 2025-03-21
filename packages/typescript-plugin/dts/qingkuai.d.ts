@@ -12,11 +12,12 @@ interface DerivedFunc {
 }
 
 interface ReloadedGetKVPair {
-    <T>(_: Set<T>): [number, T]
-    <K, V>(_: Map<K, V>): [K, V]
-    <T>(_: Array<T>): [number, T]
+    <T>(_: Set<T>): [T, T]
+    <K, V>(_: Map<K, V>): [V, K]
+    <T>(_: Array<T>): [T, number]
     (_: number): [number, number]
-    <K extends string | number | symbol, V>(_: Record<K, V>): [K, V]
+    (_: string): [string, number]
+    <K extends string | number | symbol, V>(_: Record<K, V>): [V, K]
 }
 
 interface WatchFunc {
