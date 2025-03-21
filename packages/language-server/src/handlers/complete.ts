@@ -26,6 +26,12 @@ import {
     getDirectiveDocumentation
 } from "../data/element"
 import {
+    identifierRE,
+    emmetTagNameRE,
+    inEntityCharacterRE,
+    completeEntityCharacterRE
+} from "../regular"
+import {
     TextEdit,
     InsertTextFormat,
     CompletionItemTag,
@@ -49,7 +55,6 @@ import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
-import { completeEntityCharacterRE, emmetTagNameRE, inEntityCharacterRE } from "../regular"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
@@ -90,7 +95,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             document.getText(cr.getRange(offset - 7, offset)) !== "import "
         ) {
         }
-        return doScriptBlockComplete(cr, offset)
+        return doScriptBlockComplete(cr, currentNode, offset)
     }
 
     // 文本节点范围内启用emmet、实体字符及自定义标签补全建议支持
@@ -750,9 +755,15 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
     }
 }
 
-async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number) {
+async function doScriptBlockComplete(
+    cr: CachedCompileResultItem,
+    currentNode: TemplateNode,
+    offset: number
+) {
     const { getRange, getSourceIndex } = cr
+    const unsetTriggerCharacters = new Set<string>()
     const positionOfInterCode = cr.getInterIndex(offset)
+    const attribute = findAttribute(offset, currentNode)
     const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
         TPICHandler.getCompletion,
         {
@@ -760,6 +771,17 @@ async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number
             pos: positionOfInterCode
         }
     )
+
+    if (attribute?.key.raw === "#for") {
+        const m = attribute.value.loc.start.index + util.findOutOfComment(attribute.value.raw, /\S/)
+        if (
+            m !== -1 &&
+            m <= offset &&
+            identifierRE.test(cr.inputDescriptor.source.slice(m, offset))
+        ) {
+            unsetTriggerCharacters.add(",")
+        }
+    }
 
     if (isNull(tsCompletionRes)) {
         return null
@@ -844,7 +866,9 @@ async function doScriptBlockComplete(cr: CachedCompileResultItem, offset: number
         isIncomplete: tsCompletionRes.isIncomplete,
         itemDefaults: {
             editRange: defaultEditRange,
-            commitCharacters: tsCompletionRes.defaultCommitCharacters
+            commitCharacters: tsCompletionRes.defaultCommitCharacters.filter(char => {
+                return !unsetTriggerCharacters.has(char)
+            })
         }
     }
 }

@@ -15,7 +15,7 @@
         "@types/vscode": "^1.97.0",
         "@vscode/emmet-helper": "^2.11.0",
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.7",
+        "prettier-plugin-qingkuai": "^1.0.9",
         "qingkuai": "^1.0.6",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",

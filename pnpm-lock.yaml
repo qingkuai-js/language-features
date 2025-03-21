@@ -21,7 +21,7 @@ importers:
         version: 15.3.1(rollup@4.36.0)
       '@types/node':
         specifier: ^22.13.8
-        version: 22.13.10
+        version: 22.13.11
       '@types/vscode':
         specifier: ^1.97.0
         version: 1.98.0
@@ -32,8 +32,8 @@ importers:
         specifier: ^3.5.2
         version: 3.5.3
       prettier-plugin-qingkuai:
-        specifier: ^1.0.7
-        version: 1.0.7
+        specifier: ^1.0.9
+        version: 1.0.9
       qingkuai:
         specifier: ^1.0.6
         version: 1.0.6
@@ -51,7 +51,7 @@ importers:
         version: 5.8.2
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@22.13.10)
+        version: 2.1.9(@types/node@22.13.11)
       vscode-jsonrpc:
         specifier: ^8.2.1
         version: 8.2.1
@@ -67,11 +67,7 @@ importers:
 
   packages/language-server: {}
 
-  packages/typescript-plugin:
-    dependencies:
-      qingkuai:
-        specifier: ^1.0.6
-        version: 1.0.6
+  packages/typescript-plugin: {}
 
   packages/vscode-extension:
     dependencies:
@@ -79,8 +75,8 @@ importers:
         specifier: ^3.5.2
         version: 3.5.3
       prettier-plugin-qingkuai:
-        specifier: ^1.0.7
-        version: 1.0.7
+        specifier: ^1.0.9
+        version: 1.0.9
       qingkuai:
         specifier: ^1.0.6
         version: 1.0.6
@@ -394,8 +390,8 @@ packages:
   '@types/estree@1.0.6':
     resolution: {integrity: sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==}
 
-  '@types/node@22.13.10':
-    resolution: {integrity: sha512-I6LPUvlRH+O6VRUqYOcMudhaIdUVWfsjnZavnsraHvpBwaEyMN29ry+0UVJhImYL16xsscu0aske3yA+uPOWfw==}
+  '@types/node@22.13.11':
+    resolution: {integrity: sha512-iEUCUJoU0i3VnrCmgoWCXttklWcvoCIx4jzcP22fioIVSdTmjgoEvmAO/QPw6TcS9k5FrNgn4w7q5lGOd1CT5g==}
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -672,8 +668,8 @@ packages:
     resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
     engines: {node: ^10 || ^12 || >=14}
 
-  prettier-plugin-qingkuai@1.0.7:
-    resolution: {integrity: sha512-7vg4KNe/IrqPjHjIxJDad4S09bV08c4q89wmHlC4Nz8LJ1nS9RxIo81eqHiFM7pPm3tdEXBmL3fO2BOGFZRyyg==}
+  prettier-plugin-qingkuai@1.0.9:
+    resolution: {integrity: sha512-wBnolQFVJIj2R9j2D7EJN0NKOsWcbkhj3xbuAS4Bis29E5sTogCrumtq6uK9C+Bs0/gb5zQ2kTIpfJQmU4jPgw==}
 
   prettier@3.5.3:
     resolution: {integrity: sha512-QQtaxnoDJeAkDvDKWCLiwIXkTgRhwYDEQCghU9Z6q03iyek/rxRh/2lC3HB7P8sWT2xC/y5JDctPLBIGzHKbhw==}
@@ -1092,7 +1088,7 @@ snapshots:
 
   '@types/estree@1.0.6': {}
 
-  '@types/node@22.13.10':
+  '@types/node@22.13.11':
     dependencies:
       undici-types: 6.20.0
 
@@ -1107,13 +1103,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.9(vite@5.4.14(@types/node@22.13.10))':
+  '@vitest/mocker@2.1.9(vite@5.4.14(@types/node@22.13.11))':
     dependencies:
       '@vitest/spy': 2.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 5.4.14(@types/node@22.13.10)
+      vite: 5.4.14(@types/node@22.13.11)
 
   '@vitest/pretty-format@2.1.9':
     dependencies:
@@ -1375,7 +1371,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.7:
+  prettier-plugin-qingkuai@1.0.9:
     dependencies:
       prettier: 3.5.3
       qingkuai: 1.0.6
@@ -1495,13 +1491,13 @@ snapshots:
       pathe: 2.0.3
       picomatch: 4.0.2
 
-  vite-node@2.1.9(@types/node@22.13.10):
+  vite-node@2.1.9(@types/node@22.13.11):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       es-module-lexer: 1.6.0
       pathe: 1.1.2
-      vite: 5.4.14(@types/node@22.13.10)
+      vite: 5.4.14(@types/node@22.13.11)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -1513,19 +1509,19 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.14(@types/node@22.13.10):
+  vite@5.4.14(@types/node@22.13.11):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.5.3
       rollup: 4.36.0
     optionalDependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.13.11
       fsevents: 2.3.3
 
-  vitest@2.1.9(@types/node@22.13.10):
+  vitest@2.1.9(@types/node@22.13.11):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.14(@types/node@22.13.10))
+      '@vitest/mocker': 2.1.9(vite@5.4.14(@types/node@22.13.11))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
@@ -1541,11 +1537,11 @@ snapshots:
       tinyexec: 0.3.2
       tinypool: 1.0.2
       tinyrainbow: 1.2.0
-      vite: 5.4.14(@types/node@22.13.10)
-      vite-node: 2.1.9(@types/node@22.13.10)
+      vite: 5.4.14(@types/node@22.13.11)
+      vite-node: 2.1.9(@types/node@22.13.11)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.13.11
     transitivePeerDependencies:
       - less
       - lightningcss
