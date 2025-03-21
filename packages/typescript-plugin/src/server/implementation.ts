@@ -10,7 +10,7 @@ import { convertProtocolTextSpanToRange } from "../util/protocol"
 import { getDefaultSourceFileByFileName } from "../util/typescript"
 
 export function attachFindImplementation() {
-    server.onRequest<TPICCommonRequestParams>(TPICHandler.findImplemention, ({ fileName, pos }) => {
+    server.onRequest<TPICCommonRequestParams>(TPICHandler.FindImplemention, ({ fileName, pos }) => {
         const sourceFile = getDefaultSourceFileByFileName(fileName)!
         const lineAndCharacter = sourceFile.getLineAndCharacterOfPosition(pos)
         const getImplementation = (session as any).getImplementation.bind(session)

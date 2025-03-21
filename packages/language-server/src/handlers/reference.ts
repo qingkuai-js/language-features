@@ -42,7 +42,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     }
 
     const references: FindReferenceResultItem[] | null =
-        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.findReference, {
+        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.FindReference, {
             pos: interIndex,
             fileName: cr.filePath
         })

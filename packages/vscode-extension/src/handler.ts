@@ -23,7 +23,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
             client.sendNotification(
-                LSHandler.publishDiagnostic,
+                LSHandler.PublishDiagnostic,
                 `file://${textEditor.document.uri.fsPath}`
             )
         }
@@ -42,14 +42,14 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 插入片段通知，qingkuai语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
-    client.onNotification(LSHandler.insertSnippet, (params: InsertSnippetParam) => {
+    client.onNotification(LSHandler.InsertSnippet, (params: InsertSnippetParam) => {
         vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(params.text))
         params.command && vscode.commands.executeCommand(params.command)
     })
 
     // 获取语言配置项
     client.onRequest(
-        LSHandler.getLanguageConfig,
+        LSHandler.GetLanguageConfig,
         async ({ filePath, scriptPartIsTypescript }: GetClientConfigParams) => {
             if (!fs.existsSync(filePath)) {
                 return
@@ -71,7 +71,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     )
 
     // 获取客户端配置
-    client.onRequest(LSHandler.getClientConfig, (params: GetConfigurationParams) => {
+    client.onRequest(LSHandler.GetClientConfig, (params: GetConfigurationParams) => {
         const config = vscode.workspace.getConfiguration(
             params.section,
             vscode.Uri.parse(params.uri)
@@ -91,7 +91,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     })
 
     // 应用工作区更改
-    client.onNotification(LSHandler.applyWorkspaceEdit, (param: ApplyWorkspaceEditParams) => {
+    client.onNotification(LSHandler.ApplyWorkspaceEdit, (param: ApplyWorkspaceEditParams) => {
         const changes = param.edit.changes!
         const targetUris = Object.keys(changes)
         const workspaceEdit = new vscode.WorkspaceEdit()

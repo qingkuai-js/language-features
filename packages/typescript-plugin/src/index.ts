@@ -5,10 +5,20 @@ import {
     proxyTypescriptLanguageServiceMethods,
     ProxyTypescriptSessionAndProjectServiceMethods
 } from "./proxies"
+import {
+    ts,
+    server,
+    setState,
+    projectService,
+    typeRefStatement,
+    lsProjectKindChanged
+} from "./state"
 import { existsSync } from "node:fs"
-import { ts, setState, typeRefStatement } from "./state"
-import { isUndefined } from "../../../shared-util/assert"
+import { forEachProject } from "./util/typescript"
+import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
+import { TPICHandler } from "../../../shared-util/constant"
+import { ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
 
@@ -48,9 +58,34 @@ export = function init(modules: { typescript: typeof TS }) {
                 createServer(params.sockPath).then(server => {
                     setState({ server })
                     attachLanguageServerIPCHandlers()
+                    ensureLanguageServerProjectKind()
                     server.onRequest("getQingkuaiDtsReferenceStatement", () => typeRefStatement)
                 })
             }
         }
     }
+}
+
+function ensureLanguageServerProjectKind() {
+    forEachProject(p => {
+        if (lsProjectKindChanged) {
+            return
+        }
+
+        for (const np of p.getFileNames()) {
+            const fileName = projectService.getScriptInfo(np)?.fileName
+            if (!isQingkuaiFileName(fileName || "")) {
+                continue
+            }
+
+            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName!)
+            if (qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS) {
+                setState({
+                    lsProjectKindChanged: true
+                })
+                server.sendNotification(TPICHandler.InfferedProjectAsTypescript, null)
+                break
+            }
+        }
+    })
 }

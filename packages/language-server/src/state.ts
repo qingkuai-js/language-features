@@ -1,6 +1,8 @@
-import type { IpcParticipant } from "../../../shared-util/ipc/types"
+import type { SetStateOptions } from "./types/service"
 
+import { ProjectKind } from "./constants"
 import { createLogger } from "../../../shared-util/log"
+import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
@@ -8,11 +10,23 @@ import { TextDocuments, ProposedFeatures, createConnection } from "vscode-langua
 
 export let isTestingEnv = true
 export let typeRefStatement = ""
+export let projectKind = ProjectKind.JS
 export let tpic = defaultParticipant // Typescript Plugin Icp Client
 
-export const setTpic = (v: IpcParticipant) => (tpic = v)
-export const setIsTestingEnv = (v: boolean) => (isTestingEnv = v)
-export const setTypeRefStatement = (v: string) => (typeRefStatement = v)
+export function setState(options: SetStateOptions) {
+    if (options.tpic) {
+        tpic = options.tpic
+    }
+    if (options.projectKind) {
+        projectKind = options.projectKind
+    }
+    if (!isUndefined(options.isTestingEnv)) {
+        isTestingEnv = options.isTestingEnv
+    }
+    if (!isUndefined(options.typeRefStatement)) {
+        typeRefStatement = options.typeRefStatement
+    }
+}
 
 export const Logger = createLogger(console)
 export const documents = new TextDocuments(TextDocument)

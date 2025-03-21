@@ -18,7 +18,7 @@ import { DEFAULT_RANGE, TPICHandler } from "../../../../shared-util/constant"
 
 export function attachFindDefinition() {
     server.onRequest<FindDefinitionParams>(
-        TPICHandler.findDefinition,
+        TPICHandler.FindDefinition,
         async ({ fileName, pos, preferGoToSourceDefinition }) => {
             const sourceFile = getDefaultSourceFileByFileName(fileName)
             if (!session || !sourceFile) {

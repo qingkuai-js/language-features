@@ -1,16 +1,16 @@
 import type TS from "typescript"
 import type { QingKuaiSnapShot } from "./snapshot"
-import type { QingKuaiDiagnostic, SetStateParams, FileSystemWatcherItem } from "./types"
+import type { QingKuaiDiagnostic, SetStateOptions } from "./types"
 
 import path from "node:path"
 import { inspect } from "../../../shared-util/log"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
 
-export let server = defaultParticipant
-
 export let ts: typeof TS
+export let server = defaultParticipant
 export let session: TS.server.Session | undefined
 export let projectService: TS.server.ProjectService
+export let lsProjectKindChanged = false
 
 // 已打开的文件列表
 export const openQingkuaiFiles = new Set<string>()
@@ -27,18 +27,21 @@ export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
 // typescript扩展客户端命令执行状态
 export const commandStatus = new Map<string, readonly [Promise<any>, GeneralFunc]>()
 
-export function setState(value: SetStateParams) {
-    if (value.ts) {
-        ts = value.ts
+export function setState(options: SetStateOptions) {
+    if (options.ts) {
+        ts = options.ts
     }
-    if (value.server) {
-        server = value.server
+    if (options.server) {
+        server = options.server
     }
-    if (value.session) {
-        session = value.session
+    if (options.session) {
+        session = options.session
     }
-    if (value.projectService) {
-        projectService = value.projectService
+    if (options.projectService) {
+        projectService = options.projectService
+    }
+    if (options.lsProjectKindChanged) {
+        lsProjectKindChanged = options.lsProjectKindChanged
     }
 }
 

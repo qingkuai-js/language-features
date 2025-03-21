@@ -44,6 +44,11 @@ export const MAYBE_INVALID_COMPLETION_LABELS = new Set([
     "SatisfyComponent"
 ])
 
+export enum ProjectKind {
+    TS = "ts",
+    JS = "js"
+}
+
 export const COMMANDS = {
     TriggerSuggest: "editor.action.triggerSuggest"
 }

@@ -14,7 +14,7 @@ import { TPICHandler } from "../../../../shared-util/constant"
 
 export function attachHoverTip() {
     server.onRequest<TPICCommonRequestParams, HoverTipResult | null>(
-        TPICHandler.hoverTip,
+        TPICHandler.HoverTip,
         ({ fileName, pos }) => {
             const project = getDefaultProjectByFileName(fileName)!
             const languageService = project.getLanguageService()

@@ -33,7 +33,7 @@ const optionalSameKeys = [
 
 export function attachGetCompletion() {
     server.onRequest<TPICCommonRequestParams, GetCompletionResult>(
-        TPICHandler.getCompletion,
+        TPICHandler.GetCompletion,
         params => {
             const languageService = getDefaultLanguageServiceByFileName(params.fileName)
             const completionRes = languageService?.getCompletionsAtPosition(
@@ -85,7 +85,7 @@ export function attachGetCompletion() {
     )
 
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
-        TPICHandler.resolveCompletionItem,
+        TPICHandler.ResolveCompletionItem,
         ({ fileName, entryName, pos, ori, source }) => {
             const preferences = getUserPreferencesByFileName(fileName)
             const formatSettings = getFormatCodeSettingsByFileName(fileName)

@@ -81,7 +81,7 @@ export const findDefinition: DefinitionHandler = async (
     }
 
     const preferGoToSourceDefinition: boolean = await connection.sendRequest(
-        LSHandler.getClientConfig,
+        LSHandler.GetClientConfig,
         {
             defaultValue: false,
             uri: textDocument.uri,
@@ -91,7 +91,7 @@ export const findDefinition: DefinitionHandler = async (
     )
 
     const res: FindDefinitionResult | null = await tpic.sendRequest<FindDefinitionParams>(
-        TPICHandler.findDefinition,
+        TPICHandler.FindDefinition,
         {
             pos: interIndex,
             fileName: cr.filePath,

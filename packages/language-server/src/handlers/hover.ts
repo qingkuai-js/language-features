@@ -37,7 +37,7 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
 
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
         const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<TPICCommonRequestParams>(
-            TPICHandler.hoverTip,
+            TPICHandler.HoverTip,
             {
                 fileName: cr.filePath,
                 pos: cr.getInterIndex(offset)

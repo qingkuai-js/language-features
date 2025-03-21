@@ -50,11 +50,11 @@ import { eventModifiers } from "../data/event-modifier"
 import { parseTemplate, util } from "qingkuai/compiler"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
-import { connection, documents, isTestingEnv, tpic } from "../state"
+import { connection, documents, isTestingEnv, projectKind, tpic } from "../state"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
-import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
+import { DEFAULT_RANGE, LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
@@ -364,7 +364,7 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
     const document = documents.get(`file://${item.data.fileName}`)!
     const { getSourceIndex, getRange, inputDescriptor, config } = await getCompileRes(document)
     const res: ResolveCompletionResult = await tpic.sendRequest(
-        TPICHandler.resolveCompletionItem,
+        TPICHandler.ResolveCompletionItem,
         item.data
     )
     if (res.detail) {
@@ -409,7 +409,7 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
 // 在客户端活跃文档中插入代码片段
 function insertSnippet(snippet: string | InsertSnippetParam) {
     connection.sendNotification(
-        LSHandler.insertSnippet,
+        LSHandler.InsertSnippet,
         isString(snippet) ? { text: snippet } : snippet
     )
 }
@@ -476,18 +476,29 @@ function doCustomTagComplete(
         componentInfos.forEach(item => {
             let additionalTextEdits: TextEdit[] | undefined = undefined
             if (!item.imported) {
-                const pos = getSourceIndex(builtInTypeDeclarationEndIndex, true)
-                additionalTextEdits = [
-                    {
-                        range: getRange(pos),
-                        newText: formatImportStatement(
-                            `import ${item.name} from ${JSON.stringify(item.relativePath)}`,
-                            source,
-                            [pos, pos],
-                            config.prettierConfig
-                        )
-                    }
-                ]
+                const scriptStartIndex = cr.inputDescriptor.script.loc.start.index
+                if (scriptStartIndex !== -1) {
+                    additionalTextEdits = [
+                        {
+                            range: getRange(scriptStartIndex),
+                            newText: formatImportStatement(
+                                `import ${item.name} from ${JSON.stringify(item.relativePath)}`,
+                                source,
+                                [scriptStartIndex, scriptStartIndex],
+                                config.prettierConfig
+                            )
+                        }
+                    ]
+                } else {
+                    const tagName = "lang-" + projectKind
+                    const tab = " ".repeat(cr.config.prettierConfig.tabWidth || 2)
+                    additionalTextEdits = [
+                        {
+                            range: DEFAULT_RANGE,
+                            newText: `<${tagName}>\n${tab}import ${item.name} from ${JSON.stringify(item.relativePath)}\n</${tagName}>\n\n`
+                        }
+                    ]
+                }
             }
 
             const tag = useKebab ? util.camel2Kebab(item.name, false) : item.name
@@ -765,7 +776,7 @@ async function doScriptBlockComplete(
     const positionOfInterCode = cr.getInterIndex(offset)
     const attribute = findAttribute(offset, currentNode)
     const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
-        TPICHandler.getCompletion,
+        TPICHandler.GetCompletion,
         {
             fileName: cr.filePath,
             pos: positionOfInterCode

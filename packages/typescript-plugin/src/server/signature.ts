@@ -16,7 +16,7 @@ import { TPICHandler } from "../../../../shared-util/constant"
 
 export function attachGetSignatureHelp() {
     server.onRequest<TPICCommonRequestParams, SignatureHelp | null>(
-        TPICHandler.getSignatureHelp,
+        TPICHandler.GetSignatureHelp,
         ({ fileName, pos }) => {
             const languageService = getDefaultLanguageServiceByFileName(fileName)
             const getSignatureHelpRes = languageService?.getSignatureHelpItems(

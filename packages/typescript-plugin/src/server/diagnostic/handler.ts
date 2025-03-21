@@ -14,7 +14,7 @@ import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
 
 export function attachRefreshDiagnostic() {
     server.onNotification<RefreshDiagnosticParams>(
-        TPICHandler.refreshDiagnostic,
+        TPICHandler.RefreshDiagnostic,
         ({ byFileName, scriptKindChanged }) => {
             refreshDiagnostics(byFileName, scriptKindChanged)
         }
@@ -22,7 +22,7 @@ export function attachRefreshDiagnostic() {
 }
 
 export function attachGetDiagnostic() {
-    server.onRequest<string, TSDiagnostic[]>(TPICHandler.getDiagnostic, fileName => {
+    server.onRequest<string, TSDiagnostic[]>(TPICHandler.GetDiagnostic, fileName => {
         const project = projectService.getDefaultProjectForFile(
             ts.server.toNormalizedPath(fileName),
             false

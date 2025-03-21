@@ -14,7 +14,7 @@ export function attachDocumentHandlers() {
         if (tpicConnectedPromise.state === "pending") {
             await tpicConnectedPromise
         }
-        tpic.sendNotification(TPICHandler.didOpen, document.uri)
+        tpic.sendNotification(TPICHandler.DidOpen, document.uri)
     })
 
     documents.onDidClose(async ({ document }) => {
@@ -22,7 +22,7 @@ export function attachDocumentHandlers() {
             await tpicConnectedPromise
         }
         clearDiagnostics(document.uri)
-        tpic.sendNotification(TPICHandler.didClose, document.uri)
+        tpic.sendNotification(TPICHandler.DidClose, document.uri)
     })
 }
 

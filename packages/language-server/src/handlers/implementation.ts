@@ -21,7 +21,7 @@ export const findImplementation: ImplementationHandler = async ({ textDocument, 
     }
 
     const implementations: FindReferenceResultItem[] | null =
-        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.findImplemention, {
+        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.FindImplemention, {
             fileName: cr.filePath,
             pos: cr.getInterIndex(offset)
         })

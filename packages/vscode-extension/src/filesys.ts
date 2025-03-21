@@ -16,8 +16,8 @@ export async function attachFileSystemHandlers(client: LanguageClient) {
         for (const { oldUri, newUri } of files) {
             const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
             if (!isQingkuaiFileName(oldPath) && !isQingkuaiFileName(newPath)) {
-                client.sendNotification(LSHandler.retransmission, {
-                    name: TPICHandler.refreshDiagnostic,
+                client.sendNotification(LSHandler.Retransmission, {
+                    name: TPICHandler.RefreshDiagnostic,
                     data: {
                         byFileName: "///fs",
                         scriptKindChanged: false
@@ -27,7 +27,7 @@ export async function attachFileSystemHandlers(client: LanguageClient) {
             }
 
             if (await shouldUpdateImports(client, newUri)) {
-                client.sendNotification(LSHandler.renameFile, {
+                client.sendNotification(LSHandler.RenameFile, {
                     oldPath,
                     newPath
                 } satisfies RenameFileParams)
@@ -43,9 +43,9 @@ async function shouldUpdateImports(client: LanguageClient, uri: vscode.Uri) {
     }
     const updateImportsConfigName = "updateImportsOnFileMove.enabled"
     const languageConfig = vscode.workspace.getConfiguration(
-        await client.sendRequest(LSHandler.retransmission, {
+        await client.sendRequest(LSHandler.Retransmission, {
             data: uri.fsPath,
-            name: TPICHandler.getLanguageId
+            name: TPICHandler.GetLanguageId
         } satisfies RetransmissionParams),
         uri
     )

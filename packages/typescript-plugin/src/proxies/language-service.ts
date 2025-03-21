@@ -1,4 +1,5 @@
 import type TS from "typescript"
+import type { QingKuaiSnapShot } from "../snapshot"
 
 import { existsSync } from "node:fs"
 import { dirname, extname, resolve } from "node:path"
@@ -113,8 +114,8 @@ export function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageS
                 }
             }
 
+            const snapshot = languageServiceHost.getScriptSnapshot(modulePath) as QingKuaiSnapShot
             const compilationSettings = languageServiceHost.getCompilationSettings()
-            const snapshot = ensureGetSnapshotOfQingkuaiFile(modulePath)
             const isTS = snapshot.scriptKind === ts.ScriptKind.TS
             if (!isTS && !compilationSettings.allowJs) {
                 return item

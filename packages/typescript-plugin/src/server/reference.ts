@@ -16,7 +16,7 @@ import { getDefaultSourceFileByFileName, getFileReferences } from "../util/types
 
 export function attachFindReference() {
     server.onRequest<TPICCommonRequestParams>(
-        TPICHandler.findReference,
+        TPICHandler.FindReference,
         async ({ fileName, pos }) => {
             const result: FindReferenceResultItem[] = []
             const sourceFile = getDefaultSourceFileByFileName(fileName)!
@@ -32,7 +32,7 @@ export function attachFindReference() {
                     }
 
                     const ranges: Range[] = await server.sendRequest<FindComponentTagRangeParams>(
-                        "findComponentTagRange",
+                        TPICHandler.FindComponentTagRange,
                         {
                             fileName: refFileName,
                             componentTag: filePathToComponentName(fileName)

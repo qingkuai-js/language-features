@@ -11,7 +11,7 @@ const connection = rpc.createMessageConnection(
 connection.listen()
 
 // 调试消息输出通道
-connection.onNotification(LSHandler.testLog, msg => {
+connection.onNotification(LSHandler.TestLog, msg => {
     console.log(msg)
 })
 

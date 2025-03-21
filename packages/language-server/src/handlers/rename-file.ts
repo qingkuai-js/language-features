@@ -16,7 +16,7 @@ export async function renameFile(params: RenameFileParams) {
 
     const workspaceEdit: WorkspaceEdit = { changes: {} }
     const res = await tpic.sendRequest<RenameFileParams, RenameFileResult>(
-        TPICHandler.renameFile,
+        TPICHandler.RenameFile,
         params
     )
     for (const item of res) {
@@ -25,7 +25,7 @@ export async function renameFile(params: RenameFileParams) {
         })
     }
     if (Object.keys(workspaceEdit.changes || {}).length) {
-        connection.sendNotification(LSHandler.applyWorkspaceEdit, {
+        connection.sendNotification(LSHandler.ApplyWorkspaceEdit, {
             edit: workspaceEdit,
             isRefactoring: true,
             message: "Qingkuai: imports changes is being applied"

@@ -27,7 +27,7 @@ export const publishDiagnostics = debounce(
         const { messages, getRange, filePath, getSourceIndex, config } = cr
 
         if (waittingForCommand) {
-            await tpic.sendRequest(TPICHandler.waitForTSCommand, waittingForCommand)
+            await tpic.sendRequest(TPICHandler.WaitForTSCommand, waittingForCommand)
             waittingCommands.delete("diagnostic")
         }
 
@@ -56,7 +56,7 @@ export const publishDiagnostics = debounce(
 
         // 处理javascript/typescript语言服务的诊断结果（通过请求ts插件的ipc服务器获取)
         const tsDiagnostics = await tpic.sendRequest<string, TSDiagnostic[]>(
-            TPICHandler.getDiagnostic,
+            TPICHandler.GetDiagnostic,
             filePath
         )
         for (const item of tsDiagnostics) {

@@ -455,7 +455,7 @@ export function updateQingkuaiSnapshot(
 
     // 为中间代码添加全局类型声明及默认导出语句
     if (!isTS) {
-        content += `export default function ${componentName} {
+        content += `export default class ${componentName} {
             /**
              * @param {Props} _
              * @param {Refs} __

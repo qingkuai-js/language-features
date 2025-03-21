@@ -44,7 +44,7 @@ export async function getInitQingkuaiConfig() {
 
 // 向语言服务器发送清空配置缓存的通知
 export function notifyServerCleanConfigCache(client: LanguageClient) {
-    client.sendNotification(LSHandler.cleanLanguageConfigCache, null)
+    client.sendNotification(LSHandler.CleanLanguageConfigCache, null)
 }
 
 // 监听工作区范围内.qingkuairc配置文件的修改和删除事件
@@ -52,8 +52,8 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
     const watcher = vscode.workspace.createFileSystemWatcher("**/.qingkuairc", true)
     watcher.onDidChange(uri => {
         notifyServerCleanConfigCache(client)
-        client.sendNotification(LSHandler.retransmission, {
-            name: TPICHandler.updateConfig,
+        client.sendNotification(LSHandler.Retransmission, {
+            name: TPICHandler.UpdateConfig,
             data: {
                 dir: path.dirname(uri.path),
                 ...loadQingkuaiConfig(uri.path)
@@ -62,8 +62,8 @@ export function startQingkuaiConfigWatcher(client: LanguageClient) {
     })
     watcher.onDidDelete(uri => {
         notifyServerCleanConfigCache(client)
-        client.sendNotification(LSHandler.retransmission, {
-            name: TPICHandler.deleteConfig,
+        client.sendNotification(LSHandler.Retransmission, {
+            name: TPICHandler.DeleteConfig,
             data: path.dirname(uri.path)
         } satisfies RetransmissionParams)
     })

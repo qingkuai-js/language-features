@@ -191,7 +191,7 @@ describe("Html attribute value auto quote functions:", () => {
     })
 })
 
-connection.onNotification(LSHandler.insertSnippet, item => {
+connection.onNotification(LSHandler.InsertSnippet, item => {
     resolver(item)
 })
 

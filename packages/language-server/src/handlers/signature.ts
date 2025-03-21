@@ -20,7 +20,7 @@ export const signatureHelp: SignatureHelpHandler = async (params, token) => {
     }
 
     const signatureHelp = await tpic.sendRequest<TPICCommonRequestParams, SignatureHelp | null>(
-        TPICHandler.getSignatureHelp,
+        TPICHandler.GetSignatureHelp,
         {
             fileName: cr.filePath,
             pos: cr.getInterIndex(offset)

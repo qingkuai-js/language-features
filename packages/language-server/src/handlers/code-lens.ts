@@ -25,7 +25,7 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const cr = await getCompileRes(document)
     const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET
     const navtree = await tpic.sendRequest<string, NavigationTree | undefined>(
-        TPICHandler.getNavigationTree,
+        TPICHandler.GetNavigationTree,
         cr.filePath
     )
     if (!navtree?.childItems) {
@@ -33,7 +33,7 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     }
 
     const codeLenses: CodeLens[] = []
-    const codeLensConfig: CodeLensConfig = await connection.sendRequest(LSHandler.getClientConfig, {
+    const codeLensConfig: CodeLensConfig = await connection.sendRequest(LSHandler.GetClientConfig, {
         uri: textDocument.uri,
         section: cr.scriptLanguageId,
         filter: ["referencesCodeLens", "implementationsCodeLens"]

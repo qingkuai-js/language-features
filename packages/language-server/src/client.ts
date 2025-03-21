@@ -1,3 +1,4 @@
+import { ProjectKind } from "./constants"
 import type { Range } from "vscode-languageserver"
 import type { FindComponentTagRangeParams } from "../../../types/communication"
 
@@ -11,7 +12,8 @@ import { getCompileRes, walk } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
 import { ensureGetTextDocument } from "./handlers/document"
 import { connectTo } from "../../../shared-util/ipc/participant"
-import { tpic, Logger, setTpic, setTypeRefStatement, tpicConnectedResolver } from "./state"
+import { LSHandler, TPICHandler } from "../../../shared-util/constant"
+import { tpic, Logger, tpicConnectedResolver, setState } from "./state"
 
 let connectTimes = 0
 
@@ -21,11 +23,15 @@ export async function connectTsServer(sockPath: string) {
     try {
         const client = await connectTo(sockPath)
 
-        setTpic(client)
+        setState({
+            tpic: client
+        })
         attachClientHandlers()
 
         // 获取qingkuai类型检查器文件的本机绝对路径，qingkuai编译器在生成typescript中间代码时需要它
-        setTypeRefStatement(await client.sendRequest("getQingkuaiDtsReferenceStatement", ""))
+        setState({
+            typeRefStatement: await client.sendRequest("getQingkuaiDtsReferenceStatement", "")
+        })
 
         tpicConnectedResolver()
         Logger.info(connectTsPluginServerSuccess)
@@ -50,13 +56,18 @@ function attachClientHandlers() {
         })
     })
 
+    // 将项目视为tyepscript项目，在自动添加script标签时会优先使用<lang-ts>
+    tpic.onNotification(TPICHandler.InfferedProjectAsTypescript, () => {
+        setState({ projectKind: ProjectKind.TS })
+    })
+
     // ts插件主动推送的诊断通知
-    tpic.onNotification("publishDiagnostics", (fileName: string) => {
+    tpic.onNotification(LSHandler.PublishDiagnostic, (fileName: string) => {
         publishDiagnostics(pathToFileURL(fileName).toString())
     })
 
     tpic.onRequest<FindComponentTagRangeParams>(
-        "findComponentTagRange",
+        TPICHandler.FindComponentTagRange,
         async ({ fileName, componentTag }) => {
             const ranges: Range[] = []
             const cr = await getCompileRes(ensureGetTextDocument(`file://${fileName}`))

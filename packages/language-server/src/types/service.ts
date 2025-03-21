@@ -2,7 +2,9 @@ import type {
     GetClientConfigResult,
     ComponentIdentifierInfo
 } from "../../../../types/communication"
+import type { ProjectKind } from "../constants"
 import type { Position, Range } from "vscode-languageserver"
+import type { IpcParticipant } from "../../../../shared-util/ipc/types"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
 
 export type CodeLensConfig = {
@@ -24,6 +26,13 @@ export type CodeLensData = {
     componentName?: string
     type: "reference" | "implementation"
 }
+
+export type SetStateOptions = Partial<{
+    tpic: IpcParticipant
+    isTestingEnv: boolean
+    projectKind: ProjectKind
+    typeRefStatement: string
+}>
 
 export type CachedCompileResultItem = CompileResult & {
     version: number

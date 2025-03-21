@@ -13,7 +13,7 @@ import { getSourceIndex, ensureGetSnapshotOfQingkuaiFile } from "../util/qingkua
 
 export function attachPrepareRename() {
     server.onRequest<TPICCommonRequestParams, NumNum>(
-        TPICHandler.prepareRename,
+        TPICHandler.PrepareRename,
         ({ fileName, pos }) => {
             const languageService = getDefaultLanguageServiceByFileName(fileName)
             const renameInfo = languageService?.getRenameInfo(
@@ -35,7 +35,7 @@ export function attachPrepareRename() {
 
 export function attachRename() {
     server.onRequest<TPICCommonRequestParams, RenameLocationItem[]>(
-        TPICHandler.rename,
+        TPICHandler.Rename,
         ({ fileName, pos }) => {
             const locations: RenameLocationItem[] = []
             const existringMap = new Map<string, Set<string>>()

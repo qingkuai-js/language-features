@@ -17,21 +17,16 @@ export interface QingKuaiFileInfo {
     getPos(pos: number): number
 }
 
-export interface FileSystemWatcherItem {
-    id: number
-    path: string
-    recursive: boolean
-}
-
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
     | "getSyntacticDiagnostics"
     | "getSuggestionDiagnostics"
 
-export type SetStateParams = Partial<{
+export type SetStateOptions = Partial<{
     ts: typeof TS
     server: IpcParticipant
     session: TS.server.Session
+    lsProjectKindChanged: boolean
     projectService: TS.server.ProjectService
 }>
 

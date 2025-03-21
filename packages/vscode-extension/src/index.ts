@@ -117,5 +117,5 @@ async function activeLanguageServer(context: ExtensionContext) {
     attachFileSystemHandlers(client)
     startQingkuaiConfigWatcher(client)
     startPrettierConfigWatcher(client)
-    client.sendRequest(LSHandler.languageClientCreated, sockPath)
+    client.sendRequest(LSHandler.LanguageClientCreated, sockPath)
 }

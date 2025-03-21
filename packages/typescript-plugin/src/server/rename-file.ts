@@ -7,7 +7,7 @@ import { convertProtocolTextSpanToRange } from "../util/protocol"
 
 export function attachRenameFile() {
     server.onRequest(
-        TPICHandler.renameFile,
+        TPICHandler.RenameFile,
         ({ oldPath, newPath }: RenameFileParams): RenameFileResult => {
             const handler = (session as any).getEditsForFileRename
             const arg = { oldFilePath: oldPath, newFilePath: newPath }

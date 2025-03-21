@@ -80,7 +80,7 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
     const offset = getOffset(position)
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
         const posRange = await tpic.sendRequest<TPICCommonRequestParams, NumNum>(
-            TPICHandler.prepareRename,
+            TPICHandler.PrepareRename,
             {
                 fileName: cr.filePath,
                 pos: cr.getInterIndex(offset)
@@ -128,7 +128,7 @@ async function doScriptBlockRename(
 
     const textEdits: Record<string, TextEdit[]> = {}
     const locations: RenameLocationItem[] = await tpic.sendRequest<TPICCommonRequestParams>(
-        TPICHandler.rename,
+        TPICHandler.Rename,
         {
             fileName: cr.filePath,
             pos: isInterOffset ? offset : cr.getInterIndex(offset)

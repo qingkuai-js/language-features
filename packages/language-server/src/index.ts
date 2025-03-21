@@ -37,7 +37,7 @@ connection.onCompletionResolve(resolveCompletion)
 
 // 自定义事件处理
 connection.onRequest("ping", _ => "pong")
-connection.onNotification(LSHandler.renameFile, renameFile)
-connection.onRequest(LSHandler.languageClientCreated, connectTsServer)
-connection.onNotification(LSHandler.publishDiagnostic, publishDiagnostics)
-connection.onNotification(LSHandler.cleanLanguageConfigCache, cleanConfigCache)
+connection.onNotification(LSHandler.RenameFile, renameFile)
+connection.onRequest(LSHandler.LanguageClientCreated, connectTsServer)
+connection.onNotification(LSHandler.PublishDiagnostic, publishDiagnostics)
+connection.onNotification(LSHandler.CleanLanguageConfigCache, cleanConfigCache)

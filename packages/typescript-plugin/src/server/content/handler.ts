@@ -2,6 +2,14 @@ import type { ASTPositionWithFlag } from "qingkuai/compiler"
 import type { UpdateSnapshotParams } from "../../../../../types/communication"
 
 import {
+    ts,
+    server,
+    setState,
+    projectService,
+    openQingkuaiFiles,
+    lsProjectKindChanged
+} from "../../state"
+import {
     recoverItos,
     recoverPositions,
     recoverPostionFlags
@@ -13,16 +21,15 @@ import { refreshDiagnostics } from "../diagnostic/refresh"
 import { TPICHandler } from "../../../../../shared-util/constant"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../../shared-util/assert"
-import { ts, server, projectService, openQingkuaiFiles } from "../../state"
 
 export function attachDocumentManager() {
-    server.onNotification(TPICHandler.didOpen, (uri: string) => {
+    server.onNotification(TPICHandler.DidOpen, (uri: string) => {
         const fileName = fileURLToPath(uri)
         openQingkuaiFiles.add(fileName)
         projectService.openClientFile(fileName)
     })
 
-    server.onNotification(TPICHandler.didClose, (uri: string) => {
+    server.onNotification(TPICHandler.DidClose, (uri: string) => {
         const fileName = fileURLToPath(uri)
         openQingkuaiFiles.delete(fileName)
         projectService.closeClientFile(fileName)
@@ -30,7 +37,7 @@ export function attachDocumentManager() {
 }
 
 export function attachUpdateSnapshot() {
-    server.onRequest<UpdateSnapshotParams>(TPICHandler.updateSnapshot, ({ fileName, ...rest }) => {
+    server.onRequest<UpdateSnapshotParams>(TPICHandler.UpdateSnapshot, ({ fileName, ...rest }) => {
         const positionFlags = recoverPostionFlags(rest.cpf)
         const scriptKind = ts.ScriptKind[rest.scriptKindKey]
         const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
@@ -49,6 +56,11 @@ export function attachUpdateSnapshot() {
             }
         }
 
+        if (!lsProjectKindChanged && scriptKind === ts.ScriptKind.TS) {
+            setState({ lsProjectKindChanged: true })
+            server.sendNotification(TPICHandler.InfferedProjectAsTypescript, null)
+        }
+
         const componentIdentifiers = updateQingkuaiSnapshot(
             fileName,
             rest.interCode,
@@ -63,7 +75,7 @@ export function attachUpdateSnapshot() {
 }
 
 export function attachGetLanguageId() {
-    server.onRequest(TPICHandler.getLanguageId, (fileName: string) => {
+    server.onRequest(TPICHandler.GetLanguageId, (fileName: string) => {
         if (!isQingkuaiFileName(fileName)) {
             return void 0
         }

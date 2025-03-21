@@ -132,7 +132,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
         if (!isTestingEnv && synchronize && !cr.isSynchronized) {
             cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>(
-                TPICHandler.updateSnapshot,
+                TPICHandler.UpdateSnapshot,
                 {
                     interCode: cr.code,
                     fileName: cr.filePath,
@@ -151,7 +151,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             cr.config = clientConfigCache.get(document.uri)!
         } else {
             const res: GetClientConfigResult = await connection.sendRequest(
-                LSHandler.getLanguageConfig,
+                LSHandler.GetLanguageConfig,
                 {
                     filePath: cr.filePath,
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
@@ -161,7 +161,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
 
             if (res.typescriptConfig) {
                 updateTypescriptConfigurationForQingkuaiFile(res)
-                tpic.sendNotification<ConfigureFileParams>(TPICHandler.configureFile, {
+                tpic.sendNotification<ConfigureFileParams>(TPICHandler.ConfigureFile, {
                     fileName: cr.filePath,
                     config: res.typescriptConfig,
                     workspacePath: res.workspacePath
