@@ -4,8 +4,8 @@ import type { RealPath } from "../../../../types/common"
 
 import { ts } from "../state"
 import { getDefaultSourceFileByFileName } from "./typescript"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
-import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { ensureGetSnapshotOfQingkuaiFile, getSourceIndex } from "./qingkuai"
 
 // 将TextSpan转换为vscode扩展需要的Range形式，若目标为qingkuai文件则需要将中间代码索引替换为源码索引并从源码文本中查找位置
@@ -21,7 +21,7 @@ export function convertTextSpanToRange(fileName: RealPath, span: TS.TextSpan): R
     const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
     const sourceStartIndex = getSourceIndex(qingkuaiSnapshot, span.start)
     const sourceEndIndex = getSourceIndex(qingkuaiSnapshot, ts.textSpanEnd(span))
-    if (isSourceIndexesInvalid(sourceStartIndex, sourceEndIndex)) {
+    if (isIndexesInvalid(sourceStartIndex, sourceEndIndex)) {
         return void 0
     }
 

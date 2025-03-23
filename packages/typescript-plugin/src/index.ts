@@ -12,7 +12,7 @@ import { TPICHandler } from "../../../shared-util/constant"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
-import { ts, server, setState, typeRefStatement, lsProjectKindChanged } from "./state"
+import { ts, server, setState, typeRefStatement, lsProjectKindChanged, Logger } from "./state"
 import { ensureGetSnapshotOfQingkuaiFile, getRealPath, recordRealPath } from "./util/qingkuai"
 
 export = function init(modules: { typescript: typeof TS }) {

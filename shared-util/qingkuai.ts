@@ -108,8 +108,8 @@ export function compressPositionFlags(positions: ASTPositionWithFlag[]) {
     return compressed
 }
 
-// 检查传入的源码索引是否是无效的
-export function isSourceIndexesInvalid(...items: (number | undefined)[]) {
+// 检查传入的索引（源码索引或中间代码索引）是否是无效的
+export function isIndexesInvalid(...items: (number | undefined)[]) {
     return items.some(item => {
         return !item || item === -1
     })

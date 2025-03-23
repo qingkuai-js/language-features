@@ -7,8 +7,8 @@ import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { getCompileRes, getCompileResByPath } from "../compile"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
-import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 import { connection, documents, isTestingEnv, tpic, waittingCommands } from "../state"
 
@@ -66,7 +66,7 @@ export const publishDiagnostics = debounce(
             const se = getSourceIndex(item.start + item.length, true)
             const relatedInformation: DiagnosticRelatedInformation[] = []
 
-            if (isSourceIndexesInvalid(ss, se)) {
+            if (isIndexesInvalid(ss, se)) {
                 continue
             }
 
@@ -83,7 +83,7 @@ export const publishDiagnostics = debounce(
                     const cr = await getCompileResByPath(relatedInfo.filePath)
                     const rss = cr.getSourceIndex(relatedInfo.start)
                     const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length, true)
-                    if (isSourceIndexesInvalid(rss, rse)) {
+                    if (isIndexesInvalid(rss, rse)) {
                         continue
                     }
                     range = cr.getRange(rss, rse)

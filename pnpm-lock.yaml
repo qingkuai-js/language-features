@@ -35,8 +35,8 @@ importers:
         specifier: ^1.0.9
         version: 1.0.9
       qingkuai:
-        specifier: ^1.0.8
-        version: 1.0.8
+        specifier: ^1.0.14
+        version: 1.0.14
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -81,8 +81,8 @@ importers:
         specifier: ^1.0.9
         version: 1.0.9
       qingkuai:
-        specifier: ^1.0.8
-        version: 1.0.8
+        specifier: ^1.0.14
+        version: 1.0.14
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
         version: link:../typescript-plugin
@@ -679,8 +679,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.8:
-    resolution: {integrity: sha512-8AYJkCj5W0usUUdFofcVbO3KNhqd0Pa0dRsyWxwl2cHrBo7oDP2+7Uc3ODFJ3m/7PDd5U+CHedrkFmEtIQXhww==}
+  qingkuai@1.0.14:
+    resolution: {integrity: sha512-Oh88U9KwjUxxfZm6rUlLqmLNuSyHi6d2e5qIYU8suUTCYenvY04DM1PY+e/3yh8DoXiDv9feQjVocS5Gb7u3Dw==}
     engines: {node: '>=14'}
 
   resolve-pkg-maps@1.0.0:
@@ -1377,11 +1377,11 @@ snapshots:
   prettier-plugin-qingkuai@1.0.9:
     dependencies:
       prettier: 3.5.3
-      qingkuai: 1.0.8
+      qingkuai: 1.0.14
 
   prettier@3.5.3: {}
 
-  qingkuai@1.0.8:
+  qingkuai@1.0.14:
     dependencies:
       '@babel/parser': 7.26.10
       '@jridgewell/sourcemap-codec': 1.5.0

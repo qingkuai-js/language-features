@@ -6,9 +6,9 @@ import type { ConvertProtocolTextSpanWithContextVerifier } from "../types"
 import { projectService } from "../state"
 import { DEFAULT_PROTOCOL_LOCATION } from "../constant"
 import { getDefaultSourceFileByFileName } from "./typescript"
-import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
-import { ensureGetSnapshotOfQingkuaiFile, getRealPath, getSourceIndex } from "./qingkuai"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { debugAssert, isQingkuaiFileName } from "../../../../shared-util/assert"
+import { ensureGetSnapshotOfQingkuaiFile, getRealPath, getSourceIndex } from "./qingkuai"
 
 // 将typescript-language-features扩展与ts服务器通信结果中qingkuai文件的TextSpan的行列
 // 坐标修改到正确的源码位置（typescript语言服务获取到的qingkuai文件的坐标都是基于中间代码的）
@@ -40,7 +40,7 @@ export function convertProtocolTextSpan(
     const sourceStartIndex = getSourceIndex(qingkuaiSnapshot, interStartIndex)
     const sourceEndIndex = getSourceIndex(qingkuaiSnapshot, interEndIndex, true)
     if (
-        isSourceIndexesInvalid(sourceStartIndex, sourceEndIndex) ||
+        isIndexesInvalid(sourceStartIndex, sourceEndIndex) ||
         !verify(sourceStartIndex!, qingkuaiSnapshot, "start") ||
         !verify(sourceEndIndex!, qingkuaiSnapshot, "end")
     ) {
@@ -90,7 +90,7 @@ export function convertProtocolTextSpanWithContext(
         )
         const sourceContextStartIndex = getSourceIndex(qingkuaiSnapshot, interContextStartIndex)
         if (
-            !isSourceIndexesInvalid(sourceContextStartIndex) &&
+            !isIndexesInvalid(sourceContextStartIndex) &&
             verify(sourceContextStartIndex!, qingkuaiSnapshot, "contextStart")
         ) {
             const sourceContextStartPosition = qingkuaiSnapshot.positions[sourceContextStartIndex!]
@@ -107,7 +107,7 @@ export function convertProtocolTextSpanWithContext(
         )
         const sourceContextEndIndex = getSourceIndex(qingkuaiSnapshot, interContextEndIndex, true)
         if (
-            !isSourceIndexesInvalid(sourceContextEndIndex) &&
+            !isIndexesInvalid(sourceContextEndIndex) &&
             verify(sourceContextEndIndex!, qingkuaiSnapshot, "contextEnd")
         ) {
             const sourceContextEndPosition = qingkuaiSnapshot.positions[sourceContextEndIndex!]

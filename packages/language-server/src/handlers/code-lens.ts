@@ -4,7 +4,6 @@ import type {
     TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { NavigationTree } from "typescript"
-import type { RealPath } from "../../../../types/common"
 import type { CodeLens, Location } from "vscode-languageserver"
 import type { CodeLensHandler, ResolveCodeLensHandler } from "../types/handlers"
 import type { CachedCompileResultItem, CodeLensConfig, CodeLensData } from "../types/service"
@@ -15,8 +14,8 @@ import { getCompileRes, walk } from "../compile"
 import { connection, documents, tpic } from "../state"
 import { escapeRegExp } from "../../../../shared-util/sundry"
 import { ShowReferencesCommandParams } from "../../../../types/command"
+import { filePathToComponentName, isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { EXPORT_DEFAULT_OFFSET, LSHandler, TPICHandler } from "../../../../shared-util/constant"
-import { filePathToComponentName, isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 
 export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const document = documents.get(textDocument.uri)
@@ -255,7 +254,7 @@ function getRangeOfNavigationTree(navtree: NavigationTree, cr: CachedCompileResu
     if (navtree.nameSpan) {
         const ss = cr.getSourceIndex(navtree.nameSpan.start)
         const se = cr.getSourceIndex(navtree.nameSpan.start + navtree.nameSpan.length, true)
-        if (isSourceIndexesInvalid(ss, se)) {
+        if (isIndexesInvalid(ss, se)) {
             return undefined
         }
         return cr.getRange(ss, se)
@@ -268,7 +267,7 @@ function getRangeOfNavigationTree(navtree: NavigationTree, cr: CachedCompileResu
 
     const ss = cr.getSourceIndex(span.start)
     const se = cr.getSourceIndex(span.start + span.length, true)
-    if (isSourceIndexesInvalid(ss, se)) {
+    if (isIndexesInvalid(ss, se)) {
         return undefined
     }
 

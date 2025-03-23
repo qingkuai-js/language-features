@@ -10,6 +10,7 @@ import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
 import {
     compressItos,
+    isIndexesInvalid,
     compressPosition,
     getScriptKindKey,
     compressPositionFlags
@@ -22,7 +23,6 @@ import {
 } from "../../../shared-util/constant"
 import { URI } from "vscode-uri"
 import { readFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
@@ -84,17 +84,23 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     // 通过中间代码索引换取源码索引
     const getSourceIndex = (interIndex: number, isEnd = false) => {
         const sourceIndex = compileRes.interIndexMap.itos[interIndex]
-        if (sourceIndex !== -1 || !isEnd) {
+        if (!isIndexesInvalid(sourceIndex)) {
             return sourceIndex
         }
 
         const preSourceIndex = compileRes.interIndexMap.itos[interIndex - 1]
-        return preSourceIndex === -1 ? -1 : preSourceIndex + 1
+        return isIndexesInvalid(sourceIndex) ? -1 : preSourceIndex + 1
     }
 
     // 通过源码索引换取中间代码索引
     const getInterIndex = (sourceIndex: number) => {
-        return compileRes.interIndexMap.stoi[sourceIndex]
+        const interIndex = compileRes.interIndexMap.stoi[sourceIndex]
+        if (!isIndexesInvalid(interIndex)) {
+            return interIndex
+        }
+
+        const preInterIndex = compileRes.interIndexMap.stoi[sourceIndex - 1]
+        return isIndexesInvalid(preInterIndex) ? -1 : preInterIndex + 1
     }
 
     // 验证某个索引的位置信息是否设置了指定的标志位

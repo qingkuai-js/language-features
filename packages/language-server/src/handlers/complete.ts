@@ -57,8 +57,8 @@ import { eventModifiers } from "../data/event-modifier"
 import { parseTemplate, util } from "qingkuai/compiler"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
-import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { connection, documents, isTestingEnv, projectKind, tpic } from "../state"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
@@ -398,7 +398,7 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
                     config.prettierConfig
                 )
             }
-            if (!isSourceIndexesInvalid(...sourcePosRange)) {
+            if (!isIndexesInvalid(...sourcePosRange)) {
                 additionalTextEdits.push({
                     newText: item.newText,
                     range: getRange(...sourcePosRange)
