@@ -1,3 +1,4 @@
+import type { RealPath } from "../../../../../types/common"
 import type { ASTPositionWithFlag } from "qingkuai/compiler"
 import type { UpdateSnapshotParams } from "../../../../../types/communication"
 
@@ -19,18 +20,20 @@ import { updateQingkuaiSnapshot } from "./snapshot"
 import { isFileOpening } from "../../util/typescript"
 import { refreshDiagnostics } from "../diagnostic/refresh"
 import { TPICHandler } from "../../../../../shared-util/constant"
-import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { replaceSourceContentWithInterCodeOfScritptInfo } from "./method"
+import { ensureGetSnapshotOfQingkuaiFile, recordRealPath } from "../../util/qingkuai"
 
 export function attachDocumentManager() {
     server.onNotification(TPICHandler.DidOpen, (uri: string) => {
-        const fileName = fileURLToPath(uri)
+        const fileName = fileURLToPath(uri) as RealPath
+        recordRealPath(fileName)
         openQingkuaiFiles.add(fileName)
         projectService.openClientFile(fileName)
     })
 
     server.onNotification(TPICHandler.DidClose, (uri: string) => {
-        const fileName = fileURLToPath(uri)
+        const fileName = fileURLToPath(uri) as RealPath
         openQingkuaiFiles.delete(fileName)
         projectService.closeClientFile(fileName)
     })
@@ -48,6 +51,13 @@ export function attachUpdateSnapshot() {
                 flag: positionFlags[index]
             } satisfies ASTPositionWithFlag
         })
+
+        if (qingkuaiSnapshot.initial) {
+            replaceSourceContentWithInterCodeOfScritptInfo(
+                qingkuaiSnapshot,
+                projectService.getScriptInfo(fileName)!
+            )
+        }
 
         if (scriptKindChanged) {
             projectService.openClientFile(fileName)
@@ -75,7 +85,7 @@ export function attachUpdateSnapshot() {
 }
 
 export function attachGetLanguageId() {
-    server.onRequest(TPICHandler.GetLanguageId, (fileName: string) => {
+    server.onRequest(TPICHandler.GetLanguageId, (fileName: RealPath) => {
         if (!isQingkuaiFileName(fileName)) {
             return void 0
         }

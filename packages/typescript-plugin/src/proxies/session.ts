@@ -8,8 +8,9 @@ import {
 } from "../util/protocol"
 import { commandStatus, session } from "../state"
 import { HAS_BEEN_PROXIED_BY_QINGKUAI } from "../constant"
-import { isPositionFlagSetBySourceIndex } from "../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { DEFAULT_RANGE_WITH_CONTENT } from "../../../../shared-util/constant"
+import { getRealPath, isPositionFlagSetBySourceIndex } from "../util/qingkuai"
 
 export function proxyExecuteCommand() {
     const executeCommand = session!.executeCommand
@@ -31,7 +32,7 @@ export function proxyGetReferences() {
         const originalRet = getReferences.call(session, ...args)
         for (let i = 0; i < (originalRet.refs?.length || 0); i++) {
             const ref: TS.server.protocol.FileSpan = originalRet.refs[i]
-            const convertRes = convertProtocolTextSpanWithContext(ref.file, ref)
+            const convertRes = convertProtocolTextSpanWithContext(getRealPath(ref.file), ref)
             convertRes && dealtRefs.push({ ...ref, ...convertRes })
         }
         return (originalRet.refs = dealtRefs), originalRet
@@ -74,10 +75,8 @@ export function proxyGetImplementation() {
     sessionAny.getImplementation = (...args: any) => {
         const originalRet = getImplementation.call(session, ...args)
         return originalRet?.map((item: TS.server.protocol.FileSpan) => {
-            return {
-                ...item,
-                ...convertProtocolTextSpanWithContext(item.file, item)
-            }
+            const convertRes = convertProtocolTextSpanWithContext(getRealPath(item.file), item)
+            return { ...item, ...(convertRes || DEFAULT_RANGE_WITH_CONTENT) }
         })
     }
     sessionAny.getImplementation[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
@@ -98,13 +97,14 @@ export function proxyGetEditsForFileRename() {
                 result.push(item)
             }
 
+            const realPath = getRealPath(item.fileName)
             const dealtChanges: TS.server.protocol.CodeEdit[] = []
             for (const change of item.textChanges) {
-                const convertRes = convertProtocolTextSpan(item.fileName, change)
+                const convertRes = convertProtocolTextSpan(realPath, change)
                 convertRes && dealtChanges.push({ ...change, ...convertRes })
             }
             if (dealtChanges.length) {
-                result.push({ fileName: item.fileName, textChanges: dealtChanges })
+                result.push({ fileName: realPath, textChanges: dealtChanges })
             }
         }
         return result
@@ -133,6 +133,7 @@ export function proxyGetRenameLocations() {
                 continue
             }
 
+            const realPath = getRealPath(file)
             const dealtLocs: TS.server.protocol.RenameTextSpan[] = []
             for (let i = 0, delta = 0; i < locs.length; i++) {
                 const verifier: ConvertProtocolTextSpanWithContextVerifier = (
@@ -154,14 +155,14 @@ export function proxyGetRenameLocations() {
                     )
                 }
 
-                const convertRes = convertProtocolTextSpanWithContext(file, locs[i], verifier)
+                const convertRes = convertProtocolTextSpanWithContext(realPath, locs[i], verifier)
                 if (!convertRes) {
                     continue
                 }
                 dealtLocs.push(convertRes)
                 convertRes.start.offset += delta
             }
-            dealtLocs.length && retLocs.push({ file, locs: dealtLocs })
+            dealtLocs.length && retLocs.push({ file: realPath, locs: dealtLocs })
         }
 
         return { ...originalRet, locs: retLocs }

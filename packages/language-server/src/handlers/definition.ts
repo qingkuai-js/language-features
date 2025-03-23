@@ -8,6 +8,7 @@ import type {
 import type { LocationLink, Range } from "vscode-languageserver/node"
 import type { DefinitionHandler, TypeDefinitionHandler } from "../types/handlers"
 
+import { URI } from "vscode-uri"
 import { resolve } from "node:path"
 import { getCompileRes, walk } from "../compile"
 import { NumNum } from "../../../../types/common"
@@ -112,8 +113,8 @@ export const findDefinition: DefinitionHandler = async (
     return res.definitions.map(item => {
         return {
             originSelectionRange,
-            targetUri: `file://${item.fileName}`,
             targetRange: item.targetRange,
+            targetUri: URI.file(item.fileName).toString(),
             targetSelectionRange: item.targetSelectionRange
         }
     })
@@ -147,7 +148,7 @@ export const findTypeDefinition: TypeDefinitionHandler = async (
     return definitions.map(item => {
         return {
             targetRange: item.targetRange,
-            targetUri: `file://${item.fileName}`,
+            targetUri: URI.file(item.fileName).toString(),
             targetSelectionRange: item.targetSelectionRange
         }
     })
@@ -158,7 +159,7 @@ async function getComponentSlotDefinition(
     slotName: string,
     originSelectionRange: Range
 ) {
-    const componentFileUri = `file://${componentFileName}`
+    const componentFileUri = URI.file(componentFileName).toString()
     const cr = await getCompileRes(ensureGetTextDocument(componentFileUri))
     return walk<LocationLink[]>(cr.templateNodes, node => {
         if (node.tag === "slot") {

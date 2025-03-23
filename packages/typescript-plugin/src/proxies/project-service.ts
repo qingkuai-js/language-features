@@ -1,15 +1,17 @@
+import { getRealPath } from "../util/qingkuai"
 import { openQingkuaiFiles, projectService } from "../state"
-import { HAS_BEEN_PROXIED_BY_QINGKUAI, RefreshDiagnosticKind } from "../constant"
 import { refreshDiagnostics } from "../server/diagnostic/refresh"
+import { HAS_BEEN_PROXIED_BY_QINGKUAI, RefreshDiagnosticKind } from "../constant"
 import { isEmptyString, isQingkuaiFileName } from "../../../../shared-util/assert"
 
 export function proxyCloseClientFile() {
     const closeClientFile = projectService.closeClientFile
     projectService.closeClientFile = (...args) => {
+        const realPath = getRealPath(args[0])
         const scriptInfo = projectService.getScriptInfo(args[0])
         if (
             scriptInfo &&
-            !openQingkuaiFiles.has(args[0]) &&
+            !openQingkuaiFiles.has(realPath) &&
             projectService.openFiles.has(scriptInfo.path)
         ) {
             return closeClientFile.call(projectService, ...args)

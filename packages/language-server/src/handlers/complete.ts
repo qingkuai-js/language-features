@@ -32,6 +32,12 @@ import {
     completeEntityCharacterRE
 } from "../regular"
 import {
+    LSHandler,
+    TPICHandler,
+    DEFAULT_RANGE,
+    INTER_NAMESPACE
+} from "../../../../shared-util/constant"
+import {
     TextEdit,
     InsertTextFormat,
     CompletionItemTag,
@@ -43,6 +49,7 @@ import {
     INVALID_COMPLETION_TEXT_LABELS,
     MAYBE_INVALID_COMPLETION_LABELS
 } from "../constants"
+import { URI } from "vscode-uri"
 import { getCompileRes } from "../compile"
 import { position2Range } from "../util/vscode"
 import { findEventModifier } from "../util/search"
@@ -50,11 +57,10 @@ import { eventModifiers } from "../data/event-modifier"
 import { parseTemplate, util } from "qingkuai/compiler"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
-import { connection, documents, isTestingEnv, projectKind, tpic } from "../state"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
+import { connection, documents, isTestingEnv, projectKind, tpic } from "../state"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
-import { DEFAULT_RANGE, LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
@@ -361,7 +367,7 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
         return item
     }
 
-    const document = documents.get(`file://${item.data.fileName}`)!
+    const document = documents.get(URI.file(item.data.fileName).toString())!
     const { getSourceIndex, getRange, inputDescriptor, config } = await getCompileRes(document)
     const res: ResolveCompletionResult = await tpic.sendRequest(
         TPICHandler.ResolveCompletionItem,
@@ -843,27 +849,21 @@ async function doScriptBlockComplete(
 
     // 过滤无效的补全建议
     completionItems = completionItems.filter(item => {
-        if (item.label === "__c__") {
+        if (item.label === INTER_NAMESPACE) {
             return false
         }
-
         if (
             item.kind === CompletionItemKind.Text &&
             INVALID_COMPLETION_TEXT_LABELS.has(item.label)
         ) {
             return false
         }
-
-        if (MAYBE_INVALID_COMPLETION_LABELS.has(item.label)) {
-            const ps = cr.code.slice(0, offset)
-            const lastDotIndex = ps.lastIndexOf(".")
-            if (lastDotIndex === -1) {
-                return true
-            }
-            return !/__c__\s*$/.test(ps.slice(0, lastDotIndex))
+        if (!MAYBE_INVALID_COMPLETION_LABELS.has(item.label)) {
+            return true
         }
 
-        return true
+        const preContent = cr.code.slice(0, cr.getInterIndex(offset))
+        return !new RegExp(`${INTER_NAMESPACE}\\.\\s*`).test(preContent)
     })
 
     let defaultEditRange: Range | undefined = undefined

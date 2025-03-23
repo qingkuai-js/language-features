@@ -8,9 +8,10 @@ import {
 } from "../util/typescript"
 import { server, ts } from "../state"
 import { isComponentIdentifier } from "../util/qingkuai"
+import { isBuiltInGlobalDeclaration } from "../util/ast"
 import { isUndefined } from "../../../../shared-util/assert"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
-import { TPICHandler } from "../../../../shared-util/constant"
+import { GLOBAL_BUILTIN_VARS, INTER_NAMESPACE, TPICHandler } from "../../../../shared-util/constant"
 
 export function attachHoverTip() {
     server.onRequest<TPICCommonRequestParams, HoverTipResult | null>(
@@ -21,15 +22,34 @@ export function attachHoverTip() {
             const program = languageService.getProgram()!
             const typeChecker = program.getTypeChecker()
 
+            let replacer: string | RegExp = ""
             const node = getNodeAt(program.getSourceFile(fileName)!, pos)
-            if (
-                node &&
-                ts.isIdentifier(node) &&
-                isComponentIdentifier(fileName, node, typeChecker)
-            ) {
-                return {
-                    posRange: [node.getStart(), node.getEnd()],
-                    content: mdCodeBlockGen("ts", `(component) class ${node.text}`)
+            if (node && ts.isIdentifier(node)) {
+                const nodeRange: NumNum = [node.getStart(), node.getEnd()]
+                if (
+                    GLOBAL_BUILTIN_VARS.has(node.text) &&
+                    isBuiltInGlobalDeclaration(node, typeChecker)
+                ) {
+                    replacer = INTER_NAMESPACE + "."
+                } else if (node.text === INTER_NAMESPACE) {
+                    return {
+                        posRange: nodeRange,
+                        content: "any"
+                    }
+                } else if (
+                    node.parent &&
+                    ts.isPropertyAccessExpression(node.parent) &&
+                    node.parent.expression.getText() === INTER_NAMESPACE
+                ) {
+                    return {
+                        posRange: nodeRange,
+                        content: "any"
+                    }
+                } else if (isComponentIdentifier(fileName, node, typeChecker)) {
+                    return {
+                        posRange: [node.getStart(), node.getEnd()],
+                        content: mdCodeBlockGen("ts", `(component) class ${node.text}`)
+                    }
                 }
             }
 
@@ -49,7 +69,7 @@ export function attachHoverTip() {
                 }
             }
 
-            const ret = project.getLanguageService().getQuickInfoAtPosition(fileName, pos)
+            const ret = languageService.getQuickInfoAtPosition(fileName, pos)
             if (isUndefined(ret)) {
                 return null
             }
@@ -59,7 +79,7 @@ export function attachHoverTip() {
             const documentation = convertDisplayPartsToPlainTextWithLink(ret.documentation)
             return {
                 posRange: [start, start + length] as NumNum,
-                content: mdCodeBlockGen("ts", display) + "\n" + documentation
+                content: mdCodeBlockGen("ts", display.replace(replacer, "")) + "\n" + documentation
             }
         }
     )

@@ -11,6 +11,7 @@ import {
     getDefaultSourceFileByFileName,
     getDefaultLanguageServiceByFileName
 } from "../util/typescript"
+import { getRealPath } from "../util/qingkuai"
 import { server, session, ts } from "../state"
 import { convertTextSpanToRange } from "../util/service"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
@@ -20,6 +21,7 @@ export function attachFindDefinition() {
     server.onRequest<FindDefinitionParams>(
         TPICHandler.FindDefinition,
         async ({ fileName, pos, preferGoToSourceDefinition }) => {
+            const normalizedPath = ts.server.toNormalizedPath(fileName)
             const sourceFile = getDefaultSourceFileByFileName(fileName)
             if (!session || !sourceFile) {
                 return null
@@ -30,7 +32,7 @@ export function attachFindDefinition() {
             const { line, character } = sourceFile.getLineAndCharacterOfPosition(pos)
 
             const arg = {
-                file: fileName,
+                file: normalizedPath,
                 line: line + 1,
                 offset: character + 1
             }
@@ -60,6 +62,7 @@ export function attachFindDefinition() {
 
             const dealtDefinitions = definitions.map(
                 (item: TS.server.protocol.FileSpanWithContext) => {
+                    const realPath = getRealPath(item.file)
                     const range = convertProtocolTextSpanToRange(item)
                     if (item.contextStart && item.contextEnd) {
                         const contextRange = convertProtocolTextSpanToRange({
@@ -67,13 +70,13 @@ export function attachFindDefinition() {
                             end: item.contextEnd
                         })
                         return {
-                            fileName: item.file,
+                            fileName: realPath,
                             targetRange: contextRange,
                             targetSelectionRange: range
                         }
                     }
                     return {
-                        fileName: item.file,
+                        fileName: realPath,
                         targetRange: range,
                         targetSelectionRange: range
                     }
@@ -94,20 +97,16 @@ export function attachFindDefinition() {
             }
 
             return definitions.map(definition => {
-                const range =
-                    convertTextSpanToRange(definition.fileName, definition.textSpan) ||
-                    DEFAULT_RANGE
+                const realPath = getRealPath(definition.fileName)
+                const range = convertTextSpanToRange(realPath, definition.textSpan) || DEFAULT_RANGE
 
                 let contextRange: Range | undefined = undefined
                 if (definition.contextSpan) {
-                    contextRange = convertTextSpanToRange(
-                        definition.fileName,
-                        definition.contextSpan
-                    )
+                    contextRange = convertTextSpanToRange(realPath, definition.contextSpan)
                 }
 
                 return {
-                    fileName: definition.fileName,
+                    fileName: realPath,
                     targetRange: range,
                     targetSelectionRange: contextRange || range
                 }

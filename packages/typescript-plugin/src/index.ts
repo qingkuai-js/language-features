@@ -5,22 +5,15 @@ import {
     proxyTypescriptLanguageServiceMethods,
     ProxyTypescriptSessionAndProjectServiceMethods
 } from "./proxies"
-import {
-    ts,
-    server,
-    setState,
-    projectService,
-    typeRefStatement,
-    lsProjectKindChanged
-} from "./state"
 import { existsSync } from "node:fs"
 import { forEachProject } from "./util/typescript"
-import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
 import { TPICHandler } from "../../../shared-util/constant"
-import { ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 import { initQingkuaiConfig } from "./server/configuration/method"
 import { createServer } from "../../../shared-util/ipc/participant"
+import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
+import { ts, server, setState, typeRefStatement, lsProjectKindChanged } from "./state"
+import { ensureGetSnapshotOfQingkuaiFile, getRealPath, recordRealPath } from "./util/qingkuai"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
@@ -51,17 +44,20 @@ export = function init(modules: { typescript: typeof TS }) {
             triggerFileName: string
             configurations: QingkuaiConfigurationWithDir[]
         }) {
+            recordRealPath(params.triggerFileName)
             initQingkuaiConfig(params.configurations)
 
             // 创建ipc通道，并监听来自qingkuai语言服务器的请求
-            if (!existsSync(params.sockPath)) {
-                createServer(params.sockPath).then(server => {
-                    setState({ server })
-                    attachLanguageServerIPCHandlers()
-                    ensureLanguageServerProjectKind()
-                    server.onRequest("getQingkuaiDtsReferenceStatement", () => typeRefStatement)
-                })
-            }
+            setTimeout(() => {
+                if (!existsSync(params.sockPath)) {
+                    createServer(params.sockPath).then(server => {
+                        setState({ server })
+                        attachLanguageServerIPCHandlers()
+                        ensureLanguageServerProjectKind()
+                        server.onRequest("getQingkuaiDtsReferenceStatement", () => typeRefStatement)
+                    })
+                }
+            })
         }
     }
 }
@@ -72,13 +68,13 @@ function ensureLanguageServerProjectKind() {
             return
         }
 
-        for (const np of p.getFileNames()) {
-            const fileName = projectService.getScriptInfo(np)?.fileName
-            if (!isQingkuaiFileName(fileName || "")) {
+        for (const fileName of p.getFileNames()) {
+            const realPath = getRealPath(fileName)
+            if (!isQingkuaiFileName(realPath || "")) {
                 continue
             }
 
-            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName!)
+            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(realPath!)
             if (qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS) {
                 setState({
                     lsProjectKindChanged: true

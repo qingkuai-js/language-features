@@ -6,6 +6,7 @@ import type {
 } from "vscode-languageserver"
 import type {
     NumNum,
+    RealPath,
     NumNumArray,
     PrettierConfiguration,
     TSClientConfiguration,
@@ -20,8 +21,8 @@ export interface RefreshDiagnosticParams {
 }
 
 export interface RenameFileParams {
-    oldPath: string
-    newPath: string
+    oldPath: RealPath
+    newPath: RealPath
 }
 
 export type RenameFileResult = {
@@ -49,7 +50,7 @@ export interface RetransmissionParams<T = any> {
 }
 
 export interface TPICCommonRequestParams {
-    fileName: string
+    fileName: RealPath
     pos: number
 }
 
@@ -108,7 +109,7 @@ export interface GetSemanticTokensParams {
 
 export interface ResolveCompletionParams {
     pos: number
-    fileName: string
+    fileName: RealPath
     entryName: string
     source?: string
     ori?: CompletionEntryData
@@ -168,7 +169,7 @@ export interface InsertSnippetParam {
 }
 
 export interface UpdateSnapshotParams {
-    fileName: string
+    fileName: RealPath
     interCode: string
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
@@ -182,7 +183,7 @@ export interface TSDiagnosticRelatedInformation {
     start: number
     length: number
     message: string
-    filePath: string
+    filePath: RealPath
 }
 export interface TSDiagnostic {
     kind: number

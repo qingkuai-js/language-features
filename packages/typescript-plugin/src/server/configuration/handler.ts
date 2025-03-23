@@ -1,20 +1,16 @@
-import type {
-    QingkuaiConfiguration,
-    QingkuaiConfigurationWithDir
-} from "../../../../../types/common"
 import type { ConfigureFileParams } from "../../../../../types/communication"
+import type { QingkuaiConfigurationWithDir, RealPath } from "../../../../../types/common"
 
 import path from "node:path"
 import { relativePathRE } from "../../regular"
 import { RefreshDiagnosticKind } from "../../constant"
 import { projectService, server, ts } from "../../state"
 import { refreshDiagnostics } from "../diagnostic/refresh"
-import { isUndefined } from "../../../../../shared-util/assert"
 import { TPICHandler } from "../../../../../shared-util/constant"
-import { deleteQingkuaiConfig, getQingkuaiConfig, setQingkuaiConfig } from "./method"
+import { deleteQingkuaiConfig, setQingkuaiConfig } from "./method"
 
 export function attachChangeConfig() {
-    server.onNotification(TPICHandler.DeleteConfig, (dir: string) => {
+    server.onNotification(TPICHandler.DeleteConfig, (dir: RealPath) => {
         refreshDiagnosticsDelay()
         deleteQingkuaiConfig(dir)
     })
@@ -36,24 +32,6 @@ export function attachChangeConfig() {
             formatOptions: params.config.formatCodeSettings
         })
     })
-}
-
-// 根据文件路径查找影响它的配置文件
-export function getConfigByFileName(fileName: string): QingkuaiConfiguration {
-    let currentDirname = path.dirname(fileName)
-    while (currentDirname !== path.parse(currentDirname).root) {
-        const configuration = getQingkuaiConfig(currentDirname)
-        if (!isUndefined(configuration)) {
-            return configuration
-        } else {
-            currentDirname = path.dirname(currentDirname)
-        }
-    }
-    return {}
-}
-
-function refreshDiagnosticsDelay() {
-    setTimeout(() => refreshDiagnostics(RefreshDiagnosticKind.qingkuaiConfig, false), 1000)
 }
 
 // typescript版本低于5.4.0时autoImportFileExcludePatterns配置项
@@ -78,4 +56,8 @@ function convertImportFileExcludePatternsPreferences(
             return wildcardPrefix + "**" + path.sep + p
         }
     })
+}
+
+function refreshDiagnosticsDelay() {
+    setTimeout(() => refreshDiagnostics(RefreshDiagnosticKind.qingkuaiConfig, false), 1000)
 }

@@ -1,6 +1,7 @@
 import type TS from "typescript"
 
 import path from "node:path"
+import { getRealPath } from "./qingkuai"
 import { excludeProperty } from "../../../../shared-util/sundry"
 import { openQingkuaiFiles, projectService, ts } from "../state"
 import { isString, isUndefined } from "../../../../shared-util/assert"
@@ -59,7 +60,7 @@ export function getProgramByProject(project: TS.server.Project) {
 
 export function isFileOpening(fileName: string) {
     return (
-        openQingkuaiFiles.has(fileName) ||
+        openQingkuaiFiles.has(getRealPath(fileName)) ||
         projectService.openFiles.has(projectService.toPath(fileName))
     )
 }
@@ -181,9 +182,9 @@ export function convertDisplayPartsToPlainTextWithLink(parts: TS.SymbolDisplayPa
             const target: TS.DocumentSpan = (part as any).target
             const args = encodeURIComponent(
                 JSON.stringify({
-                    path: target.fileName,
                     end: target.textSpan.start,
-                    start: target.textSpan.start
+                    start: target.textSpan.start,
+                    path: getRealPath(target.fileName)
                 })
             )
             return ret + `[${part.text}](command:qingkuai.openFileByFilePath?${args})`

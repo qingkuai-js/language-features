@@ -22,10 +22,7 @@ export function attachCustomHandlers(client: LanguageClient) {
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
     vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
-            client.sendNotification(
-                LSHandler.PublishDiagnostic,
-                `file://${textEditor.document.uri.fsPath}`
-            )
+            client.sendNotification(LSHandler.PublishDiagnostic, textEditor.document.uri.toString())
         }
     })
 

@@ -3,6 +3,7 @@ import type {
     ComponentIdentifierInfo
 } from "../../../../types/communication"
 import type { ProjectKind } from "../constants"
+import type { RealPath } from "../../../../types/common"
 import type { Position, Range } from "vscode-languageserver"
 import type { IpcParticipant } from "../../../../shared-util/ipc/types"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
@@ -19,7 +20,7 @@ export type CodeLensConfig = {
 }
 
 export type CodeLensData = {
-    fileName: string
+    fileName: RealPath
     interIndex: number
     position: Position
     slotName?: string
@@ -36,7 +37,7 @@ export type SetStateOptions = Partial<{
 
 export type CachedCompileResultItem = CompileResult & {
     version: number
-    filePath: string
+    filePath: RealPath
     getRange: GetRangeFunc
     isSynchronized: boolean
     config: GetClientConfigResult

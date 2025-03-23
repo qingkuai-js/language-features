@@ -7,12 +7,12 @@ import {
     connectTsPluginServerFailed,
     connectTsPluginServerSuccess
 } from "./messages"
-import { pathToFileURL } from "node:url"
+import { URI } from "vscode-uri"
 import { getCompileRes, walk } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
+import { TPICHandler } from "../../../shared-util/constant"
 import { ensureGetTextDocument } from "./handlers/document"
 import { connectTo } from "../../../shared-util/ipc/participant"
-import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { tpic, Logger, tpicConnectedResolver, setState } from "./state"
 
 let connectTimes = 0
@@ -62,15 +62,16 @@ function attachClientHandlers() {
     })
 
     // ts插件主动推送的诊断通知
-    tpic.onNotification(LSHandler.PublishDiagnostic, (fileName: string) => {
-        publishDiagnostics(pathToFileURL(fileName).toString())
+    tpic.onNotification(TPICHandler.RefreshDiagnostic, (fileName: string) => {
+        publishDiagnostics(URI.file(fileName).toString())
     })
 
     tpic.onRequest<FindComponentTagRangeParams>(
         TPICHandler.FindComponentTagRange,
         async ({ fileName, componentTag }) => {
             const ranges: Range[] = []
-            const cr = await getCompileRes(ensureGetTextDocument(`file://${fileName}`))
+            const uri = URI.file(fileName).toString()
+            const cr = await getCompileRes(ensureGetTextDocument(uri))
             walk(cr.templateNodes, node => {
                 if (node.componentTag === componentTag) {
                     ranges.push(cr.getRange(node.range[0], node.range[0] + node.tag.length + 1))

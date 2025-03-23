@@ -1,4 +1,5 @@
 import {
+    getRealPath,
     compileQingkuaiFileToInterCode,
     ensureGetSnapshotOfQingkuaiFile
 } from "../../util/qingkuai"
@@ -7,6 +8,7 @@ import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
 import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
+import { TPICHandler } from "../../../../../shared-util/constant"
 import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
 import { isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
 import { isFileOpening, getFileReferences, pathToFileName } from "../../util/typescript"
@@ -41,8 +43,8 @@ export const refreshDiagnostics = debounce(
             markOpenFilesAsReferences()
             shouldEdit = byFileName === RefreshDiagnosticKind.typescriptConfig
         } else {
-            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(byFileName)
-            if (!scriptKindChanged || qingkuaiSnapshot.scriptKind !== ts.ScriptKind.TS) {
+            const scriptInfo = projectService.getScriptInfo(byFileName)
+            if (!scriptKindChanged || scriptInfo?.scriptKind !== ts.ScriptKind.TS) {
                 referenceFileNames.push(
                     ...getFileReferences(byFileName, {
                         recursive: true,
@@ -66,11 +68,12 @@ export const refreshDiagnostics = debounce(
             const endsWithSpace = snapshot.getText(contentLength - 1, contentLength) === " "
 
             if (isQingkuaiFileName(fileName)) {
+                const realPath = getRealPath(fileName)
                 if (shouldEdit) {
                     if (byFileName === RefreshDiagnosticKind.qingkuaiConfig) {
-                        const compileRes = compileQingkuaiFileToInterCode(fileName)
+                        const compileRes = compileQingkuaiFileToInterCode(realPath)
                         updateQingkuaiSnapshot(
-                            fileName,
+                            realPath,
                             compileRes.code,
                             compileRes.interIndexMap.itos,
                             compileRes.inputDescriptor.slotInfo,
@@ -78,11 +81,11 @@ export const refreshDiagnostics = debounce(
                             compileRes.inputDescriptor.positions
                         )
                     } else {
-                        const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
+                        const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(realPath)
                         const content = qingkuaiSnapshot.getFullText()
                         const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
                         editQingKuaiScriptInfo(
-                            fileName,
+                            realPath,
                             newContent,
                             qingkuaiSnapshot.itos,
                             qingkuaiSnapshot.slotInfo,
@@ -91,7 +94,7 @@ export const refreshDiagnostics = debounce(
                         )
                     }
                 }
-                server.sendNotification("publishDiagnostics", fileName)
+                server.sendNotification(TPICHandler.RefreshDiagnostic, realPath)
             } else {
                 if (!byConfigChanged && !byQingKuaiFile) {
                     return
@@ -118,6 +121,6 @@ export const refreshDiagnostics = debounce(
             }
         })
     },
-    300,
+    350,
     fileName => fileName // use fileName as debounce id
 )

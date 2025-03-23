@@ -1,6 +1,6 @@
 import { ts } from "../state"
-import { ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../util/qingkuai"
 
 export function proxyReadFile() {
     const readFile = ts.sys.readFile.bind(ts.sys)
@@ -8,7 +8,7 @@ export function proxyReadFile() {
         if (!isQingkuaiFileName(fileName)) {
             return readFile(fileName, encoding)
         }
-        return ensureGetSnapshotOfQingkuaiFile(fileName).getFullText()
+        return ensureGetSnapshotOfQingkuaiFile(getRealPath(fileName)).getFullText()
     }
 }
 
@@ -21,6 +21,6 @@ export function proxyGetFileSize() {
         if (!isQingkuaiFileName(path)) {
             return getFileSize.call(ts.sys, path)
         }
-        return ensureGetSnapshotOfQingkuaiFile(path).getLength()
+        return ensureGetSnapshotOfQingkuaiFile(getRealPath(path)).getLength()
     }
 }

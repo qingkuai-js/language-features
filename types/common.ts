@@ -4,6 +4,7 @@ import type { Options as PrettierOptions } from "prettier"
 
 export type NumNumArray = NumNum[]
 export type NumNum = FixedArray<number, 2>
+export type RealPath = string & { _: never }
 
 export interface OpenFileParams {
     path: string
@@ -44,7 +45,7 @@ export type PrettierConfiguration = PrettierOptions & {
 }
 
 export type QingkuaiConfigurationWithDir = QingkuaiConfiguration & {
-    dir: string
+    dir: RealPath
 }
 
 export type TSUserPreferences = TS.server.protocol.UserPreferences

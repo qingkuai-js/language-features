@@ -4,10 +4,12 @@ import type {
     TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { NavigationTree } from "typescript"
+import type { RealPath } from "../../../../types/common"
 import type { CodeLens, Location } from "vscode-languageserver"
 import type { CodeLensHandler, ResolveCodeLensHandler } from "../types/handlers"
 import type { CachedCompileResultItem, CodeLensConfig, CodeLensData } from "../types/service"
 
+import { URI } from "vscode-uri"
 import { findSlotReferences } from "./reference"
 import { getCompileRes, walk } from "../compile"
 import { connection, documents, tpic } from "../state"
@@ -103,10 +105,11 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
 }
 
 export const resolveCodeLens: ResolveCodeLensHandler = async codeLens => {
-    const locations: Location[] = []
     const data: CodeLensData = codeLens.data
-    const { type, fileName, interIndex, position } = data
-    const label = data.componentName ? "useage" : type
+    const { type, fileName, interIndex, position, componentName } = data
+
+    const locations: Location[] = []
+    const label = componentName ? "useage" : type
     const handlerName = "find" + type[0].toUpperCase() + type.slice(1)
 
     let findResult: FindReferenceResultItem[] | [] =
@@ -127,15 +130,15 @@ export const resolveCodeLens: ResolveCodeLensHandler = async codeLens => {
     }
 
     if (findResult?.length) {
-        if (!data.componentName) {
+        if (!componentName) {
             findResult.forEach(item => {
                 locations.push({
                     range: item.range,
-                    uri: `file://${item.fileName}`
+                    uri: URI.file(item.fileName).toString()
                 })
             })
         } else {
-            const useages = await findSlotReferences(findResult, data.slotName!, data.componentName)
+            const useages = await findSlotReferences(findResult, data.slotName!, componentName)
             useages?.length && locations.push(...useages)
         }
     }

@@ -4,6 +4,7 @@ import type {
 } from "../../../../types/communication"
 import type { ImplementationHandler } from "../types/handlers"
 
+import { URI } from "vscode-uri"
 import { getCompileRes } from "../compile"
 import { documents, tpic } from "../state"
 import { TPICHandler } from "../../../../shared-util/constant"
@@ -28,7 +29,7 @@ export const findImplementation: ImplementationHandler = async ({ textDocument, 
     return implementations?.map(item => {
         return {
             range: item.range,
-            uri: `file://${item.fileName}`
+            uri: URI.file(item.fileName).toString()
         }
     })
 }

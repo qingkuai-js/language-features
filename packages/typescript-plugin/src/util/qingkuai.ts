@@ -1,14 +1,14 @@
 import type TS from "typescript"
-import { QingKuaiSnapShot } from "../snapshot"
+import type { RealPath } from "../../../../types/common"
 
 import {
     ts,
     snapshotCache,
-    projectService,
     typeRefStatement,
-    openQingkuaiFiles,
+    tsFileNameToRealPath,
     resolvedQingkuaiModule
 } from "../state"
+import { QingKuaiSnapShot } from "../snapshot"
 import { existsSync, readFileSync } from "node:fs"
 import { debugAssert } from "../../../../shared-util/assert"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
@@ -25,13 +25,6 @@ export function getSourceIndex(
         return sourceIndex
     }
     return isEnd ? snapshot.itos[interIndex + 1] : -1
-}
-
-export function reopenQingkuaiFile(fileName: string) {
-    openQingkuaiFiles.delete(fileName)
-    projectService.closeClientFile(fileName)
-    projectService.openClientFile(fileName)
-    openQingkuaiFiles.add(fileName)
 }
 
 // 通过源码索引验证位置是否设置指定标志
@@ -57,16 +50,16 @@ export function isPositionFlagSetByInterIndex(
     return isPositionFlagSetBySourceIndex(snapshot, sourceIndex, key)
 }
 
-export function compileQingkuaiFileToInterCode(fileName: string) {
-    debugAssert(existsSync(fileName))
+export function compileQingkuaiFileToInterCode(path: RealPath) {
+    debugAssert(existsSync(path))
 
-    return compile(readFileSync(fileName, "utf-8")!, {
+    return compile(readFileSync(path, "utf-8")!, {
         check: true,
         typeRefStatement
     })
 }
 
-export function ensureGetSnapshotOfQingkuaiFile(fileName: string) {
+export function ensureGetSnapshotOfQingkuaiFile(fileName: RealPath) {
     if (snapshotCache.has(fileName)) {
         return snapshotCache.get(fileName)!
     }
@@ -90,7 +83,7 @@ export function ensureGetSnapshotOfQingkuaiFile(fileName: string) {
 
 // 判断标识符节点是否是导入的组件名称标识符
 export function isComponentIdentifier(
-    fileName: string,
+    fileName: RealPath,
     identifier: TS.Identifier,
     typeChecker: TS.TypeChecker
 ) {
@@ -110,4 +103,17 @@ export function isComponentIdentifier(
         }
     }
     return false
+}
+
+export function getRealPath(fileName: string) {
+    return (tsFileNameToRealPath.get(fileName) || fileName) as RealPath
+}
+
+export function recordRealPath(realFileName: string) {
+    if (!tsFileNameToRealPath.has(realFileName)) {
+        const normalizedPath = ts.server.toNormalizedPath(realFileName).toString()
+        if (normalizedPath !== realFileName) {
+            tsFileNameToRealPath.set(normalizedPath, realFileName as RealPath)
+        }
+    }
 }

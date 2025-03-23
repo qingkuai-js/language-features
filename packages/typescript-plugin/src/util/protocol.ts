@@ -1,4 +1,5 @@
 import type TS from "typescript"
+import type { RealPath } from "../../../../types/common"
 import type { Position, Range } from "vscode-languageserver"
 import type { ConvertProtocolTextSpanWithContextVerifier } from "../types"
 
@@ -6,13 +7,13 @@ import { projectService } from "../state"
 import { DEFAULT_PROTOCOL_LOCATION } from "../constant"
 import { getDefaultSourceFileByFileName } from "./typescript"
 import { isSourceIndexesInvalid } from "../../../../shared-util/qingkuai"
-import { ensureGetSnapshotOfQingkuaiFile, getSourceIndex } from "./qingkuai"
+import { ensureGetSnapshotOfQingkuaiFile, getRealPath, getSourceIndex } from "./qingkuai"
 import { debugAssert, isQingkuaiFileName } from "../../../../shared-util/assert"
 
 // 将typescript-language-features扩展与ts服务器通信结果中qingkuai文件的TextSpan的行列
 // 坐标修改到正确的源码位置（typescript语言服务获取到的qingkuai文件的坐标都是基于中间代码的）
 export function convertProtocolTextSpan(
-    fileName: string,
+    fileName: RealPath,
     span: TS.server.protocol.TextSpan,
     verify?: ConvertProtocolTextSpanWithContextVerifier
 ) {
@@ -62,7 +63,7 @@ export function convertProtocolTextSpan(
 
 // 此方法作用与convertProtocolTextSpan相似，但它处理的目标是TextSpanWithContext
 export function convertProtocolTextSpanWithContext(
-    fileName: string,
+    fileName: RealPath,
     span: TS.server.protocol.TextSpanWithContext,
     verify?: ConvertProtocolTextSpanWithContextVerifier
 ) {
@@ -124,7 +125,10 @@ export function convertProtocolDefinitions(
     definitions: TS.server.protocol.FileSpanWithContext[] | undefined
 ) {
     definitions?.forEach((item, index) => {
-        const convertRes = convertProtocolTextSpanWithContext(item.file, item)
+        const convertRes = convertProtocolTextSpanWithContext(
+            (item.file = getRealPath(item.file)),
+            item
+        )
         if (convertRes) {
             definitions[index] = { ...item, ...convertRes }
         } else {

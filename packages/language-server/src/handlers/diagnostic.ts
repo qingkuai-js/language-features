@@ -1,6 +1,7 @@
 import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
+import { URI } from "vscode-uri"
 import { stringifyRange } from "../util/vscode"
 import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
@@ -91,7 +92,7 @@ export const publishDiagnostics = debounce(
                     message: relatedInfo.message,
                     location: {
                         range,
-                        uri: `file://${relatedInfo.filePath}`
+                        uri: URI.file(relatedInfo.filePath).toString()
                     }
                 })
             }

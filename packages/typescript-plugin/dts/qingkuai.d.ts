@@ -28,31 +28,34 @@ interface WatchFunc {
     <T>(getter: () => T, callback: (pre: T, cur: T) => void): () => void
 }
 
-declare const __c__: {
-    Receiver: any
+declare namespace __c__ {
+    type EmptyObject = {
+        [symbol]?: never
+    }
 
-    GetKVPair: ReloadedGetKVPair
-    GetTypedValue: <T>() => T
-    GetResolve: <T>(_: T) => ExtractResolveType<T>
-    GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
+    var Receiver: any
+    const symbol: unique symbol
+
+    const GetKVPair: ReloadedGetKVPair
+    const GetTypedValue: <T>() => T
+    const GetResolve: <T>(_: T) => ExtractResolveType<T>
+    const GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
         _: T,
         __: K
     ) => Readonly<ConstructorParameters<T>[2][K]>
 
-    SatisfyString: (_: string) => void
-    SatisfyBoolean: (_: boolean) => void
-    SatisfyPromise: (_: Promise<any>) => void
-    SatisfyComponent: <T extends Constructible>(
+    const SatisfyString: (_: string) => void
+    const SatisfyBoolean: (_: boolean) => void
+    const SatisfyPromise: (_: Promise<any>) => void
+    const SatisfyComponent: <T extends Constructible>(
         _: T,
         __: ConstructorParameters<T>[0],
         ___: ConstructorParameters<T>[1]
     ) => void
-    SatisfyRefGroup: <T extends Set<any> | Array<any>>(
+    const SatisfyRefGroup: <T extends Set<any> | Array<any>>(
         _: T,
         __: T extends Set<infer U> ? U : T extends Array<infer U> ? U : any
     ) => void
-
-    [K: AnyObjectKey]: any
 }
 
 declare const wat: WatchFunc

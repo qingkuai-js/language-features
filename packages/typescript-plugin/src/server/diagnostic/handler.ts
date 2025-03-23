@@ -4,13 +4,16 @@ import {
     type TSDiagnosticRelatedInformation
 } from "../../../../../types/communication"
 import type { DiagnosticKind } from "../../types"
+import type { RealPath } from "../../../../../types/common"
 import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
 import { refreshDiagnostics } from "./refresh"
 import { ORI_SOURCE_FILE } from "../../constant"
-import { TPICHandler } from "../../../../../shared-util/constant"
-import { isString, isUndefined } from "../../../../../shared-util/assert"
+import { getDefaultLanguageServiceByFileName } from "../../util/typescript"
 import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
+import { INTER_NAMESPACE, TPICHandler } from "../../../../../shared-util/constant"
+import { debugAssert, isString, isUndefined } from "../../../../../shared-util/assert"
+import { getRealPath } from "../../util/qingkuai"
 
 export function attachRefreshDiagnostic() {
     server.onNotification<RefreshDiagnosticParams>(
@@ -22,12 +25,8 @@ export function attachRefreshDiagnostic() {
 }
 
 export function attachGetDiagnostic() {
-    server.onRequest<string, TSDiagnostic[]>(TPICHandler.GetDiagnostic, fileName => {
-        const project = projectService.getDefaultProjectForFile(
-            ts.server.toNormalizedPath(fileName),
-            false
-        )!
-        const languageService = project.getLanguageService()
+    server.onRequest<RealPath, TSDiagnostic[]>(TPICHandler.GetDiagnostic, fileName => {
+        const languageService = getDefaultLanguageServiceByFileName(fileName)!
         const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
         const oriDiagnostics = Array.from(qingkuaiDiagnostics.get(fileName) || [])
 
@@ -49,7 +48,7 @@ export function attachGetDiagnostic() {
                 const res: TSDiagnosticRelatedInformation = {
                     start: ri.start || 0,
                     length: ri.length || 0,
-                    filePath: ri.file!.fileName,
+                    filePath: getRealPath(ri.file!.fileName),
                     message: formatDiagnosticMessage(ri.messageText)
                 }
 
@@ -90,7 +89,7 @@ function formatDiagnosticMessage(mt: string | DiagnosticMessageChain, indentLeve
     const indent = " ".repeat(indentLevel * 2)
 
     const eliminate = (s: string) => {
-        return s.replace(" Did you mean '__c__'?", "")
+        return s.replace(` Did you mean '${INTER_NAMESPACE}'?`, "")
     }
 
     if (isString(mt)) {

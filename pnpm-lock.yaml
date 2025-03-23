@@ -35,8 +35,8 @@ importers:
         specifier: ^1.0.9
         version: 1.0.9
       qingkuai:
-        specifier: ^1.0.6
-        version: 1.0.6
+        specifier: ^1.0.8
+        version: 1.0.8
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -64,6 +64,9 @@ importers:
       vscode-languageserver-textdocument:
         specifier: ^1.0.12
         version: 1.0.12
+      vscode-uri:
+        specifier: ^3.1.0
+        version: 3.1.0
 
   packages/language-server: {}
 
@@ -78,8 +81,8 @@ importers:
         specifier: ^1.0.9
         version: 1.0.9
       qingkuai:
-        specifier: ^1.0.6
-        version: 1.0.6
+        specifier: ^1.0.8
+        version: 1.0.8
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
         version: link:../typescript-plugin
@@ -676,8 +679,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.6:
-    resolution: {integrity: sha512-3dbE3XUaZoDrlsZGX9XQmiftYBWwLyPU8LJxFoUNrMDNuGqVnkTIw9t9APwCBJxmM1VYQJQjeqRsMie1YIw7/w==}
+  qingkuai@1.0.8:
+    resolution: {integrity: sha512-8AYJkCj5W0usUUdFofcVbO3KNhqd0Pa0dRsyWxwl2cHrBo7oDP2+7Uc3ODFJ3m/7PDd5U+CHedrkFmEtIQXhww==}
     engines: {node: '>=14'}
 
   resolve-pkg-maps@1.0.0:
@@ -1374,11 +1377,11 @@ snapshots:
   prettier-plugin-qingkuai@1.0.9:
     dependencies:
       prettier: 3.5.3
-      qingkuai: 1.0.6
+      qingkuai: 1.0.8
 
   prettier@3.5.3: {}
 
-  qingkuai@1.0.6:
+  qingkuai@1.0.8:
     dependencies:
       '@babel/parser': 7.26.10
       '@jridgewell/sourcemap-codec': 1.5.0

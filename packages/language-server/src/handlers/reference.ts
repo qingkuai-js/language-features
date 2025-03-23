@@ -5,9 +5,11 @@ import type {
 import type { ReferenceHandler } from "../types/handlers"
 import type { Location } from "vscode-languageserver/node"
 
+import { URI } from "vscode-uri"
 import { documents, tpic } from "../state"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
+import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { filePathToComponentName } from "../../../../shared-util/qingkuai"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 import { EXPORT_DEFAULT_OFFSET, TPICHandler } from "../../../../shared-util/constant"
@@ -62,7 +64,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     return references.map(item => {
         return {
             range: item.range,
-            uri: `file://${item.fileName}`
+            uri: URI.file(item.fileName).toString()
         } satisfies Location
     })
 }
@@ -73,7 +75,7 @@ export async function findSlotReferences(
     componentTag: string
 ) {
     const filteredReferences = references.filter(item => {
-        return item.fileName.endsWith(".qk")
+        return isQingkuaiFileName(item.fileName)
     })
     if (filteredReferences.length === 0) {
         return null
@@ -81,7 +83,7 @@ export async function findSlotReferences(
 
     const result: Location[] = []
     for (const fileName of new Set(filteredReferences.map(r => r.fileName))) {
-        const uri = `file://${fileName}`
+        const uri = URI.file(fileName).toString()
         const cr = await getCompileRes(ensureGetTextDocument(uri))
         walk(cr.templateNodes, node => {
             if (node.parent?.componentTag === componentTag) {

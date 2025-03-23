@@ -160,15 +160,14 @@
         "directory": "packages/vscode-extension"
     },
     "scripts": {
-        "publish": "vsce publish --no-dependencies",
-        "vsce:ls": "npm run vsce:pre && vsce ls && vsce:post",
-        "vsce:package": "npm run vsce:pre && vsce package && npm run vsce:post",
-        "vsce:publish": "npm run vsce:pre && vsce publish && npm run vsce:post",
         "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
-        "vsce:pre": "rimraf node_modules ../typescript-plugin/node_modules && npm install && cd ../typescript-plugin && npm install",
-        "vsce:post": "rimraf node_modules ../typescript-plugin/node_modules package-lock.json ../typescript-plugin/package-lock.json && pnpm install",
         "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
-        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json"
+        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json",
+        "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
+        "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
+        "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
+        "vsce:pre": "rimraf node_modules ../typescript-plugin/node_modules && npm install && cd ../typescript-plugin && npm install",
+        "vsce:post": "rimraf node_modules ../typescript-plugin/node_modules package-lock.json ../typescript-plugin/package-lock.json && pnpm install"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0"
@@ -176,7 +175,7 @@
     "dependencies": {
         "prettier": "^3.5.2",
         "prettier-plugin-qingkuai": "^1.0.9",
-        "qingkuai": "^1.0.6",
+        "qingkuai": "^1.0.8",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }

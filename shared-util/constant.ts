@@ -13,9 +13,25 @@ export const DEFAULT_RANGE: Range = {
     end: DEFAULT_POSITION
 }
 
+export const DEFAULT_RANGE_WITH_CONTENT = {
+    ...DEFAULT_RANGE,
+    contextStart: DEFAULT_POSITION,
+    contentEnd: DEFAULT_POSITION
+}
+
+export const INTER_NAMESPACE = "__c__"
 export const EXPORT_DEFAULT_OFFSET = 21
-export const TS_TYPE_DECLARATION_LEN = 119
-export const JS_TYPE_DECLARATION_LEN = 114
+export const TS_REFS_DECLARATION_LEN = 27
+export const JS_REFS_DECLARATION_LEN = 32
+export const TS_PROPS_DECLARATION_LEN = 28
+export const JS_PROPS_DECLARATION_LEN = 33
+export const TS_TYPE_DECLARATION_LEN = 149
+export const JS_TYPE_DECLARATION_LEN = 144
+
+export enum GlobalTypeIdentifier {
+    Ref = "Refs",
+    Prop = "Props"
+}
 
 export enum TPICHandler {
     HoverTip = "hoverTip",
@@ -30,7 +46,6 @@ export enum TPICHandler {
     GetCompletion = "getCompletion",
     UpdateSnapshot = "updateSnapshot",
     FindDefinition = "findDefinition",
-    Retransmission = "retransmission",
     DidOpen = "didOpenQingkuaiDocument",
     RenameFile = "getEditsForFileRename",
     DidClose = "didCloseQingkuaiDocument",
@@ -41,6 +56,7 @@ export enum TPICHandler {
     WaitForTSCommand = "waitForTypescriptCommand",
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",
+    Retransmission = "retransmissionToQingkuaiLanguageServer",
     InfferedProjectAsTypescript = "InfferedLanguageServerProjectAsTypescript"
 }
 
@@ -56,3 +72,9 @@ export enum LSHandler {
     CleanLanguageConfigCache = "qingkuai/cleanConfigurationCache",
     Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer"
 }
+
+export const GLOBAL_TYPE_IDNTIFIERS = new Set<string>([
+    GlobalTypeIdentifier.Ref,
+    GlobalTypeIdentifier.Prop
+])
+export const GLOBAL_BUILTIN_VARS = new Set(["props", "refs"])

@@ -31,7 +31,7 @@ export const KEY_RELATED_EVENT_MODIFIERS = new Set([
 ])
 
 export const MAYBE_INVALID_COMPLETION_LABELS = new Set([
-    "get",
+    "symbol",
     "Receiver",
     "GetKVPair",
     "GetResolve",

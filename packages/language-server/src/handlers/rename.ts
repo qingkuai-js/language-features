@@ -4,15 +4,15 @@ import type { CachedCompileResultItem } from "../types/service"
 import type { PrepareRename, RenameHandler } from "../types/handlers"
 import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
-import { pathToFileURL } from "url"
+import { URI } from "vscode-uri"
 import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
 import { ensureGetTextDocument } from "./document"
 import { TextEdit } from "vscode-languageserver/node"
+import { TPICHandler } from "../../../../shared-util/constant"
 import { documents, isTestingEnv, tpic, waittingCommands } from "../state"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { TPICHandler } from "../../../../shared-util/constant"
 
 export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
     const document = documents.get(textDocument.uri)
@@ -140,7 +140,7 @@ async function doScriptBlockRename(
     }
 
     for (const item of locations) {
-        const uri = pathToFileURL(item.fileName || "").toString()
+        const uri = URI.file(item.fileName).toString()
         const existing = textEdits[uri] || (textEdits[uri] = [])
         let newText = (item.prefix || "") + newName + (item.suffix || "")
         if (item.loc) {

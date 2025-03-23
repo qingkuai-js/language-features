@@ -9,7 +9,7 @@ import {
 import { server, ts } from "../state"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
-import { getSourceIndex, ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
+import { getSourceIndex, ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../util/qingkuai"
 
 export function attachPrepareRename() {
     server.onRequest<TPICCommonRequestParams, NumNum>(
@@ -54,10 +54,8 @@ export function attachRename() {
 
             renameLocations.forEach(item => {
                 const { start, length } = item.textSpan
-                const locationItem: RenameLocationItem = {
-                    fileName: item.fileName
-                }
-
+                const realPath = getRealPath(item.fileName)
+                const locationItem: RenameLocationItem = { fileName: realPath }
                 if (item.prefixText) {
                     locationItem.prefix = item.prefixText
                 }
@@ -66,11 +64,11 @@ export function attachRename() {
                 }
 
                 if (isQingkuaiFileName(item.fileName)) {
-                    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(item.fileName)
+                    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(realPath)
                     const sourceEnd = getSourceIndex(qingkuaiSnapshot, start + length, true)
                     const sourceStart = getSourceIndex(qingkuaiSnapshot, start)
+                    const existing = existringMap.get(realPath) || new Set()
                     const existringKey = `${sourceStart},${sourceEnd}`
-                    const existing = existringMap.get(item.fileName) || new Set()
                     if (
                         !sourceEnd ||
                         !sourceStart ||
@@ -81,7 +79,7 @@ export function attachRename() {
                         return
                     }
                     existing.add(existringKey)
-                    existringMap.set(item.fileName, existing)
+                    existringMap.set(realPath, existing)
                     locationItem.range = [sourceStart, sourceEnd]
                 } else {
                     const sourceFile = getDefaultSourceFileByFileName(item.fileName)

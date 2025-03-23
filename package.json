@@ -16,7 +16,7 @@
         "@vscode/emmet-helper": "^2.11.0",
         "prettier": "^3.5.2",
         "prettier-plugin-qingkuai": "^1.0.9",
-        "qingkuai": "^1.0.6",
+        "qingkuai": "^1.0.8",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
         "rollup-plugin-esbuild": "^6.2.1",
@@ -25,7 +25,8 @@
         "vscode-jsonrpc": "^8.2.1",
         "vscode-languageclient": "^9.0.1",
         "vscode-languageserver": "^9.0.1",
-        "vscode-languageserver-textdocument": "^1.0.12"
+        "vscode-languageserver-textdocument": "^1.0.12",
+        "vscode-uri": "^3.1.0"
     },
     "pnpm": {
         "patchedDependencies": {

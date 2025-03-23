@@ -5,6 +5,7 @@ import type {
     RenameFileResult
 } from "../../../../types/communication"
 
+import { URI } from "vscode-uri"
 import { TextEdit } from "vscode-languageserver/node"
 import { connection, tpic, tpicConnectedPromise } from "../state"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
@@ -20,7 +21,7 @@ export async function renameFile(params: RenameFileParams) {
         params
     )
     for (const item of res) {
-        workspaceEdit.changes![`file://${item.fileName}`] = item.changes.map(change => {
+        workspaceEdit.changes![URI.file(item.fileName).toString()] = item.changes.map(change => {
             return TextEdit.replace(change.range, change.newText)
         })
     }

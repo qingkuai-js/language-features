@@ -4,24 +4,23 @@ import type { QingKuaiSnapShot } from "../snapshot"
 import { existsSync } from "node:fs"
 import { dirname, extname, resolve } from "node:path"
 import { HAS_BEEN_PROXIED_BY_QINGKUAI } from "../constant"
-import { ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
 import { getConfigByFileName } from "../server/configuration/method"
 import { projectService, resolvedQingkuaiModule, ts } from "../state"
 import { initialEditQingkuaiFileSnapshot } from "../server/content/method"
+import { ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../util/qingkuai"
 import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../../shared-util/assert"
 
 export function proxyGetScriptKind(languageServiceHost: TS.LanguageServiceHost) {
-    const getScriptKind = languageServiceHost.getScriptKind
+    const getScriptKind = languageServiceHost.getScriptKind?.bind(languageServiceHost)
     if (isUndefined(getScriptKind) || (getScriptKind as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
         return
     }
 
     languageServiceHost.getScriptKind = fileName => {
         if (!isQingkuaiFileName(fileName)) {
-            return getScriptKind.call(languageServiceHost, fileName)
+            return getScriptKind(fileName)
         }
-
-        return ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
+        return ensureGetSnapshotOfQingkuaiFile(getRealPath(fileName)).scriptKind
     }
 
     // @ts-expect-error: attach supplementary property
@@ -38,7 +37,7 @@ export function proxyGetScriptVersion(languageServiceHost: TS.LanguageServiceHos
         if (!isQingkuaiFileName(fileName)) {
             return getScriptVersion.call(languageServiceHost, fileName)
         }
-        return ensureGetSnapshotOfQingkuaiFile(fileName).version.toString()
+        return ensureGetSnapshotOfQingkuaiFile(getRealPath(fileName)).version.toString()
     }
 
     // @ts-expect-error: attach supplementary property
@@ -56,7 +55,7 @@ export function proxyGetScriptSnapshot(project: TS.server.Project) {
             return getScriptSnapshot.call(project, fileName)
         }
 
-        if (!existsSync(fileName)) {
+        if (!existsSync(getRealPath(fileName))) {
             return undefined
         }
 
@@ -65,8 +64,10 @@ export function proxyGetScriptSnapshot(project: TS.server.Project) {
             false
         )
         scriptInfo?.attachToProject(project)
-        initialEditQingkuaiFileSnapshot(fileName)
-        return ensureGetSnapshotOfQingkuaiFile(fileName)
+
+        const realPath = getRealPath(fileName)
+        initialEditQingkuaiFileSnapshot(realPath)
+        return ensureGetSnapshotOfQingkuaiFile(realPath)
     }
 
     // @ts-expect-error: attach supplementary property
@@ -85,6 +86,7 @@ export function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageS
     }
 
     languageServiceHost.resolveModuleNameLiterals = (moduleLiterals, containingFile, ...rest) => {
+        const containingFileRealPath = getRealPath(containingFile)
         const originalRet = resolveModuleLiterals.call(
             languageServiceHost,
             moduleLiterals,
@@ -92,8 +94,8 @@ export function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageS
             ...rest
         )
         const qingkuaiModules = new Set<string>()
-        const curDir = dirname(containingFile)
-        const config = getConfigByFileName(containingFile)
+        const curDir = dirname(containingFileRealPath)
+        const config = getConfigByFileName(containingFileRealPath)
 
         const ret = originalRet.map((item, index) => {
             const moduleText = moduleLiterals[index].text
@@ -124,16 +126,16 @@ export function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageS
             return {
                 ...item,
                 resolvedModule: {
-                    resolvedFileName: modulePath,
                     isExternalLibraryImport: false,
                     resolvedUsingTsExtension: false,
-                    extension: isTS ? ".ts" : ".js"
+                    extension: isTS ? ".ts" : ".js",
+                    resolvedFileName: ts.server.toNormalizedPath(modulePath)
                 },
                 failedLookupLocations: undefined
             }
         })
         if (qingkuaiModules.size) {
-            resolvedQingkuaiModule.set(containingFile, qingkuaiModules)
+            resolvedQingkuaiModule.set(containingFileRealPath, qingkuaiModules)
         }
         return ret
     }

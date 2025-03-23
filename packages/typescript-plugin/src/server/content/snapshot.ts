@@ -3,6 +3,7 @@ import type {
     ComponentIdentifierInfo
 } from "../../../../../types/communication"
 import type TS from "typescript"
+import type { RealPath } from "../../../../../types/common"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { QingKuaiCommonMessage, QingKuaiDiagnostic } from "../../types"
 
@@ -11,7 +12,6 @@ import {
     isNumber,
     isString,
     isUndefined,
-    debugAssert,
     isQingkuaiFileName
 } from "../../../../../shared-util/assert"
 import {
@@ -23,8 +23,14 @@ import {
     resolvedQingkuaiModule
 } from "../../state"
 import {
+    INTER_NAMESPACE,
+    GlobalTypeIdentifier,
+    TS_REFS_DECLARATION_LEN,
+    JS_REFS_DECLARATION_LEN,
     JS_TYPE_DECLARATION_LEN,
-    TS_TYPE_DECLARATION_LEN
+    TS_TYPE_DECLARATION_LEN,
+    TS_PROPS_DECLARATION_LEN,
+    JS_PROPS_DECLARATION_LEN
 } from "../../../../../shared-util/constant"
 import {
     walk,
@@ -52,12 +58,12 @@ import { COMPILER_FUNCS } from "../../constant"
 import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { getConfigByFileName } from "../configuration/method"
-import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
+import { ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../../util/qingkuai"
 import { stringify, getRelativePathWithStartDot } from "../../../../../shared-util/sundry"
 
 export function updateQingkuaiSnapshot(
-    fileName: string,
+    fileName: RealPath,
     content: string,
     itos: number[],
     slotInfo: SlotInfo,
@@ -150,8 +156,6 @@ export function updateQingkuaiSnapshot(
 
     const project = getDefaultProjectByFileName(fileName)!
     const program = getProgramByProject(project)!
-    debugAssert(program)
-
     const sourceFile = program.getSourceFile(fileName)
     const typeChecker = program.getTypeChecker()
 
@@ -163,7 +167,7 @@ export function updateQingkuaiSnapshot(
         if (
             ts.isBinaryExpression(node) &&
             storedTypes.has(node.right.pos) &&
-            node.left.getText() === "__c__.Receiver" &&
+            node.left.getText() === INTER_NAMESPACE + ".Receiver" &&
             node.operatorToken.kind === ts.SyntaxKind.EqualsToken
         ) {
             const type = typeChecker.getTypeAtLocation(node.right)
@@ -425,18 +429,24 @@ export function updateQingkuaiSnapshot(
     })
 
     // 如果全局类型标识符已被声明，则将中间代码中的默认声明（never）部分用空白字符填充
-    if (existingGlobalType.has("Props")) {
+    if (existingGlobalType.has(GlobalTypeIdentifier.Ref)) {
         if (isTS) {
-            eliminateContent(typeRefStatementLen, 14)
+            eliminateContent(
+                typeRefStatementLen + TS_PROPS_DECLARATION_LEN,
+                TS_REFS_DECLARATION_LEN + 2
+            )
         } else {
-            eliminateContent(typeRefStatementLen + 3, 18)
+            eliminateContent(
+                typeRefStatementLen + JS_PROPS_DECLARATION_LEN + 1,
+                JS_REFS_DECLARATION_LEN
+            )
         }
     }
-    if (existingGlobalType.has("Refs")) {
+    if (existingGlobalType.has(GlobalTypeIdentifier.Prop)) {
         if (isTS) {
-            eliminateContent(typeRefStatementLen + 14, 12)
+            eliminateContent(typeRefStatementLen, TS_PROPS_DECLARATION_LEN)
         } else {
-            eliminateContent(typeRefStatementLen + 22, 17)
+            eliminateContent(typeRefStatementLen + 3, JS_PROPS_DECLARATION_LEN)
         }
     }
 
@@ -454,25 +464,29 @@ export function updateQingkuaiSnapshot(
     }, "")
 
     // 为中间代码添加全局类型声明及默认导出语句
-    if (!isTS) {
+    if (isTS) {
         content += `export default class ${componentName} {
-            /**
-             * @param {Props} _
-             * @param {Refs} __
-             * @param {{${slotType}}} __
-             */
-            constructor(_, __, ___){}
+            constructor(
+                _: ${GlobalTypeIdentifier.Prop},
+                __: ${GlobalTypeIdentifier.Ref},
+                ___: {${slotType}}
+            ){}
         }`
     } else {
         content += `export default class ${componentName} {
-            constructor(_: Props, __: Refs, ___: {${slotType}}){}
+            /**
+             * @param {${GlobalTypeIdentifier.Prop}} _
+             * @param {${GlobalTypeIdentifier.Ref}} __
+             * @param {{${slotType}}} __
+             */
+            constructor(_, __, ___){}
         }`
     }
 
     project.getFileNames().forEach(normalizedPath => {
         if (
-            normalizedPath !== fileName &&
-            normalizedPath.endsWith(".qk") &&
+            isQingkuaiFileName(normalizedPath) &&
+            normalizedPath !== fileName.toString() &&
             !importedQingkuaiFileNames.has(normalizedPath)
         ) {
             const relativePath = getRelativePathWithStartDot(dirPath, normalizedPath)
@@ -503,7 +517,7 @@ function getCommonMessage<K extends keyof QingKuaiCommonMessage>(
 }
 
 function getComponentSlotNames(componentFileName: string) {
-    return Object.keys(snapshotCache.get(componentFileName)!.slotInfo)
+    return Object.keys(snapshotCache.get(getRealPath(componentFileName))!.slotInfo)
 }
 
 // 动态修改qk文件的脚本类型
@@ -563,7 +577,7 @@ function getComponentAttributes(componentFileName: string) {
                     name: property.name,
                     kind: name.slice(0, -1),
                     type: typeChecker.typeToString(propertyType),
-                    isEvent: name === "Props" && isEventType(propertyType)
+                    isEvent: name === GlobalTypeIdentifier.Prop && isEventType(propertyType)
                 })
             })
         }

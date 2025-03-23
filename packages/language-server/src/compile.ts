@@ -4,6 +4,7 @@ import type {
     GetClientConfigParams,
     GetClientConfigResult
 } from "../../../types/communication"
+import type { RealPath } from "../../../types/common"
 import type { CachedCompileResultItem } from "./types/service"
 import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
@@ -19,6 +20,7 @@ import {
     JS_TYPE_DECLARATION_LEN,
     TS_TYPE_DECLARATION_LEN
 } from "../../../shared-util/constant"
+import { URI } from "vscode-uri"
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { compile, PositionFlag } from "qingkuai/compiler"
@@ -55,8 +57,8 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     })
     const getOffset = document.offsetAt.bind(document)
     const isTS = compileRes.inputDescriptor.script.isTS
-    const filePath = isTestingEnv ? document.uri : fileURLToPath(document.uri)
     const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
+    const filePath = (isTestingEnv ? document.uri : URI.parse(document.uri).fsPath) as RealPath
 
     // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
     // 如果未传入结束索引，返回的范围固定指向开始位置（Position）
@@ -193,7 +195,7 @@ export async function getCompileResByPath(path: string) {
     }
 
     const document = TextDocument.create(
-        `file://${path}`,
+        URI.file(path).toString(),
         "qingkuai",
         1,
         readFileSync(path, "utf-8")

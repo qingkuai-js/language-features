@@ -87,6 +87,7 @@ export function attachGetCompletion() {
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
         TPICHandler.ResolveCompletionItem,
         ({ fileName, entryName, pos, ori, source }) => {
+            const normalizedPath = ts.server.toNormalizedPath(fileName)
             const preferences = getUserPreferencesByFileName(fileName)
             const formatSettings = getFormatCodeSettingsByFileName(fileName)
             const languageService = getDefaultLanguageServiceByFileName(fileName)
@@ -115,7 +116,7 @@ export function attachGetCompletion() {
                         hasRemainingCommandOrEdits = true
                     }
                     action.changes.forEach(change => {
-                        if (change.fileName === fileName) {
+                        if (change.fileName === normalizedPath) {
                             textEdits.push(
                                 ...change.textChanges.map(item => {
                                     return {

@@ -6,12 +6,13 @@ import type {
 import type TS from "typescript"
 import type { Range } from "vscode-languageserver"
 
+import { getRealPath } from "../util/qingkuai"
 import { server, session, ts } from "../state"
 import { findNodeAtPosition } from "../util/ast"
-import { TPICHandler } from "../../../../shared-util/constant"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { filePathToComponentName } from "../../../../shared-util/qingkuai"
+import { GLOBAL_TYPE_IDNTIFIERS, TPICHandler } from "../../../../shared-util/constant"
 import { getDefaultSourceFileByFileName, getFileReferences } from "../util/typescript"
 
 export function attachFindReference() {
@@ -23,7 +24,7 @@ export function attachFindReference() {
             const node = findNodeAtPosition(sourceFile, pos)
             if (
                 node?.parent &&
-                ["Refs", "Props"].includes(node.getText()) &&
+                GLOBAL_TYPE_IDNTIFIERS.has(node.getText()) &&
                 (ts.isTypeAliasDeclaration(node.parent) || ts.isInterfaceDeclaration(node.parent))
             ) {
                 for (const refFileName of getFileReferences(fileName)) {
@@ -31,14 +32,15 @@ export function attachFindReference() {
                         continue
                     }
 
+                    const refRealPath = getRealPath(refFileName)
                     const ranges: Range[] = await server.sendRequest<FindComponentTagRangeParams>(
                         TPICHandler.FindComponentTagRange,
                         {
-                            fileName: refFileName,
+                            fileName: refRealPath,
                             componentTag: filePathToComponentName(fileName)
                         }
                     )
-                    ranges.forEach(range => result.push({ range, fileName: refFileName }))
+                    ranges.forEach(range => result.push({ range, fileName: refRealPath }))
                 }
             }
 
@@ -63,7 +65,7 @@ export function attachFindReference() {
             })
             res.refs.forEach((item: TS.server.protocol.FileSpan) => {
                 result.push({
-                    fileName: item.file,
+                    fileName: getRealPath(item.file),
                     range: convertProtocolTextSpanToRange(item)
                 })
             })

@@ -1,4 +1,5 @@
 import type { ScriptKind } from "typescript"
+import type { RealPath } from "../../../../../types/common"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 
 import { QingKuaiSnapShot } from "../../snapshot"
@@ -6,7 +7,7 @@ import { projectService, snapshotCache } from "../../state"
 
 // 增量更新qk文件ScriptInfo的内容
 export function editQingKuaiScriptInfo(
-    fileName: string,
+    fileName: RealPath,
     content: string,
     itos: number[],
     slotInfo: SlotInfo,
