@@ -7,10 +7,14 @@ import type {
 
 import { URI } from "vscode-uri"
 import { TextEdit } from "vscode-languageserver/node"
-import { connection, tpic, tpicConnectedPromise } from "../state"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
+import { connection, limitedScriptLanguageFeatures, tpic, tpicConnectedPromise } from "../state"
 
 export async function renameFile(params: RenameFileParams) {
+    if (limitedScriptLanguageFeatures) {
+        return null
+    }
+
     if (tpicConnectedPromise.state === "pending") {
         await tpicConnectedPromise
     }

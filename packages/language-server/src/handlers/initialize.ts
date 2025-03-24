@@ -1,4 +1,4 @@
-import { connectSuccess } from "../messages"
+import { Messages } from "../messages"
 import { Logger, setState } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
@@ -9,7 +9,7 @@ export const initialize: InitializeHandler = params => {
         isTestingEnv: false
     })
 
-    Logger.info(connectSuccess)
+    Logger.info(Messages.LanguageServerStarted)
 
     return {
         capabilities: {

@@ -1,14 +1,14 @@
 import type { SignatureHelpHandler } from "../types/handlers"
 import type { SignatureHelp } from "vscode-languageserver/node"
 
-import { documents, tpic } from "../state"
 import { getCompileRes } from "../compile"
-import { TPICCommonRequestParams } from "../../../../types/communication"
 import { TPICHandler } from "../../../../shared-util/constant"
+import { TPICCommonRequestParams } from "../../../../types/communication"
+import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 
 export const signatureHelp: SignatureHelpHandler = async (params, token) => {
     const document = documents.get(params.textDocument.uri)
-    if (!document || token.isCancellationRequested) {
+    if (!document || limitedScriptLanguageFeatures || token.isCancellationRequested) {
         return null
     }
 

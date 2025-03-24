@@ -4,13 +4,19 @@ import type { CachedCompileResultItem } from "../types/service"
 import type { PrepareRename, RenameHandler } from "../types/handlers"
 import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
+import {
+    tpic,
+    documents,
+    isTestingEnv,
+    waittingCommands,
+    limitedScriptLanguageFeatures
+} from "../state"
 import { URI } from "vscode-uri"
 import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
 import { ensureGetTextDocument } from "./document"
 import { TextEdit } from "vscode-languageserver/node"
 import { TPICHandler } from "../../../../shared-util/constant"
-import { documents, isTestingEnv, tpic, waittingCommands } from "../state"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
@@ -122,7 +128,7 @@ async function doScriptBlockRename(
     newName: string,
     isInterOffset = false
 ) {
-    if (isTestingEnv) {
+    if (isTestingEnv || limitedScriptLanguageFeatures) {
         return null
     }
 

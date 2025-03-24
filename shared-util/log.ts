@@ -11,15 +11,15 @@ class Logger {
     }
 
     info(msg: string) {
-        this.target.info(`${this.time} [Info] ${msg}`)
+        this.target.write(`${this.time} [Info] ${msg}`)
     }
 
     warn(msg: string) {
-        this.target.warn(`${this.time} [Warning] ${msg}`)
+        this.target.write(`${this.time} [Warning] ${msg}`)
     }
 
     error(msg: string) {
-        this.target.warn(`\n${this.time} [Error] ${msg}\n`)
+        this.target.write(`\n${this.time} [Error] ${msg}\n`)
     }
 }
 

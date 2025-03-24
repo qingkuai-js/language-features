@@ -11,15 +11,15 @@ import type { CachedCompileResultItem, CodeLensConfig, CodeLensData } from "../t
 import { URI } from "vscode-uri"
 import { findSlotReferences } from "./reference"
 import { getCompileRes, walk } from "../compile"
-import { connection, documents, tpic } from "../state"
 import { escapeRegExp } from "../../../../shared-util/sundry"
 import { ShowReferencesCommandParams } from "../../../../types/command"
+import { connection, documents, limitedScriptLanguageFeatures, tpic } from "../state"
 import { filePathToComponentName, isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { EXPORT_DEFAULT_OFFSET, LSHandler, TPICHandler } from "../../../../shared-util/constant"
 
 export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const document = documents.get(textDocument.uri)
-    if (!document) {
+    if (!document || limitedScriptLanguageFeatures) {
         return null
     }
 

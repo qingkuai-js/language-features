@@ -10,10 +10,22 @@ import type {
     NumNumArray,
     PrettierConfiguration,
     TSClientConfiguration,
-    ExtensionConfiguration
+    ExtensionConfiguration,
+    QingkuaiConfigurationWithDir
 } from "./common"
 import type { SlotInfo } from "qingkuai/compiler"
 import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
+
+export interface ConfigPluginParms {
+    sockPath: string
+    triggerFileName: string
+    configurations: QingkuaiConfigurationWithDir[]
+}
+
+export interface ConnectToTsServerParams {
+    sockPath: string
+    isReconnect: boolean
+}
 
 export interface RefreshDiagnosticParams {
     byFileName: string

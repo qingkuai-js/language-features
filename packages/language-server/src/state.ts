@@ -11,7 +11,11 @@ import { TextDocuments, ProposedFeatures, createConnection } from "vscode-langua
 export let isTestingEnv = true
 export let typeRefStatement = ""
 export let projectKind = ProjectKind.JS
+export let limitedScriptLanguageFeatures = true
 export let tpic = defaultParticipant // Typescript Plugin Icp Client
+
+// 一个等待tpic连接连接成功才会解决的Promise，首次编译qk代码之前会等待tpic连接成功
+export let [tpicConnectedPromise, tpicConnectedResolver] = generatePromiseAndResolver()
 
 export function setState(options: SetStateOptions) {
     if (options.tpic) {
@@ -26,16 +30,16 @@ export function setState(options: SetStateOptions) {
     if (!isUndefined(options.typeRefStatement)) {
         typeRefStatement = options.typeRefStatement
     }
+    if (!isUndefined(options.limitedScriptLanguageFeatures)) {
+        limitedScriptLanguageFeatures = options.limitedScriptLanguageFeatures
+    }
 }
 
-export const Logger = createLogger(console)
 export const documents = new TextDocuments(TextDocument)
 export const waittingCommands = new Map<string, string>()
+export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()
 export const connection = createConnection(ProposedFeatures.all)
-
-// 一个等待tpic连接连接成功才会解决的Promise，首次编译qk代码之前会等待tpic连接成功
-export const [tpicConnectedPromise, tpicConnectedResolver] = generatePromiseAndResolver()
 
 connection.listen()
 documents.listen(connection)

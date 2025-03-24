@@ -6,17 +6,17 @@ import type { ReferenceHandler } from "../types/handlers"
 import type { Location } from "vscode-languageserver/node"
 
 import { URI } from "vscode-uri"
-import { documents, tpic } from "../state"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 import { filePathToComponentName } from "../../../../shared-util/qingkuai"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 import { EXPORT_DEFAULT_OFFSET, TPICHandler } from "../../../../shared-util/constant"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)
-    if (!document || token.isCancellationRequested) {
+    if (!document || token.isCancellationRequested || limitedScriptLanguageFeatures) {
         return null
     }
 
@@ -77,7 +77,7 @@ export async function findSlotReferences(
     const filteredReferences = references.filter(item => {
         return isQingkuaiFileName(item.fileName)
     })
-    if (filteredReferences.length === 0) {
+    if (filteredReferences.length === 0 || limitedScriptLanguageFeatures) {
         return null
     }
 

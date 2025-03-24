@@ -9,6 +9,16 @@ import type { CachedCompileResultItem } from "./types/service"
 import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
 import {
+    tpic,
+    setState,
+    connection,
+    isTestingEnv,
+    typeRefStatement,
+    tpicConnectedPromise,
+    tpicConnectedResolver,
+    limitedScriptLanguageFeatures
+} from "./state"
+import {
     compressItos,
     isIndexesInvalid,
     compressPosition,
@@ -26,7 +36,6 @@ import { readFileSync } from "node:fs"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
 
 // 文档配置项，键为TextDocument.uri（string）
 const clientConfigCache = new Map<string, GetClientConfigResult>()
@@ -138,7 +147,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
 
     // 将编译结果同步到typescript-plugin-qingkuai
     async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
-        if (!isTestingEnv && synchronize && !cr.isSynchronized) {
+        if (!isTestingEnv && synchronize && !cr.isSynchronized && !limitedScriptLanguageFeatures) {
             cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>(
                 TPICHandler.UpdateSnapshot,
                 {
@@ -167,7 +176,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
             )
             updatePrettierConfigurationForQingkuaiFile(res)
 
-            if (res.typescriptConfig) {
+            if (!limitedScriptLanguageFeatures && res.typescriptConfig) {
                 updateTypescriptConfigurationForQingkuaiFile(res)
                 tpic.sendNotification<ConfigureFileParams>(TPICHandler.ConfigureFile, {
                     fileName: cr.filePath,
@@ -193,6 +202,19 @@ export function walk<T>(nodes: TemplateNode[], cb: (node: TemplateNode) => T | u
     }
 }
 
+// 清空已缓存的配置内容
+export function cleanConfigCache() {
+    clientConfigCache.clear()
+}
+
+// 标记javascript/typescript语言功能受限
+export function disableScriptLanguageFeatures() {
+    setState({
+        limitedScriptLanguageFeatures: true
+    })
+    tpicConnectedResolver()
+}
+
 // 获取未打开的文档的编译结果
 export async function getCompileResByPath(path: string) {
     const cache = compileResultCache.get(path)
@@ -207,11 +229,6 @@ export async function getCompileResByPath(path: string) {
         readFileSync(path, "utf-8")
     )
     return await getCompileRes(document, false)
-}
-
-// 清空已缓存的配置内容
-export function cleanConfigCache() {
-    clientConfigCache.clear()
 }
 
 function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResult) {

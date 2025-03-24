@@ -18,6 +18,21 @@
         "workspaceContains:**/*.qk"
     ],
     "contributes": {
+        "commands": [
+            {
+                "command": "qingkuai.restartLanguageServer",
+                "title": "Restart Language Server",
+                "category": "Qingkuai"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "qingkuai.restartLanguageServer",
+                    "when": "resourceFilename =~ /\\.(?:qk|qingkuairc)/"
+                }
+            ]
+        },
         "languages": [
             {
                 "id": "qingkuai-emmet",

@@ -6,12 +6,12 @@ import type { ImplementationHandler } from "../types/handlers"
 
 import { URI } from "vscode-uri"
 import { getCompileRes } from "../compile"
-import { documents, tpic } from "../state"
 import { TPICHandler } from "../../../../shared-util/constant"
+import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 
 export const findImplementation: ImplementationHandler = async ({ textDocument, position }) => {
     const document = documents.get(textDocument.uri)
-    if (!document) {
+    if (!document || limitedScriptLanguageFeatures) {
         return null
     }
 

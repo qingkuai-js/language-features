@@ -2,7 +2,6 @@ import { connection } from "./state"
 import { hover } from "./handlers/hover"
 import { format } from "./handlers/format"
 import { connectTsServer } from "./client"
-import { cleanConfigCache } from "./compile"
 import { initialize } from "./handlers/initialize"
 import { renameFile } from "./handlers/rename-file"
 import { findReference } from "./handlers/reference"
@@ -16,6 +15,7 @@ import { codeLens, resolveCodeLens } from "./handlers/code-lens"
 import { complete, resolveCompletion } from "./handlers/complete"
 import { attachRetransmissionHandlers } from "./handlers/retransmission"
 import { findDefinition, findTypeDefinition } from "./handlers/definition"
+import { cleanConfigCache, disableScriptLanguageFeatures } from "./compile"
 
 attachDocumentHandlers()
 attachRetransmissionHandlers()
@@ -38,6 +38,7 @@ connection.onCompletionResolve(resolveCompletion)
 // 自定义事件处理
 connection.onRequest("ping", _ => "pong")
 connection.onNotification(LSHandler.RenameFile, renameFile)
-connection.onRequest(LSHandler.LanguageClientCreated, connectTsServer)
+connection.onRequest(LSHandler.ConnectToTsServer, connectTsServer)
 connection.onNotification(LSHandler.PublishDiagnostic, publishDiagnostics)
 connection.onNotification(LSHandler.CleanLanguageConfigCache, cleanConfigCache)
+connection.onNotification(LSHandler.disableScriptLanguageFeatures, disableScriptLanguageFeatures)

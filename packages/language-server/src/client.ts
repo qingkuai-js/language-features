@@ -1,50 +1,59 @@
-import { ProjectKind } from "./constants"
+import type {
+    ConnectToTsServerParams,
+    FindComponentTagRangeParams
+} from "../../../types/communication"
 import type { Range } from "vscode-languageserver"
-import type { FindComponentTagRangeParams } from "../../../types/communication"
 
-import {
-    communicationWayInfo,
-    connectTsPluginServerFailed,
-    connectTsPluginServerSuccess
-} from "./messages"
 import { URI } from "vscode-uri"
+import { ProjectKind } from "./constants"
 import { getCompileRes, walk } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
 import { TPICHandler } from "../../../shared-util/constant"
 import { ensureGetTextDocument } from "./handlers/document"
-import { connectTo } from "../../../shared-util/ipc/participant"
+import { Messages, communicationWayInfo } from "./messages"
 import { tpic, Logger, tpicConnectedResolver, setState } from "./state"
+import { generatePromiseAndResolver, sleep } from "../../../shared-util/sundry"
+import { connectTo, defaultParticipant } from "../../../shared-util/ipc/participant"
 
-let connectTimes = 0
-
-// vscode扩展加载完毕处理，连接到typescript-plugin-qingkuai的ipc服务器，并将客户端句柄
-// 记录到tpic，后续qingkuai语言服务器将通过tpic与vscode内置的typescript语言服务进行通信
-export async function connectTsServer(sockPath: string) {
-    try {
-        const client = await connectTo(sockPath)
-
+// 连接到typescript-plugin-qingkuai创建的ipc服务器，并将客户端句柄记录到tpic，后续qingkuai语言服务器将通过tpic与ts服务器进行通信
+export async function connectTsServer(params: ConnectToTsServerParams) {
+    if (params.isReconnect) {
+        const promiseAndResolver = generatePromiseAndResolver()
         setState({
-            tpic: client
+            typeRefStatement: "",
+            tpic: defaultParticipant,
+            projectKind: ProjectKind.JS,
+            tpicConnectedPromise: promiseAndResolver[0],
+            tpicConnectedResolver: promiseAndResolver[1]
         })
-        attachClientHandlers()
+        Logger.info(Messages.WaitForReconnectTsServer)
+    }
 
-        // 获取qingkuai类型检查器文件的本机绝对路径，qingkuai编译器在生成typescript中间代码时需要它
-        setState({
-            typeRefStatement: await client.sendRequest("getQingkuaiDtsReferenceStatement", "")
-        })
+    for (let connectTimes = 0; connectTimes < 60; connectTimes++) {
+        try {
+            const client = await connectTo(params.sockPath)
+            setState({
+                tpic: client,
+                limitedScriptLanguageFeatures: false
+            })
+            attachClientHandlers()
 
-        tpicConnectedResolver()
-        Logger.info(connectTsPluginServerSuccess)
-        Logger.info(communicationWayInfo(sockPath))
-    } catch {
-        if (connectTimes++ < 60) {
-            setTimeout(() => {
-                connectTsServer(sockPath)
-            }, 1000)
-        } else {
-            Logger.error(connectTsPluginServerFailed)
+            // 获取qingkuai类型三斜线引用指令语句，qingkuai编译器在生成typescript中间代码时需要它
+            setState({
+                typeRefStatement: await client.sendRequest(TPICHandler.GetTypeRefStatement, "")
+            })
+
+            tpicConnectedResolver()
+            Logger.info(Messages.ConnectTsServerPluginSuccess)
+            Logger.info(communicationWayInfo(params.sockPath))
+            return null
+        } catch {
+            await sleep(1000)
+            continue
         }
     }
+
+    Logger.error(Messages.ConnectTsServerPluginFailed)
 }
 
 function attachClientHandlers() {

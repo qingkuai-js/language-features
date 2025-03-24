@@ -4,7 +4,14 @@ import type { Options as PrettierOptions } from "prettier"
 
 export type NumNumArray = NumNum[]
 export type NumNum = FixedArray<number, 2>
-export type RealPath = string & { _: never }
+
+export type RealPath = string & {
+    _: never
+}
+
+export type PromiseWithState<T = any> = Promise<T> & {
+    state: "fullfilled" | "pending"
+}
 
 export interface OpenFileParams {
     path: string

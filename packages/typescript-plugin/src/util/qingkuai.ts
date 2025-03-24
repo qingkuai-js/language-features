@@ -10,9 +10,9 @@ import {
 } from "../state"
 import { QingKuaiSnapShot } from "../snapshot"
 import { existsSync, readFileSync } from "node:fs"
-import { debugAssert } from "../../../../shared-util/assert"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
 import { compile, PositionFlag, PositionFlagKeys } from "qingkuai/compiler"
+import { debugAssert, isQingkuaiFileName } from "../../../../shared-util/assert"
 
 // 通过中间代码索引换取源码索引
 export function getSourceIndex(
@@ -110,7 +110,7 @@ export function getRealPath(fileName: string) {
 }
 
 export function recordRealPath(realFileName: string) {
-    if (!tsFileNameToRealPath.has(realFileName)) {
+    if (isQingkuaiFileName(realFileName) && !tsFileNameToRealPath.has(realFileName)) {
         const normalizedPath = ts.server.toNormalizedPath(realFileName).toString()
         if (normalizedPath !== realFileName) {
             tsFileNameToRealPath.set(normalizedPath, realFileName as RealPath)

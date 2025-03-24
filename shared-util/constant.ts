@@ -56,6 +56,7 @@ export enum TPICHandler {
     WaitForTSCommand = "waitForTypescriptCommand",
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",
+    GetTypeRefStatement = "getQingkuaiDtsReferenceStatement",
     Retransmission = "retransmissionToQingkuaiLanguageServer",
     InfferedProjectAsTypescript = "InfferedLanguageServerProjectAsTypescript"
 }
@@ -67,10 +68,11 @@ export enum LSHandler {
     GetClientConfig = "qingkuai/getClientConfig",
     PublishDiagnostic = "qingkuai/publishDiagnostics",
     ApplyWorkspaceEdit = "qingkuai/applyWorkspaceEdit",
+    ConnectToTsServer = "qingkuai/languageClientCreated",
     GetLanguageConfig = "qingkuai/getClientLanguageConfig",
-    LanguageClientCreated = "qingkuai/languageClientCreated",
     CleanLanguageConfigCache = "qingkuai/cleanConfigurationCache",
-    Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer"
+    Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer",
+    disableScriptLanguageFeatures = "qingkuai/disableScriptLanguageFeatures"
 }
 
 export const GLOBAL_TYPE_IDNTIFIERS = new Set<string>([

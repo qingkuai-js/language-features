@@ -15,6 +15,14 @@ import { Position, Range, CompletionItem, Command } from "vscode-languageserver/
 import type { CompletionHandler, ResolveCompletionHandler } from "../types/handlers"
 
 import {
+    tpic,
+    documents,
+    connection,
+    projectKind,
+    isTestingEnv,
+    limitedScriptLanguageFeatures
+} from "../state"
+import {
     slotTagData,
     findTagData,
     htmlElements,
@@ -59,7 +67,6 @@ import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
-import { connection, documents, isTestingEnv, projectKind, tpic } from "../state"
 import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
 
@@ -363,7 +370,11 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
 }
 
 export const resolveCompletion: ResolveCompletionHandler = async (item, token) => {
-    if (token.isCancellationRequested || item.data?._fromTS !== true) {
+    if (
+        limitedScriptLanguageFeatures ||
+        token.isCancellationRequested ||
+        item.data?._fromTS !== true
+    ) {
         return item
     }
 
@@ -777,6 +788,10 @@ async function doScriptBlockComplete(
     currentNode: TemplateNode,
     offset: number
 ) {
+    if (limitedScriptLanguageFeatures) {
+        return null
+    }
+
     const { getRange, getSourceIndex } = cr
     const unsetTriggerCharacters = new Set<string>()
     const positionOfInterCode = cr.getInterIndex(offset)

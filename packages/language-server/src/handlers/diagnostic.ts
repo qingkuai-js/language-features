@@ -1,6 +1,14 @@
 import type { TSDiagnostic } from "../../../../types/communication"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver/node"
 
+import {
+    tpic,
+    documents,
+    connection,
+    isTestingEnv,
+    waittingCommands,
+    limitedScriptLanguageFeatures
+} from "../state"
 import { URI } from "vscode-uri"
 import { stringifyRange } from "../util/vscode"
 import { badComponentAttrMessageRE } from "../regular"
@@ -10,7 +18,6 @@ import { getCompileRes, getCompileResByPath } from "../compile"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
-import { connection, documents, isTestingEnv, tpic, waittingCommands } from "../state"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -27,7 +34,7 @@ export const publishDiagnostics = debounce(
         const waittingForCommand = waittingCommands.get("diagnostic")
         const { messages, getRange, filePath, getSourceIndex, config } = cr
 
-        if (waittingForCommand) {
+        if (!limitedScriptLanguageFeatures && waittingForCommand) {
             await tpic.sendRequest(TPICHandler.WaitForTSCommand, waittingForCommand)
             waittingCommands.delete("diagnostic")
         }
@@ -56,10 +63,13 @@ export const publishDiagnostics = debounce(
         })
 
         // 处理javascript/typescript语言服务的诊断结果（通过请求ts插件的ipc服务器获取)
-        const tsDiagnostics = await tpic.sendRequest<string, TSDiagnostic[]>(
-            TPICHandler.GetDiagnostic,
-            filePath
-        )
+        let tsDiagnostics: TSDiagnostic[] = []
+        if (!limitedScriptLanguageFeatures) {
+            tsDiagnostics = await tpic.sendRequest<string, TSDiagnostic[]>(
+                TPICHandler.GetDiagnostic,
+                filePath
+            )
+        }
         for (const item of tsDiagnostics) {
             const tags: DiagnosticTag[] = []
             const ss = getSourceIndex(item.start)

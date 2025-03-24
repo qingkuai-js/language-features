@@ -1,4 +1,5 @@
 import type {
+    RealPath,
     TSFormattingOptions,
     TSFormatCodeSettings,
     QingkuaiConfiguration,
@@ -6,13 +7,13 @@ import type {
     QingkuaiConfigurationWithDir
 } from "../../../types/common"
 import type TS from "typescript"
-import type { LanguageClient } from "vscode-languageclient/node"
 import type { RetransmissionParams } from "../../../types/communication"
 
 import fs from "node:fs"
 import path from "node:path"
 import * as vscode from "vscode"
 import prettier from "prettier"
+import { client, limitedScriptLanguageFeatures } from "./state"
 import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util/assert"
 
@@ -33,7 +34,7 @@ export async function getInitQingkuaiConfig() {
                 if (!isUndefined(config)) {
                     configurations.push({
                         ...config,
-                        dir: folderPath
+                        dir: folderPath as RealPath
                     })
                 }
             }
@@ -42,39 +43,41 @@ export async function getInitQingkuaiConfig() {
     return configurations
 }
 
-// 向语言服务器发送清空配置缓存的通知
-export function notifyServerCleanConfigCache(client: LanguageClient) {
-    client.sendNotification(LSHandler.CleanLanguageConfigCache, null)
-}
-
 // 监听工作区范围内.qingkuairc配置文件的修改和删除事件
-export function startQingkuaiConfigWatcher(client: LanguageClient) {
-    const watcher = vscode.workspace.createFileSystemWatcher("**/.qingkuairc", true)
-    watcher.onDidChange(uri => {
-        notifyServerCleanConfigCache(client)
-        client.sendNotification(LSHandler.Retransmission, {
-            name: TPICHandler.UpdateConfig,
-            data: {
-                dir: path.dirname(uri.path),
-                ...loadQingkuaiConfig(uri.path)
-            }
-        } satisfies RetransmissionParams)
-    })
-    watcher.onDidDelete(uri => {
-        notifyServerCleanConfigCache(client)
-        client.sendNotification(LSHandler.Retransmission, {
-            name: TPICHandler.DeleteConfig,
-            data: path.dirname(uri.path)
-        } satisfies RetransmissionParams)
-    })
+export function startQingkuaiConfigWatcher() {
+    if (!limitedScriptLanguageFeatures) {
+        const watcher = vscode.workspace.createFileSystemWatcher("**/.qingkuairc", true)
+        watcher.onDidChange(uri => {
+            notifyServerCleanConfigCache()
+            client.sendNotification(LSHandler.Retransmission, {
+                name: TPICHandler.UpdateConfig,
+                data: {
+                    dir: path.dirname(uri.path),
+                    ...loadQingkuaiConfig(uri.path)
+                }
+            } satisfies RetransmissionParams)
+        })
+        watcher.onDidDelete(uri => {
+            notifyServerCleanConfigCache()
+            client.sendNotification(LSHandler.Retransmission, {
+                name: TPICHandler.DeleteConfig,
+                data: path.dirname(uri.path)
+            } satisfies RetransmissionParams)
+        })
+    }
 }
 
-export function startPrettierConfigWatcher(client: LanguageClient) {
+export function startPrettierConfigWatcher() {
     const watcher = vscode.workspace.createFileSystemWatcher(
         "**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}"
     )
-    watcher.onDidChange(() => notifyServerCleanConfigCache(client))
-    watcher.onDidDelete(() => notifyServerCleanConfigCache(client))
+    watcher.onDidChange(notifyServerCleanConfigCache)
+    watcher.onDidDelete(notifyServerCleanConfigCache)
+}
+
+// 向语言服务器发送清空配置缓存的通知
+export function notifyServerCleanConfigCache() {
+    client.sendNotification(LSHandler.CleanLanguageConfigCache, null)
 }
 
 export function getConfigTarget(config: vscode.WorkspaceConfiguration, section: string) {

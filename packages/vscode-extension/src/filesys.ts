@@ -3,40 +3,44 @@ import type {
     RetransmissionParams,
     RefreshDiagnosticParams
 } from "../../../types/communication"
-import type { LanguageClient } from "vscode-languageclient/node"
+import type { RealPath } from "../../../types/common"
 
 import * as vscode from "vscode"
 import { basename } from "node:path"
 import { getConfigTarget } from "./config"
+import { client, limitedScriptLanguageFeatures } from "./state"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 
-export async function attachFileSystemHandlers(client: LanguageClient) {
-    vscode.workspace.onDidRenameFiles(async ({ files }) => {
-        for (const { oldUri, newUri } of files) {
-            const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
-            if (!isQingkuaiFileName(oldPath) && !isQingkuaiFileName(newPath)) {
-                client.sendNotification(LSHandler.Retransmission, {
-                    name: TPICHandler.RefreshDiagnostic,
-                    data: {
-                        byFileName: "///fs",
-                        scriptKindChanged: false
-                    } satisfies RefreshDiagnosticParams
-                } satisfies RetransmissionParams)
-                return
-            }
+export async function attachFileSystemHandlers() {
+    if (!limitedScriptLanguageFeatures) {
+        vscode.workspace.onDidRenameFiles(async ({ files }) => {
+            for (const { oldUri, newUri } of files) {
+                const oldPath = oldUri.fsPath as RealPath
+                const newPath = newUri.fsPath as RealPath
+                if (!isQingkuaiFileName(oldPath) && !isQingkuaiFileName(newPath)) {
+                    client.sendNotification(LSHandler.Retransmission, {
+                        name: TPICHandler.RefreshDiagnostic,
+                        data: {
+                            byFileName: "///fs",
+                            scriptKindChanged: false
+                        } satisfies RefreshDiagnosticParams
+                    } satisfies RetransmissionParams)
+                    return
+                }
 
-            if (await shouldUpdateImports(client, newUri)) {
-                client.sendNotification(LSHandler.RenameFile, {
-                    oldPath,
-                    newPath
-                } satisfies RenameFileParams)
+                if (await shouldUpdateImports(newUri)) {
+                    client.sendNotification(LSHandler.RenameFile, {
+                        oldPath,
+                        newPath
+                    } satisfies RenameFileParams)
+                }
             }
-        }
-    })
+        })
+    }
 }
 
-async function shouldUpdateImports(client: LanguageClient, uri: vscode.Uri) {
+async function shouldUpdateImports(uri: vscode.Uri) {
     enum ConfigValue {
         never = "never",
         always = "always"

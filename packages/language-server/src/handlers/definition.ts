@@ -13,16 +13,13 @@ import { resolve } from "node:path"
 import { getCompileRes, walk } from "../compile"
 import { NumNum } from "../../../../types/common"
 import { ensureGetTextDocument } from "./document"
-import { connection, documents, tpic } from "../state"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { connection, documents, limitedScriptLanguageFeatures, tpic } from "../state"
 
-export const findDefinition: DefinitionHandler = async (
-    { textDocument, position, workDoneToken },
-    token
-) => {
+export const findDefinition: DefinitionHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)
-    if (!document || token.isCancellationRequested) {
+    if (limitedScriptLanguageFeatures || !document || token.isCancellationRequested) {
         return null
     }
 
@@ -125,7 +122,7 @@ export const findTypeDefinition: TypeDefinitionHandler = async (
     token
 ) => {
     const document = documents.get(textDocument.uri)
-    if (!document || token.isCancellationRequested) {
+    if (!document || limitedScriptLanguageFeatures || token.isCancellationRequested) {
         return null
     }
 

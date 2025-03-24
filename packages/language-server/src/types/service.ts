@@ -3,10 +3,10 @@ import type {
     ComponentIdentifierInfo
 } from "../../../../types/communication"
 import type { ProjectKind } from "../constants"
-import type { RealPath } from "../../../../types/common"
 import type { Position, Range } from "vscode-languageserver"
 import type { IpcParticipant } from "../../../../shared-util/ipc/types"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
+import type { PromiseWithState, RealPath } from "../../../../types/common"
 
 export type CodeLensConfig = {
     referencesCodeLens: {
@@ -33,6 +33,9 @@ export type SetStateOptions = Partial<{
     isTestingEnv: boolean
     projectKind: ProjectKind
     typeRefStatement: string
+    tpicConnectedResolver: GeneralFunc
+    tpicConnectedPromise: PromiseWithState
+    limitedScriptLanguageFeatures: boolean
 }>
 
 export type CachedCompileResultItem = CompileResult & {

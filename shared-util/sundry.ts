@@ -1,7 +1,14 @@
-import path from "node:path"
+import type { PromiseWithState } from "../types/common"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
-// JSON.stringify别名
+import path from "node:path"
+
+export function sleep(ms: number) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms)
+    })
+}
+
 export function stringify(v: any) {
     return JSON.stringify(v)
 }
@@ -18,9 +25,7 @@ export function escapeRegExp(text: string) {
 // 返回的Promise是经过包装的，可以访问其state属性获取它当前所处的状态
 export function generatePromiseAndResolver() {
     let resolver!: GeneralFunc
-    const promise: Promise<any> & {
-        state: "fullfilled" | "pending"
-    } = new Promise(resolve => {
+    const promise: PromiseWithState = new Promise(resolve => {
         resolver = (value: any) => {
             resolve(value)
             promise.state = "fullfilled"

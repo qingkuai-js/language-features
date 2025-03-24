@@ -4,7 +4,6 @@ import type {
     GetConfigurationParams,
     ApplyWorkspaceEditParams
 } from "../../../types/communication"
-import type { LanguageClient } from "vscode-languageclient/node"
 
 import {
     getConfigTarget,
@@ -17,8 +16,9 @@ import fs from "node:fs"
 import * as vscode from "vscode"
 import { LSHandler } from "../../../shared-util/constant"
 import { isUndefined } from "../../../shared-util/assert"
+import { client } from "./state"
 
-export function attachCustomHandlers(client: LanguageClient) {
+export function attachCustomHandlers() {
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
     vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
