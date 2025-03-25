@@ -615,7 +615,24 @@ function doAttributeNameComplete(
     const ret: CompletionItem[] = []
     const isEvent = startChar === "@"
     const isDynamic = startChar === "!"
+    const existingEvents = new Set<string>()
+    const existingAttributes = new Set<string>()
+    const existingDirectives = new Set<string>()
     const isDynamicOrEvent = startChar && (isEvent || isDynamic)
+
+    node.attributes.forEach(({ key }) => {
+        switch (key.raw[0]) {
+            case "@":
+                existingEvents.add(key.raw.slice(1))
+                break
+            case "#":
+                existingDirectives.add(key.raw.slice(1))
+                break
+            default:
+                existingAttributes.add(key.raw.slice(+/^[!&]/.test(key.raw)))
+                break
+        }
+    })
 
     // 获取属性名补全建议的附加属性（标签属性名和全局属性名通用方法），此方法会根据条件添加
     // 插入范围属性，选中该建议后是否再次触发补全建议的command属性以及插入格式属性（Snippet）
@@ -645,8 +662,18 @@ function doAttributeNameComplete(
     }
 
     if (startChar !== "#") {
+        const isDuplicate = (name: string) => {
+            if (!isEvent) {
+                return existingAttributes.has(name)
+            }
+            return existingEvents.has(name.replace(/^on/, ""))
+        }
+
         // 查找指定标签的所有属性名作为补全建议
         findTagData(node.tag)?.attributes.forEach(attribute => {
+            if (isDuplicate(attribute.name)) {
+                return
+            }
             if (!isEvent || attribute.name.startsWith("on")) {
                 ret.push({
                     ...getExtra(attribute),
@@ -658,6 +685,9 @@ function doAttributeNameComplete(
 
         // 全局属性的所有项都会被作为属性名补全建议
         htmlElements.globalAttributes.forEach(attribute => {
+            if (isDuplicate(attribute.name)) {
+                return
+            }
             if (!isEvent || attribute.name.startsWith("on")) {
                 ret.push({
                     ...getExtra(attribute),
@@ -686,14 +716,13 @@ function doAttributeNameComplete(
         const unsetDirectives: string[] = []
         const sortTextMap: Record<string, number> = {}
         const prevExistingDirectives = new Set<string>()
-        const currentExistingDirectives = new Set<string>()
+
+        const isOneOfTheseExisting = (...names: string[]) => {
+            return names.some(n => existingDirectives.has(n))
+        }
 
         const setSortTextMap = (map: Record<string, number>) => {
             Object.assign(sortTextMap, map)
-        }
-
-        const isExisting = (...names: string[]) => {
-            return names.some(n => currentExistingDirectives.has(n))
         }
 
         // 处理指令补全建议优先级，规则如下：
@@ -717,18 +746,14 @@ function doAttributeNameComplete(
         }
 
         // 移除不能共存的指令的补全建议
-        for (const attr of node.attributes) {
-            const attrKey = attr.key.raw
-            if (attrKey.startsWith("#")) {
-                currentExistingDirectives.add(attrKey.slice(1))
-            }
+        const resolveRelated = ["then", "catch"]
+        const conditionRelated = ["if", "elif", "else"]
+        if (isOneOfTheseExisting(...conditionRelated)) {
+            unsetDirectives.push(...conditionRelated)
         }
-        if (isExisting("if", "elif", "else")) {
-            unsetDirectives.push("if", "elif", "else")
-        }
-        if (isExisting("then", "catch")) {
-            unsetDirectives.push("then", "catch")
-        } else if (currentExistingDirectives.has("await")) {
+        if (isOneOfTheseExisting(...resolveRelated)) {
+            unsetDirectives.push(...resolveRelated)
+        } else if (existingDirectives.has("await")) {
             setSortTextMap({ then: 1, catch: 2 })
         }
 
@@ -737,8 +762,8 @@ function doAttributeNameComplete(
         // 用户有没有输入#前缀都会返回指令名补全建议，例如：#f和f都可以得到for指令的补全建议
         htmlDirectives.forEach(item => {
             if (
+                !existingDirectives.has(item.name) &&
                 !unsetDirectives.includes(item.name) &&
-                !currentExistingDirectives.has(item.name) &&
                 (item.name !== "slot" || node.parent?.componentTag)
             ) {
                 const label = "#" + item.name
