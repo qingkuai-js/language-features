@@ -60,6 +60,7 @@ export function attachUpdateSnapshot() {
         }
 
         if (scriptKindChanged) {
+            projectService.getScriptInfo(fileName)?.detachAllProjects()
             projectService.openClientFile(fileName)
             if (!isFileOpening(fileName)) {
                 projectService.closeClientFile(fileName)

@@ -1,17 +1,28 @@
+import type { GeneralFunc } from "../../../types/util"
 import type { OpenFileParams } from "../../../types/common"
 
 import fs from "node:fs"
 import * as vscode from "vscode"
+import { client } from "./state"
 import { ShowReferencesCommandParams } from "../../../types/command"
+import { runAll } from "../../../shared-util/sundry"
 
 export class QingkuaiCommands {
     public showReferences = "qingkuai.showReferences"
     public openFileByPath = "qingkuai.openFileByFilePath"
     public viewServerLogs = "qingkuai.viewLanguageServerLogs"
+    public restartLanguageServer = "qingkuai.restartLanguageServer"
 
-    constructor(outputChannel: vscode.OutputChannel) {
+    constructor(outputChannel: vscode.OutputChannel, activeLanguageServer: GeneralFunc) {
         vscode.commands.registerCommand(this.viewServerLogs, () => {
             outputChannel.show()
+        })
+
+        vscode.commands.registerCommand(this.restartLanguageServer, async () => {
+            if (client.isRunning()) {
+                await client.stop()
+                runAll([restartTsServer, activeLanguageServer])
+            }
         })
 
         vscode.commands.registerCommand(
@@ -61,4 +72,8 @@ export class QingkuaiCommands {
             }
         )
     }
+}
+
+function restartTsServer() {
+    vscode.commands.executeCommand("typescript.restartTsServer")
 }

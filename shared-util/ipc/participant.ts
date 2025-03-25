@@ -18,6 +18,7 @@ import { createMessageBuffer, createBufferReader } from "./buffer"
 
 export const defaultParticipant: IpcParticipant = {
     close: NOOP,
+    onClose: NOOP,
     onRequest: NOOP,
     sendRequest: NOOP,
     onNotification: NOOP,
@@ -87,6 +88,10 @@ function newParticipant(
         })
     })
 
+    function onClose(callback: () => void) {
+        socket.on("close", callback)
+    }
+
     function send(name: string, data: any, id = "") {
         socket.write(createMessageBuffer(data, name, id))
     }
@@ -96,6 +101,7 @@ function newParticipant(
     }
 
     return {
+        onClose,
         onRequest,
         sendRequest,
         onNotification,

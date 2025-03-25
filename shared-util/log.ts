@@ -3,23 +3,36 @@ import type { LoggerTarget } from "../types/util"
 import util from "node:util"
 import { formatDate } from "./time"
 
+enum LogKind {
+    None,
+    Info,
+    Warn,
+    Error
+}
+
 class Logger {
+    private kindOfLastLog = LogKind.None
+
     constructor(private target: LoggerTarget) {}
 
     private get time() {
         return formatDate(new Date())
     }
 
-    info(msg: string) {
-        this.target.write(`${this.time} [Info] ${msg}`)
+    info(msg: string, line = false) {
+        this.target.write(`${line ? "\n" : ""}${this.time} [Info] ${msg}`)
+        this.kindOfLastLog = LogKind.Info
     }
 
-    warn(msg: string) {
-        this.target.write(`${this.time} [Warning] ${msg}`)
+    warn(msg: string, line = false) {
+        this.target.write(`${line ? "\n" : ""}${this.time} [Warning] ${msg}`)
+        this.kindOfLastLog = LogKind.Warn
     }
 
-    error(msg: string) {
-        this.target.write(`\n${this.time} [Error] ${msg}\n`)
+    error(msg: string, line = false) {
+        const pre = line || this.kindOfLastLog !== LogKind.Error ? "\n" : ""
+        this.target.write(`${pre}${this.time} [Error] ${msg}\n`)
+        this.kindOfLastLog = LogKind.Error
     }
 }
 

@@ -1,22 +1,3 @@
-export const SELF_CLOSING_TAGS = new Set([
-    "br",
-    "img",
-    "input",
-    "meta",
-    "link",
-    "hr",
-    "base",
-    "area",
-    "col",
-    "keygen",
-    "menuitem",
-    "embed",
-    "param",
-    "source",
-    "track",
-    "wbr"
-])
-
 export const KEY_RELATED_EVENT_MODIFIERS = new Set([
     "enter",
     "tab",

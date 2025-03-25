@@ -4,6 +4,7 @@ import type { Options as PrettierOptions } from "prettier"
 
 export type NumNumArray = NumNum[]
 export type NumNum = FixedArray<number, 2>
+export type FuncWithCallBack = (cb: () => void) => void
 
 export type RealPath = string & {
     _: never

@@ -1,4 +1,5 @@
 import type {
+    RetransmissionParams,
     ConnectToTsServerParams,
     FindComponentTagRangeParams
 } from "../../../types/communication"
@@ -8,11 +9,11 @@ import { URI } from "vscode-uri"
 import { ProjectKind } from "./constants"
 import { getCompileRes, walk } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
-import { TPICHandler } from "../../../shared-util/constant"
 import { ensureGetTextDocument } from "./handlers/document"
 import { Messages, communicationWayInfo } from "./messages"
-import { tpic, Logger, tpicConnectedResolver, setState } from "./state"
+import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { generatePromiseAndResolver, sleep } from "../../../shared-util/sundry"
+import { tpic, Logger, tpicConnectedResolver, setState, connection } from "./state"
 import { connectTo, defaultParticipant } from "../../../shared-util/ipc/participant"
 
 // 连接到typescript-plugin-qingkuai创建的ipc服务器，并将客户端句柄记录到tpic，后续qingkuai语言服务器将通过tpic与ts服务器进行通信
@@ -26,7 +27,7 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
             tpicConnectedPromise: promiseAndResolver[0],
             tpicConnectedResolver: promiseAndResolver[1]
         })
-        Logger.info(Messages.WaitForReconnectTsServer)
+        Logger.info(Messages.WaitForReconnectTsServer, true)
     }
 
     for (let connectTimes = 0; connectTimes < 60; connectTimes++) {
@@ -37,6 +38,7 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
                 limitedScriptLanguageFeatures: false
             })
             attachClientHandlers()
+            attachRetransmissionHandlers()
 
             // 获取qingkuai类型三斜线引用指令语句，qingkuai编译器在生成typescript中间代码时需要它
             setState({
@@ -75,6 +77,9 @@ function attachClientHandlers() {
         publishDiagnostics(URI.file(fileName).toString())
     })
 
+    // ts server进程退出，多为typescript.restartTsServer命令调用
+    tpic.onClose(() => connection.sendNotification(LSHandler.TsServerIsKilled, null))
+
     tpic.onRequest<FindComponentTagRangeParams>(
         TPICHandler.FindComponentTagRange,
         async ({ fileName, componentTag }) => {
@@ -89,4 +94,15 @@ function attachClientHandlers() {
             return ranges
         }
     )
+}
+
+function attachRetransmissionHandlers() {
+    // 事件转发，将tpic接受到的请求转发给vscode扩展客户端
+    tpic.onRequest(TPICHandler.Retransmission, async (params: RetransmissionParams) => {
+        return await connection.sendRequest(params.name, params.data)
+    })
+
+    tpic.onNotification(TPICHandler.Retransmission, async (params: RetransmissionParams) => {
+        connection.sendNotification(params.name, params.data)
+    })
 }

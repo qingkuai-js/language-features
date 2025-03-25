@@ -66,6 +66,7 @@ export enum LSHandler {
     RenameFile = "qingkuai/renameFile",
     InsertSnippet = "qingkuai/insertSnippet",
     GetClientConfig = "qingkuai/getClientConfig",
+    TsServerIsKilled = "qingkuai/tsServerIsKilled",
     PublishDiagnostic = "qingkuai/publishDiagnostics",
     ApplyWorkspaceEdit = "qingkuai/applyWorkspaceEdit",
     ConnectToTsServer = "qingkuai/languageClientCreated",

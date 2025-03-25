@@ -4,6 +4,7 @@ import type {
     GetConfigurationParams,
     ApplyWorkspaceEditParams
 } from "../../../types/communication"
+import type { ConfigTsServerPluginFunc } from "./types"
 
 import {
     getConfigTarget,
@@ -13,12 +14,12 @@ import {
     notifyServerCleanConfigCache
 } from "./config"
 import fs from "node:fs"
+import { client } from "./state"
 import * as vscode from "vscode"
 import { LSHandler } from "../../../shared-util/constant"
 import { isUndefined } from "../../../shared-util/assert"
-import { client } from "./state"
 
-export function attachCustomHandlers() {
+export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginFunc) {
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
     vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
@@ -34,8 +35,13 @@ export function attachCustomHandlers() {
             affectsConfiguration("typescript") ||
             affectsConfiguration("javascript")
         ) {
-            notifyServerCleanConfigCache(client)
+            notifyServerCleanConfigCache()
         }
+    })
+
+    // ts server服务器进程退出通知，尝试重连
+    client.onNotification(LSHandler.TsServerIsKilled, async () => {
+        client.isRunning() && configTsServerPlugin(true).then(c => c())
     })
 
     // 插入片段通知，qingkuai语言服务器需要向当前编辑窗口插入文本片段时会发送此通知

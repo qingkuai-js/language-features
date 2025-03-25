@@ -2,6 +2,7 @@ import type { FormatHandler } from "../types/handlers"
 
 import path from "node:path"
 import prettier from "prettier"
+import stripAnsi from "strip-ansi"
 import { getCompileRes } from "../compile"
 import { documents, Logger } from "../state"
 
@@ -34,6 +35,11 @@ export const format: FormatHandler = async ({ textDocument }, token) => {
             }
         ]
     } catch (e: any) {
-        Logger.error("Formatting failure with an fatal error: " + e.message || "")
+        if (!e.message) {
+            Logger.error(
+                "Fatal error encountered while formatting document(no related information)"
+            )
+        }
+        Logger.error("Fatala error encountered while formatting document: " + stripAnsi(e.message))
     }
 }

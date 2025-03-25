@@ -1,4 +1,5 @@
 import type { GeneralFunc } from "../../types/util"
+import type { FuncWithCallBack } from "../../types/common"
 
 export type Message = {
     body: any
@@ -8,6 +9,7 @@ export type Message = {
 
 export type IpcParticipant = {
     close: () => void
+    onClose: FuncWithCallBack
     onRequest: OnRequestMethod
     sendRequest: SendRequestMethod
     onNotification: OnNotificationMethod
