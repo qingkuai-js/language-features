@@ -40,6 +40,7 @@ import {
 } from "../../util/ast"
 import {
     isEventType,
+    forEachProject,
     getProgramByProject,
     getDefaultProgramByFileName,
     getDefaultProjectByFileName
@@ -483,21 +484,23 @@ export function updateQingkuaiSnapshot(
         }`
     }
 
-    project.getFileNames().forEach(normalizedPath => {
-        if (
-            isQingkuaiFileName(normalizedPath) &&
-            normalizedPath !== fileName.toString() &&
-            !importedQingkuaiFileNames.has(normalizedPath)
-        ) {
-            const relativePath = getRelativePathWithStartDot(dirPath, normalizedPath)
-            componentIdentifierInfos.push({
-                imported: false,
-                attributes: [],
-                relativePath: relativePath,
-                name: filePathToComponentName(normalizedPath),
-                slotNams: getComponentSlotNames(normalizedPath)
-            })
-        }
+    forEachProject(project => {
+        project.getFileNames().forEach(normalizedPath => {
+            if (
+                isQingkuaiFileName(normalizedPath) &&
+                normalizedPath !== fileName.toString() &&
+                !importedQingkuaiFileNames.has(normalizedPath)
+            ) {
+                const relativePath = getRelativePathWithStartDot(dirPath, normalizedPath)
+                componentIdentifierInfos.push({
+                    imported: false,
+                    attributes: [],
+                    relativePath: relativePath,
+                    name: filePathToComponentName(normalizedPath),
+                    slotNams: getComponentSlotNames(normalizedPath)
+                })
+            }
+        })
     })
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照

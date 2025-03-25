@@ -453,19 +453,21 @@ function doCustomTagComplete(
     const ret: CompletionItem[] = []
     const { source } = cr.inputDescriptor
     const emmetTagNameIndex = source.slice(0, offset).search(emmetTagNameRE)
-    const { config, getSourceIndex, builtInTypeDeclarationEndIndex, getRange } = cr
 
     if (emmetTagNameIndex !== -1) {
         const startWithLT = source[emmetTagNameIndex] === "<"
         const startWithSpace = /\s/.test(source[emmetTagNameIndex])
         const useKebab =
             source.slice(emmetTagNameIndex, offset).includes("-") ||
-            config.prettierConfig.componentTagFormatPreference === "kebab"
-        const range = getRange(emmetTagNameIndex + Number(startWithSpace || startWithLT), offset)
+            cr.config.prettierConfig.componentTagFormatPreference === "kebab"
+        const range = cr.getRange(emmetTagNameIndex + Number(startWithSpace || startWithLT), offset)
 
         // prettier-ignore
         if (isNull(node.parent)) {
             embeddedLangTags.forEach(({ name, description }) => {
+                if(/[jt]s$/.test(name) && cr.inputDescriptor.script.existing){
+                    return
+                }
                 ret.push({
                     label: name,
                     insertTextFormat: InsertTextFormat.Snippet,
@@ -497,12 +499,12 @@ function doCustomTagComplete(
                 if (scriptStartIndex !== -1) {
                     additionalTextEdits = [
                         {
-                            range: getRange(scriptStartIndex),
+                            range: cr.getRange(scriptStartIndex),
                             newText: formatImportStatement(
                                 `import ${item.name} from ${JSON.stringify(item.relativePath)}`,
                                 source,
                                 [scriptStartIndex, scriptStartIndex],
-                                config.prettierConfig
+                                cr.config.prettierConfig
                             )
                         }
                     ]
