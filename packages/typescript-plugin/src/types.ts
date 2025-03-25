@@ -2,8 +2,9 @@ import type TS from "typescript"
 import type { ORI_SOURCE_FILE } from "./constant"
 import type { QingKuaiSnapShot } from "./snapshot"
 import type { Diagnostic, SourceFile } from "typescript"
-import type { commonMessage, SlotInfo } from "qingkuai/compiler"
 import type { IpcParticipant } from "../../../shared-util/ipc/types"
+import type { commonMessage as runtimeCommonMessage } from "qingkuai"
+import type { commonMessage as compilerCommonMessage, SlotInfo } from "qingkuai/compiler"
 
 export interface QingKuaiFileInfo {
     offset: number
@@ -44,5 +45,6 @@ export type ConvertProtocolTextSpanWithContextVerifier = (
     itemKind: "start" | "end" | "contextStart" | "contextEnd"
 ) => boolean
 
-export type QingKuaiCommonMessage = typeof commonMessage
 export type QingKuaiDiagnostic = Omit<Diagnostic, "file">
+export type QingkuaiRuntimeCommonMessage = typeof runtimeCommonMessage
+export type QingkuaiCompilerCommonMessage = typeof compilerCommonMessage

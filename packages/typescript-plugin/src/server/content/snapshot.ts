@@ -2,10 +2,14 @@ import type {
     ComponentAttributeItem,
     ComponentIdentifierInfo
 } from "../../../../../types/communication"
+import type {
+    QingKuaiDiagnostic,
+    QingkuaiRuntimeCommonMessage,
+    QingkuaiCompilerCommonMessage
+} from "../../types"
 import type TS from "typescript"
 import type { RealPath } from "../../../../../types/common"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
-import type { QingKuaiCommonMessage, QingKuaiDiagnostic } from "../../types"
 
 import {
     isNull,
@@ -46,6 +50,11 @@ import {
     getDefaultProjectByFileName
 } from "../../util/typescript"
 import {
+    getRealPath,
+    isComponentIdentifier,
+    ensureGetSnapshotOfQingkuaiFile
+} from "../../util/qingkuai"
+import {
     endingInvalidStr,
     validIdentifierRE,
     reactCompilerFuncRE,
@@ -56,11 +65,11 @@ import {
 } from "../../regular"
 import path from "node:path"
 import { COMPILER_FUNCS } from "../../constant"
-import { commonMessage } from "qingkuai/compiler"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
 import { getConfigByFileName } from "../configuration/method"
+import { commonMessage as runtimeCommonMessage } from "qingkuai"
+import { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
-import { ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../../util/qingkuai"
 import { stringify, getRelativePathWithStartDot } from "../../../../../shared-util/sundry"
 
 export function updateQingkuaiSnapshot(
@@ -71,6 +80,7 @@ export function updateQingkuaiSnapshot(
     scriptKind: TS.ScriptKind,
     positions: ASTPositionWithFlag[]
 ): ComponentIdentifierInfo[] {
+    const contentArr = content.split("")
     const dirPath = path.dirname(fileName)
     const slotInfoKeys = Object.keys(slotInfo)
     const existingGlobalType = new Set<string>()
@@ -87,11 +97,11 @@ export function updateQingkuaiSnapshot(
     const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
     const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
 
-    const editScriptInfoCommon = (content: string) => {
+    const editScriptInfoCommon = () => {
         if (originalScriptKind !== scriptKind) {
             updateScriptKindOfQingkuaiFile(fileName, scriptKind)
         }
-        editQingKuaiScriptInfo(fileName, content, itos, slotInfo, scriptKind, positions)
+        editQingKuaiScriptInfo(fileName, contentArr.join(""), itos, slotInfo, scriptKind, positions)
     }
 
     // 标记已声明的全局类型标识符
@@ -109,7 +119,7 @@ export function updateQingkuaiSnapshot(
         start: number,
         length: number,
         category: TS.DiagnosticCategory,
-        message: ReturnType<typeof getCommonMessage>
+        message: ReturnType<typeof getCompilerCommonMessage>
     ) => {
         if (isUndefined(itos[start]) || itos[start] === -1) {
             return
@@ -125,13 +135,16 @@ export function updateQingkuaiSnapshot(
         })
     }
 
-    // prettier-ignore
     // 将中间代码的指定范围用空白字符替换（用于需要被移除的语句）
-    const eliminateContent = (start: number, length: number) => {
-        content = 
-            content.slice(0, start) +
-            " ".repeat(length) +
-            content.slice(start + length)
+    const eliminateContentByLength = (start: number, length: number) => {
+        for (let i = 0; i < length; i++) {
+            contentArr[start + i] = " "
+        }
+    }
+    const eliminateContentByRange = (start: number, end: number) => {
+        for (let i = start; i < end; i++) {
+            contentArr[i] = " "
+        }
     }
 
     // 获取节点文本的长度（不包含结尾的空白字符及分号）
@@ -152,7 +165,7 @@ export function updateQingkuaiSnapshot(
     })
 
     // 缓存自定义诊断信息并将中间代码更新到快照
-    editScriptInfoCommon(content)
+    editScriptInfoCommon()
     qingkuaiDiagnostics.set(fileName, diagnosticsCache)
 
     const project = getDefaultProjectByFileName(fileName)!
@@ -174,6 +187,24 @@ export function updateQingkuaiSnapshot(
             const type = typeChecker.getTypeAtLocation(node.right)
             const typeStr = typeChecker.typeToString(type)
             storedTypes.set(node.right.pos, typeStr)
+        }
+
+        // 擦除手动实例化组件的语句
+        if (
+            ts.isNewExpression(node) &&
+            ts.isIdentifier(node.expression) &&
+            isComponentIdentifier(fileName, node.expression, typeChecker)
+        ) {
+            eliminateContentByRange(node.getStart(), node.expression.getStart())
+            eliminateContentByRange(node.expression.getEnd(), node.getEnd())
+            contentArr[node.expression.getStart() - 1] = ";"
+            contentArr[node.getEnd() - 1] = ";"
+            recordQingkuaiDiagnostic(
+                node.getStart(),
+                getLength(node),
+                ts.DiagnosticCategory.Error,
+                getRuntimeCommonMessage("InstantiateComponentManually")
+            )
         }
 
         // 脚本类型为js时，检查是否通过JSDoc声明全局类型标识符
@@ -258,7 +289,7 @@ export function updateQingkuaiSnapshot(
                 node.getStart(),
                 getLength(node),
                 ts.DiagnosticCategory.Error,
-                getCommonMessage("IdentifierFormatIsNotAllowed", node.text)
+                getCompilerCommonMessage("IdentifierFormatIsNotAllowed", node.text)
             )
         }
 
@@ -274,10 +305,10 @@ export function updateQingkuaiSnapshot(
                 start,
                 length,
                 ts.DiagnosticCategory.Error,
-                getCommonMessage("BadExportRelatedStatement")
+                getCompilerCommonMessage("BadExportRelatedStatement")
             )
             if (ts.isExportAssignment(node)) {
-                eliminateContent(start, length)
+                eliminateContentByLength(start, length)
             }
         }
 
@@ -297,7 +328,7 @@ export function updateQingkuaiSnapshot(
                             node.name.getStart(),
                             getLength(node.name),
                             ts.DiagnosticCategory.Warning,
-                            getCommonMessage("IdentifierMaybeOverwritten", "$arg")
+                            getCompilerCommonMessage("IdentifierMaybeOverwritten", "$arg")
                         )
                     }
                 } else if (existingTopScopeIdentifierRE.test(identifierName)) {
@@ -306,7 +337,7 @@ export function updateQingkuaiSnapshot(
                         node.name.getStart(),
                         getLength(node.name),
                         ts.DiagnosticCategory.Error,
-                        getCommonMessage("RegisterExsitingIdentifierName", identifierName)
+                        getCompilerCommonMessage("RegisterExsitingIdentifierName", identifierName)
                     )
                 }
             }
@@ -329,7 +360,7 @@ export function updateQingkuaiSnapshot(
                     // 检查响应性声明相关编译器助手函数是否在非顶部作用域使用（编译致命错误）
                     recordQingkuaiDiagnostic(
                         ...commonDiagnosticArgs,
-                        getCommonMessage("ReactCompilerFuncNotInTopScope")
+                        getCompilerCommonMessage("ReactCompilerFuncNotInTopScope")
                     )
                 }
 
@@ -338,7 +369,7 @@ export function updateQingkuaiSnapshot(
                     // 检查编译器响应性声明相关助手函数是否未在变量定义语句中使用（编译致命错误）
                     recordQingkuaiDiagnostic(
                         ...commonDiagnosticArgs,
-                        getCommonMessage("ReactCompilerFuncWithoutVariableDeclaration")
+                        getCompilerCommonMessage("ReactCompilerFuncWithoutVariableDeclaration")
                     )
                 } else {
                     if (
@@ -354,7 +385,7 @@ export function updateQingkuaiSnapshot(
                             node.getStart(),
                             getLength(node),
                             ts.DiagnosticCategory.Error,
-                            getCommonMessage("DestructureReactFuncWithNoArg", funcName)
+                            getCompilerCommonMessage("DestructureReactFuncWithNoArg", funcName)
                         )
                     }
 
@@ -368,7 +399,7 @@ export function updateQingkuaiSnapshot(
                                 variableDeclarationNode.getStart(),
                                 getLength(variableDeclarationNode),
                                 ts.DiagnosticCategory.Warning,
-                                getCommonMessage("MixTwoSyntaxOfDerived")
+                                getCompilerCommonMessage("MixTwoSyntaxOfDerived")
                             )
                         } else {
                             // 检查是否混用$前缀标识符和非der函数（具有二义性）
@@ -376,7 +407,10 @@ export function updateQingkuaiSnapshot(
                                 variableDeclarationNode.getStart(),
                                 getLength(variableDeclarationNode),
                                 ts.DiagnosticCategory.Error,
-                                getCommonMessage("ConvenientDerivedWithOtherReactFunc", funcName)
+                                getCompilerCommonMessage(
+                                    "ConvenientDerivedWithOtherReactFunc",
+                                    funcName
+                                )
                             )
                         }
                     }
@@ -391,7 +425,7 @@ export function updateQingkuaiSnapshot(
                             node.getStart(),
                             getLength(node),
                             ts.DiagnosticCategory.Warning,
-                            getCommonMessage("RedundantArgsForCompilerFunc", funcName, 1)
+                            getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 1)
                         )
                     }
                     if (!isTS && funcName === "rea" && node.arguments.length > 2) {
@@ -399,7 +433,7 @@ export function updateQingkuaiSnapshot(
                             node.getStart(),
                             getLength(node),
                             ts.DiagnosticCategory.Warning,
-                            getCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
+                            getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
                         )
                     }
                 }
@@ -410,7 +444,7 @@ export function updateQingkuaiSnapshot(
                         node.getStart(),
                         getLength(node),
                         ts.DiagnosticCategory.Error,
-                        getCommonMessage(
+                        getCompilerCommonMessage(
                             "WatchCompilerFuncMissingArg",
                             funcName,
                             node.arguments.length
@@ -422,7 +456,7 @@ export function updateQingkuaiSnapshot(
                         node.getStart(),
                         getLength(node),
                         ts.DiagnosticCategory.Warning,
-                        getCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
+                        getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
                     )
                 }
             }
@@ -432,12 +466,12 @@ export function updateQingkuaiSnapshot(
     // 如果全局类型标识符已被声明，则将中间代码中的默认声明（never）部分用空白字符填充
     if (existingGlobalType.has(GlobalTypeIdentifier.Ref)) {
         if (isTS) {
-            eliminateContent(
+            eliminateContentByLength(
                 typeRefStatementLen + TS_PROPS_DECLARATION_LEN,
                 TS_REFS_DECLARATION_LEN + 2
             )
         } else {
-            eliminateContent(
+            eliminateContentByLength(
                 typeRefStatementLen + JS_PROPS_DECLARATION_LEN + 1,
                 JS_REFS_DECLARATION_LEN
             )
@@ -445,9 +479,9 @@ export function updateQingkuaiSnapshot(
     }
     if (existingGlobalType.has(GlobalTypeIdentifier.Prop)) {
         if (isTS) {
-            eliminateContent(typeRefStatementLen, TS_PROPS_DECLARATION_LEN)
+            eliminateContentByLength(typeRefStatementLen, TS_PROPS_DECLARATION_LEN)
         } else {
-            eliminateContent(typeRefStatementLen + 3, JS_PROPS_DECLARATION_LEN)
+            eliminateContentByLength(typeRefStatementLen + 3, JS_PROPS_DECLARATION_LEN)
         }
     }
 
@@ -466,22 +500,22 @@ export function updateQingkuaiSnapshot(
 
     // 为中间代码添加全局类型声明及默认导出语句
     if (isTS) {
-        content += `export default class ${componentName} {
+        contentArr.push(`export default class ${componentName} {
             constructor(
                 _: ${GlobalTypeIdentifier.Prop},
                 __: ${GlobalTypeIdentifier.Ref},
                 ___: {${slotType}}
             ){}
-        }`
+        }`)
     } else {
-        content += `export default class ${componentName} {
+        contentArr.push(`export default class ${componentName} {
             /**
              * @param {${GlobalTypeIdentifier.Prop}} _
              * @param {${GlobalTypeIdentifier.Ref}} __
              * @param {{${slotType}}} __
              */
             constructor(_, __, ___){}
-        }`
+        }`)
     }
 
     forEachProject(project => {
@@ -504,18 +538,30 @@ export function updateQingkuaiSnapshot(
     })
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
-    return editScriptInfoCommon(content), componentIdentifierInfos
+    return editScriptInfoCommon(), componentIdentifierInfos
 }
 
-// 获取commonMessage中的诊断信息
-function getCommonMessage<K extends keyof QingKuaiCommonMessage>(
+// 获取编译器commonMessage中的诊断信息
+function getCompilerCommonMessage<K extends keyof QingkuaiCompilerCommonMessage>(
     key: K,
-    ...args: Parameters<QingKuaiCommonMessage[K][1]>
+    ...args: Parameters<QingkuaiCompilerCommonMessage[K][1]>
 ) {
     return {
         // @ts-ignore
-        msg: commonMessage[key][1](...args),
-        code: commonMessage[key][0]
+        msg: compilerCommonMessage[key][1](...args),
+        code: compilerCommonMessage[key][0]
+    }
+}
+
+// 获取运行时commonMessage中的诊断信息
+function getRuntimeCommonMessage<K extends keyof QingkuaiRuntimeCommonMessage>(
+    key: K,
+    ...args: Parameters<QingkuaiRuntimeCommonMessage[K][1]>
+) {
+    return {
+        // @ts-ignore
+        msg: runtimeCommonMessage[key][1](...args),
+        code: runtimeCommonMessage[key][0]
     }
 }
 

@@ -5,16 +5,18 @@ import {
     ts,
     Logger,
     snapshotCache,
+    projectService,
     typeRefStatement,
     tsFileNameToRealPath,
     resolvedQingkuaiModule
 } from "../state"
+import { isInTopScope } from "./ast"
 import { Messages } from "../message"
 import { QingKuaiSnapShot } from "../snapshot"
 import { existsSync, readFileSync } from "node:fs"
-import { getScriptKindKey } from "../../../../shared-util/qingkuai"
 import { compile, PositionFlag, PositionFlagKeys } from "qingkuai/compiler"
 import { debugAssert, isQingkuaiFileName } from "../../../../shared-util/assert"
+import { filePathToComponentName, getScriptKindKey } from "../../../../shared-util/qingkuai"
 
 // 通过中间代码索引换取源码索引
 export function getSourceIndex(
@@ -103,13 +105,20 @@ export function isComponentIdentifier(
                 ts.isStringLiteral(declaration.parent.moduleSpecifier)
             ) {
                 const resolvedModules = resolvedQingkuaiModule.get(fileName)
-                if (resolvedModules?.has(declaration.parent.moduleSpecifier.text)) {
-                    return true
-                }
+                return !!resolvedModules?.has(declaration.parent.moduleSpecifier.text)
             }
         }
     }
-    return false
+
+    return (
+        isInTopScope(identifier) &&
+        identifier.getText() === filePathToComponentName(getTsFileName(fileName))
+    )
+}
+
+export function getTsFileName(realFileName: RealPath) {
+    const scriptInfo = projectService.getScriptInfo(realFileName)
+    return debugAssert(scriptInfo), scriptInfo!.fileName
 }
 
 export function getRealPath(fileName: string) {
