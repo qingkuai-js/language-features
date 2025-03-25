@@ -544,6 +544,15 @@ function doCustomTagComplete(
 function doEmmetComplete(document: TextDocument, position: Position) {
     const ret = _doEmmetComplete(document, position, "html", {})
     ret?.items.forEach(item => {
+        // emmet bug: track和wbr标签是自闭合的，但emmet中会添加闭合标签
+        if (item.label === "track" || item.label === "wbr") {
+            if (item.textEdit?.newText) {
+                item.textEdit.newText = item.textEdit.newText.replace(
+                    />\$\{0\}<\/(?:track|wbr)>$/,
+                    " />"
+                )
+            }
+        }
         if (item.textEdit) {
             const newTextArr = item.textEdit.newText.split("")
             parseTemplate(item.textEdit.newText).forEach(node => {

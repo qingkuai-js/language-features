@@ -190,8 +190,8 @@
     },
     "dependencies": {
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.12",
-        "qingkuai": "^1.0.14",
+        "prettier-plugin-qingkuai": "^1.0.13",
+        "qingkuai": "^1.0.15",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }
