@@ -70,14 +70,14 @@ export async function configTsServerPlugin(isReconnect: boolean) {
 
     // 切换语言id以激活vscode内置ts扩展
     const activeDocument = vscode.window.activeTextEditor?.document
-    if (/\.(?:qk|qingkuairc)/.test(activeDocument?.uri.fsPath || "")) {
-        const setLanguageIdOfTriggerDocument = async (id: string) => {
-            await vscode.languages.setTextDocumentLanguage(activeDocument!, id)
-        }
-        await tsExtension.activate()
-        await setLanguageIdOfTriggerDocument("typescript").then(() => {
-            setLanguageIdOfTriggerDocument("qingkuai")
-        })
+    const isQingkuaiDoc = /\.(?:qk|qingkuairc)/.test(activeDocument?.uri.fsPath || "")
+
+    const setLanguageIdOfTriggerDocument = async (id: string) => {
+        await vscode.languages.setTextDocumentLanguage(activeDocument!, id)
+    }
+
+    if ((await tsExtension.activate(), isQingkuaiDoc)) {
+        await setLanguageIdOfTriggerDocument("typescript")
     }
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
@@ -89,6 +89,10 @@ export async function configTsServerPlugin(isReconnect: boolean) {
         configurations: await getInitQingkuaiConfig(),
         triggerFileName: activeDocument?.uri.fsPath || ""
     } satisfies ConfigPluginParms)
+
+    if (isQingkuaiDoc) {
+        setLanguageIdOfTriggerDocument("qingkuai")
+    }
 
     // 通知qingkuai语言服务器与ts server创建ipc链接
     return () => {

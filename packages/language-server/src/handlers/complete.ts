@@ -8,11 +8,12 @@ import type {
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { NumNum } from "../../../../types/common"
+import type { AnyObject, FixedArray } from "../../../../types/util"
 import type { HTMLElementDataAttributeItem } from "../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { CachedCompileResultItem, GetRangeFunc } from "../types/service"
-import { Position, Range, CompletionItem, Command } from "vscode-languageserver/node"
 import type { CompletionHandler, ResolveCompletionHandler } from "../types/handlers"
+import type { Position, Range, CompletionItem, Command } from "vscode-languageserver/node"
 
 import {
     tpic,
@@ -682,20 +683,74 @@ function doAttributeNameComplete(
             }
         })
     } else {
+        const unsetDirectives: string[] = []
+        const sortTextMap: Record<string, number> = {}
+        const prevExistingDirectives = new Set<string>()
+        const currentExistingDirectives = new Set<string>()
+
+        const setSortTextMap = (map: Record<string, number>) => {
+            Object.assign(sortTextMap, map)
+        }
+
+        const isExisting = (...names: string[]) => {
+            return names.some(n => currentExistingDirectives.has(n))
+        }
+
+        // 处理指令补全建议优先级，规则如下：
+        // 前一个兄弟节点存在if或elif指令时提升elif和else指令的优先级
+        // 前一个兄弟节点存在await及then指令时，只需提升catch指令的优先级
+        // 前一个兄弟节点存在await但不存在then或catch指令时提升then和catch指令的优先级
+        for (const attr of node.prev?.attributes || []) {
+            if (attr.key.raw.startsWith("#")) {
+                prevExistingDirectives.add(attr.key.raw.slice(1))
+            }
+        }
+        if (prevExistingDirectives.has("if") || prevExistingDirectives.has("elif")) {
+            setSortTextMap({ elif: 1, else: 2 })
+        }
+        if (prevExistingDirectives.has("await")) {
+            if (prevExistingDirectives.has("then")) {
+                setSortTextMap({ catch: 1 })
+            } else if (!prevExistingDirectives.has("catch")) {
+                setSortTextMap({ then: 1, catch: 2 })
+            }
+        }
+
+        // 移除不能共存的指令的补全建议
+        for (const attr of node.attributes) {
+            const attrKey = attr.key.raw
+            if (attrKey.startsWith("#")) {
+                currentExistingDirectives.add(attrKey.slice(1))
+            }
+        }
+        if (isExisting("if", "elif", "else")) {
+            unsetDirectives.push("if", "elif", "else")
+        }
+        if (isExisting("then", "catch")) {
+            unsetDirectives.push("then", "catch")
+        } else if (currentExistingDirectives.has("await")) {
+            setSortTextMap({ then: 1, catch: 2 })
+        }
+
         // 如果属性名非动态非事件，则将所有指令添加到补全建议列表中
         // 指令名补全建议会有两种filterText，一种有#前缀，一种没有，这样做的好处就是无论
         // 用户有没有输入#前缀都会返回指令名补全建议，例如：#f和f都可以得到for指令的补全建议
         htmlDirectives.forEach(item => {
-            if (item.name !== "slot" || node.parent?.componentTag) {
+            if (
+                !unsetDirectives.includes(item.name) &&
+                !currentExistingDirectives.has(item.name) &&
+                (item.name !== "slot" || node.parent?.componentTag)
+            ) {
                 const label = "#" + item.name
-                const newText = label + (hasValue ? "" : "={$0}")
+                const noValue = hasValue || item.name === "else"
                 const completion: CompletionItem = {
                     label: label,
                     filterText: label,
                     kind: CompletionItemKind.Keyword,
-                    textEdit: TextEdit.replace(range, newText),
                     insertTextFormat: InsertTextFormat.Snippet,
-                    documentation: getDirectiveDocumentation(item, true)
+                    sortText: "" + (sortTextMap[item.name] || "9"),
+                    documentation: getDirectiveDocumentation(item, true),
+                    textEdit: TextEdit.replace(range, `${label}${noValue ? "" : "={$0}"}`)
                 }
                 if (item.name !== "slot") {
                     ret.push({ ...completion, filterText: item.name })

@@ -3,11 +3,13 @@ import type { RealPath } from "../../../../types/common"
 
 import {
     ts,
+    Logger,
     snapshotCache,
     typeRefStatement,
     tsFileNameToRealPath,
     resolvedQingkuaiModule
 } from "../state"
+import { Messages } from "../message"
 import { QingKuaiSnapShot } from "../snapshot"
 import { existsSync, readFileSync } from "node:fs"
 import { getScriptKindKey } from "../../../../shared-util/qingkuai"
@@ -53,10 +55,15 @@ export function isPositionFlagSetByInterIndex(
 export function compileQingkuaiFileToInterCode(path: RealPath) {
     debugAssert(existsSync(path))
 
-    return compile(readFileSync(path, "utf-8")!, {
-        check: true,
-        typeRefStatement
-    })
+    try {
+        return compile(readFileSync(path, "utf-8")!, {
+            check: true,
+            typeRefStatement
+        })
+    } catch (error: any) {
+        Logger.error(Messages.UnexpectedCompilerError)
+        process.exit(1)
+    }
 }
 
 export function ensureGetSnapshotOfQingkuaiFile(fileName: RealPath) {
