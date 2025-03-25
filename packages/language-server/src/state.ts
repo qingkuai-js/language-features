@@ -11,8 +11,8 @@ import { TextDocuments, ProposedFeatures, createConnection } from "vscode-langua
 export let isTestingEnv = true
 export let typeRefStatement = ""
 export let projectKind = ProjectKind.JS
-export let limitedScriptLanguageFeatures = true
 export let tpic = defaultParticipant // Typescript Plugin Icp Client
+export let limitedScriptLanguageFeatures = process.env.LIMITED_SCRIPT !== "0"
 
 // 一个等待tpic连接连接成功才会解决的Promise，首次编译qk代码之前会等待tpic连接成功
 export let [tpicConnectedPromise, tpicConnectedResolver] = generatePromiseAndResolver()
@@ -40,6 +40,11 @@ export const waittingCommands = new Map<string, string>()
 export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()
 export const connection = createConnection(ProposedFeatures.all)
+
+// 若script语言功能受限，需连接ts server
+if (limitedScriptLanguageFeatures) {
+    tpicConnectedResolver()
+}
 
 connection.listen()
 documents.listen(connection)

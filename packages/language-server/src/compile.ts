@@ -207,14 +207,6 @@ export function cleanConfigCache() {
     clientConfigCache.clear()
 }
 
-// 标记javascript/typescript语言功能受限
-export function disableScriptLanguageFeatures() {
-    setState({
-        limitedScriptLanguageFeatures: true
-    })
-    tpicConnectedResolver()
-}
-
 // 获取未打开的文档的编译结果
 export async function getCompileResByPath(path: string) {
     const cache = compileResultCache.get(path)

@@ -25,6 +25,7 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
 
     const cr = await getCompileRes(document)
     const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET
+    const additionCodeLensConfig = cr.config.extensionConfig.additionalCodeLens
     const navtree = await tpic.sendRequest<string, NavigationTree | undefined>(
         TPICHandler.GetNavigationTree,
         cr.filePath
@@ -68,37 +69,43 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     })
 
     // 在嵌入script标签和slot标签处添加代码镜头（引用）
-    walk(cr.templateNodes, node => {
-        const tagNameEndIndex = node.range[0] + node.tag.length + 1
-        if (node.isEmbedded && /[jt]s$/.test(node.tag)) {
-            codeLenses.push({
-                range: cr.getRange(node.range[0], tagNameEndIndex),
-                data: {
-                    interIndex: e29x,
-                    type: "reference",
-                    fileName: cr.filePath,
-                    position: cr.getPosition(node.range[0])
-                } satisfies CodeLensData
-            })
-        } else if (node.tag === "slot") {
-            const nameAttribute = node.attributes.find(attr => {
-                return attr.key.raw === "name"
-            })
-            if (nameAttribute) {
+    if (additionCodeLensConfig.length) {
+        walk(cr.templateNodes, node => {
+            const tagNameEndIndex = node.range[0] + node.tag.length + 1
+            if (
+                node.isEmbedded &&
+                /[jt]s$/.test(node.tag) &&
+                additionCodeLensConfig.includes("component")
+            ) {
                 codeLenses.push({
                     range: cr.getRange(node.range[0], tagNameEndIndex),
                     data: {
                         interIndex: e29x,
                         type: "reference",
                         fileName: cr.filePath,
-                        slotName: nameAttribute.value.raw,
-                        componentName: filePathToComponentName(cr.filePath),
-                        position: cr.getPosition(nameAttribute.key.loc.start.index)
+                        position: cr.getPosition(node.range[0])
                     } satisfies CodeLensData
                 })
+            } else if (additionCodeLensConfig.includes("slot") && node.tag === "slot") {
+                const nameAttribute = node.attributes.find(attr => {
+                    return attr.key.raw === "name"
+                })
+                if (nameAttribute) {
+                    codeLenses.push({
+                        range: cr.getRange(node.range[0], tagNameEndIndex),
+                        data: {
+                            interIndex: e29x,
+                            type: "reference",
+                            fileName: cr.filePath,
+                            slotName: nameAttribute.value.raw,
+                            componentName: filePathToComponentName(cr.filePath),
+                            position: cr.getPosition(nameAttribute.key.loc.start.index)
+                        } satisfies CodeLensData
+                    })
+                }
             }
-        }
-    })
+        })
+    }
 
     return codeLenses
 }

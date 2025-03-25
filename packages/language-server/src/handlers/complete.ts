@@ -8,7 +8,6 @@ import type {
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { NumNum } from "../../../../types/common"
-import type { AnyObject, FixedArray } from "../../../../types/util"
 import type { HTMLElementDataAttributeItem } from "../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { CachedCompileResultItem, GetRangeFunc } from "../types/service"

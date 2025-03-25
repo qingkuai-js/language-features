@@ -16,7 +16,7 @@ languageStatusItem.text = "QingKuai Language Server"
 
 export let client: LanguageClient
 export let serverModulePath: string
-export let limitedScriptLanguageFeatures = false
+export let limitedScriptLanguageFeatures = true
 
 export function setState(options: SetStateOptions) {
     if (!isUndefined(options.client)) {

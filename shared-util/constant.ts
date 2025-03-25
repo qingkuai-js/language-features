@@ -73,7 +73,6 @@ export enum LSHandler {
     GetLanguageConfig = "qingkuai/getClientLanguageConfig",
     CleanLanguageConfigCache = "qingkuai/cleanConfigurationCache",
     Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer",
-    disableScriptLanguageFeatures = "qingkuai/disableScriptLanguageFeatures"
 }
 
 export const GLOBAL_TYPE_IDNTIFIERS = new Set<string>([

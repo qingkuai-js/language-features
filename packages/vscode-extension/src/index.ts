@@ -18,7 +18,8 @@ import {
     setState,
     outputChannel,
     serverModulePath,
-    languageStatusItem
+    languageStatusItem,
+    limitedScriptLanguageFeatures
 } from "./state"
 import * as vscode from "vscode"
 import { Messages } from "./messages"
@@ -26,7 +27,7 @@ import { QingkuaiCommands } from "./command"
 import { attachCustomHandlers } from "./handler"
 import { runAll } from "../../../shared-util/sundry"
 import { attachFileSystemHandlers } from "./filesys"
-import { LSHandler } from "../../../shared-util/constant"
+import { LSHandler, NOOP } from "../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 
@@ -50,8 +51,8 @@ export async function activate(context: ExtensionContext) {
         return activeLanguageServer()
     }
 
-    const disposable = vscode.workspace.onDidOpenTextDocument(document => {
-        if (isQingkuaiFileName(document.uri.fsPath || "")) {
+    const disposable = vscode.window.onDidChangeActiveTextEditor(e => {
+        if (isQingkuaiFileName(e?.document.uri.fsPath || "")) {
             activeLanguageServer()
             disposable.dispose()
         }
@@ -60,12 +61,10 @@ export async function activate(context: ExtensionContext) {
 
 export async function configTsServerPlugin(isReconnect: boolean) {
     const tsExtension = vscode.extensions.getExtension("vscode.typescript-language-features")
+    setState({ limitedScriptLanguageFeatures: !tsExtension })
+
     if (!tsExtension) {
-        setState({
-            limitedScriptLanguageFeatures: true
-        })
-        Logger.warn(Messages.BuiltinTsExtensionDisabled)
-        return () => client.sendNotification(LSHandler.disableScriptLanguageFeatures, null)
+        return Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP
     }
 
     // 切换语言id以激活vscode内置ts扩展
@@ -96,7 +95,7 @@ export async function configTsServerPlugin(isReconnect: boolean) {
 
     // 通知qingkuai语言服务器与ts server创建ipc链接
     return () => {
-        client!.sendNotification(LSHandler.ConnectToTsServer, {
+        client.sendRequest(LSHandler.ConnectToTsServer, {
             sockPath,
             isReconnect
         } satisfies ConnectToTsServerParams)
@@ -113,6 +112,9 @@ async function activeLanguageServer() {
         transport: TransportKind.ipc
     }
     const languageClientOptions: LanguageClientOptions = {
+        initializationOptions: {
+            limitedScriptLanguageFeatures
+        },
         documentSelector: [
             {
                 scheme: "file",
@@ -137,10 +139,16 @@ async function activeLanguageServer() {
     setState({ client: languageClient })
 
     const connectToTsServer = await configTsServerPlugin(false)
+    languageServerOptions.options = {
+        env: {
+            ...process.env,
+            LIMITED_SCRIPT: +limitedScriptLanguageFeatures
+        }
+    }
     await languageClient.start()
+    await connectToTsServer()
 
     runAll([
-        connectToTsServer,
         attachFileSystemHandlers,
         startQingkuaiConfigWatcher,
         startPrettierConfigWatcher,

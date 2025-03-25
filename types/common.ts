@@ -23,6 +23,7 @@ export interface OpenFileParams {
 export interface ExtensionConfiguration {
     typescriptDiagnosticsExplain: boolean
     insertSpaceAroundInterpolation: boolean
+    additionalCodeLens: ("component" | "slot")[]
     componentTagFormatPreference: "camel" | "kebab"
     htmlHoverTip: ("tag" | "entity" | "attribute")[]
     componentAttributeFormatPreference: "camel" | "kebab"
