@@ -47,16 +47,14 @@ export function attachLanguageServerIPCHandlers() {
 
 // 创建ipc通道，并监听来自qingkuai语言服务器的请求
 export function createIpcServer(sockPath: string) {
-    setTimeout(() => {
-        if (!existsSync(sockPath)) {
-            createServer(sockPath).then(server => {
-                setState({ server })
-                attachLanguageServerIPCHandlers()
-                ensureLanguageServerProjectKind(server)
-                server.onRequest(TPICHandler.GetTypeRefStatement, () => typeRefStatement)
-            })
-        }
-    })
+    if (!existsSync(sockPath)) {
+        createServer(sockPath).then(server => {
+            setState({ server })
+            attachLanguageServerIPCHandlers()
+            ensureLanguageServerProjectKind(server)
+            server.onRequest(TPICHandler.GetTypeRefStatement, () => typeRefStatement)
+        })
+    }
 }
 
 export function ensureLanguageServerProjectKind(server: IpcParticipant) {

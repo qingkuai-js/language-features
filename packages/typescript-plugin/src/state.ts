@@ -1,6 +1,7 @@
 import type TS from "typescript"
 import type { QingKuaiSnapShot } from "./snapshot"
 import type { RealPath } from "../../../types/common"
+import type { GeneralFunc } from "../../../types/util"
 import type { QingKuaiDiagnostic, SetStateOptions } from "./types"
 
 import path from "node:path"
@@ -57,4 +58,4 @@ export const Logger = {
 }
 
 export const typeDeclarationFilePath = path.resolve(__dirname, "../dts/qingkuai.d.ts")
-export const typeRefStatement = `/// <reference types="${typeDeclarationFilePath}" />\n`
+export const typeRefStatement = `import {__c__,wat,waT,Wat,der,stc,rea} from "${typeDeclarationFilePath}"\n`

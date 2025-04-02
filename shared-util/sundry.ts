@@ -2,6 +2,7 @@ import type { PromiseWithState } from "../types/common"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
 import path from "node:path"
+import { randomBytes } from "node:crypto"
 
 export function sleep(ms: number) {
     return new Promise(resolve => {
@@ -60,12 +61,8 @@ export function debounce<T extends GeneralFunc>(
 
 // 生成指定长度的随机哈希字符串
 export function createRandomHash(length: number) {
-    if (length <= 0) {
-        return ""
-    }
-
-    const maxValue = parseInt("0x" + "f".repeat(length))
-    return Math.floor(Math.random() * maxValue).toString(16)
+    const bs = randomBytes(Math.ceil(length / 2))
+    return bs.toString("hex").slice(0, length)
 }
 
 // 获取数组的最后一个元素

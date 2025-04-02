@@ -33,10 +33,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.13
-        version: 1.0.13(prettier@3.5.3)(qingkuai@1.0.20)
+        version: 1.0.13(prettier@3.5.3)(qingkuai@..+Qingkuai+qingkuai)
       qingkuai:
-        specifier: ^1.0.20
-        version: 1.0.20
+        specifier: /Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
+        version: link:../../Qingkuai/qingkuai
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -71,9 +71,17 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0
 
-  packages/language-server: {}
+  packages/language-server:
+    dependencies:
+      qingkuai:
+        specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
+        version: link:../../../../Qingkuai/qingkuai
 
-  packages/typescript-plugin: {}
+  packages/typescript-plugin:
+    dependencies:
+      qingkuai:
+        specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
+        version: link:../../../../Qingkuai/qingkuai
 
   packages/vscode-extension:
     dependencies:
@@ -82,10 +90,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.13
-        version: 1.0.13(prettier@3.5.3)(qingkuai@1.0.20)
+        version: 1.0.13(prettier@3.5.3)(qingkuai@..+Qingkuai+qingkuai)
       qingkuai:
-        specifier: ^1.0.20
-        version: 1.0.20
+        specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
+        version: link:../../../../Qingkuai/qingkuai
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
         version: link:../typescript-plugin
@@ -100,21 +108,8 @@ packages:
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/helper-string-parser@7.25.9':
-    resolution: {integrity: sha512-4A/SCr/2KLd5jrtOMFzaKjVtAei3+2r/NChoBNoZ3EyP/+GlhoaEGoWOZUmFmoITP7zOJyHIMm+DYRd8o3PvHA==}
-    engines: {node: '>=6.9.0'}
-
   '@babel/helper-validator-identifier@7.25.9':
     resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/parser@7.27.0':
-    resolution: {integrity: sha512-iaepho73/2Pz7w2eMS0Q5f83+0RKI7i4xmiYeBmDzfRVbQtTOG7Ts0S4HzJVsTMGI9keU8rNfuZr8DKfSt7Yyg==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
-
-  '@babel/types@7.27.0':
-    resolution: {integrity: sha512-H45s8fVLYjbhFH62dIJ3WtmJ6RSPt/3DRO0ZcT2SUiYiQyz3BLVb9ADEnLl91m74aQPS3AzzeajZHYOalWe3bg==}
     engines: {node: '>=6.9.0'}
 
   '@emmetio/abbreviation@2.3.3':
@@ -696,10 +691,6 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.20:
-    resolution: {integrity: sha512-Eb47XL4Dpuz682zb8mPcdgpWimpZtgql3EacC2oXcirZ+HzPvkvPhavEUfOpY7+LffevcIo19m6fspJN/STnHg==}
-    engines: {node: '>=14'}
-
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
 
@@ -920,18 +911,7 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
-  '@babel/helper-string-parser@7.25.9': {}
-
   '@babel/helper-validator-identifier@7.25.9': {}
-
-  '@babel/parser@7.27.0':
-    dependencies:
-      '@babel/types': 7.27.0
-
-  '@babel/types@7.27.0':
-    dependencies:
-      '@babel/helper-string-parser': 7.25.9
-      '@babel/helper-validator-identifier': 7.25.9
 
   '@emmetio/abbreviation@2.3.3':
     dependencies:
@@ -1401,19 +1381,14 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.13(prettier@3.5.3)(qingkuai@1.0.20):
+  prettier-plugin-qingkuai@1.0.13(prettier@3.5.3)(qingkuai@..+Qingkuai+qingkuai):
     dependencies:
       '@babel/code-frame': 7.26.2
       lines-and-columns: 2.0.4
       prettier: 3.5.3
-      qingkuai: 1.0.20
+      qingkuai: link:../../Qingkuai/qingkuai
 
   prettier@3.5.3: {}
-
-  qingkuai@1.0.20:
-    dependencies:
-      '@babel/parser': 7.27.0
-      '@jridgewell/sourcemap-codec': 1.5.0
 
   resolve-pkg-maps@1.0.0: {}
 

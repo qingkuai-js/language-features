@@ -3,11 +3,11 @@ import type { QingKuaiSnapShot } from "../snapshot"
 
 import { existsSync } from "node:fs"
 import { dirname, extname, resolve } from "node:path"
-import { HAS_BEEN_PROXIED_BY_QINGKUAI } from "../constant"
 import { getConfigByFileName } from "../server/configuration/method"
-import { projectService, resolvedQingkuaiModule, ts } from "../state"
 import { initialEditQingkuaiFileSnapshot } from "../server/content/method"
 import { ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../util/qingkuai"
+import { HAS_BEEN_PROXIED_BY_QINGKUAI, QINGKUAI_ENV_IDENTIFIERS } from "../constant"
+import { projectService, resolvedQingkuaiModule, ts, typeDeclarationFilePath } from "../state"
 import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../../shared-util/assert"
 
 export function proxyGetScriptKind(languageServiceHost: TS.LanguageServiceHost) {
@@ -25,6 +25,36 @@ export function proxyGetScriptKind(languageServiceHost: TS.LanguageServiceHost) 
 
     // @ts-expect-error: attach supplementary property
     languageServiceHost.getScriptKind[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+}
+
+export function proxyGetCompletionsAtPosition(languageService: TS.LanguageService) {
+    const getCompletionsAtPosition = languageService.getCompletionsAtPosition
+    if ((getCompletionsAtPosition as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        return
+    }
+
+    languageService.getCompletionsAtPosition = (fileName, position, ...rest) => {
+        const originalResult = getCompletionsAtPosition.call(
+            languageService,
+            fileName,
+            position,
+            ...rest
+        )
+        if (!isQingkuaiFileName(fileName) && originalResult?.entries) {
+            originalResult.entries = originalResult.entries.filter(entry => {
+                if (!QINGKUAI_ENV_IDENTIFIERS.has(entry.name) || !entry.source) {
+                    return true
+                }
+
+                const sourcePath = resolve(dirname(fileName), entry.source)
+                return !typeDeclarationFilePath.startsWith(sourcePath)
+            })
+        }
+        return originalResult
+    }
+
+    // @ts-expect-error: attach supplementary property
+    languageService.getCompletionsAtPosition[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
 }
 
 export function proxyGetScriptVersion(languageServiceHost: TS.LanguageServiceHost) {

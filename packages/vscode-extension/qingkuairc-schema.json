@@ -9,6 +9,21 @@
             "enum": ["never", "all", "development", "production"],
             "description": "Whether to reserve HTML comment nodes."
         },
+        "exposeDependencies": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to attach reactive value dependencies to component instance."
+        },
+        "exposeDestructions": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to attach destruction methods of HTML nodes to component instance."
+        },
+        "insertTipComments": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether to allow interpretive comments to be inserted into compilation result."
+        },
         "convenientDerivedDeclaration": {
             "type": "boolean",
             "default": true,

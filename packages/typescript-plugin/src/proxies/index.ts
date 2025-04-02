@@ -20,7 +20,8 @@ import {
     proxyGetScriptVersion,
     proxyGetScriptSnapshot,
     proxyResolveModuleNameLiterals,
-    proxyGetMoveToRefactoringFileSuggestions
+    proxyGetMoveToRefactoringFileSuggestions,
+    proxyGetCompletionsAtPosition
 } from "./language-service"
 import { session } from "../state"
 import { runAll } from "../../../../shared-util/sundry"
@@ -55,6 +56,7 @@ export function proxyTypescriptLanguageServiceMethods(info: TS.server.PluginCrea
         () => proxyGetScriptSnapshot(project),
         () => proxyGetScriptKind(languageServiceHost),
         () => proxyGetScriptVersion(languageServiceHost),
+        () => proxyGetCompletionsAtPosition(languageService),
         () => proxyResolveModuleNameLiterals(languageServiceHost),
         () => proxyGetMoveToRefactoringFileSuggestions(languageService)
     ])

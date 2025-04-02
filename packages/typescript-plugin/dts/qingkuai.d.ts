@@ -28,7 +28,7 @@ interface WatchFunc {
     <T>(getter: () => T, callback: (pre: T, cur: T) => void): () => void
 }
 
-declare namespace __c__ {
+export namespace __c__ {
     type EmptyObject = {
         [symbol]?: never
     }
@@ -58,9 +58,9 @@ declare namespace __c__ {
     ) => void
 }
 
-declare const wat: WatchFunc
-declare const waT: WatchFunc
-declare const Wat: WatchFunc
-declare const der: DerivedFunc
-declare function stc<T = undefined>(value: T): T
-declare function rea<T = undefined>(value: T, level?: number): T
+export const wat: WatchFunc
+export const waT: WatchFunc
+export const Wat: WatchFunc
+export const der: DerivedFunc
+export function stc<T = undefined>(value: T): T
+export function rea<T = undefined>(value: T, level?: number): T

@@ -16,7 +16,8 @@ import {
     isNumber,
     isString,
     isUndefined,
-    isQingkuaiFileName
+    isQingkuaiFileName,
+    debugAssert
 } from "../../../../../shared-util/assert"
 import {
     ts,
@@ -52,7 +53,8 @@ import {
 import {
     getRealPath,
     isComponentIdentifier,
-    ensureGetSnapshotOfQingkuaiFile
+    ensureGetSnapshotOfQingkuaiFile,
+    isPositionFlagSetByInterIndex
 } from "../../util/qingkuai"
 import {
     endingInvalidStr,
@@ -93,12 +95,12 @@ export function updateQingkuaiSnapshot(
     const componentName = filePathToComponentName(fileName)
     const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
     const componentIdentifierInfos: ComponentIdentifierInfo[] = []
-    const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
+    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
     const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
     const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
 
     const editScriptInfoCommon = () => {
-        if (originalScriptKind !== scriptKind) {
+        if (qingkuaiSnapshot.scriptKind !== scriptKind) {
             updateScriptKindOfQingkuaiFile(fileName, scriptKind)
         }
         editQingKuaiScriptInfo(fileName, contentArr.join(""), itos, slotInfo, scriptKind, positions)
@@ -193,7 +195,8 @@ export function updateQingkuaiSnapshot(
         if (
             ts.isNewExpression(node) &&
             ts.isIdentifier(node.expression) &&
-            isComponentIdentifier(fileName, node.expression, typeChecker)
+            isComponentIdentifier(fileName, node.expression, typeChecker) &&
+            isPositionFlagSetByInterIndex(qingkuaiSnapshot, node.getStart(), "inScript")
         ) {
             eliminateContentByRange(node.getStart(), node.expression.getStart())
             eliminateContentByRange(node.expression.getEnd(), node.getEnd())
@@ -589,7 +592,11 @@ function updateScriptKindOfQingkuaiFile(fileName: string, scriptKind: TS.ScriptK
 // 获取组件的attribute信息
 function getComponentAttributes(componentFileName: string) {
     const program = getDefaultProgramByFileName(componentFileName)!
-    const sourceFile = program.getSourceFile(componentFileName)!
+    const sourceFile = program.getSourceFile(componentFileName)
+    if (!sourceFile) {
+        return []
+    }
+
     const attributes: ComponentAttributeItem[] = []
     const typeChecker = program.getTypeChecker()
 
@@ -603,7 +610,7 @@ function getComponentAttributes(componentFileName: string) {
                 type = typeChecker.getTypeFromTypeNode(symbol.declarations[0].typeExpression)
             }
 
-            if (!(type.symbol.flags & ts.SymbolFlags.Type)) {
+            if (!type.symbol || !(type.symbol.flags & ts.SymbolFlags.Type)) {
                 continue
             }
 

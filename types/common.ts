@@ -35,6 +35,9 @@ export interface TSFormattingOptions {
 }
 
 export type QingkuaiConfiguration = Partial<{
+    exposeDestructions: boolean
+    exposeDependencies: boolean
+    insertTipComments: boolean
     resolveImportExtension: boolean
     convenientDerivedDeclaration: boolean
     reserveHtmlComments: "all" | "never" | "development" | "production"
