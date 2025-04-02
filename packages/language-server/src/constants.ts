@@ -35,3 +35,4 @@ export const COMMANDS = {
 }
 export const SPECIAL_TAGS = new Set(["!", "script", "style"])
 export const INVALID_COMPLETION_TEXT_LABELS = new Set(["_", "__", "___"])
+export const EMMET_SELF_CLOSING_TAG = new Set(["isindex", "basefont", "frame"])

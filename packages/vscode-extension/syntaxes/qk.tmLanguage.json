@@ -223,7 +223,7 @@
         },
         "tag-structure-start": {
             "name": "meta.tag.normal.$2.start.qk",
-            "begin": "(<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)([a-z][a-zA-Z\\d_.:]*|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))(?=[\\s>/])",
+            "begin": "(<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)([a-z][a-zA-Z\\d_.:]*|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))(?=[\\s>/])",
             "end": ">",
             "beginCaptures": {
                 "1": {
@@ -270,7 +270,7 @@
         },
         "self-closing-tags": {
             "name": "meta.tag.native.$2.void.qk",
-            "begin": "(<)(?!/)(br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr)(?=[\\s>/])",
+            "begin": "(<)(?!/)(br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)(?=[\\s>/])",
             "end": "/?>",
             "beginCaptures": {
                 "1": {

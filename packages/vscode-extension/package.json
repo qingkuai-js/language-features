@@ -206,7 +206,7 @@
     },
     "dependencies": {
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.13",
+        "prettier-plugin-qingkuai": "^1.0.14",
         "qingkuai": "link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }

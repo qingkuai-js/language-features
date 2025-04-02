@@ -86,7 +86,7 @@ export function attachGetCompletion() {
 
     server.onRequest<ResolveCompletionParams, ResolveCompletionResult>(
         TPICHandler.ResolveCompletionItem,
-        ({ fileName, entryName, pos, ori, source }) => {
+        ({ fileName, entryName, pos, original, source }) => {
             const normalizedPath = ts.server.toNormalizedPath(fileName)
             const preferences = getUserPreferencesByFileName(fileName)
             const formatSettings = getFormatCodeSettingsByFileName(fileName)
@@ -99,7 +99,7 @@ export function attachGetCompletion() {
                 formatSettings,
                 source,
                 preferences,
-                ori
+                original
             )
 
             let command: Command | undefined = undefined

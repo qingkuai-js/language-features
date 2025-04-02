@@ -1,14 +1,24 @@
 import type {
     GetClientConfigResult,
-    ComponentIdentifierInfo
+    ComponentIdentifierInfo,
+    ResolveCompletionParams
 } from "../../../../types/communication"
 import type { ProjectKind } from "../constants"
+import type { GeneralFunc } from "../../../../types/util"
 import type { Position, Range } from "vscode-languageserver"
 import type { IpcParticipant } from "../../../../shared-util/ipc/types"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
 import type { PromiseWithState, RealPath } from "../../../../types/common"
 
-export type CodeLensConfig = {
+export type CompletionData =
+    | {
+          kind: "emmet"
+      }
+    | ({
+          kind: "script"
+      } & ResolveCompletionParams)
+
+export interface CodeLensConfig {
     referencesCodeLens: {
         enabled: boolean
         showOnAllFunctions: boolean
@@ -19,7 +29,7 @@ export type CodeLensConfig = {
     }
 }
 
-export type CodeLensData = {
+export interface CodeLensData {
     fileName: RealPath
     interIndex: number
     position: Position

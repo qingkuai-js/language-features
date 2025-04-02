@@ -15,7 +15,8 @@
         "@types/vscode": "^1.97.0",
         "@vscode/emmet-helper": "^2.11.0",
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.13",
+        "prettier-plugin-qingkuai": "^1.0.14",
+        "qingkuai": "link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
         "rollup-plugin-esbuild": "^6.2.1",
@@ -26,8 +27,7 @@
         "vscode-languageclient": "^9.0.1",
         "vscode-languageserver": "^9.0.1",
         "vscode-languageserver-textdocument": "^1.0.12",
-        "vscode-uri": "^3.1.0",
-        "qingkuai": "/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai"
+        "vscode-uri": "^3.1.0"
     },
     "pnpm": {
         "patchedDependencies": {

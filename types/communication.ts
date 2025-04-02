@@ -124,7 +124,7 @@ export interface ResolveCompletionParams {
     fileName: RealPath
     entryName: string
     source?: string
-    ori?: CompletionEntryData
+    original?: CompletionEntryData
 }
 
 export interface FindReferenceResultItem {

@@ -4,15 +4,16 @@ import type {
     ComponentAttributeItem,
     ResolveCompletionResult,
     ComponentIdentifierInfo,
-    TPICCommonRequestParams
+    TPICCommonRequestParams,
+    ResolveCompletionParams
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { NumNum } from "../../../../types/common"
 import type { HTMLElementDataAttributeItem } from "../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
-import type { CachedCompileResultItem, GetRangeFunc } from "../types/service"
 import type { CompletionHandler, ResolveCompletionHandler } from "../types/handlers"
 import type { Position, Range, CompletionItem, Command } from "vscode-languageserver/node"
+import type { CachedCompileResultItem, CompletionData, GetRangeFunc } from "../types/service"
 
 import {
     tpic,
@@ -371,53 +372,83 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
 
 export const resolveCompletion: ResolveCompletionHandler = async (item, token) => {
     if (
+        !isString(item.data?.kind) ||
         limitedScriptLanguageFeatures ||
-        token.isCancellationRequested ||
-        item.data?._fromTS !== true
+        token.isCancellationRequested
     ) {
         return item
     }
 
-    const document = documents.get(URI.file(item.data.fileName).toString())!
-    const { getSourceIndex, getRange, inputDescriptor, config } = await getCompileRes(document)
-    const res: ResolveCompletionResult = await tpic.sendRequest(
-        TPICHandler.ResolveCompletionItem,
-        item.data
-    )
-    if (res.detail) {
-        item.detail = res.detail
-    }
-    if (res.documentation) {
-        item.documentation = {
-            kind: "markdown",
-            value: res.documentation
-        }
-    }
-    if (res.textEdits) {
-        const additionalTextEdits: TextEdit[] = []
-        for (const item of res.textEdits) {
-            let sourcePosRange: NumNum = [
-                getSourceIndex(item.start),
-                getSourceIndex(item.end, true)
-            ]
-            if (item.newText.trimStart().startsWith("import")) {
-                sourcePosRange = Array(2).fill(inputDescriptor.script.loc.start.index) as NumNum
-                item.newText = formatImportStatement(
-                    item.newText.trim(),
-                    inputDescriptor.source,
-                    sourcePosRange,
-                    config.prettierConfig
-                )
-            }
-            if (!isIndexesInvalid(...sourcePosRange)) {
-                additionalTextEdits.push({
-                    newText: item.newText,
-                    range: getRange(...sourcePosRange)
+    const data: CompletionData = item.data
+    switch (data.kind) {
+        case "emmet": {
+            const textEdit = item.textEdit!
+            const newTextArr = textEdit.newText.split("")
+            parseTemplate(textEdit.newText).forEach(node => {
+                let sizesitCount = 0
+                node.attributes.forEach(attr => {
+                    if (attr.quote && !attr.value.raw) {
+                        sizesitCount++
+                    }
                 })
-            }
+                node.attributes.forEach(attr => {
+                    if (attr.quote !== "none" && /[!@#&]/.test(attr.key.raw[0])) {
+                        newTextArr[attr.value.loc.end.index] = "}"
+                        newTextArr[attr.value.loc.start.index - 1] = "{"
+                    }
+                })
+            })
+            textEdit.newText = newTextArr.join("")
+            item.documentation = item.textEdit?.newText.replace(/\$\{\d+\}/g, "|")
+            break
         }
-        if (additionalTextEdits.length) {
-            item.additionalTextEdits = additionalTextEdits
+
+        case "script": {
+            const document = documents.get(URI.file(data.fileName).toString())!
+            const { getSourceIndex, getRange, inputDescriptor, config } =
+                await getCompileRes(document)
+            const res: ResolveCompletionResult = await tpic.sendRequest<ResolveCompletionParams>(
+                TPICHandler.ResolveCompletionItem,
+                data
+            )
+            if (res.detail) {
+                item.detail = res.detail
+            }
+            if (res.documentation) {
+                item.documentation = {
+                    kind: "markdown",
+                    value: res.documentation
+                }
+            }
+            if (res.textEdits) {
+                const additionalTextEdits: TextEdit[] = []
+                for (const item of res.textEdits) {
+                    let sourcePosRange: NumNum = [
+                        getSourceIndex(item.start),
+                        getSourceIndex(item.end, true)
+                    ]
+                    if (item.newText.trimStart().startsWith("import")) {
+                        sourcePosRange = Array(2).fill(
+                            inputDescriptor.script.loc.start.index
+                        ) as NumNum
+                        item.newText = formatImportStatement(
+                            item.newText.trim(),
+                            inputDescriptor.source,
+                            sourcePosRange,
+                            config.prettierConfig
+                        )
+                    }
+                    if (!isIndexesInvalid(...sourcePosRange)) {
+                        additionalTextEdits.push({
+                            newText: item.newText,
+                            range: getRange(...sourcePosRange)
+                        })
+                    }
+                }
+                if (additionalTextEdits.length) {
+                    item.additionalTextEdits = additionalTextEdits
+                }
+            }
         }
     }
     return item
@@ -546,34 +577,24 @@ function doCustomTagComplete(
 function doEmmetComplete(document: TextDocument, position: Position) {
     const ret = _doEmmetComplete(document, position, "html", {})
     ret?.items.forEach(item => {
+        if (!item.textEdit) {
+            return
+        }
+
+        // 在resolveCompletion中解析插入的文本
+        item.data = {
+            kind: "emmet"
+        }
+
         // emmet bug: track和wbr标签是自闭合的，但emmet中会添加闭合标签
         if (item.label === "track" || item.label === "wbr") {
-            if (item.textEdit?.newText) {
-                item.textEdit.newText = item.textEdit.newText.replace(
-                    />\$\{0\}<\/(?:track|wbr)>$/,
-                    " />"
-                )
-            }
+            item.textEdit.newText = item.textEdit.newText.replace(
+                />\$\{0\}<\/(?:track|wbr|isindex)>$/,
+                " />"
+            )
+        } else if (util.isSelfClosingTag(item.label)) {
+            item.textEdit.newText = item.textEdit.newText.slice(0, -1) + " />"
         }
-        if (item.textEdit) {
-            const newTextArr = item.textEdit.newText.split("")
-            parseTemplate(item.textEdit.newText).forEach(node => {
-                let sizesitCount = 0
-                node.attributes.forEach(attr => {
-                    if (attr.quote && !attr.value.raw) {
-                        sizesitCount++
-                    }
-                })
-                node.attributes.forEach(attr => {
-                    if (attr.quote !== "none" && /[!@#&]/.test(attr.key.raw[0])) {
-                        newTextArr[attr.value.loc.end.index] = "}"
-                        newTextArr[attr.value.loc.start.index - 1] = "{"
-                    }
-                })
-            })
-            item.textEdit.newText = newTextArr.join("")
-        }
-        item.documentation = item.textEdit?.newText.replace(/\$\{\d+\}/g, "|")
     })
     return ret
 }
@@ -910,17 +931,18 @@ async function doScriptBlockComplete(
     }
 
     let completionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
+        const data: CompletionData = {
+            kind: "script",
+            original: item.data,
+            source: item.source,
+            entryName: item.name,
+            fileName: cr.filePath,
+            pos: positionOfInterCode
+        }
         const ret: CompletionItem = {
+            data,
             label: item.label,
             sortText: item.sortText,
-            data: {
-                _fromTS: true,
-                ori: item.data,
-                source: item.source,
-                entryName: item.name,
-                fileName: cr.filePath,
-                pos: positionOfInterCode
-            },
             kind: convertTsCompletionKind(item.kind)
         }
         optionalSameKeys.forEach(key => {
