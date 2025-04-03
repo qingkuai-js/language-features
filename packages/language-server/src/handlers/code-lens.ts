@@ -1,5 +1,5 @@
 import type {
-    GetConfigurationParams,
+    GetClientConfigParams,
     FindReferenceResultItem,
     TPICCommonRequestParams
 } from "../../../../types/communication"
@@ -38,8 +38,8 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     const codeLensConfig: CodeLensConfig = await connection.sendRequest(LSHandler.GetClientConfig, {
         uri: textDocument.uri,
         section: cr.scriptLanguageId,
-        filter: ["referencesCodeLens", "implementationsCodeLens"]
-    } satisfies GetConfigurationParams)
+        includes: ["referencesCodeLens", "implementationsCodeLens"]
+    } satisfies GetClientConfigParams)
 
     if (
         !codeLensConfig.referencesCodeLens.enabled &&

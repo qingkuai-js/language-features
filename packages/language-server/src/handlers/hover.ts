@@ -1,6 +1,19 @@
+import type {
+    HoverTipResult,
+    GetClientConfigParams,
+    TPICCommonRequestParams
+} from "../../../../types/communication"
 import type { HoverHandler } from "../types/handlers"
-import type { TPICCommonRequestParams, HoverTipResult } from "../../../../types/communication"
+import type { CachedCompileResultItem } from "../types/service"
 
+import {
+    tpic,
+    documents,
+    isTestingEnv,
+    cssLanguageService,
+    limitedScriptLanguageFeatures,
+    connection
+} from "../state"
 import {
     findTagData,
     htmlDirectives,
@@ -8,17 +21,21 @@ import {
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../data/element"
+import {
+    findNodeAt,
+    findAttribute,
+    findTagRanges,
+    findEventModifier,
+    createStyleSheetAndDocument
+} from "../util/qingkuai"
 import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
-import { MarkupKind } from "vscode-languageserver"
-import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
+import { Hover, MarkupKind } from "vscode-languageserver"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
-import { TPICHandler } from "../../../../shared-util/constant"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
+import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
-import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { documents, isTestingEnv, limitedScriptLanguageFeatures, tpic } from "../state"
 
 export const hover: HoverHandler = async ({ textDocument, position }, token) => {
     if (token.isCancellationRequested) {
@@ -26,7 +43,7 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
     }
 
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    const { templateNodes, getOffset, getRange, config, getSourceIndex } = cr
+    const { templateNodes, getOffset, getRange, config } = cr
 
     const offset = getOffset(position)
     const source = cr.inputDescriptor.source
@@ -40,28 +57,11 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
         !limitedScriptLanguageFeatures &&
         cr.isPositionFlagSet(offset, "inScript")
     ) {
-        const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<TPICCommonRequestParams>(
-            TPICHandler.HoverTip,
-            {
-                fileName: cr.filePath,
-                pos: cr.getInterIndex(offset)
-            }
-        )
+        return await doScriptBlockHover(cr, offset)
+    }
 
-        if (!tsHoverTip) {
-            return null
-        }
-
-        return {
-            contents: {
-                kind: "markdown",
-                value: tsHoverTip.content
-            },
-            range: getRange(
-                getSourceIndex(tsHoverTip.posRange[0]),
-                getSourceIndex(tsHoverTip.posRange[1], true)
-            )
-        }
+    if (!isTestingEnv && cr.isPositionFlagSet(offset, "inStyle")) {
+        return await doStyleBlockHover(cr, offset)
     }
 
     // HTML标签悬停提示
@@ -248,4 +248,41 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
             }
         }
     }
+}
+
+async function doScriptBlockHover(cr: CachedCompileResultItem, offset: number) {
+    const tsHoverTip: HoverTipResult | null = await tpic.sendRequest<TPICCommonRequestParams>(
+        TPICHandler.HoverTip,
+        {
+            fileName: cr.filePath,
+            pos: cr.getInterIndex(offset)
+        }
+    )
+
+    if (!tsHoverTip) {
+        return null
+    }
+
+    return {
+        contents: {
+            kind: "markdown",
+            value: tsHoverTip.content
+        },
+        range: cr.getRange(
+            cr.getSourceIndex(tsHoverTip.posRange[0]),
+            cr.getSourceIndex(tsHoverTip.posRange[1], true)
+        )
+    } satisfies Hover
+}
+
+async function doStyleBlockHover(cr: CachedCompileResultItem, offset: number) {
+    const getConfigParams: GetClientConfigParams = {
+        uri: cr.uri,
+        name: "hover",
+        section: "css"
+    }
+    return cssLanguageService.doHover(
+        ...createStyleSheetAndDocument(cr, offset)!,
+        await connection.sendRequest(LSHandler.GetClientConfig, getConfigParams)
+    )
 }

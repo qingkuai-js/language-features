@@ -15,6 +15,7 @@ import { findImplementation } from "./handlers/implementation"
 import { codeLens, resolveCodeLens } from "./handlers/code-lens"
 import { complete, resolveCompletion } from "./handlers/complete"
 import { attachRetransmissionHandlers } from "./handlers/retransmission"
+import { getColorPresentations, getDocumentColor } from "./handlers/color"
 import { findDefinition, findTypeDefinition } from "./handlers/definition"
 
 attachDocumentHandlers()
@@ -30,10 +31,12 @@ connection.onDocumentFormatting(format)
 connection.onDefinition(findDefinition)
 connection.onPrepareRename(prepareRename)
 connection.onSignatureHelp(signatureHelp)
+connection.onDocumentColor(getDocumentColor)
 connection.onCodeLensResolve(resolveCodeLens)
 connection.onTypeDefinition(findTypeDefinition)
 connection.onImplementation(findImplementation)
 connection.onCompletionResolve(resolveCompletion)
+connection.onColorPresentation(getColorPresentations)
 
 // 自定义事件处理
 connection.onRequest("ping", _ => "pong")

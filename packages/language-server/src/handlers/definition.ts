@@ -1,7 +1,7 @@
 import type {
     FindDefinitionParams,
     FindDefinitionResult,
-    GetConfigurationParams,
+    GetClientConfigParams,
     TPICCommonRequestParams,
     FindDefinitionResultItem
 } from "../../../../types/communication"
@@ -10,12 +10,13 @@ import type { DefinitionHandler, TypeDefinitionHandler } from "../types/handlers
 
 import { URI } from "vscode-uri"
 import { resolve } from "node:path"
+import { excuteCSSLSHandler } from "../util/css"
 import { getCompileRes, walk } from "../compile"
 import { NumNum } from "../../../../types/common"
 import { ensureGetTextDocument } from "./document"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
-import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { connection, documents, limitedScriptLanguageFeatures, tpic } from "../state"
+import { findNodeAt, findAttribute, findTagRanges } from "../util/qingkuai"
+import { tpic, documents, connection, limitedScriptLanguageFeatures } from "../state"
 
 export const findDefinition: DefinitionHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)
@@ -26,95 +27,98 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
     const cr = await getCompileRes(document)
     const offset = document.offsetAt(position)
     const { getRange, getSourceIndex, getInterIndex } = cr
+    if (cr.isPositionFlagSet(offset, "inStyle")) {
+        return excuteCSSLSHandler("findDefinition", cr, offset)
+    }
 
     let interIndex = getInterIndex(offset)
     let originSelectionRange: Range | undefined = undefined
-    if (!cr.isPositionFlagSet(offset, "inScript")) {
-        const currentNode = findNodeAt(cr.templateNodes, offset)
-        if (!currentNode || !(currentNode.componentTag || currentNode.parent?.componentTag)) {
+    if (cr.isPositionFlagSet(offset, "inScript")) {
+        if (interIndex === -1) {
             return null
         }
 
-        const tagRanges = findTagRanges(currentNode, offset)
-        if (tagRanges[0]) {
-            if (!currentNode.componentTag) {
-                return null
-            }
-            interIndex = getInterIndex(currentNode.range[0])
-            originSelectionRange = getRange(...tagRanges[offset < tagRanges[0][1] ? 0 : 1]!)
-        } else {
-            const attribute = findAttribute(offset, currentNode)
-            if (!attribute || attribute.key.raw.startsWith("#")) {
-                return null
-            }
-
-            if (currentNode.parent?.componentTag && attribute.key.raw === "slot") {
-                const componentInfo = cr.componentInfos.find(info => {
-                    return info.name === currentNode.parent!.componentTag
-                })
-                if (!componentInfo) {
-                    return null
-                }
-
-                const componentFileName = resolve(cr.filePath, "../", componentInfo.relativePath)
-                return await getComponentSlotDefinition(
-                    componentFileName,
-                    attribute.value.raw,
-                    getRange(attribute.loc.start.index, attribute.loc.end.index)
-                )
-            }
-
-            const keyEndIndex = attribute.key.loc.end.index
-            const keyStartIndex = attribute.key.loc.start.index
-            if (offset >= keyEndIndex || offset < keyStartIndex) {
-                return null
-            }
-            interIndex = getInterIndex(keyStartIndex)
-            originSelectionRange = getRange(keyStartIndex, keyEndIndex)
-        }
-    }
-
-    if (interIndex === -1) {
-        return null
-    }
-
-    const preferGoToSourceDefinition: boolean = await connection.sendRequest(
-        LSHandler.GetClientConfig,
-        {
-            defaultValue: false,
-            uri: textDocument.uri,
-            section: cr.scriptLanguageId,
-            name: "preferGoToSourceDefinition"
-        } satisfies GetConfigurationParams<boolean>
-    )
-
-    const res: FindDefinitionResult | null = await tpic.sendRequest<FindDefinitionParams>(
-        TPICHandler.FindDefinition,
-        {
-            pos: interIndex,
-            fileName: cr.filePath,
-            preferGoToSourceDefinition
-        }
-    )
-    if (!res?.definitions.length) {
-        return null
-    }
-
-    if (!originSelectionRange) {
-        originSelectionRange = getRange(
-            getSourceIndex(res.range[0]),
-            getSourceIndex(res.range[1], true)
+        const preferGoToSourceDefinition: boolean = await connection.sendRequest(
+            LSHandler.GetClientConfig,
+            {
+                defaultValue: false,
+                uri: textDocument.uri,
+                section: cr.scriptLanguageId,
+                name: "preferGoToSourceDefinition"
+            } satisfies GetClientConfigParams<boolean>
         )
+
+        const res: FindDefinitionResult | null = await tpic.sendRequest<FindDefinitionParams>(
+            TPICHandler.FindDefinition,
+            {
+                pos: interIndex,
+                fileName: cr.filePath,
+                preferGoToSourceDefinition
+            }
+        )
+        if (!res?.definitions.length) {
+            return null
+        }
+
+        if (!originSelectionRange) {
+            originSelectionRange = getRange(
+                getSourceIndex(res.range[0]),
+                getSourceIndex(res.range[1], true)
+            )
+        }
+
+        return res.definitions.map(item => {
+            return {
+                originSelectionRange,
+                targetRange: item.targetRange,
+                targetUri: URI.file(item.fileName).toString(),
+                targetSelectionRange: item.targetSelectionRange
+            }
+        })
     }
 
-    return res.definitions.map(item => {
-        return {
-            originSelectionRange,
-            targetRange: item.targetRange,
-            targetUri: URI.file(item.fileName).toString(),
-            targetSelectionRange: item.targetSelectionRange
+    const currentNode = findNodeAt(cr.templateNodes, offset)
+    if (!currentNode || !(currentNode.componentTag || currentNode.parent?.componentTag)) {
+        return null
+    }
+
+    const tagRanges = findTagRanges(currentNode, offset)
+    if (tagRanges[0]) {
+        if (!currentNode.componentTag) {
+            return null
         }
-    })
+        interIndex = getInterIndex(currentNode.range[0])
+        originSelectionRange = getRange(...tagRanges[offset < tagRanges[0][1] ? 0 : 1]!)
+    } else {
+        const attribute = findAttribute(offset, currentNode)
+        if (!attribute || attribute.key.raw.startsWith("#")) {
+            return null
+        }
+
+        if (currentNode.parent?.componentTag && attribute.key.raw === "slot") {
+            const componentInfo = cr.componentInfos.find(info => {
+                return info.name === currentNode.parent!.componentTag
+            })
+            if (!componentInfo) {
+                return null
+            }
+
+            const componentFileName = resolve(cr.filePath, "../", componentInfo.relativePath)
+            return await getComponentSlotDefinition(
+                componentFileName,
+                attribute.value.raw,
+                getRange(attribute.loc.start.index, attribute.loc.end.index)
+            )
+        }
+
+        const keyEndIndex = attribute.key.loc.end.index
+        const keyStartIndex = attribute.key.loc.start.index
+        if (offset >= keyEndIndex || offset < keyStartIndex) {
+            return null
+        }
+        interIndex = getInterIndex(keyStartIndex)
+        originSelectionRange = getRange(keyStartIndex, keyEndIndex)
+    }
 }
 
 export const findTypeDefinition: TypeDefinitionHandler = async (

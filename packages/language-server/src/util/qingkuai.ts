@@ -1,8 +1,12 @@
-import type { TemplateNode } from "qingkuai/compiler"
+import type { Position } from "vscode-languageserver"
 import type { FixedArray } from "../../../../types/util"
+import type { CachedCompileResultItem } from "../types/service"
+import type { NumNum, PrettierConfiguration } from "../../../../types/common"
+import type { ASTPosition, StyleDescriptor, TemplateNode } from "qingkuai/compiler"
 
+import { cssLanguageService } from "../state"
 import { isEmptyString } from "../../../../shared-util/assert"
-import { NumNum, PrettierConfiguration } from "../../../../types/common"
+import { TextDocument } from "vscode-languageserver-textdocument"
 
 // 整理自动添加的import语句的格式
 export function formatImportStatement(
@@ -24,6 +28,10 @@ export function formatImportStatement(
     return statement
 }
 
+export function toLSPosition(position: ASTPosition): Position {
+    return { line: position.line - 1, character: position.column }
+}
+
 // 找到源码中某个索引所处的attribute
 export function findAttribute(index: number, node: TemplateNode) {
     for (let i = 0; i < node.attributes.length; i++) {
@@ -41,6 +49,53 @@ export function findAttribute(index: number, node: TemplateNode) {
         if (index >= attribute.loc.start.index && (endIndex === -1 || index < endIndex + delta)) {
             return attribute
         }
+    }
+}
+
+// 根据style block的内容创建TextDocument和StyleSheet
+// 注意：此方法创建的textDocument会将style块内容开始前的行以空行填充，列以空格填充
+export function createStyleSheetAndDocument(cr: CachedCompileResultItem, offset: number) {
+    const styleDescriptor = cr.inputDescriptor.styles.find(item => {
+        return offset >= item.loc.start.index && offset <= item.loc.end.index
+    })
+    if (!styleDescriptor) {
+        return null
+    }
+
+    let languageId = styleDescriptor.lang
+    if (!/(?:css|s[ca]ss|less)/.test(languageId)) {
+        languageId = "css"
+    }
+
+    const preLine = "\n".repeat(styleDescriptor.loc.start.line - 1)
+    const preColumn = " ".repeat(styleDescriptor.loc.start.column)
+    const content = preLine + preColumn + styleDescriptor.code
+    const document = TextDocument.create(cr.uri, languageId, 1, content)
+    const styleSheet = cssLanguageService.parseStylesheet(document)
+    return [document, toLSPosition(cr.inputDescriptor.positions[offset]), styleSheet] as const
+}
+
+// 找到指定offset所处的事件修饰符的名称及范围，不存在时返回undefined
+// 注意：调用此方法要确保offse在一个事件属性范围内，若不在事件属性范围内并不是一定返回undefined
+export function findEventModifier(source: string, offset: number, range: FixedArray<number, 2>) {
+    let endIndex = offset
+    let startIndex = offset - 1
+
+    while (endIndex < range[1] && source[endIndex] !== "|") {
+        endIndex++
+    }
+    while (startIndex > range[0] && source[startIndex] !== "|") {
+        startIndex--
+    }
+
+    if (source[startIndex] !== "|") {
+        return undefined
+    }
+
+    const modifierRange: FixedArray<number, 2> = [startIndex + 1, endIndex]
+    return {
+        range: modifierRange,
+        name: source.slice(...modifierRange)
     }
 }
 

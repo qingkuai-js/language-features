@@ -23,6 +23,7 @@
         "strip-ansi": "^7.1.0",
         "typescript": "^5.8.2",
         "vitest": "^2.1.9",
+        "vscode-css-languageservice": "6.3.4-next.0",
         "vscode-jsonrpc": "^8.2.1",
         "vscode-languageclient": "^9.0.1",
         "vscode-languageserver": "^9.0.1",

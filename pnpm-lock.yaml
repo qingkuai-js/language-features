@@ -33,10 +33,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.14
-        version: 1.0.14(prettier@3.5.3)(qingkuai@1.0.24)
+        version: 1.0.14(prettier@3.5.3)(qingkuai@..+Qingkuai+qingkuai)
       qingkuai:
         specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
-        version: 1.0.24
+        version: link:../../Qingkuai/qingkuai
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -55,6 +55,9 @@ importers:
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.13.11)
+      vscode-css-languageservice:
+        specifier: 6.3.4-next.0
+        version: 6.3.4-next.0
       vscode-jsonrpc:
         specifier: ^8.2.1
         version: 8.2.1
@@ -71,17 +74,9 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0
 
-  packages/language-server:
-    dependencies:
-      qingkuai:
-        specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
-        version: link:../../../../Qingkuai/qingkuai
+  packages/language-server: {}
 
-  packages/typescript-plugin:
-    dependencies:
-      qingkuai:
-        specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
-        version: link:../../../../Qingkuai/qingkuai
+  packages/typescript-plugin: {}
 
   packages/vscode-extension:
     dependencies:
@@ -90,13 +85,13 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.14
-        version: 1.0.14(prettier@3.5.3)(qingkuai@1.0.24)
+        version: 1.0.14(prettier@3.5.3)(qingkuai@..+Qingkuai+qingkuai)
       qingkuai:
         specifier: link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
-        version: 1.0.24
+        version: link:../../../../Qingkuai/qingkuai
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
-        version: file:packages/typescript-plugin
+        version: link:../typescript-plugin
     devDependencies:
       js-yaml:
         specifier: ^4.1.0
@@ -108,21 +103,8 @@ packages:
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/helper-string-parser@7.25.9':
-    resolution: {integrity: sha512-4A/SCr/2KLd5jrtOMFzaKjVtAei3+2r/NChoBNoZ3EyP/+GlhoaEGoWOZUmFmoITP7zOJyHIMm+DYRd8o3PvHA==}
-    engines: {node: '>=6.9.0'}
-
   '@babel/helper-validator-identifier@7.25.9':
     resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/parser@7.27.0':
-    resolution: {integrity: sha512-iaepho73/2Pz7w2eMS0Q5f83+0RKI7i4xmiYeBmDzfRVbQtTOG7Ts0S4HzJVsTMGI9keU8rNfuZr8DKfSt7Yyg==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
-
-  '@babel/types@7.27.0':
-    resolution: {integrity: sha512-H45s8fVLYjbhFH62dIJ3WtmJ6RSPt/3DRO0ZcT2SUiYiQyz3BLVb9ADEnLl91m74aQPS3AzzeajZHYOalWe3bg==}
     engines: {node: '>=6.9.0'}
 
   '@emmetio/abbreviation@2.3.3':
@@ -449,6 +431,9 @@ packages:
   '@vscode/emmet-helper@2.11.0':
     resolution: {integrity: sha512-QLxjQR3imPZPQltfbWRnHU6JecWTF1QSWhx3GAKQpslx7y3Dp6sIIXhKjiUJ/BR9FX8PVthjr9PD6pNwOJfAzw==}
 
+  '@vscode/l10n@0.0.18':
+    resolution: {integrity: sha512-KYSIHVmslkaCDyw013pphY+d7x1qV8IZupYfeIfzNA+nsaWHbn5uPuQRvdRFsa9zFzGeudPuoGoZ1Op4jrJXIQ==}
+
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
@@ -704,10 +689,6 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.24:
-    resolution: {integrity: sha512-H1Umh4eVG8+LTZUbHxfcTrycAd60JCfics6EqkZDfefHxfTI5le9JZO7rXBpqXtKCsrbn6ploUnkRdiRaaXHxw==}
-    engines: {node: '>=14'}
-
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
 
@@ -801,9 +782,6 @@ packages:
     resolution: {integrity: sha512-n1cw8k1k0x4pgA2+9XrOkFydTerNcJ1zWCO5Nn9scWHTD+5tp8dghT2x1uduQePZTZgd3Tupf+x9BxJjeJi77Q==}
     engines: {node: '>=14.0.0'}
 
-  typescript-plugin-qingkuai@file:packages/typescript-plugin:
-    resolution: {directory: packages/typescript-plugin, type: directory}
-
   typescript@5.8.2:
     resolution: {integrity: sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ==}
     engines: {node: '>=14.17'}
@@ -877,6 +855,9 @@ packages:
       jsdom:
         optional: true
 
+  vscode-css-languageservice@6.3.4-next.0:
+    resolution: {integrity: sha512-pUfahJqrxTWEHxWGysU+OKNBie5L5T7tlkEgmogro9Uu60A4YkD5XuAl3kDpnYifQZCGqvOP6u/L8MYqZUgvHQ==}
+
   vscode-jsonrpc@8.2.0:
     resolution: {integrity: sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA==}
     engines: {node: '>=14.0.0'}
@@ -931,18 +912,7 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
-  '@babel/helper-string-parser@7.25.9': {}
-
   '@babel/helper-validator-identifier@7.25.9': {}
-
-  '@babel/parser@7.27.0':
-    dependencies:
-      '@babel/types': 7.27.0
-
-  '@babel/types@7.27.0':
-    dependencies:
-      '@babel/helper-string-parser': 7.25.9
-      '@babel/helper-validator-identifier': 7.25.9
 
   '@emmetio/abbreviation@2.3.3':
     dependencies:
@@ -1181,6 +1151,8 @@ snapshots:
       vscode-languageserver-types: 3.17.5
       vscode-uri: 3.1.0
 
+  '@vscode/l10n@0.0.18': {}
+
   ansi-regex@5.0.1: {}
 
   ansi-regex@6.1.0: {}
@@ -1412,19 +1384,14 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.14(prettier@3.5.3)(qingkuai@1.0.24):
+  prettier-plugin-qingkuai@1.0.14(prettier@3.5.3)(qingkuai@..+Qingkuai+qingkuai):
     dependencies:
       '@babel/code-frame': 7.26.2
       lines-and-columns: 2.0.4
       prettier: 3.5.3
-      qingkuai: 1.0.24
+      qingkuai: link:../../Qingkuai/qingkuai
 
   prettier@3.5.3: {}
-
-  qingkuai@1.0.24:
-    dependencies:
-      '@babel/parser': 7.27.0
-      '@jridgewell/sourcemap-codec': 1.5.0
 
   resolve-pkg-maps@1.0.0: {}
 
@@ -1525,10 +1492,6 @@ snapshots:
 
   tinyspy@3.0.2: {}
 
-  typescript-plugin-qingkuai@file:packages/typescript-plugin:
-    dependencies:
-      qingkuai: link:../../Qingkuai/qingkuai
-
   typescript@5.8.2: {}
 
   undici-types@6.20.0: {}
@@ -1599,6 +1562,13 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vscode-css-languageservice@6.3.4-next.0:
+    dependencies:
+      '@vscode/l10n': 0.0.18
+      vscode-languageserver-textdocument: 1.0.12
+      vscode-languageserver-types: 3.17.5
+      vscode-uri: 3.1.0
 
   vscode-jsonrpc@8.2.0: {}
 

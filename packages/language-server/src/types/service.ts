@@ -1,5 +1,5 @@
 import type {
-    GetClientConfigResult,
+    GetClientLanguageConfigResult,
     ComponentIdentifierInfo,
     ResolveCompletionParams
 } from "../../../../types/communication"
@@ -49,11 +49,12 @@ export type SetStateOptions = Partial<{
 }>
 
 export type CachedCompileResultItem = CompileResult & {
+    uri: string
     version: number
     filePath: RealPath
     getRange: GetRangeFunc
     isSynchronized: boolean
-    config: GetClientConfigResult
+    config: GetClientLanguageConfigResult
     builtInTypeDeclarationEndIndex: number
     componentInfos: ComponentIdentifierInfo[]
     scriptLanguageId: "typescript" | "javascript"

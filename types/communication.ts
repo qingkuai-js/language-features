@@ -95,12 +95,12 @@ export interface ComponentIdentifierInfo {
     attributes: ComponentAttributeItem[]
 }
 
-export interface GetClientConfigParams {
+export interface GetClientLanguageConfigParams {
     filePath: string
     scriptPartIsTypescript: boolean
 }
 
-export interface GetClientConfigResult {
+export interface GetClientLanguageConfigResult {
     workspacePath: string
     prettierConfig: PrettierConfiguration
     typescriptConfig: TSClientConfiguration
@@ -216,16 +216,16 @@ export type GetCompletionResult = {
     entries: GetCompletionResultEntry[]
 } | null
 
-export type GetConfigurationParams<T = any> = {
+export type GetClientConfigParams<T = any> = {
     uri: string
     section: string
 } & (
     | {
-          filter?: string[]
+          name: string
+          defaultValue?: T
       }
     | {
-          name: string
-          defaultValue: T
+          includes?: string[]
       }
 )
 

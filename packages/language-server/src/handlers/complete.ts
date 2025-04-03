@@ -5,7 +5,8 @@ import type {
     ResolveCompletionResult,
     ComponentIdentifierInfo,
     TPICCommonRequestParams,
-    ResolveCompletionParams
+    ResolveCompletionParams,
+    GetClientConfigParams
 } from "../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { NumNum } from "../../../../types/common"
@@ -21,6 +22,7 @@ import {
     connection,
     projectKind,
     isTestingEnv,
+    cssLanguageService,
     limitedScriptLanguageFeatures
 } from "../state"
 import {
@@ -40,6 +42,13 @@ import {
     inEntityCharacterRE,
     completeEntityCharacterRE
 } from "../regular"
+import {
+    findNodeAt,
+    findAttribute,
+    findEventModifier,
+    formatImportStatement,
+    createStyleSheetAndDocument
+} from "../util/qingkuai"
 import {
     LSHandler,
     TPICHandler,
@@ -61,14 +70,12 @@ import {
 import { URI } from "vscode-uri"
 import { getCompileRes } from "../compile"
 import { position2Range } from "../util/vscode"
-import { findEventModifier } from "../util/search"
 import { eventModifiers } from "../data/event-modifier"
 import { parseTemplate, util } from "qingkuai/compiler"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
-import { findAttribute, findNodeAt, formatImportStatement } from "../util/qingkuai"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
 
 const optionalSameKeys = [
@@ -92,7 +99,6 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
     const source = cr.inputDescriptor.source
     const triggerChar = context?.triggerCharacter || ""
     const currentNode = findNodeAt(templateNodes, offset - 1)
-    const inScript = cr.isPositionFlagSet(offset, "inScript")
 
     // 输入结束标签的关闭字符>时不处于任何节点，直接返回
     if (isUndefined(currentNode)) {
@@ -100,7 +106,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
     }
 
     // 获取脚本块（包括插值表达式）的补全建议
-    if (!isTestingEnv && inScript) {
+    if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
         if (/[^\.\-@#<'"`:,_ ]/.test(triggerChar)) {
             return null
         }
@@ -108,8 +114,17 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             triggerChar === " " &&
             document.getText(cr.getRange(offset - 7, offset)) !== "import "
         ) {
+            // import completions
         }
         return doScriptBlockComplete(cr, currentNode, offset)
+    }
+
+    // 获取样式块的补全建议
+    if (!isTestingEnv && cr.isPositionFlagSet(offset, "inStyle")) {
+        if (/[^#.\[:@ ]/.test(triggerChar)) {
+            return null
+        }
+        return await doStyleBlockComplete(cr, offset)
     }
 
     // 文本节点范围内启用emmet、实体字符及自定义标签补全建议支持
@@ -1136,4 +1151,16 @@ function convertTsCompletionKind(kind: string) {
         default:
             return CompletionItemKind.Property
     }
+}
+
+async function doStyleBlockComplete(cr: CachedCompileResultItem, offset: number) {
+    const getConfigParams: GetClientConfigParams = {
+        uri: cr.uri,
+        section: "css",
+        name: "completion"
+    }
+    return cssLanguageService.doComplete(
+        ...createStyleSheetAndDocument(cr, offset)!,
+        await connection.sendRequest(LSHandler.GetClientConfig, getConfigParams)
+    )
 }

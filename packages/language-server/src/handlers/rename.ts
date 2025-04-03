@@ -9,16 +9,24 @@ import {
     documents,
     isTestingEnv,
     waittingCommands,
+    cssLanguageService,
     limitedScriptLanguageFeatures
 } from "../state"
+import {
+    findNodeAt,
+    findTagRanges,
+    findAttribute,
+    createStyleSheetAndDocument
+} from "../util/qingkuai"
 import { URI } from "vscode-uri"
 import { util } from "qingkuai/compiler"
 import { getCompileRes } from "../compile"
+import { excuteCSSLSHandler } from "../util/css"
 import { ensureGetTextDocument } from "./document"
 import { TextEdit } from "vscode-languageserver/node"
 import { TPICHandler } from "../../../../shared-util/constant"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
-import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export const rename: RenameHandler = async ({ textDocument, position, newName }, token) => {
     const document = documents.get(textDocument.uri)
@@ -27,14 +35,16 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
     }
 
     const cr = await getCompileRes(document)
-    const { getRange, getOffset, templateNodes } = cr
-
-    const offset = getOffset(position)
+    const offset = cr.getOffset(position)
+    if (cr.isPositionFlagSet(offset, "inStyle")) {
+        const [sd, sp, ss] = createStyleSheetAndDocument(cr, offset)!
+        return cssLanguageService.doRename(sd, sp, newName, ss)
+    }
     if (cr.isPositionFlagSet(offset, "inScript")) {
-        return doScriptBlockRename(cr, offset, newName)
+        return await doScriptBlockRename(cr, offset, newName)
     }
 
-    const currentNode = findNodeAt(templateNodes, offset)
+    const currentNode = findNodeAt(cr.templateNodes, offset)
     if (isUndefined(currentNode) || isEmptyString(currentNode.tag)) {
         return null
     }
@@ -62,7 +72,7 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
     // HTML标签重命名
     tagRanges.forEach(range => {
         if (!isUndefined(range)) {
-            textEdits.push(TextEdit.replace(getRange(...range), newName))
+            textEdits.push(TextEdit.replace(cr.getRange(...range), newName))
         }
     })
     if (textEdits.length > 0) {
@@ -81,26 +91,15 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
     }
 
     const cr = await getCompileRes(document)
-    const { getRange, getOffset, templateNodes, getSourceIndex } = cr
-
-    const offset = getOffset(position)
-    if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
-        const posRange = await tpic.sendRequest<TPICCommonRequestParams, NumNum>(
-            TPICHandler.PrepareRename,
-            {
-                fileName: cr.filePath,
-                pos: cr.getInterIndex(offset)
-            }
-        )
-        const ss = getSourceIndex(posRange[0])
-        const se = getSourceIndex(posRange[1], true)
-        if (ss && se && ss !== -1 && se !== -1) {
-            return getRange(ss, se)
-        }
-        return null
+    const offset = cr.getOffset(position)
+    if (cr.isPositionFlagSet(offset, "inScript")) {
+        return await scriptBlockPrepareRename(cr, offset)
+    }
+    if (cr.isPositionFlagSet(offset, "inStyle")) {
+        return excuteCSSLSHandler("prepareRename", cr, offset)
     }
 
-    const currentNode = findNodeAt(templateNodes, offset)
+    const currentNode = findNodeAt(cr.templateNodes, offset)
     if (isUndefined(currentNode) || isEmptyString(currentNode)) {
         return null
     }
@@ -109,7 +108,7 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
         const currentAttribute = findAttribute(offset, currentNode)
         if (currentAttribute && currentAttribute.key.raw[0] !== "#") {
             const delta = +/[!@&]/.test(currentAttribute.key.raw)
-            return getRange(
+            return cr.getRange(
                 currentAttribute.key.loc.start.index + delta,
                 currentAttribute.key.loc.end.index
             )
@@ -118,7 +117,7 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
 
     const tagRanges = findTagRanges(currentNode, offset, true)
     if (!isUndefined(tagRanges[0])) {
-        return getRange(...tagRanges[offset <= tagRanges[0][1] ? 0 : 1]!)
+        return cr.getRange(...tagRanges[offset <= tagRanges[0][1] ? 0 : 1]!)
     }
 }
 
@@ -195,4 +194,17 @@ async function doScriptBlockRename(
     }
 
     return { changes: textEdits } satisfies WorkspaceEdit
+}
+
+async function scriptBlockPrepareRename(cr: CachedCompileResultItem, offset: number) {
+    const posRange = await tpic.sendRequest<TPICCommonRequestParams, NumNum>(
+        TPICHandler.PrepareRename,
+        {
+            fileName: cr.filePath,
+            pos: cr.getInterIndex(offset)
+        }
+    )
+    const ss = cr.getSourceIndex(posRange[0])
+    const se = cr.getSourceIndex(posRange[1], true)
+    return isIndexesInvalid(ss, se) ? null : cr.getRange(ss, se)
 }

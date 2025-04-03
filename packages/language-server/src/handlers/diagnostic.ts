@@ -7,6 +7,7 @@ import {
     connection,
     isTestingEnv,
     waittingCommands,
+    cssLanguageService,
     limitedScriptLanguageFeatures
 } from "../state"
 import { URI } from "vscode-uri"
@@ -14,6 +15,7 @@ import { stringifyRange } from "../util/vscode"
 import { badComponentAttrMessageRE } from "../regular"
 import { debounce } from "../../../../shared-util/sundry"
 import { TPICHandler } from "../../../../shared-util/constant"
+import { createStyleSheetAndDocument } from "../util/qingkuai"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isNull, isUndefined } from "../../../../shared-util/assert"
@@ -60,6 +62,15 @@ export const publishDiagnostics = debounce(
                 code: value.code,
                 message: value.message
             }
+        })
+
+        // 添加样式块的诊断信息
+        cr.inputDescriptor.styles.forEach(descriptor => {
+            const [document, _, styleSheet] = createStyleSheetAndDocument(
+                cr,
+                descriptor.loc.start.index
+            )!
+            diagnostics.push(...cssLanguageService.doValidation(document, styleSheet))
         })
 
         // 处理javascript/typescript语言服务的诊断结果（通过请求ts插件的ipc服务器获取)

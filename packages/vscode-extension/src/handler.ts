@@ -1,8 +1,8 @@
 import type {
     InsertSnippetParam,
     GetClientConfigParams,
-    GetConfigurationParams,
-    ApplyWorkspaceEditParams
+    ApplyWorkspaceEditParams,
+    GetClientLanguageConfigParams
 } from "../../../types/communication"
 import type { ConfigTsServerPluginFunc } from "./types"
 
@@ -53,7 +53,7 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
     // 获取语言配置项
     client.onRequest(
         LSHandler.GetLanguageConfig,
-        async ({ filePath, scriptPartIsTypescript }: GetClientConfigParams) => {
+        async ({ filePath, scriptPartIsTypescript }: GetClientLanguageConfigParams) => {
             if (!fs.existsSync(filePath)) {
                 return
             }
@@ -74,13 +74,13 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
     )
 
     // 获取客户端配置
-    client.onRequest(LSHandler.GetClientConfig, (params: GetConfigurationParams) => {
+    client.onRequest(LSHandler.GetClientConfig, (params: GetClientConfigParams) => {
         const config = vscode.workspace.getConfiguration(
             params.section,
             vscode.Uri.parse(params.uri)
         )
-        if ("filter" in params) {
-            const needKeys = new Set(params.filter)
+        if ("includes" in params) {
+            const needKeys = new Set(params.includes)
             return Object.keys(config).reduce((ret, key) => {
                 if (!needKeys.has(key)) {
                     return ret

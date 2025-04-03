@@ -1,8 +1,8 @@
 import type {
     ConfigureFileParams,
     UpdateSnapshotParams,
-    GetClientConfigParams,
-    GetClientConfigResult
+    GetClientLanguageConfigParams,
+    GetClientLanguageConfigResult
 } from "../../../types/communication"
 import type { RealPath } from "../../../types/common"
 import type { CachedCompileResultItem } from "./types/service"
@@ -38,7 +38,7 @@ import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
 
 // 文档配置项，键为TextDocument.uri（string）
-const clientConfigCache = new Map<string, GetClientConfigResult>()
+const clientConfigCache = new Map<string, GetClientLanguageConfigResult>()
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
 const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
@@ -130,6 +130,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         getInterIndex,
         getSourceIndex,
         isPositionFlagSet,
+        uri: document.uri,
         componentInfos: [],
         config: null as any,
         isSynchronized: false,
@@ -167,12 +168,12 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
         if (clientConfigCache.has(document.uri)) {
             cr.config = clientConfigCache.get(document.uri)!
         } else {
-            const res: GetClientConfigResult = await connection.sendRequest(
+            const res: GetClientLanguageConfigResult = await connection.sendRequest(
                 LSHandler.GetLanguageConfig,
                 {
                     filePath: cr.filePath,
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
-                } satisfies GetClientConfigParams
+                } satisfies GetClientLanguageConfigParams
             )
             updatePrettierConfigurationForQingkuaiFile(res)
 
@@ -223,7 +224,7 @@ export async function getCompileResByPath(path: string) {
     return await getCompileRes(document, false)
 }
 
-function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+function updatePrettierConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {
     const { prettierConfig: pc, extensionConfig: ec } = config
     if (isUndefined(pc.qingkuai)) {
         pc.qingkuai = {}
@@ -240,7 +241,7 @@ function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResul
 }
 
 // prettier-ignore
-function updateTypescriptConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+function updateTypescriptConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {
     // @ts-expect-error: change read-only property
     config.typescriptConfig.formatCodeSettings.semicolons = config.prettierConfig.semi ? "insert" : "remove"
 

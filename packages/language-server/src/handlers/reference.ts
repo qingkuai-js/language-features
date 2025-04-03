@@ -6,12 +6,13 @@ import type { ReferenceHandler } from "../types/handlers"
 import type { Location } from "vscode-languageserver/node"
 
 import { URI } from "vscode-uri"
+import { excuteCSSLSHandler } from "../util/css"
 import { getCompileRes, walk } from "../compile"
 import { ensureGetTextDocument } from "./document"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 import { filePathToComponentName } from "../../../../shared-util/qingkuai"
-import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { findNodeAt, findAttribute, findTagRanges } from "../util/qingkuai"
 import { EXPORT_DEFAULT_OFFSET, TPICHandler } from "../../../../shared-util/constant"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
@@ -22,51 +23,54 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
 
     const cr = await getCompileRes(document)
     const offset = document.offsetAt(position)
+    if (cr.isPositionFlagSet(offset, "inStyle")) {
+        return excuteCSSLSHandler("findReferences", cr, offset)
+    }
 
     let searchingSlotName = ""
     let interIndex = cr.getInterIndex(offset)
-    if (!cr.isPositionFlagSet(interIndex, "inScript")) {
-        const currentNode = findNodeAt(cr.templateNodes, offset)
-        const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET // Export Identifier Start Inter Index
-        if (currentNode?.isEmbedded && findTagRanges(currentNode, offset)[0]) {
-            if (!/[jt]s$/.test(currentNode.tag)) {
-                return null
-            }
-            interIndex = e29x
-        } else if (currentNode?.tag === "slot") {
-            const attribute = findAttribute(offset, currentNode)
-            if (attribute?.key.raw !== "name") {
-                return null
-            }
-            searchingSlotName = attribute.value.raw
-            interIndex = e29x
+    if (cr.isPositionFlagSet(interIndex, "inScript")) {
+        const references: FindReferenceResultItem[] | null =
+            await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.FindReference, {
+                pos: interIndex,
+                fileName: cr.filePath
+            })
+
+        if (!references?.length) {
+            return null
         }
-    }
 
-    const references: FindReferenceResultItem[] | null =
-        await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.FindReference, {
-            pos: interIndex,
-            fileName: cr.filePath
+        if (searchingSlotName) {
+            return await findSlotReferences(
+                references,
+                searchingSlotName,
+                filePathToComponentName(cr.filePath)
+            )
+        }
+
+        return references.map(item => {
+            return {
+                range: item.range,
+                uri: URI.file(item.fileName).toString()
+            } satisfies Location
         })
-
-    if (!references?.length) {
-        return null
     }
 
-    if (searchingSlotName) {
-        return await findSlotReferences(
-            references,
-            searchingSlotName,
-            filePathToComponentName(cr.filePath)
-        )
+    const currentNode = findNodeAt(cr.templateNodes, offset)
+    const e29x = cr.interIndexMap.itos.length + EXPORT_DEFAULT_OFFSET // Export Identifier Start Inter Index
+    if (currentNode?.isEmbedded && findTagRanges(currentNode, offset)[0]) {
+        if (!/[jt]s$/.test(currentNode.tag)) {
+            return null
+        }
+        interIndex = e29x
+    } else if (currentNode?.tag === "slot") {
+        const attribute = findAttribute(offset, currentNode)
+        if (attribute?.key.raw !== "name") {
+            return null
+        }
+        searchingSlotName = attribute.value.raw
+        interIndex = e29x
     }
-
-    return references.map(item => {
-        return {
-            range: item.range,
-            uri: URI.file(item.fileName).toString()
-        } satisfies Location
-    })
 }
 
 export async function findSlotReferences(

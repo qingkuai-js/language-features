@@ -4,6 +4,7 @@ import { ProjectKind } from "./constants"
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
+import { getCSSLanguageService } from "vscode-css-languageservice"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
 import { TextDocuments, ProposedFeatures, createConnection } from "vscode-languageserver/node"
@@ -36,6 +37,7 @@ export function setState(options: SetStateOptions) {
 }
 
 export const documents = new TextDocuments(TextDocument)
+export const cssLanguageService = getCSSLanguageService()
 export const waittingCommands = new Map<string, string>()
 export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()

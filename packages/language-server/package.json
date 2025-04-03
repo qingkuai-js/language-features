@@ -4,8 +4,5 @@
     "author": "lgq",
     "main": "index.js",
     "type": "module",
-    "license": "MIT",
-    "dependencies": {
-        "qingkuai": "link:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai"
-    }
+    "license": "MIT"
 }
