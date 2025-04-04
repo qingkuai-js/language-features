@@ -1,3 +1,5 @@
+/// <reference lib="dom" />
+
 type GeneralFunc = (...args: any) => any
 type AnyObject = Record<AnyObjectKey, any>
 type Constructible = new (..._: any) => any
@@ -5,6 +7,12 @@ type AnyObjectKey = string | number | symbol
 type NotFunction<T> = Exclude<T, GeneralFunc>
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
 type ExtractSlotNames<T extends Constructible> = keyof ConstructorParameters<T>[2]
+
+type UnescapeOptions = Partial<{
+    escapeTags?: string[]
+    escapeStyle?: boolean
+    escapeScript?: boolean
+}>
 
 interface DerivedFunc {
     <T>(expression: NotFunction<T>): T
@@ -44,9 +52,13 @@ export namespace __c__ {
         __: K
     ) => Readonly<ConstructorParameters<T>[2][K]>
 
+    const SatisfyNode: (_: Node) => void
     const SatisfyString: (_: string) => void
     const SatisfyBoolean: (_: boolean) => void
     const SatisfyPromise: (_: Promise<any>) => void
+    const SatisfyTargetDirective: (_: Node | string) => void
+    const SatisfyHtmlDirective: (_: UnescapeOptions) => void
+
     const SatisfyComponent: <T extends Constructible>(
         _: T,
         __: ConstructorParameters<T>[0],

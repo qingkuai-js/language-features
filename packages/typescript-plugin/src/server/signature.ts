@@ -3,26 +3,57 @@ import type {
     ParameterInformation,
     SignatureInformation
 } from "vscode-languageserver/node"
-import { SignatureHelpItem, SignatureHelpItems } from "typescript"
-import type { TPICCommonRequestParams } from "../../../../types/communication"
+import type { SignatureHelpParams } from "../../../../types/communication"
+import type { SignatureHelpItem, SignatureHelpItems, SignatureHelpTriggerReason } from "typescript"
 
 import {
+    getNodeAt,
     convertJsDocTagsToMarkdown,
     getDefaultLanguageServiceByFileName,
     convertDisplayPartsToPlainTextWithLink
 } from "../util/typescript"
-import { server } from "../state"
-import { TPICHandler } from "../../../../shared-util/constant"
+import { server, ts } from "../state"
+import { findAncestorUntil } from "../util/ast"
+import { INTER_NAMESPACE, TPICHandler } from "../../../../shared-util/constant"
 
 export function attachGetSignatureHelp() {
-    server.onRequest<TPICCommonRequestParams, SignatureHelp | null>(
+    server.onRequest<SignatureHelpParams, SignatureHelp | null>(
         TPICHandler.GetSignatureHelp,
-        ({ fileName, pos }) => {
+        ({ fileName, pos, isRetrigger, triggerCharacter }) => {
+            let reason: SignatureHelpTriggerReason | undefined = undefined
             const languageService = getDefaultLanguageServiceByFileName(fileName)
+            const sourceFile = languageService?.getProgram()?.getSourceFile(fileName)
+
+            // __c__命名空间中的方法调用不触发签名帮助
+            if (sourceFile) {
+                const node = getNodeAt(sourceFile, pos)
+                const callee = node && findAncestorUntil(node, ts.SyntaxKind.CallExpression)
+                if (callee?.getText().startsWith(INTER_NAMESPACE)) {
+                    return null
+                }
+            }
+
+            if (isRetrigger) {
+                reason = {
+                    kind: "retrigger",
+                    triggerCharacter
+                }
+            } else if (triggerCharacter) {
+                reason = {
+                    kind: "characterTyped",
+                    triggerCharacter
+                }
+            } else {
+                reason = {
+                    kind: "invoked"
+                }
+            }
+
+            const options = { triggerReason: reason }
             const getSignatureHelpRes = languageService?.getSignatureHelpItems(
                 fileName,
                 pos,
-                undefined
+                options
             )
             if (!getSignatureHelpRes) {
                 return null

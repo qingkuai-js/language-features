@@ -1,41 +1,44 @@
 import type { SignatureHelpHandler } from "../types/handlers"
 import type { SignatureHelp } from "vscode-languageserver/node"
+import type { SignatureHelpParams } from "../../../../types/communication"
 
 import { getCompileRes } from "../compile"
 import { TPICHandler } from "../../../../shared-util/constant"
-import { TPICCommonRequestParams } from "../../../../types/communication"
 import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 
-export const signatureHelp: SignatureHelpHandler = async (params, token) => {
-    const document = documents.get(params.textDocument.uri)
+export const signatureHelp: SignatureHelpHandler = async (
+    { textDocument, position, context },
+    token
+) => {
+    const document = documents.get(textDocument.uri)
     if (!document || limitedScriptLanguageFeatures || token.isCancellationRequested) {
         return null
     }
 
     const cr = await getCompileRes(document)
-    const offset = document.offsetAt(params.position)
+    const offset = document.offsetAt(position)
     const { isPositionFlagSet } = cr
     if (!isPositionFlagSet(offset, "inScript")) {
         return null
     }
 
-    const signatureHelp = await tpic.sendRequest<TPICCommonRequestParams, SignatureHelp | null>(
+    const signatureHelp = await tpic.sendRequest<SignatureHelpParams, SignatureHelp | null>(
         TPICHandler.GetSignatureHelp,
         {
             fileName: cr.filePath,
-            pos: cr.getInterIndex(offset)
+            pos: cr.getInterIndex(offset),
+            isRetrigger: !!context?.isRetrigger,
+            triggerCharacter: context?.triggerCharacter as any
         }
     )
     if (!signatureHelp) {
         return null
     }
 
-    if (params.context?.activeSignatureHelp) {
+    if (context?.activeSignatureHelp) {
         const previouslyActiveSignature =
-            params.context.activeSignatureHelp.signatures[
-                params.context.activeSignatureHelp.activeSignature!
-            ]
-        if (previouslyActiveSignature && params.context.isRetrigger) {
+            context.activeSignatureHelp.signatures[context.activeSignatureHelp.activeSignature!]
+        if (previouslyActiveSignature && context.isRetrigger) {
             const existingIndex = signatureHelp.signatures.findIndex(s => {
                 return s.label === previouslyActiveSignature.label
             })

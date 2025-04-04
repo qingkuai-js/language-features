@@ -229,6 +229,11 @@ export type GetClientConfigParams<T = any> = {
       }
 )
 
+export type SignatureHelpParams = TPICCommonRequestParams & {
+    isRetrigger: boolean
+    triggerCharacter?: "," | "(" | "<"
+}
+
 export type FindDefinitionParams = TPICCommonRequestParams & {
     preferGoToSourceDefinition: boolean
 }

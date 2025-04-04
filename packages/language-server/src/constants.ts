@@ -17,12 +17,15 @@ export const MAYBE_INVALID_COMPLETION_LABELS = new Set([
     "GetKVPair",
     "GetResolve",
     "GetSlotProp",
+    "SatisfyNode",
     "GetTypedValue",
     "SatisfyString",
     "SatisfyPromise",
     "SatisfyBoolean",
     "SatisfyRefGroup",
-    "SatisfyComponent"
+    "SatisfyComponent",
+    "SatisfyHtmlDirective",
+    "SatisfyTargetDirective"
 ])
 
 export enum ProjectKind {

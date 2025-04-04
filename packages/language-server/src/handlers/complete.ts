@@ -107,16 +107,10 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
 
     // 获取脚本块（包括插值表达式）的补全建议
     if (!isTestingEnv && cr.isPositionFlagSet(offset, "inScript")) {
-        if (/[^\.\-@#<'"`:,_ ]/.test(triggerChar)) {
+        if (/[^\.\-@#<'"`_$]/.test(triggerChar)) {
             return null
         }
-        if (
-            triggerChar === " " &&
-            document.getText(cr.getRange(offset - 7, offset)) !== "import "
-        ) {
-            // import completions
-        }
-        return doScriptBlockComplete(cr, currentNode, offset)
+        return doScriptBlockComplete(cr, currentNode, offset, triggerChar)
     }
 
     // 获取样式块的补全建议
@@ -802,7 +796,7 @@ function doAttributeNameComplete(
                 (item.name !== "slot" || node.parent?.componentTag)
             ) {
                 const label = "#" + item.name
-                const noValue = hasValue || item.name === "else"
+                const noValue = hasValue || item.name === "else" || item.name === "html"
                 const completion: CompletionItem = {
                     label: label,
                     filterText: label,
@@ -912,7 +906,8 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
 async function doScriptBlockComplete(
     cr: CachedCompileResultItem,
     currentNode: TemplateNode,
-    offset: number
+    offset: number,
+    triggerChar: string
 ) {
     if (limitedScriptLanguageFeatures) {
         return null
@@ -921,7 +916,6 @@ async function doScriptBlockComplete(
     const { getRange, getSourceIndex } = cr
     const unsetTriggerCharacters = new Set<string>()
     const positionOfInterCode = cr.getInterIndex(offset)
-    const attribute = findAttribute(offset, currentNode)
     const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
         TPICHandler.GetCompletion,
         {
@@ -929,17 +923,6 @@ async function doScriptBlockComplete(
             pos: positionOfInterCode
         }
     )
-
-    if (attribute?.key.raw === "#for") {
-        const m = attribute.value.loc.start.index + util.findOutOfComment(attribute.value.raw, /\S/)
-        if (
-            m !== -1 &&
-            m <= offset &&
-            identifierRE.test(cr.inputDescriptor.source.slice(m, offset))
-        ) {
-            unsetTriggerCharacters.add(",")
-        }
-    }
 
     if (isNull(tsCompletionRes)) {
         return null
@@ -981,9 +964,16 @@ async function doScriptBlockComplete(
         }
         if (item.replacementSpan) {
             const { start, length } = item.replacementSpan
-            ret.textEdit = TextEdit.del(
-                getRange(getSourceIndex(start), getSourceIndex(start + length, true))
-            )
+            const se = getSourceIndex(start + length, true)
+            const ss = getSourceIndex(start)
+            if (!isIndexesInvalid(ss, se)) {
+                ret.textEdit = TextEdit.replace(getRange(ss, se), item.name)
+            }
+        } else {
+            ret.textEdit = TextEdit.insert(cr.getPosition(offset), item.name)
+        }
+        if (ret.kind === CompletionItemKind.Text || ret.kind === CompletionItemKind.Constant) {
+            ret.commitCharacters = undefined
         }
 
         return ret
@@ -991,8 +981,14 @@ async function doScriptBlockComplete(
 
     // 过滤无效的补全建议
     completionItems = completionItems.filter(item => {
+        if (!item.textEdit) {
+            return false
+        }
         if (item.label === INTER_NAMESPACE) {
             return false
+        }
+        if (/['"`]/.test(triggerChar)) {
+            return item.kind === CompletionItemKind.Constant
         }
         if (
             item.kind === CompletionItemKind.Text &&
