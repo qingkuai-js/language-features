@@ -67,7 +67,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         if (/[^\.\-@#<'"`_$]/.test(triggerChar)) {
             return null
         }
-        return doScriptBlockComplete(cr, offset, triggerChar)
+        return doScriptBlockComplete(cr, currentNode, offset, triggerChar)
     }
 
     // 获取样式块的补全建议

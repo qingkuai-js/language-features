@@ -191,26 +191,24 @@ export interface UpdateSnapshotParams {
 }
 
 export interface TSDiagnosticRelatedInformation {
-    range?: Range
-    start: number
-    length: number
+    range: Range
     message: string
     filePath: RealPath
 }
 export interface TSDiagnostic {
     kind: number
     code: number
-    start: number
-    length: number
+    range: Range
     source: string
     message: string
     deprecated: boolean
     unnecessary: boolean
-    relatedInformation: TSDiagnosticRelatedInformation[]
+    relatedInformations: TSDiagnosticRelatedInformation[]
 }
 
 export type GetCompletionResult = {
     isIncomplete: boolean
+    isNewIdentifierLocation: boolean
     defaultCommitCharacters: string[]
     defaultRepalcementSpan?: TextSpan
     entries: GetCompletionResultEntry[]

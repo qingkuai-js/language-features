@@ -57,7 +57,7 @@ export namespace __c__ {
     const SatisfyBoolean: (_: boolean) => void
     const SatisfyPromise: (_: Promise<any>) => void
     const SatisfyTargetDirective: (_: Node | string) => void
-    const SatisfyHtmlDirective: (_: UnescapeOptions) => void
+    const SatisfyHtmlDirective: (_?: UnescapeOptions) => void
 
     const SatisfyComponent: <T extends Constructible>(
         _: T,

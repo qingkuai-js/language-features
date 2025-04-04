@@ -2,7 +2,6 @@ import type TS from "typescript"
 import type { RenameFileParams, RenameFileResult } from "../../../../types/communication"
 
 import { server, session } from "../state"
-import { getRealPath } from "../util/qingkuai"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
 

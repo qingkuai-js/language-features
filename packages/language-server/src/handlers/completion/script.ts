@@ -2,6 +2,7 @@ import type {
     GetCompletionResult,
     TPICCommonRequestParams
 } from "../../../../../types/communication"
+import type { TemplateNode } from "qingkuai/compiler"
 import type { CompletionItem, Range } from "vscode-languageserver/node"
 import type { CachedCompileResultItem, CompletionData } from "../../types/service"
 
@@ -11,6 +12,9 @@ import {
     InsertTextFormat,
     CompletionItemKind
 } from "vscode-languageserver/node"
+import { util } from "qingkuai/compiler"
+import { identifierRE } from "../../regular"
+import { findAttribute } from "../../util/qingkuai"
 import { isNull } from "../../../../../shared-util/assert"
 import { limitedScriptLanguageFeatures, tpic } from "../../state"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
@@ -27,6 +31,7 @@ const optionalSameKeys = [
 
 export async function doScriptBlockComplete(
     cr: CachedCompileResultItem,
+    currentNode: TemplateNode,
     offset: number,
     triggerChar: string
 ) {
@@ -37,6 +42,7 @@ export async function doScriptBlockComplete(
     const { getRange, getSourceIndex } = cr
     const unsetTriggerCharacters = new Set<string>()
     const positionOfInterCode = cr.getInterIndex(offset)
+    const attribute = findAttribute(offset, currentNode)
     const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
         TPICHandler.GetCompletion,
         {
@@ -47,6 +53,18 @@ export async function doScriptBlockComplete(
 
     if (isNull(tsCompletionRes)) {
         return null
+    }
+
+    // 如果当前出入#for指令的第一个标识符范围内，禁止逗号作为commit character
+    if (attribute?.key.raw === "#for") {
+        const m = attribute.value.loc.start.index + util.findOutOfComment(attribute.value.raw, /\S/)
+        if (
+            m !== -1 &&
+            m <= offset &&
+            identifierRE.test(cr.inputDescriptor.source.slice(m, offset))
+        ) {
+            unsetTriggerCharacters.add(",")
+        }
     }
 
     let completionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
@@ -65,10 +83,13 @@ export async function doScriptBlockComplete(
             kind: convertTsCompletionKind(item.kind)
         }
         optionalSameKeys.forEach(key => {
-            // @ts-expect-error
+            // @ts-ignore
             item[key] && (ret[key] = item[key])
         })
 
+        if (item.name !== item.label) {
+            item.insertText = item.name
+        }
         if (item.source) {
             ret.labelDetails = {
                 description: item.source
@@ -80,6 +101,13 @@ export async function doScriptBlockComplete(
         if (item.deprecated) {
             ret.tags = [CompletionItemTag.Deprecated]
         }
+        if (
+            tsCompletionRes.isNewIdentifierLocation ||
+            ret.kind === CompletionItemKind.Text ||
+            ret.kind === CompletionItemKind.Constant
+        ) {
+            ret.commitCharacters = undefined
+        }
         if (item.isSnippet) {
             ret.insertTextFormat = InsertTextFormat.Snippet
         }
@@ -90,11 +118,6 @@ export async function doScriptBlockComplete(
             if (!isIndexesInvalid(ss, se)) {
                 ret.textEdit = TextEdit.replace(getRange(ss, se), item.name)
             }
-        } else {
-            ret.textEdit = TextEdit.insert(cr.getPosition(offset), item.name)
-        }
-        if (ret.kind === CompletionItemKind.Text || ret.kind === CompletionItemKind.Constant) {
-            ret.commitCharacters = undefined
         }
 
         return ret
@@ -102,9 +125,6 @@ export async function doScriptBlockComplete(
 
     // 过滤无效的补全建议
     completionItems = completionItems.filter(item => {
-        if (!item.textEdit) {
-            return false
-        }
         if (item.label === INTER_NAMESPACE) {
             return false
         }

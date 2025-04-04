@@ -1,19 +1,26 @@
-import {
+import type {
+    TSDiagnostic,
     RefreshDiagnosticParams,
-    type TSDiagnostic,
-    type TSDiagnosticRelatedInformation
+    TSDiagnosticRelatedInformation
 } from "../../../../../types/communication"
 import type { DiagnosticKind } from "../../types"
+import type { Range } from "vscode-languageserver/node"
 import type { RealPath } from "../../../../../types/common"
 import type { DiagnosticMessageChain, SourceFile } from "typescript"
 
 import { refreshDiagnostics } from "./refresh"
 import { ORI_SOURCE_FILE } from "../../constant"
+import {
+    ensureGetSnapshotOfQingkuaiFile,
+    getLineAndCharacterBySourceIndex,
+    getRealPath,
+    getSourceIndex
+} from "../../util/qingkuai"
 import { getDefaultLanguageServiceByFileName } from "../../util/typescript"
 import { ts, server, projectService, qingkuaiDiagnostics } from "../../state"
 import { INTER_NAMESPACE, TPICHandler } from "../../../../../shared-util/constant"
-import { debugAssert, isString, isUndefined } from "../../../../../shared-util/assert"
-import { getRealPath } from "../../util/qingkuai"
+import { isQingkuaiFileName, isString, isUndefined } from "../../../../../shared-util/assert"
+import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 
 export function attachRefreshDiagnostic() {
     server.onNotification<RefreshDiagnosticParams>(
@@ -26,6 +33,8 @@ export function attachRefreshDiagnostic() {
 
 export function attachGetDiagnostic() {
     server.onRequest<RealPath, TSDiagnostic[]>(TPICHandler.GetDiagnostic, fileName => {
+        const result: TSDiagnostic[] = []
+        const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
         const languageService = getDefaultLanguageServiceByFileName(fileName)!
         const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
         const oriDiagnostics = Array.from(qingkuaiDiagnostics.get(fileName) || [])
@@ -39,48 +48,65 @@ export function attachGetDiagnostic() {
             oriDiagnostics.push(...languageService[m](fileName))
         })
 
-        return oriDiagnostics.map(item => {
-            const fri = (item.relatedInformation || []).filter(ri => {
+        for (const item of oriDiagnostics) {
+            const start = item.start ?? 0
+            const end = start + (item.length ?? 0)
+            const ss = getSourceIndex(qingkuaiSnapshot, start)
+            const se = getSourceIndex(qingkuaiSnapshot, end, true)
+            if (isIndexesInvalid(ss, se)) {
+                continue
+            }
+
+            const relatedInformations: TSDiagnosticRelatedInformation[] = []
+            const filteredRelatedInformations = (item.relatedInformation || []).filter(ri => {
                 return !isUndefined(ri.file)
             })
-
-            const relatedInformation = fri.map(ri => {
-                const res: TSDiagnosticRelatedInformation = {
-                    start: ri.start || 0,
-                    length: ri.length || 0,
-                    filePath: getRealPath(ri.file!.fileName),
-                    message: formatDiagnosticMessage(ri.messageText)
-                }
-
-                const getRange = (offset: number) => {
-                    // @ts-expect-error: access additional custom property
-                    const sourceFile: SourceFile = ri.file[ORI_SOURCE_FILE] ?? ri.file
-                    return sourceFile.getLineAndCharacterOfPosition(offset)
-                }
-
-                // 非qk文件时需要返回诊断相关信息范围
-                if (!res.filePath.endsWith(".qk")) {
-                    res.range = {
-                        start: getRange(res.start),
-                        end: getRange(res.start + res.length)
+            for (const ri of filteredRelatedInformations) {
+                let range: Range
+                const start = ri.start ?? 0
+                const end = start + (ri.length ?? 0)
+                const realPath = getRealPath(ri.file!.fileName)
+                if (!isQingkuaiFileName(realPath)) {
+                    const getRange = (offset: number) => {
+                        // @ts-expect-error: access additional custom property
+                        const sourceFile: SourceFile = ri.file[ORI_SOURCE_FILE] ?? ri.file
+                        return sourceFile.getLineAndCharacterOfPosition(offset)
+                    }
+                    range = { start: getRange(start), end: getRange(end) }
+                } else {
+                    const snapshot = ensureGetSnapshotOfQingkuaiFile(realPath)
+                    const ss = getSourceIndex(snapshot, start)
+                    const se = getSourceIndex(snapshot, end, true)
+                    if (isIndexesInvalid(ss, se)) {
+                        continue
+                    }
+                    range = {
+                        start: getLineAndCharacterBySourceIndex(snapshot, ss!),
+                        end: getLineAndCharacterBySourceIndex(snapshot, se!)
                     }
                 }
+                relatedInformations.push({
+                    range,
+                    filePath: getRealPath(ri.file!.fileName),
+                    message: formatDiagnosticMessage(ri.messageText)
+                })
+            }
 
-                return res
-            })
-
-            return {
-                relatedInformation,
+            result.push({
+                relatedInformations,
                 code: item.code,
                 kind: item.category,
-                start: item.start || 0,
-                length: item.length || 0,
                 source: item.source || "ts",
                 deprecated: Boolean(item.reportsDeprecated),
                 unnecessary: Boolean(item.reportsUnnecessary),
-                message: formatDiagnosticMessage(item.messageText)
-            }
-        })
+                message: formatDiagnosticMessage(item.messageText),
+                range: {
+                    start: getLineAndCharacterBySourceIndex(qingkuaiSnapshot, ss!),
+                    end: getLineAndCharacterBySourceIndex(qingkuaiSnapshot, se!)
+                }
+            })
+        }
+        return result
     })
 }
 

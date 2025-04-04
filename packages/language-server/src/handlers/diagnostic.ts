@@ -11,14 +11,13 @@ import {
     limitedScriptLanguageFeatures
 } from "../state"
 import { URI } from "vscode-uri"
+import { getCompileRes } from "../compile"
 import { stringifyRange } from "../util/vscode"
 import { badComponentAttrMessageRE } from "../regular"
+import { isNull } from "../../../../shared-util/assert"
 import { debounce } from "../../../../shared-util/sundry"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { createStyleSheetAndDocument } from "../util/qingkuai"
-import { getCompileRes, getCompileResByPath } from "../compile"
-import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
-import { isNull, isUndefined } from "../../../../shared-util/assert"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
 
 export const publishDiagnostics = debounce(
@@ -83,36 +82,19 @@ export const publishDiagnostics = debounce(
         }
         for (const item of tsDiagnostics) {
             const tags: DiagnosticTag[] = []
-            const ss = getSourceIndex(item.start)
-            const se = getSourceIndex(item.start + item.length, true)
+            const sourceIndex = document.offsetAt(item.range.start)
             const relatedInformation: DiagnosticRelatedInformation[] = []
-
-            if (isIndexesInvalid(ss, se)) {
-                continue
-            }
-
             if (item.deprecated) {
                 tags.push(DiagnosticTag.Deprecated)
             }
             if (item.unnecessary) {
                 tags.push(DiagnosticTag.Unnecessary)
             }
-
-            for (const relatedInfo of item.relatedInformation) {
-                let range = relatedInfo.range
-                if (isUndefined(range)) {
-                    const cr = await getCompileResByPath(relatedInfo.filePath)
-                    const rss = cr.getSourceIndex(relatedInfo.start)
-                    const rse = cr.getSourceIndex(relatedInfo.start + relatedInfo.length, true)
-                    if (isIndexesInvalid(rss, rse)) {
-                        continue
-                    }
-                    range = cr.getRange(rss, rse)
-                }
+            for (const relatedInfo of item.relatedInformations) {
                 relatedInformation.push({
                     message: relatedInfo.message,
                     location: {
-                        range,
+                        range: relatedInfo.range,
                         uri: URI.file(relatedInfo.filePath).toString()
                     }
                 })
@@ -123,7 +105,7 @@ export const publishDiagnostics = debounce(
                 if (
                     item.code === 2353 &&
                     item.source === "ts" &&
-                    cr.isPositionFlagSet(ss, "isAttributeStart")
+                    cr.isPositionFlagSet(sourceIndex, "isAttributeStart")
                 ) {
                     const m = badComponentAttrMessageRE.exec(item.message)
                     if (!isNull(m)) {
@@ -136,7 +118,6 @@ export const publishDiagnostics = debounce(
                 ...item,
                 tags,
                 relatedInformation,
-                range: getRange(ss, se),
                 severity: transTsDiagnosticSeverity(item.kind)
             })
         }

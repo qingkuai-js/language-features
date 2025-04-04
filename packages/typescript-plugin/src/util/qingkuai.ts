@@ -133,3 +133,10 @@ export function recordRealPath(realFileName: string) {
         }
     }
 }
+
+export function getLineAndCharacterBySourceIndex(snapshot: QingKuaiSnapShot, sourceIndex: number) {
+    return {
+        line: snapshot.positions[sourceIndex].line - 1,
+        character: snapshot.positions[sourceIndex].column
+    }
+}

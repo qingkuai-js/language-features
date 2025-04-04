@@ -57,5 +57,5 @@ export const Logger = {
     error: (v: any) => server.sendNotification("log/error", inspect(v))
 }
 
-export const typeDeclarationFilePath = path.resolve(__dirname, "../dts/qingkuai.d.ts")
+export const typeDeclarationFilePath = path.resolve(__dirname, "../dts/qingkuai")
 export const typeRefStatement = `import {__c__,wat,waT,Wat,der,stc,rea} from "${typeDeclarationFilePath}"\n`

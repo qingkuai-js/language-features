@@ -79,6 +79,7 @@ export function attachGetCompletion() {
                 entries: completionItems,
                 isIncomplete: !!completionRes.isIncomplete,
                 defaultRepalcementSpan: completionRes.optionalReplacementSpan,
+                isNewIdentifierLocation: completionRes.isNewIdentifierLocation,
                 defaultCommitCharacters: completionRes.defaultCommitCharacters ?? []
             }
         }
