@@ -19,6 +19,7 @@ import { debounce } from "../../../../shared-util/sundry"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { createStyleSheetAndDocument } from "../util/qingkuai"
 import { DiagnosticTag, DiagnosticSeverity } from "vscode-languageserver/node"
+import { CachedCompileResultItem } from "../types/service"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -82,7 +83,6 @@ export const publishDiagnostics = debounce(
         }
         for (const item of tsDiagnostics) {
             const tags: DiagnosticTag[] = []
-            const sourceIndex = document.offsetAt(item.range.start)
             const relatedInformation: DiagnosticRelatedInformation[] = []
             if (item.deprecated) {
                 tags.push(DiagnosticTag.Deprecated)
@@ -99,21 +99,9 @@ export const publishDiagnostics = debounce(
                     }
                 })
             }
-
-            // 为指定的诊断信息添加qingkuai相关解释
             if (config.extensionConfig.typescriptDiagnosticsExplain) {
-                if (
-                    item.code === 2353 &&
-                    item.source === "ts" &&
-                    cr.isPositionFlagSet(sourceIndex, "isAttributeStart")
-                ) {
-                    const m = badComponentAttrMessageRE.exec(item.message)
-                    if (!isNull(m)) {
-                        item.message += `\n(Qingkuai explain): The attribute name is not a property of component's ${m[1]} type.`
-                    }
-                }
+                attachQingkuaiExplain(cr, item, document.offsetAt(item.range.start))
             }
-
             extendDiagnostic({
                 ...item,
                 tags,
@@ -151,5 +139,32 @@ function transTsDiagnosticSeverity(n: number) {
             return DiagnosticSeverity.Hint
         default:
             return DiagnosticSeverity.Information
+    }
+}
+
+// 为typescript诊断信息添加qingkuai相关解释
+function attachQingkuaiExplain(
+    cr: CachedCompileResultItem,
+    diagnostic: TSDiagnostic,
+    sourceIndex: number
+) {
+    const addMessage = (msg: string) => {
+        diagnostic.message += `\n(Qingkuai explain): ${msg}`
+    }
+    switch (diagnostic.code) {
+        case 2351:
+            if (cr.isPositionFlagSet(sourceIndex, "isComponentStart")) {
+                addMessage(`The value of identifier is not a qingkuai component.`)
+            }
+            break
+        case 2353: {
+            if (cr.isPositionFlagSet(sourceIndex, "isAttributeStart")) {
+                const m = badComponentAttrMessageRE.exec(diagnostic.message)
+                if (!isNull(m)) {
+                    addMessage(`The attribute name is not a property of component's ${m[1]} type.`)
+                }
+            }
+            break
+        }
     }
 }

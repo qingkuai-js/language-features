@@ -405,6 +405,22 @@ function doCustomTagComplete(
             })
         }
 
+        // 上下文中以大写开头的标识符提示为组件标签
+        util.getContextIdentifiers(node).forEach(identifier => {
+            if (!/^[A-Z]/.test(identifier)) {
+                return
+            }
+            const tag = useKebab ? util.camel2Kebab(identifier) : identifier
+            ret.push({
+                label: tag,
+                insertTextFormat: InsertTextFormat.Snippet,
+                textEdit: TextEdit.replace(
+                    range,
+                    (startWithLT ? "" : "<") + tag + (startWithLT ? "" : `>$0</${tag}>`)
+                )
+            })
+        })
+
         componentInfos.forEach(item => {
             let additionalTextEdits: TextEdit[] | undefined = undefined
             if (!item.imported) {
@@ -726,31 +742,53 @@ function doEventModifierComplete(existingItems: Set<string>, range: Range, key: 
 // 获取引用属性名补全建议，普通标的引用属性签建议列表如下：
 // input -> &value, radio/checkbox -> &value/checked，select -> &value
 function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, range: Range) {
-    const attrs: string[] = []
-    if (node.tag === "select") {
-        attrs.push("value")
-    } else if (node.tag === "input") {
-        let type = "text"
-        let cantUseRef = false
-        for (const { key, value } of node.attributes) {
-            if (/[!&]?type/.test(key.raw)) {
-                if (key.raw !== "type") {
-                    cantUseRef = true
-                }
-                type = value.raw
-                break
-            }
-        }
-        if (!cantUseRef) {
-            if (!/radio|checkbox/.test(type)) {
-                attrs.push("value")
-            } else {
-                attrs.push("checked", "group")
-            }
+    const recommend: string[] = []
+    const existing = new Set<string>()
+    for (const { key } of node.attributes) {
+        if (key.raw.startsWith("&")) {
+            existing.add(key.raw.slice(1))
         }
     }
 
-    return attrs.map(attr => {
+    const extendRecommand = (...names: string[]) => {
+        names.forEach(name => !existing.has(name) && recommend.push(name))
+    }
+
+    switch (node.tag) {
+        case "select": {
+            extendRecommand("value")
+            break
+        }
+        case "input": {
+            let type = "text"
+            let cantUseRef = false
+            for (const { key, value } of node.attributes) {
+                if (/[!&]?type/.test(key.raw)) {
+                    if (key.raw !== "type") {
+                        cantUseRef = true
+                    }
+                    type = value.raw
+                    break
+                }
+            }
+            if (!cantUseRef) {
+                if (!/radio|checkbox/.test(type)) {
+                    extendRecommand("value")
+                } else {
+                    extendRecommand("checked", "group")
+                }
+            }
+            break
+        }
+        default: {
+            if (node.tag !== "slot" && node.tag !== "spread") {
+                extendRecommand("dom")
+            }
+            break
+        }
+    }
+
+    return recommend.map(attr => {
         return {
             label: "&" + attr,
             kind: CompletionItemKind.Property,
