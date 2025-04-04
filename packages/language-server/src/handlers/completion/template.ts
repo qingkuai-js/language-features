@@ -1,30 +1,15 @@
 import type {
     InsertSnippetParam,
-    GetCompletionResult,
     ComponentAttributeItem,
-    ResolveCompletionResult,
-    ComponentIdentifierInfo,
-    TPICCommonRequestParams,
-    ResolveCompletionParams,
-    GetClientConfigParams
-} from "../../../../types/communication"
+    ComponentIdentifierInfo
+} from "../../../../../types/communication"
 import type { TemplateNode } from "qingkuai/compiler"
-import type { NumNum } from "../../../../types/common"
-import type { HTMLElementDataAttributeItem } from "../types/data"
+import type { CompletionHandler } from "../../types/handlers"
+import type { HTMLElementDataAttributeItem } from "../../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
-import type { CompletionHandler, ResolveCompletionHandler } from "../types/handlers"
+import type { CachedCompileResultItem, GetRangeFunc } from "../../types/service"
 import type { Position, Range, CompletionItem, Command } from "vscode-languageserver/node"
-import type { CachedCompileResultItem, CompletionData, GetRangeFunc } from "../types/service"
 
-import {
-    tpic,
-    documents,
-    connection,
-    projectKind,
-    isTestingEnv,
-    cssLanguageService,
-    limitedScriptLanguageFeatures
-} from "../state"
 import {
     slotTagData,
     findTagData,
@@ -35,56 +20,28 @@ import {
     getDocumentation,
     findTagAttributeData,
     getDirectiveDocumentation
-} from "../data/element"
-import {
-    identifierRE,
-    emmetTagNameRE,
-    inEntityCharacterRE,
-    completeEntityCharacterRE
-} from "../regular"
+} from "../../data/element"
 import {
     findNodeAt,
     findAttribute,
     findEventModifier,
-    formatImportStatement,
-    createStyleSheetAndDocument
-} from "../util/qingkuai"
-import {
-    LSHandler,
-    TPICHandler,
-    DEFAULT_RANGE,
-    INTER_NAMESPACE
-} from "../../../../shared-util/constant"
-import {
-    TextEdit,
-    InsertTextFormat,
-    CompletionItemTag,
-    CompletionItemKind
-} from "vscode-languageserver/node"
-import {
-    COMMANDS,
-    KEY_RELATED_EVENT_MODIFIERS,
-    INVALID_COMPLETION_TEXT_LABELS,
-    MAYBE_INVALID_COMPLETION_LABELS
-} from "../constants"
-import { URI } from "vscode-uri"
-import { getCompileRes } from "../compile"
-import { position2Range } from "../util/vscode"
-import { eventModifiers } from "../data/event-modifier"
-import { parseTemplate, util } from "qingkuai/compiler"
-import { mdCodeBlockGen } from "../../../../shared-util/docs"
-import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
-import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
+    formatImportStatement
+} from "../../util/qingkuai"
+import { util } from "qingkuai/compiler"
+import { getCompileRes } from "../../compile"
+import { doStyleBlockComplete } from "./style"
+import { doScriptBlockComplete } from "./script"
+import { position2Range } from "../../util/vscode"
+import { eventModifiers } from "../../data/event-modifier"
+import { mdCodeBlockGen } from "../../../../../shared-util/docs"
+import { htmlEntities, htmlEntitiesKeys } from "../../data/entity"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
-import { isEmptyString, isNull, isString, isUndefined } from "../../../../shared-util/assert"
-
-const optionalSameKeys = [
-    "preselect",
-    "filterText",
-    "insertText",
-    "labelDetails",
-    "commitCharacters"
-] as const
+import { COMMANDS, KEY_RELATED_EVENT_MODIFIERS } from "../../constants"
+import { LSHandler, DEFAULT_RANGE } from "../../../../../shared-util/constant"
+import { documents, connection, projectKind, isTestingEnv } from "../../state"
+import { TextEdit, InsertTextFormat, CompletionItemKind } from "vscode-languageserver/node"
+import { emmetTagNameRE, inEntityCharacterRE, completeEntityCharacterRE } from "../../regular"
+import { isEmptyString, isNull, isString, isUndefined } from "../../../../../shared-util/assert"
 
 export const complete: CompletionHandler = async ({ position, textDocument, context }, token) => {
     const document = documents.get(textDocument.uri)
@@ -110,7 +67,7 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
         if (/[^\.\-@#<'"`_$]/.test(triggerChar)) {
             return null
         }
-        return doScriptBlockComplete(cr, currentNode, offset, triggerChar)
+        return doScriptBlockComplete(cr, offset, triggerChar)
     }
 
     // 获取样式块的补全建议
@@ -377,90 +334,6 @@ export const complete: CompletionHandler = async ({ position, textDocument, cont
             return doAttributeNameComplete(currentNode, keyRange, hasValue, keyFirstChar)
         }
     }
-}
-
-export const resolveCompletion: ResolveCompletionHandler = async (item, token) => {
-    if (
-        !isString(item.data?.kind) ||
-        limitedScriptLanguageFeatures ||
-        token.isCancellationRequested
-    ) {
-        return item
-    }
-
-    const data: CompletionData = item.data
-    switch (data.kind) {
-        case "emmet": {
-            const textEdit = item.textEdit!
-            const newTextArr = textEdit.newText.split("")
-            parseTemplate(textEdit.newText).forEach(node => {
-                let sizesitCount = 0
-                node.attributes.forEach(attr => {
-                    if (attr.quote && !attr.value.raw) {
-                        sizesitCount++
-                    }
-                })
-                node.attributes.forEach(attr => {
-                    if (attr.quote !== "none" && /[!@#&]/.test(attr.key.raw[0])) {
-                        newTextArr[attr.value.loc.end.index] = "}"
-                        newTextArr[attr.value.loc.start.index - 1] = "{"
-                    }
-                })
-            })
-            textEdit.newText = newTextArr.join("")
-            item.documentation = item.textEdit?.newText.replace(/\$\{\d+\}/g, "|")
-            break
-        }
-
-        case "script": {
-            const document = documents.get(URI.file(data.fileName).toString())!
-            const { getSourceIndex, getRange, inputDescriptor, config } =
-                await getCompileRes(document)
-            const res: ResolveCompletionResult = await tpic.sendRequest<ResolveCompletionParams>(
-                TPICHandler.ResolveCompletionItem,
-                data
-            )
-            if (res.detail) {
-                item.detail = res.detail
-            }
-            if (res.documentation) {
-                item.documentation = {
-                    kind: "markdown",
-                    value: res.documentation
-                }
-            }
-            if (res.textEdits) {
-                const additionalTextEdits: TextEdit[] = []
-                for (const item of res.textEdits) {
-                    let sourcePosRange: NumNum = [
-                        getSourceIndex(item.start),
-                        getSourceIndex(item.end, true)
-                    ]
-                    if (item.newText.trimStart().startsWith("import")) {
-                        sourcePosRange = Array(2).fill(
-                            inputDescriptor.script.loc.start.index
-                        ) as NumNum
-                        item.newText = formatImportStatement(
-                            item.newText.trim(),
-                            inputDescriptor.source,
-                            sourcePosRange,
-                            config.prettierConfig
-                        )
-                    }
-                    if (!isIndexesInvalid(...sourcePosRange)) {
-                        additionalTextEdits.push({
-                            newText: item.newText,
-                            range: getRange(...sourcePosRange)
-                        })
-                    }
-                }
-                if (additionalTextEdits.length) {
-                    item.additionalTextEdits = additionalTextEdits
-                }
-            }
-        }
-    }
-    return item
 }
 
 // 在客户端活跃文档中插入代码片段
@@ -903,125 +776,6 @@ function doAttributeValueComplete(tag: string, attrName: string, range: Range) {
     }
 }
 
-async function doScriptBlockComplete(
-    cr: CachedCompileResultItem,
-    currentNode: TemplateNode,
-    offset: number,
-    triggerChar: string
-) {
-    if (limitedScriptLanguageFeatures) {
-        return null
-    }
-
-    const { getRange, getSourceIndex } = cr
-    const unsetTriggerCharacters = new Set<string>()
-    const positionOfInterCode = cr.getInterIndex(offset)
-    const tsCompletionRes: GetCompletionResult = await tpic.sendRequest<TPICCommonRequestParams>(
-        TPICHandler.GetCompletion,
-        {
-            fileName: cr.filePath,
-            pos: positionOfInterCode
-        }
-    )
-
-    if (isNull(tsCompletionRes)) {
-        return null
-    }
-
-    let completionItems: CompletionItem[] = tsCompletionRes.entries.map(item => {
-        const data: CompletionData = {
-            kind: "script",
-            original: item.data,
-            source: item.source,
-            entryName: item.name,
-            fileName: cr.filePath,
-            pos: positionOfInterCode
-        }
-        const ret: CompletionItem = {
-            data,
-            label: item.label,
-            sortText: item.sortText,
-            kind: convertTsCompletionKind(item.kind)
-        }
-        optionalSameKeys.forEach(key => {
-            // @ts-expect-error
-            item[key] && (ret[key] = item[key])
-        })
-
-        if (item.source) {
-            ret.labelDetails = {
-                description: item.source
-            }
-        }
-        if (item.isColor) {
-            ret.kind = CompletionItemKind.Color
-        }
-        if (item.deprecated) {
-            ret.tags = [CompletionItemTag.Deprecated]
-        }
-        if (item.isSnippet) {
-            ret.insertTextFormat = InsertTextFormat.Snippet
-        }
-        if (item.replacementSpan) {
-            const { start, length } = item.replacementSpan
-            const se = getSourceIndex(start + length, true)
-            const ss = getSourceIndex(start)
-            if (!isIndexesInvalid(ss, se)) {
-                ret.textEdit = TextEdit.replace(getRange(ss, se), item.name)
-            }
-        } else {
-            ret.textEdit = TextEdit.insert(cr.getPosition(offset), item.name)
-        }
-        if (ret.kind === CompletionItemKind.Text || ret.kind === CompletionItemKind.Constant) {
-            ret.commitCharacters = undefined
-        }
-
-        return ret
-    })
-
-    // 过滤无效的补全建议
-    completionItems = completionItems.filter(item => {
-        if (!item.textEdit) {
-            return false
-        }
-        if (item.label === INTER_NAMESPACE) {
-            return false
-        }
-        if (/['"`]/.test(triggerChar)) {
-            return item.kind === CompletionItemKind.Constant
-        }
-        if (
-            item.kind === CompletionItemKind.Text &&
-            INVALID_COMPLETION_TEXT_LABELS.has(item.label)
-        ) {
-            return false
-        }
-        if (!MAYBE_INVALID_COMPLETION_LABELS.has(item.label)) {
-            return true
-        }
-
-        const preContent = cr.code.slice(0, cr.getInterIndex(offset))
-        return !new RegExp(`${INTER_NAMESPACE}\\.\\s*`).test(preContent)
-    })
-
-    let defaultEditRange: Range | undefined = undefined
-    if (tsCompletionRes.defaultRepalcementSpan) {
-        const { start, length } = tsCompletionRes.defaultRepalcementSpan
-        defaultEditRange = getRange(getSourceIndex(start), getSourceIndex(start + length, true))
-    }
-
-    return {
-        items: completionItems,
-        isIncomplete: tsCompletionRes.isIncomplete,
-        itemDefaults: {
-            editRange: defaultEditRange,
-            commitCharacters: tsCompletionRes.defaultCommitCharacters.filter(char => {
-                return !unsetTriggerCharacters.has(char)
-            })
-        }
-    }
-}
-
 function doComponentAttributeNameComplete(
     attributes: ComponentAttributeItem[] | undefined,
     node: TemplateNode,
@@ -1080,83 +834,4 @@ function doComponentAttributeNameComplete(
         }
     })
     return completions
-}
-
-// 将ts补全建议的kind转换为LSP需要的kind
-function convertTsCompletionKind(kind: string) {
-    switch (kind) {
-        case "keyword":
-        case "primitive type":
-            return CompletionItemKind.Keyword
-
-        case "var":
-        case "let":
-        case "const":
-        case "alias":
-        case "local var":
-        case "parameter":
-            return CompletionItemKind.Variable
-
-        case "getter":
-        case "setter":
-        case "property":
-            return CompletionItemKind.Field
-
-        case "function":
-        case "local function":
-            return CompletionItemKind.Function
-
-        case "call":
-        case "index":
-        case "method":
-        case "construct":
-            return CompletionItemKind.Method
-
-        case "enum":
-            return CompletionItemKind.Enum
-
-        case "enum member":
-            return CompletionItemKind.EnumMember
-
-        case "module":
-        case "external module name":
-            return CompletionItemKind.Module
-
-        case "color":
-            return CompletionItemKind.Color
-
-        case "type":
-        case "class":
-            return CompletionItemKind.Class
-
-        case "interface":
-            return CompletionItemKind.Interface
-
-        case "warning":
-            return CompletionItemKind.Text
-
-        case "script":
-            return CompletionItemKind.File
-
-        case "directory":
-            return CompletionItemKind.Folder
-
-        case "string":
-            return CompletionItemKind.Constant
-
-        default:
-            return CompletionItemKind.Property
-    }
-}
-
-async function doStyleBlockComplete(cr: CachedCompileResultItem, offset: number) {
-    const getConfigParams: GetClientConfigParams = {
-        uri: cr.uri,
-        section: "css",
-        name: "completion"
-    }
-    return cssLanguageService.doComplete(
-        ...createStyleSheetAndDocument(cr, offset)!,
-        await connection.sendRequest(LSHandler.GetClientConfig, getConfigParams)
-    )
 }
