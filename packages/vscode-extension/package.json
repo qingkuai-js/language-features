@@ -60,7 +60,7 @@
             {
                 "language": "qingkuai",
                 "scopeName": "source.qk",
-                "path": "./syntaxes/qk.tmLanguage.json",
+                "path": "./syntaxes/qingkuai.tmLanguage.json",
                 "embeddedLanguages": {
                     "source.jsdoc": "jsdoc",
                     "source.js": "javascript",
@@ -86,7 +86,7 @@
             {
                 "language": "qingkuai-emmet",
                 "scopeName": "source.qke",
-                "path": "./syntaxes/qke.tmLanguage.json",
+                "path": "./syntaxes/qingkuai-emmet.tmLanguage.json",
                 "embeddedLanguages": {
                     "source.qk": "qingkuai"
                 }
@@ -193,9 +193,9 @@
         "directory": "packages/vscode-extension"
     },
     "scripts": {
-        "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
-        "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
-        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json",
+        "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
+        "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
+        "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json",
         "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
         "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
         "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
@@ -207,8 +207,8 @@
     },
     "dependencies": {
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.17",
-        "qingkuai": "^1.0.26",
+        "prettier-plugin-qingkuai": "^1.0.18",
+        "qingkuai": "^1.0.27",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }

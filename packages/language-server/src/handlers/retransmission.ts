@@ -1,7 +1,7 @@
 import type { RetransmissionParams } from "../../../../types/communication"
 
+import { LSHandler } from "../../../../shared-util/constant"
 import { connection, tpic, tpicConnectedPromise } from "../state"
-import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
 
 export async function attachRetransmissionHandlers() {
     // 事件转发，将接受到的请求/通知转发给typescript插件的ipc服务器

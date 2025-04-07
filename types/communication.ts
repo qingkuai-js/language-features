@@ -124,6 +124,7 @@ export interface ResolveCompletionParams {
     fileName: RealPath
     entryName: string
     source?: string
+    insertText?: string
     original?: CompletionEntryData
 }
 

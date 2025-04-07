@@ -32,11 +32,11 @@ importers:
         specifier: ^3.5.2
         version: 3.5.3
       prettier-plugin-qingkuai:
-        specifier: ^1.0.17
-        version: 1.0.17(prettier@3.5.3)(qingkuai@1.0.26)
+        specifier: ^1.0.18
+        version: 1.0.18(prettier@3.5.3)(qingkuai@1.0.27)
       qingkuai:
-        specifier: ^1.0.26
-        version: 1.0.26
+        specifier: ^1.0.27
+        version: 1.0.27
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -84,11 +84,11 @@ importers:
         specifier: ^3.5.2
         version: 3.5.3
       prettier-plugin-qingkuai:
-        specifier: ^1.0.17
-        version: 1.0.17(prettier@3.5.3)(qingkuai@1.0.26)
+        specifier: ^1.0.18
+        version: 1.0.18(prettier@3.5.3)(qingkuai@1.0.27)
       qingkuai:
-        specifier: ^1.0.26
-        version: 1.0.26
+        specifier: ^1.0.27
+        version: 1.0.27
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
         version: link:../typescript-plugin
@@ -707,8 +707,8 @@ packages:
     resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
     engines: {node: ^10 || ^12 || >=14}
 
-  prettier-plugin-qingkuai@1.0.17:
-    resolution: {integrity: sha512-ml98GDsdlmr/97qAmG8eEP/Ar2IjkFLG3gXZ4NMJP50oUUnbHOdREjNx/uQ3Q1rznpyyWBiKGUveTd8F4tyj4g==}
+  prettier-plugin-qingkuai@1.0.18:
+    resolution: {integrity: sha512-cypqiOqUOtnaPJdI0/CAIL7XJf4lcRnYKmY1KXD2XloTd05MUdhEB8CBxOfEi4ygrhXkNE7xh+q6KfxL0e2oMw==}
     peerDependencies:
       prettier: ^3.5.3
       qingkuai: ^1.0.25
@@ -718,8 +718,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.26:
-    resolution: {integrity: sha512-HLTIRRmrXow4+NLehYh4PFeOi9O+/w5D4/dbfzLI0PuGhc1yk9aCYUyGRJbMZ8lssZ9ZCR1xEv/XA4kSh8MosA==}
+  qingkuai@1.0.27:
+    resolution: {integrity: sha512-iO0xQ58jgCsXG7SA57B1DdKLsF+ZYVs3KrwiUMHupaTpzgOkha0ZFj4mOythLfabRE5hmtNBm/c+fk6QZqbk5A==}
     engines: {node: '>=14'}
 
   resolve-pkg-maps@1.0.0:
@@ -1431,16 +1431,16 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.17(prettier@3.5.3)(qingkuai@1.0.26):
+  prettier-plugin-qingkuai@1.0.18(prettier@3.5.3)(qingkuai@1.0.27):
     dependencies:
       '@babel/code-frame': 7.26.2
       lines-and-columns: 2.0.4
       prettier: 3.5.3
-      qingkuai: 1.0.26
+      qingkuai: 1.0.27
 
   prettier@3.5.3: {}
 
-  qingkuai@1.0.26:
+  qingkuai@1.0.27:
     dependencies:
       '@babel/parser': 7.27.0
       '@jridgewell/sourcemap-codec': 1.5.0

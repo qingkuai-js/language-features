@@ -44,7 +44,7 @@ export function recoverItos(citos: NumNumArray) {
             continue
         }
         for (let i = count - 1; i >= 0; i--) {
-            recovered.push(value - i)
+            recovered.push(Math.max(value - i, -1))
         }
     }
     return recovered

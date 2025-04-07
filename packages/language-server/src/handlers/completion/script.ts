@@ -74,22 +74,21 @@ export async function doScriptBlockComplete(
             source: item.source,
             entryName: item.name,
             fileName: cr.filePath,
-            pos: positionOfInterCode
+            pos: positionOfInterCode,
+            insertText: item.insertText || (item.label !== item.name ? item.name : undefined)
         }
         const ret: CompletionItem = {
             data,
             label: item.label,
             sortText: item.sortText,
-            kind: convertTsCompletionKind(item.kind)
+            filterText: data.insertText,
+            kind: convertTsCompletionKind(item.kind),
         }
         optionalSameKeys.forEach(key => {
             // @ts-ignore
             item[key] && (ret[key] = item[key])
         })
 
-        if (item.name !== item.label) {
-            item.insertText = item.name
-        }
         if (item.source) {
             ret.labelDetails = {
                 description: item.source
@@ -119,7 +118,6 @@ export async function doScriptBlockComplete(
                 ret.textEdit = TextEdit.replace(getRange(ss, se), item.name)
             }
         }
-
         return ret
     })
 

@@ -28,7 +28,7 @@ export function getSourceIndex(
     if (sourceIndex !== -1) {
         return sourceIndex
     }
-    return isEnd ? snapshot.itos[interIndex + 1] : -1
+    return isEnd ? snapshot.itos[interIndex - 1] : -1
 }
 
 // 通过源码索引验证位置是否设置指定标志

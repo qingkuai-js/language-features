@@ -66,6 +66,13 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
                     value: res.documentation
                 }
             }
+            if (data.insertText) {
+                if (!item.textEdit) {
+                    item.insertText = data.insertText
+                } else {
+                    item.textEdit.newText = data.insertText
+                }
+            }
             if (res.textEdits) {
                 const additionalTextEdits: TextEdit[] = []
                 for (const item of res.textEdits) {
