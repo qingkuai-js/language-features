@@ -4,25 +4,19 @@ import type {
     FindDefinitionResultItem
 } from "../../../../types/communication"
 import type TS from "typescript"
-import type { NumNum } from "../../../../types/common"
-import type { Range } from "vscode-languageserver/node"
 
-import {
-    getDefaultSourceFileByFileName,
-    getDefaultLanguageServiceByFileName
-} from "../util/typescript"
-import { getRealPath } from "../util/qingkuai"
 import { server, session, ts } from "../state"
-import { convertTextSpanToRange } from "../util/service"
+import { TPICHandler } from "../../../../shared-util/constant"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
-import { DEFAULT_RANGE, TPICHandler } from "../../../../shared-util/constant"
+import { convertor, qkContext } from "qingkuai-language-service/adapters"
+import { getDefaultSourceFile, getDefaultLanguageService } from "../util/typescript"
 
 export function attachFindDefinition() {
     server.onRequest<FindDefinitionParams>(
         TPICHandler.FindDefinition,
         async ({ fileName, pos, preferGoToSourceDefinition }) => {
             const normalizedPath = ts.server.toNormalizedPath(fileName)
-            const sourceFile = getDefaultSourceFileByFileName(fileName)
+            const sourceFile = getDefaultSourceFile(fileName)
             if (!session || !sourceFile) {
                 return null
             }
@@ -37,6 +31,14 @@ export function attachFindDefinition() {
                 offset: character + 1
             }
             const definitionRes = getDefinitionAndBoundSpan.call(session, arg, true)
+            if (!definitionRes.definitions.length) {
+                return null
+            }
+
+            const originRange = convertor.lsRange.fromProtocolTextSpan(
+                fileName,
+                definitionRes.textSpan
+            )
             if (!definitionRes || !definitionRes.definitions.length) {
                 return null
             }
@@ -49,20 +51,9 @@ export function attachFindDefinition() {
                 }
             }
 
-            const originRange: NumNum = [
-                sourceFile.getPositionOfLineAndCharacter(
-                    definitionRes.textSpan.start.line - 1,
-                    definitionRes.textSpan.start.offset - 1
-                ),
-                sourceFile.getPositionOfLineAndCharacter(
-                    definitionRes.textSpan.end.line - 1,
-                    definitionRes.textSpan.end.offset - 1
-                )
-            ]
-
             const dealtDefinitions = definitions.map(
                 (item: TS.server.protocol.FileSpanWithContext) => {
-                    const realPath = getRealPath(item.file)
+                    const realPath = qkContext.getRealPath(item.file)
                     const range = convertProtocolTextSpanToRange(item)
                     if (item.contextStart && item.contextEnd) {
                         const contextRange = convertProtocolTextSpanToRange({
@@ -89,28 +80,12 @@ export function attachFindDefinition() {
 
     server.onRequest<TPICCommonRequestParams, FindDefinitionResultItem[] | null>(
         "findTypeDefinition",
-        ({ fileName, pos }) => {
-            const languageService = getDefaultLanguageServiceByFileName(fileName)
-            const definitions = languageService?.getTypeDefinitionAtPosition(fileName, pos)
-            if (!definitions?.length) {
+        params => {
+            const languageService = getDefaultLanguageService(params.fileName)
+            if (!languageService) {
                 return null
             }
-
-            return definitions.map(definition => {
-                const realPath = getRealPath(definition.fileName)
-                const range = convertTextSpanToRange(realPath, definition.textSpan) || DEFAULT_RANGE
-
-                let contextRange: Range | undefined = undefined
-                if (definition.contextSpan) {
-                    contextRange = convertTextSpanToRange(realPath, definition.contextSpan)
-                }
-
-                return {
-                    fileName: realPath,
-                    targetRange: range,
-                    targetSelectionRange: contextRange || range
-                }
-            })
+            return convertor.getAndConvertTypeDefinitions(languageService, params)
         }
     )
 }

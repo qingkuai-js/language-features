@@ -1,10 +1,14 @@
 {
     "compilerOptions": {
+        "strict": true,
         "lib": ["ESNext"],
         "target": "ESNext",
         "module": "Preserve",
-        "strict": true,
         "moduleResolution": "Bundler",
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "paths": {
+            "qingkuai-language-service": ["./packages/language-service/src"],
+            "qingkuai-language-service/adapters": ["./packages/language-service/src/adapters"]
+        }
     }
 }

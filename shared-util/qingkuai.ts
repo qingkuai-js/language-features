@@ -1,4 +1,5 @@
 import type { NumNumArray } from "../types/common"
+import type { Position } from "vscode-languageserver/node"
 import type { ASTPosition, ASTPositionWithFlag, CompileResult } from "qingkuai/compiler"
 
 import { util } from "qingkuai/compiler"
@@ -106,6 +107,10 @@ export function compressPositionFlags(positions: ASTPositionWithFlag[]) {
         }
     }
     return compressed
+}
+
+export function toLSPosition(position: ASTPosition): Position {
+    return { line: position.line - 1, character: position.column }
 }
 
 // 检查传入的索引（源码索引或中间代码索引）是否是无效的

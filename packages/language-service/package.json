@@ -1,0 +1,34 @@
+{
+    "name": "qingkuai-language-service",
+    "license": "MIT",
+    "author": "mlgq",
+    "version": "1.0.0",
+    "keywords": [
+        "qingkuai",
+        "language-service"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        },
+        "./adapters": {
+            "import": "./dist/adapters.js",
+            "require": "./dist/adapters.cjs",
+            "types": "./dist/adapters.d.ts"
+        }
+    },
+    "peerDependencies": {
+        "prettier": "^3.5.2",
+        "qingkuai": "^1.0.27"
+    },
+    "devDependencies": {
+        "prettier": "^3.5.2",
+        "qingkuai": "^1.0.27"
+    },
+    "dependencies": {
+        "vscode-languageserver-types": "^3.17.5"
+    },
+    "description": "The language service for qingkuai"
+}

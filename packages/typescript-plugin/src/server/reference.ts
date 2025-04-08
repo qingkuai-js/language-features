@@ -6,22 +6,21 @@ import type {
 import type TS from "typescript"
 import type { Range } from "vscode-languageserver"
 
-import { getRealPath } from "../util/qingkuai"
 import { server, session, ts } from "../state"
-import { findNodeAtPosition } from "../util/ast"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
+import { astUtil, qkContext } from "qingkuai-language-service/adapters"
 import { filePathToComponentName } from "../../../../shared-util/qingkuai"
+import { getDefaultSourceFile, getFileReferences } from "../util/typescript"
 import { GLOBAL_TYPE_IDNTIFIERS, TPICHandler } from "../../../../shared-util/constant"
-import { getDefaultSourceFileByFileName, getFileReferences } from "../util/typescript"
 
 export function attachFindReference() {
     server.onRequest<TPICCommonRequestParams>(
         TPICHandler.FindReference,
         async ({ fileName, pos }) => {
             const result: FindReferenceResultItem[] = []
-            const sourceFile = getDefaultSourceFileByFileName(fileName)!
-            const node = findNodeAtPosition(sourceFile, pos)
+            const sourceFile = getDefaultSourceFile(fileName)!
+            const node = astUtil.findNodeAtPosition(sourceFile, pos)
             if (
                 node?.parent &&
                 GLOBAL_TYPE_IDNTIFIERS.has(node.getText()) &&
@@ -32,7 +31,7 @@ export function attachFindReference() {
                         continue
                     }
 
-                    const refRealPath = getRealPath(refFileName)
+                    const refRealPath = qkContext.getRealPath(refFileName)
                     const ranges: Range[] = await server.sendRequest<FindComponentTagRangeParams>(
                         TPICHandler.FindComponentTagRange,
                         {
@@ -65,7 +64,7 @@ export function attachFindReference() {
             })
             res.refs.forEach((item: TS.server.protocol.FileSpan) => {
                 result.push({
-                    fileName: getRealPath(item.file),
+                    fileName: qkContext.getRealPath(item.file),
                     range: convertProtocolTextSpanToRange(item)
                 })
             })

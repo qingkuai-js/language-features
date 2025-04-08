@@ -203,7 +203,8 @@
         "vsce:post": "rimraf node_modules ../typescript-plugin/node_modules package-lock.json ../typescript-plugin/package-lock.json && pnpm install"
     },
     "devDependencies": {
-        "js-yaml": "^4.1.0"
+        "js-yaml": "^4.1.0",
+        "qingkuai-language-service": "workspace:*"
     },
     "dependencies": {
         "prettier": "^3.5.2",

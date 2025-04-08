@@ -8,8 +8,9 @@
             "sourceMaps": true,
             "autoAttachChildProcesses": true,
             "outFiles": [
-                "${workspaceFolder}/packages/vscode-extension/dist/**/*.js",
-                "${workspaceFolder}/packages/typescript-plugin/dist/**/*.js"
+                "${workspaceFolder}/packages/language-service/dist/**/*",
+                "${workspaceFolder}/packages/vscode-extension/dist/**/*",
+                "${workspaceFolder}/packages/typescript-plugin/dist/**/*"
             ],
             "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
             "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"]

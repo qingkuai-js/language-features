@@ -10,12 +10,10 @@ import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
 import {
     tpic,
-    setState,
     connection,
     isTestingEnv,
     typeRefStatement,
     tpicConnectedPromise,
-    tpicConnectedResolver,
     limitedScriptLanguageFeatures
 } from "./state"
 import {
@@ -32,7 +30,7 @@ import {
     TS_TYPE_DECLARATION_LEN
 } from "../../../shared-util/constant"
 import { URI } from "vscode-uri"
-import { readFileSync } from "node:fs"
+import { ensureGetTextDocument } from "./util"
 import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
@@ -210,18 +208,7 @@ export function cleanConfigCache() {
 
 // 获取未打开的文档的编译结果
 export async function getCompileResByPath(path: string) {
-    const cache = compileResultCache.get(path)
-    if (!isUndefined(cache)) {
-        return await cache
-    }
-
-    const document = TextDocument.create(
-        URI.file(path).toString(),
-        "qingkuai",
-        1,
-        readFileSync(path, "utf-8")
-    )
-    return await getCompileRes(document, false)
+    return await getCompileRes(ensureGetTextDocument(URI.file(path).toString()), false)
 }
 
 function updatePrettierConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {

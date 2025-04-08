@@ -1,10 +1,15 @@
 import type TS from "typescript"
 import type { FixedArray } from "./util"
 import type { Options as PrettierOptions } from "prettier"
+import type { Position, Range } from "vscode-languageserver/node"
+import type { ComponentIdentifierInfo, GetClientLanguageConfigResult } from "./communication"
+import type { CompileResult as QingkuaiCompileResult, PositionFlagKeys } from "qingkuai/compiler"
 
 export type NumNumArray = NumNum[]
 export type NumNum = FixedArray<number, 2>
+export type MaybePromise<T = any> = T | Promise<T>
 export type FuncWithCallBack = (cb: () => void) => void
+export type GetRangeFunc = (start: number, end?: number) => Range
 
 export type RealPath = string & {
     _: never
@@ -54,6 +59,24 @@ export type PrettierConfiguration = PrettierOptions & {
         componentTagFormatPreference: "camel" | "kebab"
         componentAttributeFormatPreference: "camel" | "kebab"
     }>
+}
+
+export type CompileResult = QingkuaiCompileResult & {
+    uri: string
+    version: number
+    filePath: RealPath
+    getRange: GetRangeFunc
+    isSynchronized: boolean
+    builtInTypeDeclarationEndIndex: number
+    componentInfos: ComponentIdentifierInfo[]
+    scriptLanguageId: "typescript" | "javascript"
+    config: Partial<GetClientLanguageConfigResult>
+
+    getOffset: (position: Position) => number
+    getPosition: (offset: number) => Position
+    getInterIndex: (sourceIndex: number) => number
+    getSourceIndex: (interIndex: number, isEnd?: boolean) => number
+    isPositionFlagSet: (index: number, key: PositionFlagKeys) => boolean
 }
 
 export type QingkuaiConfigurationWithDir = QingkuaiConfiguration & {

@@ -1,14 +1,12 @@
 import type TS from "typescript"
 import type { ConfigPluginParms } from "../../../types/communication"
 
-import {
-    proxyTypescriptLanguageServiceMethods,
-    ProxyTypescriptSessionAndProjectServiceMethods
-} from "./proxies"
 import { ts, setState } from "./state"
+import { proxyTypescript } from "./proxy"
 import { createIpcServer } from "./server"
-import { recordRealPath } from "./util/qingkuai"
+import { initializeAdapter } from "./adapter"
 import { isUndefined } from "../../../shared-util/assert"
+import { qkContext } from "qingkuai-language-service/adapters"
 import { initQingkuaiConfig } from "./server/configuration/method"
 
 export = function init(modules: { typescript: typeof TS }) {
@@ -20,7 +18,7 @@ export = function init(modules: { typescript: typeof TS }) {
                     ts: modules.typescript,
                     projectService: info.project.projectService
                 })
-                ProxyTypescriptSessionAndProjectServiceMethods()
+                initializeAdapter(modules.typescript)
                 info.project.projectService.setHostConfiguration({
                     extraFileExtensions: [
                         {
@@ -31,14 +29,13 @@ export = function init(modules: { typescript: typeof TS }) {
                     ]
                 })
             }
-            proxyTypescriptLanguageServiceMethods(info)
-            return Object.assign({}, info.languageService)
+            return proxyTypescript(info), Object.assign({}, info.languageService)
         },
 
         onConfigurationChanged(params: ConfigPluginParms) {
             createIpcServer(params.sockPath)
-            recordRealPath(params.triggerFileName)
             initQingkuaiConfig(params.configurations)
+            qkContext.recordRealPath(params.triggerFileName)
         }
     }
 }

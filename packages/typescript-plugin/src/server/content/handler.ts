@@ -19,15 +19,16 @@ import { fileURLToPath } from "node:url"
 import { updateQingkuaiSnapshot } from "./snapshot"
 import { isFileOpening } from "../../util/typescript"
 import { refreshDiagnostics } from "../diagnostic/refresh"
+import { qkContext } from "qingkuai-language-service/adapters"
 import { TPICHandler } from "../../../../../shared-util/constant"
+import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../../shared-util/assert"
 import { replaceSourceContentWithInterCodeOfScritptInfo } from "./method"
-import { ensureGetSnapshotOfQingkuaiFile, recordRealPath } from "../../util/qingkuai"
 
 export function attachDocumentManager() {
     server.onNotification(TPICHandler.DidOpen, (uri: string) => {
         const fileName = fileURLToPath(uri) as RealPath
-        recordRealPath(fileName)
+        qkContext.recordRealPath(fileName)
         openQingkuaiFiles.add(fileName)
         projectService.openClientFile(fileName)
     })

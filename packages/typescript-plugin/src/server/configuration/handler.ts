@@ -2,7 +2,6 @@ import type { ConfigureFileParams } from "../../../../../types/communication"
 import type { QingkuaiConfigurationWithDir, RealPath } from "../../../../../types/common"
 
 import path from "node:path"
-import { relativePathRE } from "../../regular"
 import { RefreshDiagnosticKind } from "../../constant"
 import { projectService, server, ts } from "../../state"
 import { refreshDiagnostics } from "../diagnostic/refresh"
@@ -50,7 +49,7 @@ function convertImportFileExcludePatternsPreferences(
         }
         if (p.startsWith("*")) {
             patterns[i] = wildcardPrefix + p
-        } else if (relativePathRE.test(p)) {
+        } else if (/^\.\.?($|[\/\\])/.test(p)) {
             patterns[i] = path.join(workspacePath, p)
         } else {
             return wildcardPrefix + "**" + path.sep + p

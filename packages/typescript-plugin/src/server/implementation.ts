@@ -5,14 +5,14 @@ import type {
 import type TS from "typescript"
 
 import { server, session } from "../state"
-import { getRealPath } from "../util/qingkuai"
+import { getDefaultSourceFile } from "../util/typescript"
 import { TPICHandler } from "../../../../shared-util/constant"
+import { qkContext } from "qingkuai-language-service/adapters"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
-import { getDefaultSourceFileByFileName } from "../util/typescript"
 
 export function attachFindImplementation() {
     server.onRequest<TPICCommonRequestParams>(TPICHandler.FindImplemention, ({ fileName, pos }) => {
-        const sourceFile = getDefaultSourceFileByFileName(fileName)!
+        const sourceFile = getDefaultSourceFile(fileName)!
         const lineAndCharacter = sourceFile.getLineAndCharacterOfPosition(pos)
         const getImplementation = (session as any).getImplementation.bind(session)
         const implementations = getImplementation(
@@ -28,7 +28,7 @@ export function attachFindImplementation() {
         }
         return implementations.map((item: TS.server.protocol.FileSpan) => {
             return {
-                fileName: getRealPath(item.file),
+                fileName: qkContext.getRealPath(item.file),
                 range: convertProtocolTextSpanToRange(item)
             } satisfies FindReferenceResultItem
         })

@@ -90,8 +90,3 @@ export function excludeProperty<T extends AnyObject, K extends keyof T>(
     }
     return ret
 }
-
-export function getRelativePathWithStartDot(from: string, to: string) {
-    const relativePath = path.relative(from, to)
-    return /\.{1,2}\//.test(relativePath) ? relativePath : `./${relativePath}`
-}

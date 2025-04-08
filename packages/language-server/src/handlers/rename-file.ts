@@ -1,9 +1,9 @@
-import type { WorkspaceEdit } from "vscode-languageserver/node"
 import type {
+    RenameFileResult,
     RenameFileParams,
-    ApplyWorkspaceEditParams,
-    RenameFileResult
+    ApplyWorkspaceEditParams
 } from "../../../../types/communication"
+import type { WorkspaceEdit } from "vscode-languageserver/node"
 
 import { URI } from "vscode-uri"
 import { TextEdit } from "vscode-languageserver/node"

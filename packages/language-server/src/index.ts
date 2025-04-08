@@ -7,17 +7,16 @@ import { initialize } from "./handlers/initialize"
 import { renameFile } from "./handlers/rename-file"
 import { findReference } from "./handlers/reference"
 import { signatureHelp } from "./handlers/signature"
-import { complete } from "./handlers/completion/template"
 import { LSHandler } from "../../../shared-util/constant"
 import { prepareRename, rename } from "./handlers/rename"
 import { publishDiagnostics } from "./handlers/diagnostic"
 import { attachDocumentHandlers } from "./handlers/document"
 import { findImplementation } from "./handlers/implementation"
 import { codeLens, resolveCodeLens } from "./handlers/code-lens"
-import { resolveCompletion } from "./handlers/completion/resolve"
+import { complete, resolveCompletion } from "./handlers/complete"
 import { attachRetransmissionHandlers } from "./handlers/retransmission"
-import { getColorPresentations, getDocumentColor } from "./handlers/color"
 import { findDefinition, findTypeDefinition } from "./handlers/definition"
+import { getColorPresentations, getDocumentColor } from "./handlers/color"
 
 attachDocumentHandlers()
 attachRetransmissionHandlers()
@@ -28,8 +27,8 @@ connection.onCompletion(complete)
 connection.onRenameRequest(rename)
 connection.onInitialize(initialize)
 connection.onReferences(findReference)
-connection.onDocumentFormatting(format)
 connection.onDefinition(findDefinition)
+connection.onDocumentFormatting(format)
 connection.onPrepareRename(prepareRename)
 connection.onSignatureHelp(signatureHelp)
 connection.onDocumentColor(getDocumentColor)

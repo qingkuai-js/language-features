@@ -1,14 +1,13 @@
 import type TS from "typescript"
 import type { RealPath } from "../../../../types/common"
-import type { Position, Range } from "vscode-languageserver"
+import type { Position, Range } from "vscode-languageserver/node"
 import type { ConvertProtocolTextSpanWithContextVerifier } from "../types"
 
 import { projectService } from "../state"
 import { DEFAULT_PROTOCOL_LOCATION } from "../constant"
-import { getDefaultSourceFileByFileName } from "./typescript"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { debugAssert, isQingkuaiFileName } from "../../../../shared-util/assert"
-import { ensureGetSnapshotOfQingkuaiFile, getRealPath, getSourceIndex } from "./qingkuai"
+import { convertor, getCompileInfo, qkContext } from "qingkuai-language-service/adapters"
 
 // 将typescript-language-features扩展与ts服务器通信结果中qingkuai文件的TextSpan的行列
 // 坐标修改到正确的源码位置（typescript语言服务获取到的qingkuai文件的坐标都是基于中间代码的）
@@ -16,7 +15,7 @@ export function convertProtocolTextSpan(
     fileName: RealPath,
     span: TS.server.protocol.TextSpan,
     verify?: ConvertProtocolTextSpanWithContextVerifier
-) {
+): TS.server.protocol.TextSpan | undefined {
     if (!isQingkuaiFileName(fileName)) {
         return span
     }
@@ -27,38 +26,19 @@ export function convertProtocolTextSpan(
 
     debugAssert(projectService.getScriptInfo(fileName))
 
-    const sourceFile = getDefaultSourceFileByFileName(fileName)!
-    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
-    const interStartIndex = sourceFile.getPositionOfLineAndCharacter(
-        span.start.line - 1,
-        span.start.offset - 1
-    )
-    const interEndIndex = sourceFile.getPositionOfLineAndCharacter(
-        span.end.line - 1,
-        span.end.offset - 1
-    )
-    const sourceStartIndex = getSourceIndex(qingkuaiSnapshot, interStartIndex)
-    const sourceEndIndex = getSourceIndex(qingkuaiSnapshot, interEndIndex, true)
+    const sourceStartIndex = convertor.protocolLocation.toSourceIndex(fileName, span.start)
+    const sourceEndIndex = convertor.protocolLocation.toSourceIndex(fileName, span.end)
     if (
         isIndexesInvalid(sourceStartIndex, sourceEndIndex) ||
-        !verify(sourceStartIndex!, qingkuaiSnapshot, "start") ||
-        !verify(sourceEndIndex!, qingkuaiSnapshot, "end")
+        !verify(fileName, sourceStartIndex!, "start") ||
+        !verify(fileName, sourceEndIndex!, "end")
     ) {
         return void 0
     }
-
-    const sourceEndPosition = qingkuaiSnapshot.positions[sourceEndIndex!]
-    const sourceStartPosition = qingkuaiSnapshot.positions[sourceStartIndex!]
     return {
-        start: {
-            line: sourceStartPosition.line,
-            offset: sourceStartPosition.column + 1
-        },
-        end: {
-            line: sourceEndPosition.line,
-            offset: sourceEndPosition.column + 1
-        }
-    } satisfies TS.server.protocol.TextSpan
+        end: sourceIndexToProtocolLocation(fileName, sourceEndIndex),
+        start: sourceIndexToProtocolLocation(fileName, sourceStartIndex)
+    }
 }
 
 // 此方法作用与convertProtocolTextSpan相似，但它处理的目标是TextSpanWithContext
@@ -75,49 +55,43 @@ export function convertProtocolTextSpanWithContext(
         verify = () => !0
     }
 
-    const convertTextSpan = convertProtocolTextSpan(fileName, span, verify)
-    if (!convertTextSpan) {
+    const converted = convertProtocolTextSpan(
+        fileName,
+        span,
+        verify
+    ) as TS.server.protocol.TextSpanWithContext
+    if (!converted) {
         return void 0
     }
 
-    const sourceFile = getDefaultSourceFileByFileName(fileName)!
-    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
-    const result: TS.server.protocol.TextSpanWithContext = convertTextSpan
     if (span.contextStart) {
-        const interContextStartIndex = sourceFile.getPositionOfLineAndCharacter(
-            span.contextStart.line - 1,
-            span.contextStart.offset - 1
+        const sourceContextStartIndex = convertor.protocolLocation.toSourceIndex(
+            fileName,
+            span.contextStart
         )
-        const sourceContextStartIndex = getSourceIndex(qingkuaiSnapshot, interContextStartIndex)
         if (
             !isIndexesInvalid(sourceContextStartIndex) &&
-            verify(sourceContextStartIndex!, qingkuaiSnapshot, "contextStart")
+            verify(fileName, sourceContextStartIndex!, "contextStart")
         ) {
-            const sourceContextStartPosition = qingkuaiSnapshot.positions[sourceContextStartIndex!]
-            result.contextStart = {
-                line: sourceContextStartPosition.line,
-                offset: sourceContextStartPosition.column + 1
-            }
+            converted.contextStart = sourceIndexToProtocolLocation(
+                fileName,
+                sourceContextStartIndex
+            )
         }
     }
     if (span.contextEnd) {
-        const interContextEndIndex = sourceFile.getPositionOfLineAndCharacter(
-            span.contextEnd.line - 1,
-            span.contextEnd.offset - 1
+        const sourceContextEndIndex = convertor.protocolLocation.toSourceIndex(
+            fileName,
+            span.contextEnd
         )
-        const sourceContextEndIndex = getSourceIndex(qingkuaiSnapshot, interContextEndIndex, true)
         if (
             !isIndexesInvalid(sourceContextEndIndex) &&
-            verify(sourceContextEndIndex!, qingkuaiSnapshot, "contextEnd")
+            verify(fileName, sourceContextEndIndex!, "contextEnd")
         ) {
-            const sourceContextEndPosition = qingkuaiSnapshot.positions[sourceContextEndIndex!]
-            result.contextEnd = {
-                line: sourceContextEndPosition.line,
-                offset: sourceContextEndPosition.column + 1
-            }
+            converted.contextEnd = sourceIndexToProtocolLocation(fileName, sourceContextEndIndex)
         }
     }
-    return result
+    return converted
 }
 
 // 将typescript-language-features扩展与ts服务器通信结果中找到的定义位置转换为qingkuai文件的源码位置
@@ -126,7 +100,7 @@ export function convertProtocolDefinitions(
 ) {
     definitions?.forEach((item, index) => {
         const convertRes = convertProtocolTextSpanWithContext(
-            (item.file = getRealPath(item.file)),
+            (item.file = qkContext.getRealPath(item.file)),
             item
         )
         if (convertRes) {
@@ -148,4 +122,15 @@ export function convertProtocolTextSpanToRange(span: TS.server.protocol.TextSpan
 
 export function convertProtocolLocationToPosition(location: TS.server.protocol.Location): Position {
     return { line: location.line - 1, character: location.offset - 1 }
+}
+
+function sourceIndexToProtocolLocation(
+    fileName: string,
+    index: number
+): TS.server.protocol.Location {
+    const positions = getCompileInfo(fileName).positions
+    if (!positions[index]) {
+        return DEFAULT_PROTOCOL_LOCATION
+    }
+    return { line: positions[index].line, offset: positions[index].column + 1 }
 }

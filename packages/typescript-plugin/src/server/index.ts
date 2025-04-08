@@ -3,11 +3,11 @@ import type { IpcParticipant } from "../../../../shared-util/ipc/types"
 import { existsSync } from "node:fs"
 import { forEachProject } from "../util/typescript"
 import { runAll } from "../../../../shared-util/sundry"
+import { lsProjectKindChanged, setState, ts } from "../state"
 import { TPICHandler } from "../../../../shared-util/constant"
+import { ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { createServer } from "../../../../shared-util/ipc/participant"
-import { ensureGetSnapshotOfQingkuaiFile, getRealPath } from "../util/qingkuai"
-import { lsProjectKindChanged, setState, ts, typeRefStatement } from "../state"
 
 import { attachHoverTip } from "./hover"
 import { attachCodeLens } from "./code-lens"
@@ -20,6 +20,7 @@ import { attachGetSignatureHelp } from "./signature"
 import { attachFindImplementation } from "./implementation"
 import { attachChangeConfig } from "./configuration/handler"
 import { attachPrepareRename, attachRename } from "./rename"
+import { qkContext, typeRefStatement } from "qingkuai-language-service/adapters"
 import { attachGetDiagnostic, attachRefreshDiagnostic } from "./diagnostic/handler"
 import { attachDocumentManager, attachGetLanguageId, attachUpdateSnapshot } from "./content/handler"
 
@@ -64,7 +65,7 @@ export function ensureLanguageServerProjectKind(server: IpcParticipant) {
         }
 
         for (const fileName of p.getFileNames()) {
-            const realPath = getRealPath(fileName)
+            const realPath = qkContext.getRealPath(fileName)
             if (!isQingkuaiFileName(realPath || "")) {
                 continue
             }

@@ -43,6 +43,9 @@ importers:
       rollup:
         specifier: ^4.34.9
         version: 4.39.0
+      rollup-plugin-dts:
+        specifier: ^6.2.1
+        version: 6.2.1(rollup@4.39.0)(typescript@5.8.2)
       rollup-plugin-esbuild:
         specifier: ^6.2.1
         version: 6.2.1(esbuild@0.21.5)(rollup@4.39.0)
@@ -74,9 +77,30 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0
 
-  packages/language-server: {}
+  packages/language-server:
+    dependencies:
+      qingkuai-language-service:
+        specifier: workspace:*
+        version: link:../language-service
 
-  packages/typescript-plugin: {}
+  packages/language-service:
+    dependencies:
+      vscode-languageserver-types:
+        specifier: ^3.17.5
+        version: 3.17.5
+    devDependencies:
+      prettier:
+        specifier: ^3.5.2
+        version: 3.5.3
+      qingkuai:
+        specifier: ^1.0.27
+        version: 1.0.27
+
+  packages/typescript-plugin:
+    devDependencies:
+      qingkuai-language-service:
+        specifier: workspace:*
+        version: link:../language-service
 
   packages/vscode-extension:
     dependencies:
@@ -96,6 +120,9 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
+      qingkuai-language-service:
+        specifier: workspace:*
+        version: link:../language-service
 
 packages:
 
@@ -734,6 +761,13 @@ packages:
     resolution: {integrity: sha512-9dkvaxAsk/xNXSJzMgFqqMCuFgt2+KsOFek3TMLfo8NCPfWpBmqwyNn5Y+NX56QUYfCtsyhF3ayiboEoUmJk/A==}
     engines: {node: 20 || >=22}
     hasBin: true
+
+  rollup-plugin-dts@6.2.1:
+    resolution: {integrity: sha512-sR3CxYUl7i2CHa0O7bA45mCrgADyAQ0tVtGSqi3yvH28M+eg1+g5d7kQ9hLvEz5dorK3XVsH5L2jwHLQf72DzA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      rollup: ^3.29.4 || ^4
+      typescript: ^4.5 || ^5.0
 
   rollup-plugin-esbuild@6.2.1:
     resolution: {integrity: sha512-jTNOMGoMRhs0JuueJrJqbW8tOwxumaWYq+V5i+PD+8ecSCVkuX27tGW7BXqDgoULQ55rO7IdNxPcnsWtshz3AA==}
@@ -1457,6 +1491,14 @@ snapshots:
     dependencies:
       glob: 11.0.1
       package-json-from-dist: 1.0.1
+
+  rollup-plugin-dts@6.2.1(rollup@4.39.0)(typescript@5.8.2):
+    dependencies:
+      magic-string: 0.30.17
+      rollup: 4.39.0
+      typescript: 5.8.2
+    optionalDependencies:
+      '@babel/code-frame': 7.26.2
 
   rollup-plugin-esbuild@6.2.1(esbuild@0.21.5)(rollup@4.39.0):
     dependencies:

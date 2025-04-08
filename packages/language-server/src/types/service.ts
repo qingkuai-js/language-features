@@ -10,34 +10,6 @@ import type { IpcParticipant } from "../../../../shared-util/ipc/types"
 import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
 import type { PromiseWithState, RealPath } from "../../../../types/common"
 
-export type CompletionData =
-    | {
-          kind: "emmet"
-      }
-    | ({
-          kind: "script"
-      } & ResolveCompletionParams)
-
-export interface CodeLensConfig {
-    referencesCodeLens: {
-        enabled: boolean
-        showOnAllFunctions: boolean
-    }
-    implementationsCodeLens?: {
-        enabled: boolean
-        showOnInterfaceMethods: boolean
-    }
-}
-
-export interface CodeLensData {
-    fileName: RealPath
-    interIndex: number
-    position: Position
-    slotName?: string
-    componentName?: string
-    type: "reference" | "implementation"
-}
-
 export type SetStateOptions = Partial<{
     tpic: IpcParticipant
     isTestingEnv: boolean

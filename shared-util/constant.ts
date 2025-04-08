@@ -53,6 +53,7 @@ export enum TPICHandler {
     FindImplemention = "findImplementation",
     GetNavigationTree = "getNavigationTree",
     RefreshDiagnostic = "refreshDiagnostic",
+    findTypeDefinition = "findTypeDefinition",
     WaitForTSCommand = "waitForTypescriptCommand",
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",
@@ -72,7 +73,7 @@ export enum LSHandler {
     ConnectToTsServer = "qingkuai/languageClientCreated",
     GetLanguageConfig = "qingkuai/getClientLanguageConfig",
     CleanLanguageConfigCache = "qingkuai/cleanConfigurationCache",
-    Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer",
+    Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer"
 }
 
 export const GLOBAL_TYPE_IDNTIFIERS = new Set<string>([

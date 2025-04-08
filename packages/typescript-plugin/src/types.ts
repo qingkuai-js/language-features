@@ -1,10 +1,6 @@
 import type TS from "typescript"
-import type { ORI_SOURCE_FILE } from "./constant"
-import type { QingKuaiSnapShot } from "./snapshot"
-import type { Diagnostic, SourceFile } from "typescript"
+import type { SlotInfo } from "qingkuai/compiler"
 import type { IpcParticipant } from "../../../shared-util/ipc/types"
-import type { commonMessage as runtimeCommonMessage } from "qingkuai"
-import type { commonMessage as compilerCommonMessage, SlotInfo } from "qingkuai/compiler"
 
 export interface QingKuaiFileInfo {
     offset: number
@@ -18,11 +14,6 @@ export interface QingKuaiFileInfo {
     getPos(pos: number): number
 }
 
-export type DiagnosticKind =
-    | "getSemanticDiagnostics"
-    | "getSyntacticDiagnostics"
-    | "getSuggestionDiagnostics"
-
 export type SetStateOptions = Partial<{
     ts: typeof TS
     server: IpcParticipant
@@ -31,20 +22,8 @@ export type SetStateOptions = Partial<{
     projectService: TS.server.ProjectService
 }>
 
-export type RelatedInfoFile =
-    | SourceFile
-    | undefined
-    | {
-          fileName: string
-          [ORI_SOURCE_FILE]: SourceFile
-      }
-
 export type ConvertProtocolTextSpanWithContextVerifier = (
+    fileName: string,
     sourceIndex: number,
-    qingkuaiSnapshot: QingKuaiSnapShot,
     itemKind: "start" | "end" | "contextStart" | "contextEnd"
 ) => boolean
-
-export type QingKuaiDiagnostic = Omit<Diagnostic, "file">
-export type QingkuaiRuntimeCommonMessage = typeof runtimeCommonMessage
-export type QingkuaiCompilerCommonMessage = typeof compilerCommonMessage

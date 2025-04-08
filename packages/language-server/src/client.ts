@@ -3,14 +3,13 @@ import type {
     ConnectToTsServerParams,
     FindComponentTagRangeParams
 } from "../../../types/communication"
-import type { Range } from "vscode-languageserver"
 
 import { URI } from "vscode-uri"
 import { ProjectKind } from "./constants"
-import { getCompileRes, walk } from "./compile"
+import { getCompileResByPath } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
-import { ensureGetTextDocument } from "./handlers/document"
 import { Messages, communicationWayInfo } from "./messages"
+import { findComponentTagRanges } from "qingkuai-language-service"
 import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { generatePromiseAndResolver, sleep } from "../../../shared-util/sundry"
 import { tpic, Logger, tpicConnectedResolver, setState, connection } from "./state"
@@ -83,15 +82,7 @@ function attachClientHandlers() {
     tpic.onRequest<FindComponentTagRangeParams>(
         TPICHandler.FindComponentTagRange,
         async ({ fileName, componentTag }) => {
-            const ranges: Range[] = []
-            const uri = URI.file(fileName).toString()
-            const cr = await getCompileRes(ensureGetTextDocument(uri))
-            walk(cr.templateNodes, node => {
-                if (node.componentTag === componentTag) {
-                    ranges.push(cr.getRange(node.range[0], node.range[0] + node.tag.length + 1))
-                }
-            })
-            return ranges
+            return findComponentTagRanges(fileName, componentTag, getCompileResByPath)
         }
     )
 }

@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "target": "ESNext",
+        "declaration": true,
+        "module": "ESNext",
+        "skipLibCheck": true,
+        "outDir": "dist/temp-types",
+        "emitDeclarationOnly": true,
+        "skipDefaultLibCheck": true,
+        "moduleResolution": "Bundler",
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": ["src"]
+}

@@ -1,4 +1,4 @@
-import type { Location, Position } from "vscode-languageserver"
+import type { Location, Position } from "vscode-languageserver/node"
 
 export interface ShowReferencesCommandParams {
     fileName: string

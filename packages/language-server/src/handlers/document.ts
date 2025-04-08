@@ -1,9 +1,6 @@
-import { readFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
 import { TPICHandler } from "../../../../shared-util/constant"
-import { TextDocument } from "vscode-languageserver-textdocument"
 import { clearDiagnostics, publishDiagnostics } from "./diagnostic"
-import { documents, cachedDocuments, tpic, tpicConnectedPromise } from "../state"
+import { documents, tpic, tpicConnectedPromise } from "../state"
 
 export function attachDocumentHandlers() {
     documents.onDidChangeContent(({ document }) => {
@@ -26,17 +23,4 @@ export function attachDocumentHandlers() {
     })
 }
 
-export function ensureGetTextDocument(uri: string) {
-    const existing = documents.get(uri)
-    if (existing) {
-        return cachedDocuments.set(uri, existing), existing
-    }
 
-    const document = TextDocument.create(
-        uri,
-        "qingkuai",
-        0,
-        readFileSync(fileURLToPath(uri), "utf-8")
-    )
-    return cachedDocuments.set(uri, document), document
-}

@@ -5,9 +5,12 @@
     "author": "lgq",
     "license": "MIT",
     "scripts": {
-        "build": "rollup -c",
-        "dev": "rollup -c -w"
+        "dev": "rollup -c -w",
+        "build": "rimraf packages/language-service/dist && cd ./packages/language-service && tsc -p tsconfig.dts.json && cd ../../ && rollup -c && rimraf packages/language-service/dist/temp-types"
     },
+    "workspaces": [
+        "packages/*"
+    ],
     "devDependencies": {
         "@rollup/plugin-commonjs": "^26.0.3",
         "@rollup/plugin-node-resolve": "^15.3.1",
@@ -19,6 +22,7 @@
         "qingkuai": "^1.0.27",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
+        "rollup-plugin-dts": "^6.2.1",
         "rollup-plugin-esbuild": "^6.2.1",
         "strip-ansi": "^7.1.0",
         "typescript": "^5.8.2",

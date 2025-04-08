@@ -1,10 +1,4 @@
 import type {
-    Range,
-    Command,
-    WorkspaceEdit,
-    CompletionItemLabelDetails
-} from "vscode-languageserver"
-import type {
     NumNum,
     RealPath,
     NumNumArray,
@@ -13,8 +7,9 @@ import type {
     ExtensionConfiguration,
     QingkuaiConfigurationWithDir
 } from "./common"
+import type TS from "typescript"
 import type { SlotInfo } from "qingkuai/compiler"
-import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
+import type { Range, WorkspaceEdit } from "vscode-languageserver/node"
 
 export interface ConfigPluginParms {
     sockPath: string
@@ -52,7 +47,7 @@ export interface ApplyWorkspaceEditParams {
 }
 
 export interface FindComponentTagRangeParams {
-    fileName: string
+    fileName: RealPath
     componentTag: string
 }
 
@@ -121,11 +116,10 @@ export interface GetSemanticTokensParams {
 
 export interface ResolveCompletionParams {
     pos: number
-    fileName: RealPath
     entryName: string
+    fileName: RealPath
     source?: string
-    insertText?: string
-    original?: CompletionEntryData
+    original?: TS.CompletionEntryData
 }
 
 export interface FindReferenceResultItem {
@@ -140,40 +134,8 @@ export interface FindDefinitionResultItem {
 }
 
 export interface FindDefinitionResult {
-    range: NumNum
+    range: Range
     definitions: FindDefinitionResultItem[]
-}
-
-export interface ResolveCompletionTextEdit {
-    start: number
-    end: number
-    newText: string
-}
-
-export interface ResolveCompletionResult {
-    detail?: string
-    command?: Command
-    documentation?: string
-    textEdits?: ResolveCompletionTextEdit[]
-}
-
-export interface GetCompletionResultEntry {
-    name: string
-    label: string
-    kind: ScriptElementKind
-    source?: string
-    detail?: string
-    sortText?: string
-    isColor?: boolean
-    filterText?: string
-    insertText?: string
-    isSnippet?: boolean
-    preselect?: boolean
-    deprecated?: boolean
-    data?: CompletionEntryData
-    replacementSpan?: TextSpan
-    commitCharacters?: string[]
-    labelDetails?: CompletionItemLabelDetails
 }
 
 export interface InsertSnippetParam {
@@ -196,7 +158,7 @@ export interface TSDiagnosticRelatedInformation {
     message: string
     filePath: RealPath
 }
-export interface TSDiagnostic {
+export interface GetDiagnosticResultItem {
     kind: number
     code: number
     range: Range
@@ -206,14 +168,6 @@ export interface TSDiagnostic {
     unnecessary: boolean
     relatedInformations: TSDiagnosticRelatedInformation[]
 }
-
-export type GetCompletionResult = {
-    isIncomplete: boolean
-    isNewIdentifierLocation: boolean
-    defaultCommitCharacters: string[]
-    defaultRepalcementSpan?: TextSpan
-    entries: GetCompletionResultEntry[]
-} | null
 
 export type GetClientConfigParams<T = any> = {
     uri: string
@@ -235,4 +189,15 @@ export type SignatureHelpParams = TPICCommonRequestParams & {
 
 export type FindDefinitionParams = TPICCommonRequestParams & {
     preferGoToSourceDefinition: boolean
+}
+
+export type GetCompletionsResultEntry = TS.CompletionEntry & {
+    label: string
+    isColor: boolean
+    isDeprecated: boolean
+    detail: string | undefined
+}
+
+export type GetCompletionsResult = Omit<TS.CompletionInfo, "entries"> & {
+    entries: GetCompletionsResultEntry[]
 }

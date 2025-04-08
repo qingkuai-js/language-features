@@ -1,5 +1,4 @@
 import {
-    getRealPath,
     compileQingkuaiFileToInterCode,
     ensureGetSnapshotOfQingkuaiFile
 } from "../../util/qingkuai"
@@ -7,6 +6,7 @@ import { RefreshDiagnosticKind } from "../../constant"
 import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
 import { updateQingkuaiSnapshot } from "../content/snapshot"
+import { qkContext } from "qingkuai-language-service/adapters"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
 import { TPICHandler } from "../../../../../shared-util/constant"
 import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
@@ -68,7 +68,7 @@ export const refreshDiagnostics = debounce(
             const endsWithSpace = snapshot.getText(contentLength - 1, contentLength) === " "
 
             if (isQingkuaiFileName(fileName)) {
-                const realPath = getRealPath(fileName)
+                const realPath = qkContext.getRealPath(fileName)
                 if (shouldEdit) {
                     if (byFileName === RefreshDiagnosticKind.qingkuaiConfig) {
                         const compileRes = compileQingkuaiFileToInterCode(realPath)
