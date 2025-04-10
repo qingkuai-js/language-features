@@ -4,7 +4,7 @@ import { getCompileRes } from "../compile"
 import { RealPath } from "../../../../types/common"
 import { debounce } from "../../../../shared-util/sundry"
 import { getDiagnostic } from "qingkuai-language-service"
-import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
+import { TPICHandler } from "../../../../shared-util/constant"
 import { tpic, documents, connection, isTestingEnv, limitedScriptLanguageFeatures } from "../state"
 
 export const publishDiagnostics = debounce(
@@ -15,8 +15,8 @@ export const publishDiagnostics = debounce(
         }
 
         const cr = await getCompileRes(document)
-        const diagnostics = getDiagnostic(cr, getScriptDiagnostics)
-        connection.sendNotification(LSHandler.PublishDiagnostic, { uri, diagnostics })
+        const diagnostics = await getDiagnostic(cr, getScriptDiagnostics)
+        connection.sendDiagnostics({ uri, diagnostics })
     },
     300,
     debounceIdGetter

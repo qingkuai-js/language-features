@@ -19,6 +19,11 @@ export const DEFAULT_RANGE_WITH_CONTENT = {
     contentEnd: DEFAULT_POSITION
 }
 
+export const DEFAULT_QINGKUAI_CONFIGURATION = {
+    resolveImportExtension: true,
+    convenientDerivedDeclaration: true
+}
+
 export const INTER_NAMESPACE = "__c__"
 export const EXPORT_DEFAULT_OFFSET = 21
 export const TS_REFS_DECLARATION_LEN = 27
@@ -68,7 +73,7 @@ export enum LSHandler {
     InsertSnippet = "qingkuai/insertSnippet",
     GetClientConfig = "qingkuai/getClientConfig",
     TsServerIsKilled = "qingkuai/tsServerIsKilled",
-    PublishDiagnostic = "qingkuai/publishDiagnostics",
+    RefreshDiagnostic = "qingkuai/refreshDiagnostics",
     ApplyWorkspaceEdit = "qingkuai/applyWorkspaceEdit",
     ConnectToTsServer = "qingkuai/languageClientCreated",
     GetLanguageConfig = "qingkuai/getClientLanguageConfig",

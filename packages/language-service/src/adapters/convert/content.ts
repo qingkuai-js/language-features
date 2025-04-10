@@ -308,8 +308,16 @@ export function ensureExport(program: TS.Program, fileName: RealPath, content: s
         if (
             ts.isCallExpression(node) &&
             ts.isIdentifier(node.expression) &&
-            COMPILER_FUNCS.has(node.expression.text) &&
-            isDeclarationOfGlobalType(typeChecker.getSymbolAtLocation(node.expression))
+            COMPILER_FUNCS.has(node.expression.text)
+        ) {
+            console.log(node)
+        }
+
+        if (
+            ts.isCallExpression(node) &&
+            ts.isIdentifier(node.expression) &&
+            COMPILER_FUNCS.has(node.expression.text)
+            // && isDeclarationOfGlobalType(typeChecker.getSymbolAtLocation(node.expression))
         ) {
             const funcName = node.expression.text
             if (reactCompilerFuncRE.test(funcName)) {
@@ -486,7 +494,10 @@ export function ensureExport(program: TS.Program, fileName: RealPath, content: s
             currentFileName !== fileName.toString() &&
             !importedQingkuaiFileNames.has(currentFileName)
         ) {
-            const relativePath = getRelativePathWithStartDot(dirPath, currentFileName)
+            let relativePath = getRelativePathWithStartDot(dirPath, currentFileName)
+            if (config?.resolveImportExtension) {
+                relativePath = relativePath.slice(0, -path.ext(relativePath).length)
+            }
             componentIdentifierInfos.push({
                 imported: false,
                 attributes: [],

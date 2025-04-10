@@ -102,6 +102,9 @@ export async function getAndProcessScriptBlockCompletions(
 
     // 过滤无效的补全建议
     completionItems = completionItems.filter(item => {
+        if (item.label === INTER_NAMESPACE) {
+            return false
+        }
         if (
             item.kind === CompletionItemKind.Text &&
             INVALID_COMPLETION_TEXT_LABELS.has(item.label)

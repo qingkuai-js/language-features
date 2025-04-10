@@ -6,12 +6,13 @@ import type {
 
 import path from "node:path"
 import { isUndefined } from "../../../../../shared-util/assert"
+import { DEFAULT_QINGKUAI_CONFIGURATION } from "../../../../../shared-util/constant"
 
 // .qingkuairc文件配置内容，键为其所在的目录
 const configurations = new Map<RealPath, QingkuaiConfiguration>()
 
 export function getQingkuaiConfig(k: RealPath) {
-    return configurations.get(k)
+    return getConfigByFileName(k)
 }
 
 export function deleteQingkuaiConfig(k: RealPath) {
@@ -39,5 +40,5 @@ export function getConfigByFileName(realPath: RealPath): QingkuaiConfiguration {
             currentDirname = path.dirname(currentDirname)
         }
     }
-    return {}
+    return DEFAULT_QINGKUAI_CONFIGURATION
 }

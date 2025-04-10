@@ -47,11 +47,12 @@ export function proxyResolveModuleNameLiterals(
         const qingkuaiModules = new Set<string>()
         const curDir = path.dir(containingFileRealPath)
         const config = getConfig(containingFileRealPath)
+        const fromQk = isQingkuaiFileName(containingFile)
 
         const ret = originalRet.map((item, index) => {
             const moduleText = moduleLiterals[index].text
             const isDirectory = isEmptyString(path.ext(moduleText))
-            const resolveAsQk = isDirectory && config?.resolveImportExtension
+            const resolveAsQk = fromQk && isDirectory && config?.resolveImportExtension
             const modulePath = path.resolve(curDir, moduleText + (resolveAsQk ? ".qk" : ""))
 
             // 导入项非qingkuai文件，返回原始值
@@ -93,5 +94,4 @@ export function proxyResolveModuleNameLiterals(
 
 export function proxyGetCompletionEntryDetails(languageService: TS.LanguageService) {
     const getCompletionEntryDetails = languageService.getCompletionEntryDetails
-    
 }

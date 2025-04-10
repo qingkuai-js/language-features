@@ -350,7 +350,7 @@ function shouldComplete(cr: CompileResult, offset: number, trigger: string) {
         return !trigger || /[#.\[:@ ]/.test(trigger)
     }
     if (cr.isPositionFlagSet(offset, "inScript")) {
-        return !trigger || /[\.\-@#<'"`_\$ ]/.test(trigger)
+        return !trigger || /[\.\-@#<'"`_\$]/.test(trigger)
     }
     return true
 }

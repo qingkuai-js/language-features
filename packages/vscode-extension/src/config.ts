@@ -47,18 +47,16 @@ export async function getInitQingkuaiConfig() {
 export function startQingkuaiConfigWatcher() {
     if (!limitedScriptLanguageFeatures) {
         const watcher = vscode.workspace.createFileSystemWatcher("**/.qingkuairc", true)
-        watcher.onDidChange(uri => {
-            notifyServerCleanConfigCache()
+        watcher.onDidChange(async uri => {
             client.sendNotification(LSHandler.Retransmission, {
                 name: TPICHandler.UpdateConfig,
                 data: {
                     dir: path.dirname(uri.path),
-                    ...loadQingkuaiConfig(uri.path)
+                    ...(await loadQingkuaiConfig(uri.path))
                 }
             } satisfies RetransmissionParams)
         })
         watcher.onDidDelete(uri => {
-            notifyServerCleanConfigCache()
             client.sendNotification(LSHandler.Retransmission, {
                 name: TPICHandler.DeleteConfig,
                 data: path.dirname(uri.path)

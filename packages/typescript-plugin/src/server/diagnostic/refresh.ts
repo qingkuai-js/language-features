@@ -40,8 +40,8 @@ export const refreshDiagnostics = debounce(
         }
 
         if (byConfigChanged) {
+            shouldEdit = true
             markOpenFilesAsReferences()
-            shouldEdit = byFileName === RefreshDiagnosticKind.typescriptConfig
         } else {
             const scriptInfo = projectService.getScriptInfo(byFileName)
             if (!scriptKindChanged || scriptInfo?.scriptKind !== ts.ScriptKind.TS) {

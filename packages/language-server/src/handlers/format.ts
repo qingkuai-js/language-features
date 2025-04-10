@@ -11,9 +11,9 @@ export const format: FormatHandler = async ({ textDocument }, token) => {
         return null
     }
 
-    await _format(
-        resolve(__dirname, "../node_modules/prettier-plugin-qingkuai"), // /dist/index.js
+    return _format(
+        resolve(__dirname, "../node_modules/prettier-plugin-qingkuai/dist/index.js"),
         await getCompileRes(document),
-        Logger.error
+        Logger.error.bind(Logger)
     )
 }

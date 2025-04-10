@@ -5,7 +5,7 @@ import type { ComponentIdentifierInfo } from "../../../../../types/communication
 
 import { projectService } from "../../state"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
-import { getDefaultProgram } from "../../util/typescript"
+import { getDefaultProgram, getDefaultSourceFile } from "../../util/typescript"
 import { convertor } from "qingkuai-language-service/adapters"
 import { debugAssert } from "../../../../../shared-util/assert"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
@@ -18,7 +18,6 @@ export function updateQingkuaiSnapshot(
     scriptKind: TS.ScriptKind,
     positions: ASTPositionWithFlag[]
 ): ComponentIdentifierInfo[] {
-    const program = getDefaultProgram(fileName)!
     const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
 
     const editScriptInfoCommon = (text: string) => {
@@ -27,9 +26,10 @@ export function updateQingkuaiSnapshot(
         }
         editQingKuaiScriptInfo(fileName, text, itos, slotInfo, scriptKind, positions)
     }
-
-    debugAssert(!!program)
     editScriptInfoCommon(content)
+
+    const program = getDefaultProgram(fileName)!
+    debugAssert(!!program)
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
     const res = convertor.ensureExport(program, fileName, content)

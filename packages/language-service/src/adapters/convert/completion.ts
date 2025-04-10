@@ -12,6 +12,7 @@ import { lsRange } from "./struct"
 import { SCRIPT_EXTENSIONS } from "../../constants"
 import { getRealPath, getSourceIndex } from "../qingkuai"
 import { isUndefined } from "../../../../../shared-util/assert"
+import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { convertDisplayPartsToPlainTextWithLink } from "./typescript"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 import { getFormattingOptions, getUserPreferences, ts } from "../state"
@@ -118,7 +119,7 @@ export function getAndConvertCompletionDetail(
     if (detail.documentation) {
         converted.documentation = convertDisplayPartsToPlainTextWithLink(detail.documentation)
     }
-    return converted
+    return (converted.detail = converted.detail.replaceAll(`${INTER_NAMESPACE}.`, "")), converted
 }
 
 function parseKindModifier(kindModifiers: string | undefined) {

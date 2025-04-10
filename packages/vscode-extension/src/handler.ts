@@ -23,7 +23,7 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
     // 活跃文档切换且新活跃文档的语言id为qingkuai时刷新诊断信息
     vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
-            client.sendNotification(LSHandler.PublishDiagnostic, textEditor.document.uri.toString())
+            client.sendNotification(LSHandler.RefreshDiagnostic, textEditor.document.uri.toString())
         }
     })
 
