@@ -9,6 +9,7 @@ export class QingKuaiSnapShot implements IScriptSnapshot {
         public initial: boolean,
         public scriptKind: ScriptKind,
         public readonly itos: number[],
+        public readonly typeDeclarationLen: number,
         public readonly slotInfo: SlotInfo,
         public readonly positions: ASTPositionWithFlag[]
     ) {}

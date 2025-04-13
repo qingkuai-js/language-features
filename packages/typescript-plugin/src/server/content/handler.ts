@@ -79,6 +79,7 @@ export function attachUpdateSnapshot() {
             recoverItos(rest.citos),
             rest.slotInfo,
             scriptKind,
+            rest.typeDeclarationLen,
             positions
         )
         refreshDiagnostics(fileName, scriptKindChanged)

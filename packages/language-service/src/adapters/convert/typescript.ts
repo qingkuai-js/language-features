@@ -69,7 +69,7 @@ export function convertDisplayPartsToPlainTextWithLink(parts: TS.SymbolDisplayPa
             )
             return ret + `[${part.text}](command:qingkuai.openFileByFilePath?${args})`
         }
-        return ret + (part.kind === "link" ? "" : part.text || "")
+        return (ret + (part.kind === "link" ? "" : part.text || "")).replace("__c__.", "")
     }, "")
 }
 

@@ -17,6 +17,7 @@ export function initialEditQingkuaiFileSnapshot(fileName: RealPath) {
                 qingkuaiSnapshot.itos,
                 qingkuaiSnapshot.slotInfo,
                 qingkuaiSnapshot.scriptKind,
+                qingkuaiSnapshot.typeDeclarationLen,
                 qingkuaiSnapshot.positions
             )
         })

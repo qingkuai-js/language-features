@@ -30,8 +30,6 @@ export const TS_REFS_DECLARATION_LEN = 27
 export const JS_REFS_DECLARATION_LEN = 32
 export const TS_PROPS_DECLARATION_LEN = 28
 export const JS_PROPS_DECLARATION_LEN = 33
-export const TS_TYPE_DECLARATION_LEN = 149
-export const JS_TYPE_DECLARATION_LEN = 144
 
 export enum GlobalTypeIdentifier {
     Ref = "Refs",

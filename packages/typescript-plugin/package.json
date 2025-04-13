@@ -10,8 +10,8 @@
         "javascript",
         "language features"
     ],
+    "description": "A Typescript plugin for Qingkuai.",
     "devDependencies": {
-        "qingkuai-language-service": "workspace:*"
-    },
-    "description": "A Typescript plugin for Qingkuai."
+        "qingkuai-language-service": "file:../language-service"
+    }
 }

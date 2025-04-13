@@ -12,16 +12,18 @@ import type {
 import type {
     NumNum,
     RealPath,
+    CustomFS,
+    CustomPath,
     MaybePromise,
     CompileResult,
     QingkuaiConfiguration
 } from "../../../../types/common"
 import type TS from "typescript"
-import type { AnyObject } from "../../../../types/util"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as runtimeCommonMessage } from "qingkuai"
 import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
 import type { CompletionItem, Position, SignatureHelp, TextEdit } from "vscode-languageserver-types"
+import { HoverSettings } from "vscode-css-languageservice"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -76,23 +78,10 @@ export type ScriptCompletionDetail = Omit<
     })[]
 }
 
-export interface FSMethods {
-    read: (path: string) => string
-    exist: (path: string) => boolean
-}
-
-export interface PathMethods {
-    ext: (path: string) => string
-    dir: (path: string) => string
-    base: (path: string) => string
-    resolve: (...segments: string[]) => string
-    relative: (from: string, to: string) => string
-}
-
 export interface CreateLsAdaptersOptions {
     ts: typeof TS
-    fs: FSMethods
-    path: PathMethods
+    fs: CustomFS
+    path: CustomPath
     typeDeclarationFilePath: string
     getConfig: GetQingkuaiConfigFunc
     getFullFileNames: GetFullFileNamesFunc
@@ -182,7 +171,6 @@ export type FindScriptTypeDefinitionsFunc = (
 
 export type GetFullFileNamesFunc = () => string[]
 export type GetRealPathFunc = (fileName: string) => RealPath
-export type PathResolveFunc = (...segments: string[]) => string
 export type QingkuaiRuntimeCommonMessage = typeof runtimeCommonMessage
 export type QingkuaiCompilerCommonMessage = typeof compilerCommonMessage
 export type InsertSnippetFunc = (item: string | InsertSnippetParam) => void
@@ -190,7 +178,7 @@ export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
 export type GetAdapterCompileResultFunc = (fileName: string) => AdapterCompileInfo
-export type GetCssConfigFunc = (uri: string) => MaybePromise<AnyObject | undefined>
+export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetTsLanguageServiceFunc = (fileName: string) => TS.LanguageService | undefined
 export type GetQingkuaiConfigFunc = (fileName: RealPath) => QingkuaiConfiguration | undefined
 export type GetScriptNavTreeFunc = (fileName: RealPath) => MaybePromise<TS.NavigationTree | null>

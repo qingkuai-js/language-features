@@ -6,6 +6,7 @@ import type {
 import type TS from "typescript"
 import type { Range } from "vscode-languageserver"
 
+import { CUSTOM_PATH } from "../constant"
 import { server, session, ts } from "../state"
 import { convertProtocolTextSpanToRange } from "../util/protocol"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
@@ -36,7 +37,7 @@ export function attachFindReference() {
                         TPICHandler.FindComponentTagRange,
                         {
                             fileName: refRealPath,
-                            componentTag: filePathToComponentName(fileName)
+                            componentTag: filePathToComponentName(CUSTOM_PATH, fileName)
                         }
                     )
                     ranges.forEach(range => result.push({ range, fileName: refRealPath }))

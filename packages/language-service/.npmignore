@@ -1,6 +1,7 @@
 src
 node_modules
 
+dist/**/*.map
+!dist/**/*.js
+!dist/**/*.d.ts
 tsconfig.dts.json
-dist/index.js.map
-dist/adapters.js.map

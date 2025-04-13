@@ -7,8 +7,8 @@ import type {
     GetCodeLensConfigFunc
 } from "../types/service"
 import type TS from "typescript"
-import type { CompileResult } from "../../../../types/common"
 import type { CodeLens, Location } from "vscode-languageserver-types"
+import type { CompileResult, CustomPath } from "../../../../types/common"
 import type { ShowReferencesCommandParams } from "../../../../types/command"
 
 import { URI } from "vscode-uri"
@@ -20,6 +20,7 @@ import { filePathToComponentName, isIndexesInvalid } from "../../../../shared-ut
 
 export async function codeLens(
     cr: CompileResult,
+    path: CustomPath,
     getScriptNavTree: GetScriptNavTreeFunc,
     getCodeLensConfig: GetCodeLensConfigFunc
 ): Promise<CodeLens[] | null> {
@@ -89,7 +90,7 @@ export async function codeLens(
                             type: "reference",
                             fileName: cr.filePath,
                             slotName: nameAttribute.value.raw,
-                            componentName: filePathToComponentName(cr.filePath),
+                            componentName: filePathToComponentName(path, cr.filePath),
                             position: cr.getPosition(nameAttribute.key.loc.start.index)
                         } satisfies CodeLensData
                     })

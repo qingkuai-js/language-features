@@ -5,8 +5,8 @@ import type { PositionFlagKeys } from "qingkuai/compiler"
 import { isInTopScope } from "./ts-ast"
 import { PositionFlag } from "qingkuai/compiler"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
-import { getCompileInfo, resolvedQingkuaiModule, ts, tsFileNameToRealPath } from "./state"
 import { filePathToComponentName, isIndexesInvalid } from "../../../../shared-util/qingkuai"
+import { getCompileInfo, path, resolvedQingkuaiModule, ts, tsFileNameToRealPath } from "./state"
 
 export function getRealPath(fileName: string) {
     return (tsFileNameToRealPath.get(fileName) || fileName) as RealPath
@@ -53,8 +53,9 @@ export function isComponentIdentifier(
             }
         }
     }
-
-    return isInTopScope(identifier) && identifier.getText() === filePathToComponentName(fileName)
+    return (
+        isInTopScope(identifier) && identifier.getText() === filePathToComponentName(path, fileName)
+    )
 }
 
 export function getSourceIndex(fileName: string, interIndex: number, isEnd = false) {

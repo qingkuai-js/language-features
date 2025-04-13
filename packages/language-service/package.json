@@ -2,7 +2,7 @@
     "name": "qingkuai-language-service",
     "license": "MIT",
     "author": "mlgq",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "keywords": [
         "qingkuai",
         "language-service"
@@ -19,15 +19,16 @@
             "types": "./dist/adapters.d.ts"
         }
     },
+    "scripts": {
+        "postpublish": "curl -X PUT 'https://registry-direct.npmmirror.com/-/package/qingkuai-language-service/syncs'"
+    },
     "peerDependencies": {
         "prettier": "^3.5.2",
         "qingkuai": "^1.0.27"
     },
     "devDependencies": {
         "prettier": "^3.5.2",
-        "qingkuai": "^1.0.27"
-    },
-    "dependencies": {
+        "qingkuai": "^1.0.28",
         "vscode-languageserver-types": "^3.17.5"
     },
     "description": "The language service for qingkuai"

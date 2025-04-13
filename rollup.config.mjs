@@ -6,7 +6,7 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
-    const languageExternal = ["vscode", "prettier", "qingkuai/compiler"]
+    const languageExternal = ["vscode", "prettier", "qingkuai", "qingkuai/compiler"]
 
     if (isWatchMode) {
         languageExternal.push(
@@ -17,6 +17,7 @@ export default defineConfig(commandLineArgs => {
             "vscode-languageclient/node",
             "vscode-languageserver/node",
             "vscode-css-languageservice",
+            "vscode-languageserver-types",
             "vscode-languageserver-textdocument"
         )
     }
@@ -39,6 +40,12 @@ export default defineConfig(commandLineArgs => {
                 )
             ) {
                 warn(log)
+            }
+        },
+
+        treeshake: {
+            moduleSideEffects(id) {
+                return !id.startsWith("node:")
             }
         }
     }

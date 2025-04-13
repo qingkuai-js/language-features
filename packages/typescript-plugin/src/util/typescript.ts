@@ -50,15 +50,10 @@ export function forEachProject(cb: (p: TS.server.Project) => void) {
 }
 
 export function getUserPreferences(fileName: string): TS.UserPreferences {
-    const userPreferences = excludeProperty(
+    return  excludeProperty(
         projectService.getPreferences(ts.server.toNormalizedPath(fileName)),
         "lazyConfiguredProjectsFromExternalProject"
     )
-    return {
-        ...userPreferences,
-        includeCompletionsWithInsertText: true,
-        includeCompletionsForModuleExports: true
-    }
 }
 
 export function getFormattingOptions(fileName: string) {

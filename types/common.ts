@@ -25,6 +25,19 @@ export interface OpenFileParams {
     end: number
 }
 
+export interface CustomFS {
+    read: (path: string) => string
+    exist: (path: string) => boolean
+}
+
+export interface CustomPath {
+    ext: (path: string) => string
+    dir: (path: string) => string
+    base: (path: string) => string
+    resolve: (...segments: string[]) => string
+    relative: (from: string, to: string) => string
+}
+
 export interface ExtensionConfiguration {
     typescriptDiagnosticsExplain: boolean
     insertSpaceAroundInterpolation: boolean

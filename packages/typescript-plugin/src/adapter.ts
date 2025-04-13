@@ -8,11 +8,12 @@ import {
     getFormattingOptions,
     getDefaultLanguageService
 } from "./util/typescript"
+import { resolve } from "node:path"
+import { CUSTOM_PATH } from "./constant"
 import { existsSync, readFileSync } from "node:fs"
 import { ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
 import { getQingkuaiConfig } from "./server/configuration/method"
 import { init, qkContext } from "qingkuai-language-service/adapters"
-import { basename, dirname, extname, relative, resolve } from "node:path"
 import { debugAssert, isQingkuaiFileName } from "../../../shared-util/assert"
 
 export function initializeAdapter(ts: typeof TS) {
@@ -22,15 +23,9 @@ export function initializeAdapter(ts: typeof TS) {
             exist: existsSync,
             read: path => readFileSync(path, "utf-8")
         },
-        path: {
-            resolve,
-            relative,
-            ext: extname,
-            dir: dirname,
-            base: basename
-        },
         getCompileInfo,
         getFullFileNames,
+        path: CUSTOM_PATH,
         getUserPreferences,
         getLineAndCharacter,
         getFormattingOptions,

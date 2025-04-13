@@ -196,20 +196,19 @@
         "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
         "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
         "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json",
+        "vsce:post": "cd ../../ && rimraf --glob '**/package-lock.json' && rimraf --glob '**/node_modules' && pnpm install",
         "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
-        "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
         "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
-        "vsce:pre": "rimraf node_modules ../typescript-plugin/node_modules && npm install && cd ../typescript-plugin && npm install",
-        "vsce:post": "rimraf node_modules ../typescript-plugin/node_modules package-lock.json ../typescript-plugin/package-lock.json && pnpm install"
+        "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
+        "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install"
     },
     "devDependencies": {
-        "js-yaml": "^4.1.0",
-        "qingkuai-language-service": "workspace:*"
+        "js-yaml": "^4.1.0"
     },
     "dependencies": {
         "prettier": "^3.5.2",
         "prettier-plugin-qingkuai": "^1.0.18",
-        "qingkuai": "^1.0.27",
+        "qingkuai": "^1.0.28",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }

@@ -1,10 +1,9 @@
 import type {
-    PathResolveFunc,
     GetCompileResultFunc,
     FindScriptDefinitionsFunc,
     FindScriptTypeDefinitionsFunc
 } from "../types/service"
-import type { CompileResult, NumNum } from "../../../../types/common"
+import type { CompileResult, CustomPath, NumNum } from "../../../../types/common"
 import type { LocationLink, Range } from "vscode-languageserver-types"
 
 import { URI } from "vscode-uri"
@@ -15,7 +14,7 @@ import { findAttribute, findNodeAt, findTagRanges, walk } from "../util/qingkuai
 export async function findDefinitions(
     cr: CompileResult,
     offset: number,
-    pathResolve: PathResolveFunc,
+    path: CustomPath,
     getCompileRes: GetCompileResultFunc,
     findScriptDefinitions: FindScriptDefinitionsFunc
 ) {
@@ -52,7 +51,7 @@ export async function findDefinitions(
                     return null
                 }
 
-                const componentFileName = pathResolve(
+                const componentFileName = path.resolve(
                     cr.filePath,
                     "../",
                     componentInfo.relativePath

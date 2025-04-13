@@ -91,7 +91,3 @@ export function proxyResolveModuleNameLiterals(
         return ret
     }
 }
-
-export function proxyGetCompletionEntryDetails(languageService: TS.LanguageService) {
-    const getCompletionEntryDetails = languageService.getCompletionEntryDetails
-}

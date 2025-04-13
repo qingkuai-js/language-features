@@ -5,7 +5,7 @@ import type { ComponentIdentifierInfo } from "../../../../../types/communication
 
 import { projectService } from "../../state"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
-import { getDefaultProgram, getDefaultSourceFile } from "../../util/typescript"
+import { getDefaultLanguageService, getDefaultProgram } from "../../util/typescript"
 import { convertor } from "qingkuai-language-service/adapters"
 import { debugAssert } from "../../../../../shared-util/assert"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
@@ -16,6 +16,7 @@ export function updateQingkuaiSnapshot(
     itos: number[],
     slotInfo: SlotInfo,
     scriptKind: TS.ScriptKind,
+    typeDeclarationLen: number,
     positions: ASTPositionWithFlag[]
 ): ComponentIdentifierInfo[] {
     const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
@@ -24,15 +25,25 @@ export function updateQingkuaiSnapshot(
         if (qingkuaiSnapshot.scriptKind !== scriptKind) {
             updateScriptKindOfQingkuaiFile(fileName, scriptKind)
         }
-        editQingKuaiScriptInfo(fileName, text, itos, slotInfo, scriptKind, positions)
+        editQingKuaiScriptInfo(
+            fileName,
+            text,
+            itos,
+            slotInfo,
+            scriptKind,
+            typeDeclarationLen,
+            positions
+        )
     }
     editScriptInfoCommon(content)
 
-    const program = getDefaultProgram(fileName)!
-    debugAssert(!!program)
-
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
-    const res = convertor.ensureExport(program, fileName, content)
+    const res = convertor.ensureExport(
+        getDefaultLanguageService(fileName)!,
+        fileName,
+        content,
+        typeDeclarationLen
+    )
     return editScriptInfoCommon(res.content), res.componentIdentifierInfos
 }
 

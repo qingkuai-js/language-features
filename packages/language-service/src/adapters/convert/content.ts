@@ -17,8 +17,6 @@ import {
 import {
     INTER_NAMESPACE,
     GlobalTypeIdentifier,
-    JS_TYPE_DECLARATION_LEN,
-    TS_TYPE_DECLARATION_LEN,
     TS_PROPS_DECLARATION_LEN,
     TS_REFS_DECLARATION_LEN,
     JS_PROPS_DECLARATION_LEN,
@@ -40,7 +38,6 @@ import {
     getLength,
     isEventType,
     isInTopScope,
-    isDeclarationOfGlobalType,
     findVariableDeclarationOfReactFunc
 } from "../ts-ast"
 import {
@@ -58,7 +55,13 @@ import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
 import { commonMessage as compilerCommonMessage, util } from "qingkuai/compiler"
 import { getRealPath, isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"
 
-export function ensureExport(program: TS.Program, fileName: RealPath, content: string) {
+export function ensureExport(
+    languageService: TS.LanguageService,
+    fileName: RealPath,
+    content: string,
+    typeDeclarationLen: number
+) {
+    const program = languageService.getProgram()!
     const typeChecker = program.getTypeChecker()
     const sourceFile = program.getSourceFile(fileName)!
     debugAssert(!!sourceFile)
@@ -73,11 +76,10 @@ export function ensureExport(program: TS.Program, fileName: RealPath, content: s
     const importedQingkuaiFileNames = new Set<string>()
     const typeRefStatementLen = typeRefStatement.length
     const slotInfoKeys = Object.keys(compileInfo.slotInfo)
-    const componentName = filePathToComponentName(fileName)
     const isTS = compileInfo.scriptKind === ts.ScriptKind.TS
     const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
+    const componentName = filePathToComponentName(path, fileName)
     const componentIdentifierInfos: ComponentIdentifierInfo[] = []
-    const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
     const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
 
     // 将每个待提取类型的索引记录到storedTypes
@@ -310,7 +312,7 @@ export function ensureExport(program: TS.Program, fileName: RealPath, content: s
             ts.isIdentifier(node.expression) &&
             COMPILER_FUNCS.has(node.expression.text)
         ) {
-            console.log(node)
+            // console.log(node)
         }
 
         if (
@@ -502,8 +504,8 @@ export function ensureExport(program: TS.Program, fileName: RealPath, content: s
                 imported: false,
                 attributes: [],
                 relativePath: relativePath,
-                name: filePathToComponentName(currentFileName),
-                slotNams: getComponentSlotNames(currentFileName)
+                slotNams: getComponentSlotNames(currentFileName),
+                name: filePathToComponentName(path, currentFileName)
             })
         }
     }

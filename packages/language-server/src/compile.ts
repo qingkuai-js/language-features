@@ -5,8 +5,8 @@ import type {
     GetClientLanguageConfigResult
 } from "../../../types/communication"
 import type { RealPath } from "../../../types/common"
+import type { TemplateNode } from "qingkuai/compiler"
 import type { CachedCompileResultItem } from "./types/service"
-import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
 
 import {
     tpic,
@@ -17,23 +17,22 @@ import {
     limitedScriptLanguageFeatures
 } from "./state"
 import {
+    getRangeGen,
     compressItos,
-    isIndexesInvalid,
+    getPositionGen,
+    getInterIndexGen,
     compressPosition,
     getScriptKindKey,
+    getSourceIndexGen,
+    isPositionFlagSetGen,
     compressPositionFlags
 } from "../../../shared-util/qingkuai"
-import {
-    LSHandler,
-    TPICHandler,
-    JS_TYPE_DECLARATION_LEN,
-    TS_TYPE_DECLARATION_LEN
-} from "../../../shared-util/constant"
 import { URI } from "vscode-uri"
+import { compile } from "qingkuai/compiler"
 import { ensureGetTextDocument } from "./util"
-import { compile, PositionFlag } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
+import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 
 // 文档配置项，键为TextDocument.uri（string）
 const clientConfigCache = new Map<string, GetClientLanguageConfigResult>()
@@ -64,77 +63,25 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     })
     const getOffset = document.offsetAt.bind(document)
     const isTS = compileRes.inputDescriptor.script.isTS
-    const typeDeclarationLen = isTS ? TS_TYPE_DECLARATION_LEN : JS_TYPE_DECLARATION_LEN
+    const getPosition = getPositionGen(compileRes.inputDescriptor.positions)
     const filePath = (isTestingEnv ? document.uri : URI.parse(document.uri).fsPath) as RealPath
-
-    // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
-    // 如果未传入结束索引，返回的范围固定指向开始位置（Position）
-    const getRange = (start: number, end?: number) => {
-        if (isUndefined(end)) {
-            end = start
-        }
-        return {
-            start: getPosition(start),
-            end: getPosition(end)
-        }
-    }
-
-    // 获取指定索引的vscode格式位置表达（Position）
-    const getPosition = (offset: number) => {
-        const { positions } = compileRes.inputDescriptor
-        return {
-            line: positions[offset].line - 1,
-            character: positions[offset].column
-        }
-    }
-
-    // 通过中间代码索引换取源码索引
-    const getSourceIndex = (interIndex: number, isEnd = false) => {
-        const sourceIndex = compileRes.interIndexMap.itos[interIndex]
-        if (!isIndexesInvalid(sourceIndex)) {
-            return sourceIndex
-        }
-
-        const preSourceIndex = compileRes.interIndexMap.itos[interIndex - 1]
-        return isIndexesInvalid(sourceIndex) ? -1 : preSourceIndex + 1
-    }
-
-    // 通过源码索引换取中间代码索引
-    const getInterIndex = (sourceIndex: number) => {
-        const interIndex = compileRes.interIndexMap.stoi[sourceIndex]
-        if (!isIndexesInvalid(interIndex)) {
-            return interIndex
-        }
-
-        const preInterIndex = compileRes.interIndexMap.stoi[sourceIndex - 1]
-        return isIndexesInvalid(preInterIndex) ? -1 : preInterIndex + 1
-    }
-
-    // 验证某个索引的位置信息是否设置了指定的标志位
-    const isPositionFlagSet = (index: number, key: PositionFlagKeys) => {
-        const positionInfo = compileRes.inputDescriptor.positions[index]
-        if (isUndefined(positionInfo)) {
-            return false
-        }
-        return (positionInfo.flag & PositionFlag[key]) !== 0
-    }
 
     const ccri: CachedCompileResultItem = {
         ...compileRes,
-        getRange,
         filePath,
         getOffset,
         getPosition,
-        getInterIndex,
-        getSourceIndex,
-        isPositionFlagSet,
         uri: document.uri,
         componentInfos: [],
         config: null as any,
         isSynchronized: false,
         version: document.version,
+        getRange: getRangeGen(getPosition),
         scriptLanguageId: isTS ? "typescript" : "javascript",
-        builtInTypeDeclarationEndIndex: typeRefStatement.length + typeDeclarationLen
+        getInterIndex: getInterIndexGen(compileRes.interIndexMap.stoi),
+        getSourceIndex: getSourceIndexGen(compileRes.interIndexMap.itos),
+        isPositionFlagSet: isPositionFlagSetGen(compileRes.inputDescriptor.positions),
+        builtInTypeDeclarationEndIndex: typeRefStatement.length + compileRes.typeDeclarationLen
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
@@ -154,6 +101,7 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
                     fileName: cr.filePath,
                     scriptKindKey: getScriptKindKey(cr),
                     slotInfo: cr.inputDescriptor.slotInfo,
+                    typeDeclarationLen: cr.typeDeclarationLen,
                     citos: compressItos(cr.interIndexMap.itos),
                     cp: compressPosition(cr.inputDescriptor.positions),
                     cpf: compressPositionFlags(cr.inputDescriptor.positions)

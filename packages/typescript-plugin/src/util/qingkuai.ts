@@ -37,6 +37,7 @@ export function ensureGetSnapshotOfQingkuaiFile(fileName: RealPath) {
             true,
             scriptKind,
             compileRes.interIndexMap.itos,
+            compileRes.typeDeclarationLen,
             compileRes.inputDescriptor.slotInfo,
             compileRes.inputDescriptor.positions
         )

@@ -78,6 +78,7 @@ export const refreshDiagnostics = debounce(
                             compileRes.interIndexMap.itos,
                             compileRes.inputDescriptor.slotInfo,
                             ts.ScriptKind[getScriptKindKey(compileRes)],
+                            compileRes.typeDeclarationLen,
                             compileRes.inputDescriptor.positions
                         )
                     } else {
@@ -90,6 +91,7 @@ export const refreshDiagnostics = debounce(
                             qingkuaiSnapshot.itos,
                             qingkuaiSnapshot.slotInfo,
                             qingkuaiSnapshot.scriptKind,
+                            qingkuaiSnapshot.typeDeclarationLen,
                             qingkuaiSnapshot.positions
                         )
                     }

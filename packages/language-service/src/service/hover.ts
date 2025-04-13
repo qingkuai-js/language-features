@@ -17,6 +17,7 @@ import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { createStyleSheetAndDocument, cssLanguageService } from "../util/css"
 import { findAttribute, findEventModifier, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 
 export async function doHover(
     cr: CompileResult,
@@ -33,18 +34,22 @@ export async function doHover(
 
     if (cr.isPositionFlagSet(offset, "inScript")) {
         const tsHoverTip = await getScriptHover!(cr.filePath, cr.getInterIndex(offset))
-        return (
-            tsHoverTip && {
-                contents: {
-                    kind: "markdown",
-                    value: tsHoverTip.content
-                },
-                range: cr.getRange(
-                    cr.getSourceIndex(tsHoverTip.posRange[0]),
-                    cr.getSourceIndex(tsHoverTip.posRange[1], true)
-                )
-            }
-        )
+        if (!tsHoverTip) {
+            return null
+        }
+
+        const ss = cr.getSourceIndex(tsHoverTip.posRange[0])
+        const se = cr.getSourceIndex(tsHoverTip.posRange[1], true)
+        if (isIndexesInvalid(ss, se)) {
+            return null
+        }
+        return {
+            contents: {
+                kind: "markdown",
+                value: tsHoverTip.content
+            },
+            range: cr.getRange(ss, se)
+        }
     }
 
     if (cr.isPositionFlagSet(offset, "inStyle")) {

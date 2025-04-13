@@ -1,5 +1,5 @@
 import type { Location } from "vscode-languageserver-types"
-import type { CompileResult } from "../../../../types/common"
+import type { CompileResult, CustomPath } from "../../../../types/common"
 import type { FindReferenceResultItem } from "../../../../types/communication"
 import type { FindScriptReferencesFunc, GetCompileResultFunc } from "../types/service"
 
@@ -13,6 +13,7 @@ import { filePathToComponentName, isIndexesInvalid } from "../../../../shared-ut
 export async function findReferences(
     cr: CompileResult,
     offset: number,
+    path: CustomPath,
     getCompileRes: GetCompileResultFunc,
     findScriptReferences: FindScriptReferencesFunc
 ): Promise<Location[] | null> {
@@ -49,7 +50,7 @@ export async function findReferences(
                 references,
                 getCompileRes,
                 searchingSlotName,
-                filePathToComponentName(cr.filePath)
+                filePathToComponentName(path, cr.filePath)
             )
         }
 

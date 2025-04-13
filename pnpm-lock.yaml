@@ -33,10 +33,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.18
-        version: 1.0.18(prettier@3.5.3)(qingkuai@1.0.27)
+        version: 1.0.18(prettier@3.5.3)(qingkuai@1.0.28)
       qingkuai:
-        specifier: ^1.0.27
-        version: 1.0.27
+        specifier: ^1.0.28
+        version: 1.0.28
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -73,33 +73,35 @@ importers:
       vscode-languageserver-textdocument:
         specifier: ^1.0.12
         version: 1.0.12
+      vscode-languageserver-types:
+        specifier: ^3.17.5
+        version: 3.17.5
       vscode-uri:
         specifier: ^3.1.0
         version: 3.1.0
 
   packages/language-server:
-    dependencies:
+    devDependencies:
       qingkuai-language-service:
-        specifier: workspace:*
+        specifier: file:../language-service
         version: link:../language-service
 
   packages/language-service:
-    dependencies:
-      vscode-languageserver-types:
-        specifier: ^3.17.5
-        version: 3.17.5
     devDependencies:
       prettier:
         specifier: ^3.5.2
         version: 3.5.3
       qingkuai:
-        specifier: ^1.0.27
-        version: 1.0.27
+        specifier: ^1.0.28
+        version: 1.0.28
+      vscode-languageserver-types:
+        specifier: ^3.17.5
+        version: 3.17.5
 
   packages/typescript-plugin:
     devDependencies:
       qingkuai-language-service:
-        specifier: workspace:*
+        specifier: file:../language-service
         version: link:../language-service
 
   packages/vscode-extension:
@@ -109,10 +111,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.18
-        version: 1.0.18(prettier@3.5.3)(qingkuai@1.0.27)
+        version: 1.0.18(prettier@3.5.3)(qingkuai@1.0.28)
       qingkuai:
-        specifier: ^1.0.27
-        version: 1.0.27
+        specifier: ^1.0.28
+        version: 1.0.28
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
         version: link:../typescript-plugin
@@ -120,9 +122,6 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
-      qingkuai-language-service:
-        specifier: workspace:*
-        version: link:../language-service
 
 packages:
 
@@ -745,8 +744,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.27:
-    resolution: {integrity: sha512-iO0xQ58jgCsXG7SA57B1DdKLsF+ZYVs3KrwiUMHupaTpzgOkha0ZFj4mOythLfabRE5hmtNBm/c+fk6QZqbk5A==}
+  qingkuai@1.0.28:
+    resolution: {integrity: sha512-wRiS5mFMS1O820cSsKUmW+zpQOXGSsVvyYm5LfK2mSBtXgVQCkXNWmjQ22sS57WUUybX2Jb0g2dVgntE/3TZMQ==}
     engines: {node: '>=14'}
 
   resolve-pkg-maps@1.0.0:
@@ -1465,16 +1464,16 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.18(prettier@3.5.3)(qingkuai@1.0.27):
+  prettier-plugin-qingkuai@1.0.18(prettier@3.5.3)(qingkuai@1.0.28):
     dependencies:
       '@babel/code-frame': 7.26.2
       lines-and-columns: 2.0.4
       prettier: 3.5.3
-      qingkuai: 1.0.27
+      qingkuai: 1.0.28
 
   prettier@3.5.3: {}
 
-  qingkuai@1.0.27:
+  qingkuai@1.0.28:
     dependencies:
       '@babel/parser': 7.27.0
       '@jridgewell/sourcemap-codec': 1.5.0

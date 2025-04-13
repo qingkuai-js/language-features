@@ -7,6 +7,7 @@ import type {
 import type { CodeLensHandler, ResolveCodeLensHandler } from "../types/handlers"
 import type { CodeLensConfig } from "../../../language-service/src/types/service"
 
+import { CUSTOM_PATH } from "../constants"
 import { RealPath } from "../../../../types/common"
 import { getCompileRes, getCompileResByPath } from "../compile"
 import { codeLens as _codeLens } from "qingkuai-language-service"
@@ -21,7 +22,7 @@ export const codeLens: CodeLensHandler = async ({ textDocument }) => {
     }
 
     const cr = await getCompileRes(document)
-    return _codeLens(cr, getScriptNavTree, getCodeLensConfig)
+    return _codeLens(cr, CUSTOM_PATH, getScriptNavTree, getCodeLensConfig)
 }
 
 export const resolveCodeLens: ResolveCodeLensHandler = async codeLens => {

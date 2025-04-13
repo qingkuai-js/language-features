@@ -1,16 +1,81 @@
-import type { NumNumArray } from "../types/common"
-import type { Position } from "vscode-languageserver/node"
-import type { ASTPosition, ASTPositionWithFlag, CompileResult } from "qingkuai/compiler"
+import type {
+    ASTPosition,
+    CompileResult,
+    PositionFlagKeys,
+    ASTPositionWithFlag
+} from "qingkuai/compiler"
+import type { CustomPath, NumNumArray } from "../types/common"
+import type { Position, Range } from "vscode-languageserver/node"
 
-import { util } from "qingkuai/compiler"
-import { basename, extname } from "node:path"
+import { isUndefined } from "./assert"
+import { PositionFlag, util } from "qingkuai/compiler"
 
 export function getScriptKindKey(cr: CompileResult) {
     return cr.inputDescriptor.script.isTS ? "TS" : "JS"
 }
 
-export function filePathToComponentName(p: string) {
-    let base = basename(p, extname(p))
+// 生成根据源码索引获取qingkuai编译结果中间代码索引的方法
+export function getInterIndexGen(stoi: number[]) {
+    return (sourceIndex: number) => {
+        const interIndex = stoi[sourceIndex]
+        if (!isIndexesInvalid(interIndex)) {
+            return interIndex
+        }
+
+        const preInterIndex = stoi[sourceIndex - 1]
+        return isIndexesInvalid(preInterIndex) ? -1 : preInterIndex + 1
+    }
+}
+
+// 生成根据qingkuai编译结果中间代码索引获取源码索引的方法
+export function getSourceIndexGen(itos: number[]) {
+    return (interIndex: number, isEnd = false) => {
+        const sourceIndex = itos[interIndex]
+        if (!isEnd || !isIndexesInvalid(sourceIndex)) {
+            return sourceIndex ?? -1
+        }
+
+        const preSourceIndex = itos[interIndex - 1]
+        return isIndexesInvalid(sourceIndex) ? -1 : preSourceIndex + 1
+    }
+}
+
+// 生成检查qingkuai编译结果中某个位置标志位设置情况的方法
+export function isPositionFlagSetGen(positions: ASTPositionWithFlag[]) {
+    return (index: number, key: PositionFlagKeys) => {
+        const positionInfo = positions[index]
+        if (isUndefined(positionInfo)) {
+            return false
+        }
+        return (positionInfo.flag & PositionFlag[key]) !== 0
+    }
+}
+
+// 生成从qingkuai编译结果中获取指定索引的位置表达（Language Server Position）
+export function getPositionGen(positions: ASTPosition[]) {
+    return (offset: number): Position => {
+        return {
+            line: positions[offset].line - 1,
+            character: positions[offset].column
+        }
+    }
+}
+
+// 生成从qingkuai编译结果中获取指定索引的范围表达（Language Server Range）
+export function getRangeGen(getPosition: ReturnType<typeof getPositionGen>) {
+    return (start: number, end?: number): Range => {
+        if (isUndefined(end)) {
+            end = start
+        }
+        return {
+            start: getPosition(start),
+            end: getPosition(end)
+        }
+    }
+}
+
+export function filePathToComponentName(path: CustomPath, filePath: string) {
+    let base = path.base(filePath)
     base = base.replace(/[^a-zA-Z]*/, "")
     base = base.replace(/[^a-zA-Z\d]/g, "")
     if (!base) {

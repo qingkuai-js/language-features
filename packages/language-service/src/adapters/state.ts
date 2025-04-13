@@ -1,6 +1,4 @@
 import type {
-    FSMethods,
-    PathMethods,
     GetFullFileNamesFunc,
     GetQingkuaiConfigFunc,
     GetUserPreferencesFunc,
@@ -12,11 +10,11 @@ import type {
     GetInterIndexByLineAndCharacterFunc
 } from "../types/service"
 import type TS from "typescript"
-import type { RealPath } from "../../../../types/common"
+import type { CustomFS, CustomPath, RealPath } from "../../../../types/common"
 
 export let ts: typeof TS
-export let fs: FSMethods
-export let path: PathMethods
+export let fs: CustomFS
+export let path: CustomPath
 export let typeRefStatement: string
 export let typeDeclarationFilePath: string
 export let getConfig: GetQingkuaiConfigFunc

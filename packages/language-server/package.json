@@ -5,7 +5,7 @@
     "main": "index.js",
     "type": "module",
     "license": "MIT",
-    "dependencies": {
-        "qingkuai-language-service": "workspace:*"
+    "devDependencies": {
+        "qingkuai-language-service": "file:../language-service"
     }
 }

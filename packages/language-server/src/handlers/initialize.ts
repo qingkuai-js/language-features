@@ -2,6 +2,7 @@ import { Messages } from "../messages"
 import { Logger, setState } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
+import { COMPLETION_TRIGGER_CHARS } from "qingkuai-language-service"
 
 export const initialize: InitializeHandler = params => {
     // 测试环境下不会调用initialize
@@ -14,7 +15,7 @@ export const initialize: InitializeHandler = params => {
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
-            colorProvider:true,
+            colorProvider: true,
             hoverProvider: true,
             referencesProvider: true,
             definitionProvider: true,
@@ -36,16 +37,7 @@ export const initialize: InitializeHandler = params => {
                 completionItem: {
                     labelDetailsSupport: true
                 },
-                triggerCharacters: [
-                    ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
-
-                    // script needs trigger characters
-                    [".", "'", '"', "`", ":", ",", "_", " "],
-
-                    // prettier-ignore
-                    // emmet needs trigger characters
-                    [".", "+", "*", "]", "^", "$", ")", "}", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
-                ].flat()
+                triggerCharacters: COMPLETION_TRIGGER_CHARS
             }
         }
     }

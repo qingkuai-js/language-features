@@ -5,6 +5,7 @@ import type {
 import type { RealPath } from "../../../../types/common"
 import type { ReferenceHandler } from "../types/handlers"
 
+import { CUSTOM_PATH } from "../constants"
 import { findReferences } from "qingkuai-language-service"
 import { TPICHandler } from "../../../../shared-util/constant"
 import { getCompileRes, getCompileResByPath } from "../compile"
@@ -18,7 +19,7 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
 
     const cr = await getCompileRes(document)
     const offset = document.offsetAt(position)
-    return findReferences(cr, offset, getCompileResByPath, getScriptBlockReferences)
+    return findReferences(cr, offset, CUSTOM_PATH, getCompileResByPath, getScriptBlockReferences)
 }
 
 async function getScriptBlockReferences(

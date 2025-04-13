@@ -1,5 +1,6 @@
 **/*.map
 **/*.d.ts
+**/.DS_Store
 
 src
 syntaxes/src
@@ -8,12 +9,17 @@ node_modules/js-yaml
 node_modules/@babel/types
 node_modules/.package-lock.json
 
+../language-service/**
 ../typescript-plugin/src
 ../typescript-plugin/.npmignore
 ../typescript-plugin/node_modules
+
+node_modules/**/*.md
+node_modules/**/*.map
+node_modules/**/*.d.ts
+node_modules/**/LICENSE
 node_modules/typescript-plugin-qingkuai/src
 node_modules/typescript-plugin-qingkuai/.npmignore
 node_modules/typescript-plugin-qingkuai/node_modules
 
-!../typescript-plugin/dts/qingkuai.d.ts
 !node_modules/typescript-plugin-qingkuai/dts/qingkuai.d.ts

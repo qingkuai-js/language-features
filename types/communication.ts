@@ -148,6 +148,7 @@ export interface UpdateSnapshotParams {
     interCode: string
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
+    typeDeclarationLen: number
     cp: number[] // compressed positions
     citos: NumNumArray // compressed itos
     cpf: NumNumArray // compressed position flags

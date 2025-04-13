@@ -2,6 +2,17 @@ export enum Commands {
     TriggerSuggest = "editor.action.triggerSuggest"
 }
 
+export const COMPLETION_TRIGGER_CHARS = [
+    ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
+
+    // script needs trigger characters
+    [".", "'", '"', "`", ":", ",", "_", " "],
+
+    // prettier-ignore
+    // emmet needs trigger characters
+    [".", "+", "*", "]", "^", "$", ")", "}", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+].flat()
+
 export const KEY_RELATED_EVENT_MODIFIERS = new Set([
     "enter",
     "tab",

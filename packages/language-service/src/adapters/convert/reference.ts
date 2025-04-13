@@ -5,7 +5,7 @@ import type {
 import type TS from "typescript"
 import type { GetCompileResultFunc } from "../../types/service"
 
-import { ts } from "../state"
+import { path, ts } from "../state"
 import { lsRange } from "./struct"
 import { getRealPath } from "../qingkuai"
 import { findNodeAtPosition } from "../ts-ast"
@@ -39,7 +39,7 @@ export async function findAndConvertReferences(
             const refRealPath = getRealPath(ref.fileName)
             const ranges = await findComponentTagRanges(
                 refRealPath,
-                filePathToComponentName(fileName),
+                filePathToComponentName(path, fileName),
                 getCompileRes
             )
             ranges.forEach(range => result.push({ fileName: refRealPath, range }))
