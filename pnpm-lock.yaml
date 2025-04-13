@@ -88,12 +88,6 @@ importers:
 
   packages/language-service:
     devDependencies:
-      prettier:
-        specifier: ^3.5.2
-        version: 3.5.3
-      qingkuai:
-        specifier: ^1.0.28
-        version: 1.0.28
       vscode-languageserver-types:
         specifier: ^3.17.5
         version: 3.17.5

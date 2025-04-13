@@ -32,9 +32,9 @@ export const complete: CompletionHandler = async ({ textDocument, position, cont
         cr,
         offset,
         trigger,
+        document,
         isTestingEnv,
         projectKind,
-        document,
         insertSnippet,
         getScriptCompletions
     )

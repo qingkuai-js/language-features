@@ -1,5 +1,6 @@
 import type { FormatHandler } from "../types/handlers"
 
+import prettier from "prettier"
 import { resolve } from "node:path"
 import { getCompileRes } from "../compile"
 import { documents, Logger } from "../state"
@@ -11,9 +12,6 @@ export const format: FormatHandler = async ({ textDocument }, token) => {
         return null
     }
 
-    return _format(
-        resolve(__dirname, "../node_modules/prettier-plugin-qingkuai/dist/index.js"),
-        await getCompileRes(document),
-        Logger.error.bind(Logger)
-    )
+    const pluginPath = resolve(__dirname, "../node_modules/prettier-plugin-qingkuai/dist/index.js")
+    return _format([prettier, pluginPath], await getCompileRes(document), Logger.error.bind(Logger))
 }

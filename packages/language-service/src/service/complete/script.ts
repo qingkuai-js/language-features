@@ -10,9 +10,9 @@ import {
 import { util } from "qingkuai/compiler"
 import { identifierRE } from "../../regular"
 import { findAttribute, findNodeAt } from "../../util/qingkuai"
+import { INVALID_COMPLETION_TEXT_LABELS } from "../../constants"
 import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
-import { INVALID_COMPLETION_TEXT_LABELS, SCRIPT_EXTENSIONS } from "../../constants"
 
 export async function getAndProcessScriptBlockCompletions(
     cr: CompileResult,

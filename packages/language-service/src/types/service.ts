@@ -19,11 +19,12 @@ import type {
     QingkuaiConfiguration
 } from "../../../../types/common"
 import type TS from "typescript"
+import type Prettier from "prettier"
+import type { HoverSettings } from "vscode-css-languageservice"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as runtimeCommonMessage } from "qingkuai"
 import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
 import type { CompletionItem, Position, SignatureHelp, TextEdit } from "vscode-languageserver-types"
-import { HoverSettings } from "vscode-css-languageservice"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -178,6 +179,7 @@ export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
 export type GetAdapterCompileResultFunc = (fileName: string) => AdapterCompileInfo
+export type PrettierAndPlugin = [typeof Prettier, ...Array<string | Prettier.Plugin>]
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetTsLanguageServiceFunc = (fileName: string) => TS.LanguageService | undefined
 export type GetQingkuaiConfigFunc = (fileName: RealPath) => QingkuaiConfiguration | undefined

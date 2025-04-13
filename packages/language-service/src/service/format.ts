@@ -1,14 +1,19 @@
 import type { CompileResult } from "../../../../types/common"
 
-import prettier from "prettier"
 import stripAnsi from "strip-ansi"
+import { PrettierAndPlugin } from "../types/service"
 
-export async function format(pluginPath: string, cr: CompileResult, error: (msg: string) => void) {
+export async function format(
+    formater: PrettierAndPlugin,
+    cr: CompileResult,
+    error: (msg: string) => void
+) {
     try {
-        const formatedContent = await prettier.format(cr.inputDescriptor.source, {
-            ...cr.config.prettierConfig,
+        const [{format}, ...plugins] = formater
+        const formatedContent = await format(cr.inputDescriptor.source, {
+            plugins,
             parser: "qingkuai",
-            plugins: [pluginPath],
+            ...cr.config.prettierConfig,
             ...cr.config.prettierConfig?.qingkuai
         })
 

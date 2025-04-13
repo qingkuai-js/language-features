@@ -14,10 +14,10 @@ import { MarkupKind } from "vscode-languageserver-types"
 import { eventModifiers } from "../data/event-modifier"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
+import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { createStyleSheetAndDocument, cssLanguageService } from "../util/css"
 import { findAttribute, findEventModifier, findNodeAt, findTagRanges } from "../util/qingkuai"
-import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 
 export async function doHover(
     cr: CompileResult,
