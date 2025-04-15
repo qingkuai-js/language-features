@@ -5,9 +5,8 @@ import type { ComponentIdentifierInfo } from "../../../../../types/communication
 
 import { projectService } from "../../state"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
-import { getDefaultLanguageService, getDefaultProgram } from "../../util/typescript"
 import { convertor } from "qingkuai-language-service/adapters"
-import { debugAssert } from "../../../../../shared-util/assert"
+import { getDefaultLanguageService } from "../../util/typescript"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 
 export function updateQingkuaiSnapshot(

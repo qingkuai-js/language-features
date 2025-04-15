@@ -1,11 +1,10 @@
 import type TS from "typescript"
-import type { Identifier, Node, SourceFile, Symbol, SyntaxKind, TypeChecker } from "typescript"
 
 import { endingInvalidStrRE } from "../regular"
 import { ts, typeDeclarationFilePath } from "./state"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
-export function getKindName(node: Node) {
+export function getKindName(node: TS.Node) {
     return ts.SyntaxKind[node.kind]
 }
 // 获取节点文本的长度（不包含结尾的空白字符及分号）
@@ -17,7 +16,7 @@ export function getLength(nodeOrText: TS.Node | string) {
 }
 
 // 判断某个节点是否处于当前文件的顶部作用域
-export function isInTopScope(node: Node): boolean {
+export function isInTopScope(node: TS.Node): boolean {
     while (!ts.isSourceFile(node)) {
         node = node.parent
         if (
@@ -34,7 +33,7 @@ export function isInTopScope(node: Node): boolean {
     return true
 }
 
-export function findAncestorUntil(node: Node, kind: SyntaxKind) {
+export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {
     while (node.kind !== kind) {
         node = node.parent
         if (!node) {
@@ -56,7 +55,7 @@ export function isEventType(type: TS.Type) {
 }
 
 // 查找响应性声明相关编译器助手函数所属的变量声明节点
-export function findVariableDeclarationOfReactFunc(node: Node) {
+export function findVariableDeclarationOfReactFunc(node: TS.Node) {
     const { parent } = node
     if (
         ts.isAsExpression(parent) ||
@@ -70,7 +69,7 @@ export function findVariableDeclarationOfReactFunc(node: Node) {
 }
 
 // 判断符号的定义处是否为qingkuai类型声明文件
-export function isDeclarationOfGlobalType(symbol: Symbol | undefined) {
+export function isDeclarationOfGlobalType(symbol: TS.Symbol | undefined) {
     return (
         symbol?.declarations?.length === 1 &&
         symbol.declarations[0].getSourceFile().fileName === typeDeclarationFilePath
@@ -78,7 +77,7 @@ export function isDeclarationOfGlobalType(symbol: Symbol | undefined) {
 }
 
 // 遍历所有后代节点
-export function walk(node: Node | undefined, callback: (node: Node) => void) {
+export function walk(node: TS.Node | undefined, callback: (node: TS.Node) => void) {
     if (!isUndefined(node)) {
         callback(node), ts.forEachChild(node, cn => walk(cn, callback))
     }
@@ -100,7 +99,7 @@ export function getNodeAt(node: TS.Node, pos: number): TS.Node | undefined {
 }
 
 // 判断是否是内置的全局声明标识符（props、refs）
-export function isBuiltInGlobalDeclaration(node: Identifier, typeChecker: TypeChecker) {
+export function isBuiltInGlobalDeclaration(node: TS.Identifier, typeChecker: TS.TypeChecker) {
     const symbol = typeChecker.getSymbolAtLocation(node)
     for (const declaration of symbol?.declarations || []) {
         const variableDeclaration = findAncestorUntil(
@@ -112,8 +111,11 @@ export function isBuiltInGlobalDeclaration(node: Identifier, typeChecker: TypeCh
 }
 
 // 查找指定位置的节点
-export function findNodeAtPosition(sourceFile: SourceFile, position: number): Node | undefined {
-    function find(node: Node): Node | undefined {
+export function findNodeAtPosition(
+    sourceFile: TS.SourceFile,
+    position: number
+): TS.Node | undefined {
+    function find(node: TS.Node): TS.Node | undefined {
         if (position >= node.getStart() && position < node.getEnd()) {
             return ts.forEachChild(node, find) || node
         }

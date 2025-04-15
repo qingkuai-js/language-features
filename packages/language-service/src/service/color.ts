@@ -3,7 +3,7 @@ import type { Color, ColorInformation, Range } from "vscode-languageserver-types
 
 import { createStyleSheetAndDocument, cssLanguageService } from "../util/css"
 
-export function getDocumentColor(cr: CompileResult) {
+export function getDocumentColors(cr: CompileResult) {
     const result: ColorInformation[] = []
     cr.inputDescriptor.styles.forEach(descriptor => {
         const [document, _, styleSheet] = createStyleSheetAndDocument(

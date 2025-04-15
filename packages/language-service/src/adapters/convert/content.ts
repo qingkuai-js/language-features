@@ -197,19 +197,13 @@ export function ensureExport(
         if (isTS && ts.isImportDeclaration(node) && isInTopScope(node)) {
             if (!isUndefined(node.importClause?.name)) {
                 const identifierName = node.importClause.name.text
-
-                // prettier-ignore
-                if (
-                    globalTypeIdentifierRE.test(identifierName) &&
-                    (
-                        ts.SymbolFlags.Type &
-                        // @ts-expect-error: access private property
-                        typeChecker.getDeclaredTypeOfSymbol(node.importClause.symbol).flags
-                    )
-                ) {
-                    existingGlobalType.add(identifierName)
+                if (globalTypeIdentifierRE.test(identifierName)) {
+                    const symbol = typeChecker.getSymbolAtLocation(node.importClause.name)
+                    const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
+                    if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
+                        existingGlobalType.add(identifierName)
+                    }
                 }
-
                 if (
                     ts.isStringLiteral(node.moduleSpecifier) &&
                     qingkuaiModules?.has(node.moduleSpecifier.text)
@@ -235,13 +229,14 @@ export function ensureExport(
                 ts.isNamedImports(node.importClause.namedBindings)
             ) {
                 for (const element of node.importClause.namedBindings.elements) {
-                    const identifierName = element.name.text
-                    if (
-                        globalTypeIdentifierRE.test(identifierName) &&
-                        // @ts-expect-error: access private property
-                        ts.SymbolFlags.Type & typeChecker.getDeclaredTypeOfSymbol(element.symbol)
-                    ) {
-                        existingGlobalType.add(identifierName)
+                    if (!globalTypeIdentifierRE.test(element.name.text)) {
+                        continue
+                    }
+
+                    const symbol = typeChecker.getSymbolAtLocation(element.name)
+                    const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
+                    if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
+                        existingGlobalType.add(element.name.text)
                     }
                 }
             }

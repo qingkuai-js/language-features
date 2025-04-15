@@ -19,7 +19,8 @@ export async function findDefinitions(
     findScriptDefinitions: FindScriptDefinitionsFunc
 ) {
     if (cr.isPositionFlagSet(offset, "inStyle")) {
-        return excuteCssCommonHandler("findDefinition", cr, offset)
+        const cssRet =  excuteCssCommonHandler("findDefinition", cr, offset)
+        return cssRet && [cssRet]
     }
 
     let interIndex = cr.getInterIndex(offset)
@@ -85,7 +86,7 @@ export async function findDefinitions(
     if (!originSelectionRange) {
         originSelectionRange = res.range
     }
-    return res.definitions.map(item => {
+    return res.definitions.map<LocationLink>(item => {
         return {
             originSelectionRange,
             targetRange: item.targetRange,
@@ -134,14 +135,13 @@ async function getComponentSlotDefinition(
                 const selectionRange: NumNum = nameAttr
                     ? [nameAttr.loc.start.index, nameAttr.loc.end.index]
                     : [node.range[0], node.range[0] + node.tag.length + 1]
-                return [
-                    {
-                        originSelectionRange,
-                        targetUri: componentFileUri,
-                        targetRange: cr.getRange(...node.range),
-                        targetSelectionRange: cr.getRange(...selectionRange)
-                    }
-                ]
+                return  [{
+                    originSelectionRange,
+                    targetUri: componentFileUri,
+                    targetRange: cr.getRange(...node.range),
+                    targetSelectionRange: cr.getRange(...selectionRange)
+                }]
+                
             }
         }
         return undefined

@@ -1,11 +1,14 @@
-import type { NumNum } from "../../../../../types/common"
+import type {
+    TextEditWithPosRange,
+    GetCompileResultFunc,
+    GetScriptCompletionDetailFunc
+} from "../../types/service"
 import type { CompletionItem, TextEdit } from "vscode-languageserver-types"
-import type { GetCompileResultFunc, GetScriptCompletionDetailFunc } from "../../types/service"
 
 import { parseTemplate } from "qingkuai/compiler"
+import { addImportTextEditRE } from "../../regular"
 import { formatImportStatement } from "../../util/qingkuai"
 import { isString } from "../../../../../shared-util/assert"
-import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 
 export function resolveEmmetCompletion(item: CompletionItem) {
     if (!isString(item.data?.kind)) {
@@ -43,7 +46,8 @@ export async function resolveScriptBlockCompletion(
         return item
     }
 
-    const [detailSections, textEdits]: [string[], TextEdit[]] = [[], []]
+    const scriptStartIndex = cr.inputDescriptor.script.loc.start.index
+    const [detailSections, textEdits]: [string[], TextEditWithPosRange[]] = [[], []]
     if (completionDetail?.codeActions) {
         let hasRemainingCommandOrEdits = false
         for (let i = 0; i < completionDetail.codeActions.length; i++) {
@@ -74,25 +78,19 @@ export async function resolveScriptBlockCompletion(
     if (textEdits.length) {
         const additionalTextEdits: TextEdit[] = []
         for (const item of textEdits) {
-            let sourcePosRange: NumNum = [
-                cr.getSourceIndex(cr.getOffset(item.range.start)),
-                cr.getSourceIndex(cr.getOffset(item.range.end), true)
-            ]
-            if (item.newText.trimStart().startsWith("import")) {
-                sourcePosRange = Array(2).fill(cr.inputDescriptor.script.loc.start.index) as NumNum
+            if (addImportTextEditRE.test(item.newText)) {
+                item.range = [scriptStartIndex, scriptStartIndex]
                 item.newText = formatImportStatement(
                     item.newText.trim(),
                     cr.inputDescriptor.source,
-                    sourcePosRange,
+                    item.range,
                     cr.config.prettierConfig
                 )
             }
-            if (!isIndexesInvalid(...sourcePosRange)) {
-                additionalTextEdits.push({
-                    newText: item.newText,
-                    range: cr.getRange(...sourcePosRange)
-                })
-            }
+            additionalTextEdits.push({
+                newText: item.newText,
+                range: cr.getRange(...item.range)
+            })
         }
         if (additionalTextEdits.length) {
             item.additionalTextEdits = additionalTextEdits

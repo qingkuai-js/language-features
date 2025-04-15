@@ -2,7 +2,7 @@ import type { GetColorPresentations, GetDocumentColor } from "../types/handlers"
 
 import { documents } from "../state"
 import { getCompileRes } from "../compile"
-import { getDocumentColor as _getDocumentColor } from "qingkuai-language-service"
+import { getDocumentColors as _getDocumentColor } from "qingkuai-language-service"
 import { getColorPresentations as _getColorPresentations } from "qingkuai-language-service"
 
 export const getDocumentColor: GetDocumentColor = async ({ textDocument }, token) => {

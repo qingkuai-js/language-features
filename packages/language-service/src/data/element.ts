@@ -6339,6 +6339,12 @@ export const htmlDirectives = [
             "The html directive is used to render string as html content, and you can control whether to escape script, style or specific tag names by passing a value to it."
     },
     {
+        name: "show",
+        useage: "<tag #show={showTag}>\n\t<!-- visibility when showTag is truthy -->\n</tag>",
+        description:
+            'The show direcive is used to control whether the element is visible. It only controls whether style.diaplsy="none" is added, not whether the element is rendered.'
+    },
+    {
         name: "target",
         useage: '<tag #target={document.body}>\n\t<!-- transfor into body -->\n</tag>\n\n<tag #target={".container"}>\n\t<!-- transfor into document.querySelector(".container") -->\n</tag>',
         description:

@@ -1,10 +1,10 @@
 import type { CompileResult } from "../../../../types/common"
 
 import stripAnsi from "strip-ansi"
-import { PrettierAndPlugin } from "../types/service"
+import { PrettierAndPlugins } from "../types/service"
 
 export async function format(
-    formater: PrettierAndPlugin,
+    formater: PrettierAndPlugins,
     cr: CompileResult,
     error: (msg: string) => void
 ) {

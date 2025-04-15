@@ -24,7 +24,7 @@ import type { HoverSettings } from "vscode-css-languageservice"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as runtimeCommonMessage } from "qingkuai"
 import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
-import type { CompletionItem, Position, SignatureHelp, TextEdit } from "vscode-languageserver-types"
+import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -51,6 +51,11 @@ export interface CodeLensConfig {
     }
 }
 
+export interface TextEditWithPosRange {
+    range: NumNum
+    newText: string
+}
+
 export interface AdapterCompileInfo {
     itos: number[]
     content: string
@@ -75,7 +80,7 @@ export type ScriptCompletionDetail = Omit<
     documentation?: string
     codeActions?: (Omit<TS.CodeAction, "changes"> & {
         effects: TS.FileTextChanges[]
-        currentFileChanges: TextEdit[]
+        currentFileChanges: TextEditWithPosRange[]
     })[]
 }
 
@@ -179,7 +184,7 @@ export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
 export type GetAdapterCompileResultFunc = (fileName: string) => AdapterCompileInfo
-export type PrettierAndPlugin = [typeof Prettier, ...Array<string | Prettier.Plugin>]
+export type PrettierAndPlugins = [typeof Prettier, ...Array<string | Prettier.Plugin>]
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetTsLanguageServiceFunc = (fileName: string) => TS.LanguageService | undefined
 export type GetQingkuaiConfigFunc = (fileName: RealPath) => QingkuaiConfiguration | undefined

@@ -42,6 +42,15 @@ export async function getAndProcessScriptBlockCompletions(
         }
     }
 
+    let defaultEditRange: Range | undefined = undefined
+    if (response.optionalReplacementSpan) {
+        const { start, length } = response.optionalReplacementSpan
+        defaultEditRange = cr.getRange(
+            cr.getSourceIndex(start),
+            cr.getSourceIndex(start + length, true)
+        )
+    }
+
     response.entries.forEach(entry => {
         const insertText = entry.insertText || entry.name
         const data: CompletionData = {
@@ -96,6 +105,11 @@ export async function getAndProcessScriptBlockCompletions(
                     range: cr.getRange(ss, se)
                 }
             }
+        } else if (defaultEditRange) {
+            currentItem.textEdit = {
+                newText: insertText,
+                range: defaultEditRange
+            }
         }
         completionItems.push(currentItem)
     })
@@ -122,20 +136,10 @@ export async function getAndProcessScriptBlockCompletions(
         return !new RegExp(`${INTER_NAMESPACE}\\.\\s*`).test(preContent)
     })
 
-    let defaultEditRange: Range | undefined = undefined
-    if (response.optionalReplacementSpan) {
-        const { start, length } = response.optionalReplacementSpan
-        defaultEditRange = cr.getRange(
-            cr.getSourceIndex(start),
-            cr.getSourceIndex(start + length, true)
-        )
-    }
-
     return {
         items: completionItems,
         isIncomplete: !!response.isIncomplete,
         itemDefaults: {
-            editRange: defaultEditRange,
             commitCharacters: (response.defaultCommitCharacters || []).filter(char => {
                 return !unsetTriggerCharacters.has(char)
             })

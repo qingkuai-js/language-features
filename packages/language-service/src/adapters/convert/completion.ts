@@ -1,21 +1,20 @@
 import type {
     GetCompletionsResult,
-    GetCompletionsResultEntry,
     ResolveCompletionParams,
-    TPICCommonRequestParams
+    TPICCommonRequestParams,
+    GetCompletionsResultEntry
 } from "../../../../../types/communication"
 import type TS from "typescript"
-import type { TextEdit } from "vscode-languageserver-types"
-import type { ScriptCompletionDetail } from "../../types/service"
+import type { ScriptCompletionDetail, TextEditWithPosRange } from "../../types/service"
 
-import { lsRange } from "./struct"
 import { SCRIPT_EXTENSIONS } from "../../constants"
 import { getRealPath, getSourceIndex } from "../qingkuai"
 import { isUndefined } from "../../../../../shared-util/assert"
+import { addImportTextEditRE, qkExtInImportRE } from "../../regular"
 import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { convertDisplayPartsToPlainTextWithLink } from "./typescript"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
-import { getFormattingOptions, getUserPreferences, ts } from "../state"
+import { getConfig, getFormattingOptions, getUserPreferences, ts } from "../state"
 
 export function getAndConvertCompletionInfo(
     languageService: TS.LanguageService,
@@ -66,6 +65,7 @@ export function getAndConvertCompletionDetail(
     }
 
     const converted: ScriptCompletionDetail = {
+        codeActions: [],
         name: detail.name,
         kind: detail.kind,
         kindModifiers: detail.kindModifiers,
@@ -75,10 +75,14 @@ export function getAndConvertCompletionDetail(
         converted.tags = detail.tags
     }
     if (detail.codeActions?.length) {
-        converted.codeActions = []
+        const resolveImportExtension = getConfig(fileName)?.resolveImportExtension
+
         detail.codeActions?.forEach(action => {
             const effects: TS.FileTextChanges[] = []
-            const currentFileChanges: TextEdit[] = []
+            const currentFileChanges: TextEditWithPosRange[] = []
+            if (resolveImportExtension) {
+                action.description = action.description.replace(qkExtInImportRE, "$1")
+            }
             action.changes.forEach(change => {
                 const realPath = getRealPath(change.fileName)
                 const currentEffect: TS.FileTextChanges = {
@@ -87,21 +91,31 @@ export function getAndConvertCompletionDetail(
                     isNewFile: change.isNewFile
                 }
                 change.textChanges.forEach(item => {
+                    const sourceStartIndex = getSourceIndex(realPath, item.span.start)
                     if (fileName === change.fileName) {
-                        const range = lsRange.fromTextSpan(realPath, item.span)
-                        range && currentFileChanges.push({ range, newText: item.newText })
-                    } else {
-                        const sourceStartIndex = getSourceIndex(realPath, item.span.start)
-                        if (!isIndexesInvalid(sourceStartIndex)) {
-                            // @ts-ignore
-                            currentEffect.textChanges.push({
+                        const sourceEndIndex = getSourceIndex(
+                            realPath,
+                            item.span.start + item.span.length
+                        )
+                        const isAddImport = addImportTextEditRE.test(item.newText)
+                        if (isAddImport && resolveImportExtension) {
+                            item.newText = item.newText.replace(qkExtInImportRE, "$1")
+                        }
+                        if (isAddImport || !isIndexesInvalid(sourceStartIndex, sourceEndIndex)) {
+                            currentFileChanges.push({
                                 newText: item.newText,
-                                span: {
-                                    start: sourceStartIndex,
-                                    length: item.span.length
-                                }
+                                range: [sourceStartIndex, sourceEndIndex]
                             })
                         }
+                    } else if (!isIndexesInvalid(sourceStartIndex)) {
+                        // @ts-ignore
+                        currentEffect.textChanges.push({
+                            newText: item.newText,
+                            span: {
+                                start: sourceStartIndex,
+                                length: item.span.length
+                            }
+                        })
                     }
                 })
                 if (currentEffect.textChanges.length) {
