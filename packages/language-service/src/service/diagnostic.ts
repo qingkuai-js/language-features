@@ -1,13 +1,14 @@
 import type { CompileResult } from "../../../../types/common"
 import type { GetScriptDiagnosticsFunc } from "../types/service"
+import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languageserver-types"
 
 import { URI } from "vscode-uri"
 import { stringifyRange } from "../util/sundry"
 import { badComponentAttrMessageRE } from "../regular"
 import { isNull } from "../../../../shared-util/assert"
+import { createStyleSheetAndDocument, walk } from "../util/css"
 import { GetDiagnosticResultItem } from "../../../../types/communication"
-import { createStyleSheetAndDocument, cssLanguageService } from "../util/css"
 import { DiagnosticSeverity, DiagnosticTag } from "vscode-languageserver-types"
 
 export async function getDiagnostic(
@@ -40,11 +41,14 @@ export async function getDiagnostic(
 
     // 添加样式块的诊断信息
     cr.inputDescriptor.styles.forEach(descriptor => {
-        const [document, _, styleSheet] = createStyleSheetAndDocument(
+        const [languageService, document, _, styleSheet] = createStyleSheetAndDocument(
             cr,
             descriptor.loc.start.index
-        )!
-        diagnostics.push(...cssLanguageService.doValidation(document, styleSheet))
+        )
+        diagnostics.push(
+            ...checkStyleBlock(document, styleSheet),
+            ...languageService.doValidation(document, styleSheet)
+        )
     })
 
     // 处理javascript/typescript语言服务的诊断结果
@@ -118,4 +122,24 @@ function attachQingkuaiExplain(
             break
         }
     }
+}
+
+function checkStyleBlock(document: TextDocument, styleSheet: any) {
+    const ret: Diagnostic[] = []
+    walk(styleSheet, node => {
+        if (node.type === 52) {
+            ret.push({
+                source: "qk",
+                code: "4001",
+                severity: DiagnosticSeverity.Warning,
+                range: {
+                    start: document.positionAt(node.offset),
+                    end: document.positionAt(node.offset + 10)
+                },
+                message:
+                    "@keyframes will not be scoped, so it's recommended to declare it in an external file and import it at the application's entry point."
+            })
+        }
+    })
+    return ret
 }

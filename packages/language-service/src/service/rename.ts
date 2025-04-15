@@ -6,16 +6,12 @@ import type {
 import type { CompileResult } from "../../../../types/common"
 import type { Range, TextEdit, WorkspaceEdit } from "vscode-languageserver-types"
 
-import {
-    cssLanguageService,
-    excuteCssCommonHandler,
-    createStyleSheetAndDocument
-} from "../util/css"
 import { URI } from "vscode-uri"
 import { util } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
+import { excuteCssCommonHandler, createStyleSheetAndDocument } from "../util/css"
 
 export async function rename(
     cr: CompileResult,
@@ -25,8 +21,8 @@ export async function rename(
     renameInScriptBlock: RenameInScriptBlockFunc
 ): Promise<WorkspaceEdit | null> {
     if (cr.isPositionFlagSet(offset, "inStyle")) {
-        const [sd, sp, ss] = createStyleSheetAndDocument(cr, offset)!
-        return cssLanguageService.doRename(sd, sp, newName, ss)
+        const [languageService, sd, sp, ss] = createStyleSheetAndDocument(cr, offset)
+        return languageService.doRename(sd, sp, newName, ss)
     }
     if (cr.isPositionFlagSet(offset, "inScript")) {
         return await doScriptBlockRename(

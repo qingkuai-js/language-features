@@ -12,11 +12,11 @@ import {
 import { util } from "qingkuai/compiler"
 import { MarkupKind } from "vscode-languageserver-types"
 import { eventModifiers } from "../data/event-modifier"
+import { createStyleSheetAndDocument } from "../util/css"
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../data/entity"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
-import { createStyleSheetAndDocument, cssLanguageService } from "../util/css"
 import { findAttribute, findEventModifier, findNodeAt, findTagRanges } from "../util/qingkuai"
 
 export async function doHover(
@@ -53,10 +53,8 @@ export async function doHover(
     }
 
     if (cr.isPositionFlagSet(offset, "inStyle")) {
-        return cssLanguageService.doHover(
-            ...createStyleSheetAndDocument(cr, offset)!,
-            await getCssConfig(cr.uri)
-        )
+        const [languageService, ...params] = createStyleSheetAndDocument(cr, offset)
+        return languageService.doHover(...params, await getCssConfig(cr.uri))
     }
 
     // HTML标签悬停提示

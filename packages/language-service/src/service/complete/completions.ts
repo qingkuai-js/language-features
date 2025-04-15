@@ -33,13 +33,13 @@ import {
 } from "../../util/qingkuai"
 import { util } from "qingkuai/compiler"
 import { eventModifiers } from "../../data/event-modifier"
+import { createStyleSheetAndDocument } from "../../util/css"
 import { getAndProcessScriptBlockCompletions } from "./script"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../../data/entity"
 import { DEFAULT_RANGE } from "../../../../../shared-util/constant"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
 import { Commands, KEY_RELATED_EVENT_MODIFIERS } from "../../constants"
-import { createStyleSheetAndDocument, cssLanguageService } from "../../util/css"
 import { CompletionItemKind, InsertTextFormat } from "vscode-languageserver-types"
 import { completeEntityCharacterRE, emmetTagNameRE, inEntityCharacterRE } from "../../regular"
 import { isEmptyString, isNull, isString, isUndefined } from "../../../../../shared-util/assert"
@@ -356,7 +356,8 @@ function shouldComplete(cr: CompileResult, offset: number, trigger: string) {
 }
 
 function doStyleBlockComplete(cr: CompileResult, offset: number) {
-    return cssLanguageService.doComplete(...createStyleSheetAndDocument(cr, offset)!, {
+    const [languageService, ...params] = createStyleSheetAndDocument(cr, offset)
+    return languageService.doComplete(...params, {
         completePropertyWithSemicolon: true,
         triggerPropertyValueCompletion: true
     })

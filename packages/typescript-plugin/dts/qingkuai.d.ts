@@ -8,6 +8,10 @@ type NotFunction<T> = Exclude<T, GeneralFunc>
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
 type ExtractSlotNames<T extends Constructible> = keyof ConstructorParameters<T>[2]
 
+type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
+    ? HTMLElementTagNameMap[K]
+    : HTMLElement
+
 type UnescapeOptions = Partial<{
     escapeTags?: string[]
     escapeStyle?: boolean
@@ -52,12 +56,12 @@ export namespace __c__ {
         __: K
     ) => Readonly<ConstructorParameters<T>[2][K]>
 
-    const SatisfyNode: (_: Node) => void
     const SatisfyString: (_: string) => void
     const SatisfyBoolean: (_: boolean) => void
     const SatisfyPromise: (_: Promise<any>) => void
     const SatisfyTargetDirective: (_: Node | string) => void
     const SatisfyHtmlDirective: (_?: UnescapeOptions) => void
+    const SatisfyElement: <K>(_: ExtractElementKind<K>) => void
 
     const SatisfyComponent: <T extends Constructible>(
         _: T,
