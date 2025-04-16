@@ -25,6 +25,7 @@ import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as runtimeCommonMessage } from "qingkuai"
 import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
+import { ProjectKind } from "../constants"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -64,13 +65,10 @@ export interface AdapterCompileInfo {
     positions: ASTPositionWithFlag[]
 }
 
-export type CompletionData =
-    | {
-          kind: "emmet"
-      }
-    | ({
-          kind: "script"
-      } & ResolveCompletionParams)
+export type ScriptCompletionData = {
+    kind: "script"
+    projectKind: ProjectKind
+} & ResolveCompletionParams
 
 export type ScriptCompletionDetail = Omit<
     TS.CompletionEntryDetails,
@@ -177,6 +175,7 @@ export type FindScriptTypeDefinitionsFunc = (
 
 export type GetFullFileNamesFunc = () => string[]
 export type GetRealPathFunc = (fileName: string) => RealPath
+export type CompletionData = ScriptCompletionData | { kind: "emmet" }
 export type QingkuaiRuntimeCommonMessage = typeof runtimeCommonMessage
 export type QingkuaiCompilerCommonMessage = typeof compilerCommonMessage
 export type InsertSnippetFunc = (item: string | InsertSnippetParam) => void

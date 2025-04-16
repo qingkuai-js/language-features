@@ -1,4 +1,5 @@
 import type {
+    ScriptCompletionData,
     TextEditWithPosRange,
     GetCompileResultFunc,
     GetScriptCompletionDetailFunc
@@ -40,7 +41,8 @@ export async function resolveScriptBlockCompletion(
     getCompileRes: GetCompileResultFunc,
     getScriptCompletionDetail: GetScriptCompletionDetailFunc
 ): Promise<CompletionItem> {
-    const cr = await getCompileRes(item.data.fileName)
+    const data: ScriptCompletionData = item.data
+    const cr = await getCompileRes(data.fileName)
     const completionDetail = await getScriptCompletionDetail(item)
     if (!completionDetail) {
         return item
@@ -79,11 +81,13 @@ export async function resolveScriptBlockCompletion(
         const additionalTextEdits: TextEdit[] = []
         for (const item of textEdits) {
             if (addImportTextEditRE.test(item.newText)) {
-                item.range = [scriptStartIndex, scriptStartIndex]
+                const addImportIndex = Math.max(0, scriptStartIndex)
+                item.range = [addImportIndex, addImportIndex]
                 item.newText = formatImportStatement(
                     item.newText.trim(),
                     cr.inputDescriptor.source,
                     item.range,
+                    data.projectKind,
                     cr.config.prettierConfig
                 )
             }

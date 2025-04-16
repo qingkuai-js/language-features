@@ -1,3 +1,8 @@
+export enum ProjectKind {
+    TS = "ts",
+    JS = "js"
+}
+
 export enum Commands {
     TriggerSuggest = "editor.action.triggerSuggest"
 }

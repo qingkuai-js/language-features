@@ -6,10 +6,10 @@ import type {
     CompletionItem,
     CompletionList
 } from "vscode-languageserver-types"
+import type { ProjectKind } from "../../constants"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { HTMLElementDataAttributeItem } from "../../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
-import type { ProjectKind } from "../../../../language-server/src/constants"
 import type { CompileResult, GetRangeFunc } from "../../../../../types/common"
 import type { GetScriptCompletionsFunc, InsertSnippetFunc } from "../../types/service"
 import type { ComponentAttributeItem, InsertSnippetParam } from "../../../../../types/communication"
@@ -74,7 +74,13 @@ export async function doComplete(
 
     // 转换脚本块（包括插值表达式）的补全建议
     if (cr.isPositionFlagSet(offset, "inScript")) {
-        return getAndProcessScriptBlockCompletions(cr, offset, trigger, getScriptCompletions)
+        return getAndProcessScriptBlockCompletions(
+            cr,
+            offset,
+            trigger,
+            projectKind,
+            getScriptCompletions
+        )
     }
 
     // 文本节点范围内触发emmet、实体字符及自定义标签补全建议
@@ -90,20 +96,13 @@ export async function doComplete(
 
         const completions = [
             ...doCharacterEntityComplete(getRange, source, offset),
-            ...doCustomTagComplete(cr, offset, currentNode, isTestingEnv, projectKind)
+            ...doCustomTagComplete(cr, offset, currentNode, projectKind)
         ]
 
         // 如果是由<触发的补全建议获取，则列举所有标签名建议
         if (source[offset - 1] === "<") {
             completions.push(
-                ...doTagComplete(
-                    getRange(offset),
-                    cr,
-                    offset,
-                    currentNode,
-                    isTestingEnv,
-                    projectKind
-                )
+                ...doTagComplete(getRange(offset), cr, offset, currentNode, projectKind)
             )
         }
 
@@ -124,7 +123,6 @@ export async function doComplete(
             cr,
             offset,
             currentNode,
-            isTestingEnv,
             projectKind
         )
     }
@@ -393,7 +391,6 @@ function doCustomTagComplete(
     cr: CompileResult,
     offset: number,
     node: TemplateNode,
-    isTestingEnv: boolean,
     projectKind: ProjectKind
 ) {
     const ret: CompletionItem[] = []
@@ -460,29 +457,19 @@ function doCustomTagComplete(
         cr.componentInfos.forEach(item => {
             let additionalTextEdits: TextEdit[] | undefined = undefined
             if (!item.imported) {
-                const scriptStartIndex = cr.inputDescriptor.script.loc.start.index
-                if (scriptStartIndex !== -1) {
-                    additionalTextEdits = [
-                        {
-                            range: cr.getRange(scriptStartIndex),
-                            newText: formatImportStatement(
-                                `import ${item.name} from ${JSON.stringify(item.relativePath)}`,
-                                source,
-                                [scriptStartIndex, scriptStartIndex],
-                                cr.config.prettierConfig
-                            )
-                        }
-                    ]
-                } else {
-                    const tagName = "lang-" + projectKind
-                    const tab = " ".repeat(cr.config.prettierConfig?.tabWidth || 2)
-                    additionalTextEdits = [
-                        {
-                            range: DEFAULT_RANGE,
-                            newText: `<${tagName}>\n${tab}import ${item.name} from ${JSON.stringify(item.relativePath)}\n</${tagName}>\n\n`
-                        }
-                    ]
-                }
+                const addImportIndex = Math.max(0, cr.inputDescriptor.script.loc.start.index)
+                additionalTextEdits = [
+                    {
+                        range: cr.getRange(addImportIndex),
+                        newText: formatImportStatement(
+                            `import ${item.name} from ${JSON.stringify(item.relativePath)}`,
+                            source,
+                            [addImportIndex, addImportIndex],
+                            projectKind,
+                            cr.config.prettierConfig
+                        )
+                    }
+                ]
             }
 
             const tag = useKebab ? util.camel2Kebab(item.name, false) : item.name

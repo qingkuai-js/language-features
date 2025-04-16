@@ -5,13 +5,12 @@ import type {
 } from "../../../types/communication"
 
 import { URI } from "vscode-uri"
-import { ProjectKind } from "./constants"
 import { getCompileResByPath } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
 import { Messages, communicationWayInfo } from "./messages"
-import { findComponentTagRanges } from "qingkuai-language-service"
 import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 import { generatePromiseAndResolver, sleep } from "../../../shared-util/sundry"
+import { findComponentTagRanges, ProjectKind } from "qingkuai-language-service"
 import { tpic, Logger, tpicConnectedResolver, setState, connection } from "./state"
 import { connectTo, defaultParticipant } from "../../../shared-util/ipc/participant"
 

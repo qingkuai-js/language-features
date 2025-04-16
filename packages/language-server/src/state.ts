@@ -1,6 +1,6 @@
 import type { SetStateOptions } from "./types/service"
 
-import { ProjectKind } from "./constants"
+import { ProjectKind } from "qingkuai-language-service"
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"

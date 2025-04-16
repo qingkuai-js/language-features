@@ -1,3 +1,4 @@
+import type { ProjectKind } from "../../constants"
 import type { CompileResult } from "../../../../../types/common"
 import type { CompletionData, GetScriptCompletionsFunc } from "../../types/service"
 import type { Range, CompletionItem, CompletionList } from "vscode-languageserver-types"
@@ -18,6 +19,7 @@ export async function getAndProcessScriptBlockCompletions(
     cr: CompileResult,
     offset: number,
     trigger: string,
+    projectKind: ProjectKind,
     getCompletions: GetScriptCompletionsFunc
 ): Promise<CompletionList | null> {
     const response = await getCompletions(cr.filePath, cr.getInterIndex(offset))
@@ -54,6 +56,7 @@ export async function getAndProcessScriptBlockCompletions(
     response.entries.forEach(entry => {
         const insertText = entry.insertText || entry.name
         const data: CompletionData = {
+            projectKind,
             kind: "script",
             original: entry.data,
             source: entry.source,

@@ -4,6 +4,7 @@ import type { FixedArray } from "../../../../types/util"
 import type { GetCompileResultFunc } from "../types/service"
 import type { NumNum, PrettierConfiguration, RealPath } from "../../../../types/common"
 
+import { ProjectKind } from "../constants"
 import { isEmptyString } from "../../../../shared-util/assert"
 
 // 整理自动添加的import语句的格式
@@ -11,8 +12,15 @@ export function formatImportStatement(
     statement: string,
     source: string,
     posRange: NumNum,
+    projectKind: ProjectKind,
     prettierConfig?: PrettierConfiguration
 ) {
+    const tab = " ".repeat(prettierConfig?.tabWidth || 2)
+    if (!posRange[0]) {
+        const tagName = "lang-" + projectKind
+        return `<${tagName}>\n${tab}${statement.trim()}\n</${tagName}>\n\n`
+    }
+
     statement = " ".repeat(prettierConfig?.tabWidth || 2) + statement
     if (!/^\s*\n/.test(source.slice(posRange[1]))) {
         statement += "\n"
