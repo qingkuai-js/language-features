@@ -6,6 +6,7 @@ node_modules
 .DS_Store
 
 features.md
+**/package-lock.json
 packages/vscode-extension/*.vsix
 packages/typescript-plugin/src/log.ts
 packages/ext-vscode/syntaxes/qk.tmLanguage.json

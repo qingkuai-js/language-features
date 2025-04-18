@@ -145,6 +145,7 @@ export interface InsertSnippetParam {
 
 export interface UpdateSnapshotParams {
     fileName: RealPath
+    version: number
     interCode: string
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"

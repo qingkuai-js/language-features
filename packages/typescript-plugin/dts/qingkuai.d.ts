@@ -12,6 +12,10 @@ type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
     ? HTMLElementTagNameMap[K]
     : HTMLElement
 
+type ExtractEventHandlerKind<K> = K extends keyof HTMLElementEventMap
+    ? HTMLElementEventMap[K]
+    : Event
+
 type UnescapeOptions = Partial<{
     escapeTags?: string[]
     escapeStyle?: boolean
@@ -62,6 +66,7 @@ export namespace __c__ {
     const SatisfyHtmlDirective: (_?: UnescapeOptions) => void
     const SatisfyElement: <K>(_: ExtractElementKind<K>) => void
     const SatisfyTargetDirective: (_: HTMLElement | string) => void
+    const SatisfyEventHandler: <K>(_: (_: ExtractEventHandlerKind<K>) => void) => void
 
     const SatisfyComponent: <T extends Constructible>(
         _: T,

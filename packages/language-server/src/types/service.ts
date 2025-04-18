@@ -19,22 +19,5 @@ export type SetStateOptions = Partial<{
     limitedScriptLanguageFeatures: boolean
 }>
 
-export type CachedCompileResultItem = CompileResult & {
-    uri: string
-    version: number
-    filePath: RealPath
-    getRange: GetRangeFunc
-    isSynchronized: boolean
-    config: GetClientLanguageConfigResult
-    builtInTypeDeclarationEndIndex: number
-    componentInfos: ComponentIdentifierInfo[]
-    scriptLanguageId: "typescript" | "javascript"
-    getOffset: (position: Position) => number
-    getPosition: (offset: number) => Position
-    getInterIndex: (sourceIndex: number) => number
-    getSourceIndex: (interIndex: number, isEnd?: boolean) => number
-    isPositionFlagSet: (index: number, key: PositionFlagKeys) => boolean
-}
-
 export type GetRangeFunc = (start: number, end?: number) => Range
 export type GetSourceIndexFunc = (interIndex: number, isEnd?: boolean) => number

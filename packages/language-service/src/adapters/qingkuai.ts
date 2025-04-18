@@ -58,19 +58,6 @@ export function isComponentIdentifier(
     )
 }
 
-export function getSourceIndex(fileName: string, interIndex: number, isEnd = false) {
-    if (!isQingkuaiFileName(fileName)) {
-        return interIndex
-    }
-
-    const itos = getCompileInfo(fileName).itos
-    const sourceIndex = itos[interIndex]
-    if (!isIndexesInvalid(sourceIndex)) {
-        return sourceIndex
-    }
-    return isEnd ? itos[interIndex - 1] : sourceIndex
-}
-
 export function recordRealPath(realFileName: string) {
     if (isQingkuaiFileName(realFileName) && !tsFileNameToRealPath.has(realFileName)) {
         const normalizedPath = ts.server.toNormalizedPath(realFileName).toString()
@@ -78,4 +65,19 @@ export function recordRealPath(realFileName: string) {
             tsFileNameToRealPath.set(normalizedPath, realFileName as RealPath)
         }
     }
+}
+
+export function getSourceIndex(fileName: string, interIndex: number, isEnd = false) {
+    if (!isQingkuaiFileName(fileName)) {
+        return interIndex
+    }
+
+    const { itos } = getCompileInfo(fileName)
+    const sourceIndex = itos[interIndex]
+    if (!isEnd || !isIndexesInvalid(sourceIndex)) {
+        return sourceIndex ?? -1
+    }
+
+    const preSourceIndex = itos[interIndex - 1]
+    return isIndexesInvalid(sourceIndex) ? -1 : preSourceIndex + 1
 }

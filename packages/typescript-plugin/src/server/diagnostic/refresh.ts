@@ -1,15 +1,9 @@
-import {
-    compileQingkuaiFileToInterCode,
-    ensureGetSnapshotOfQingkuaiFile
-} from "../../util/qingkuai"
-import { RefreshDiagnosticKind } from "../../constant"
 import { ts, projectService, server } from "../../state"
 import { debounce } from "../../../../../shared-util/sundry"
-import { updateQingkuaiSnapshot } from "../content/snapshot"
 import { qkContext } from "qingkuai-language-service/adapters"
 import { editQingKuaiScriptInfo } from "../content/scriptInfo"
 import { TPICHandler } from "../../../../../shared-util/constant"
-import { getScriptKindKey } from "../../../../../shared-util/qingkuai"
+import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 import { isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
 import { isFileOpening, getFileReferences, pathToFileName } from "../../util/typescript"
 
@@ -70,31 +64,18 @@ export const refreshDiagnostics = debounce(
             if (isQingkuaiFileName(fileName)) {
                 const realPath = qkContext.getRealPath(fileName)
                 if (shouldEdit) {
-                    if (byFileName === RefreshDiagnosticKind.qingkuaiConfig) {
-                        const compileRes = compileQingkuaiFileToInterCode(realPath)
-                        updateQingkuaiSnapshot(
-                            realPath,
-                            compileRes.code,
-                            compileRes.interIndexMap.itos,
-                            compileRes.inputDescriptor.slotInfo,
-                            ts.ScriptKind[getScriptKindKey(compileRes)],
-                            compileRes.typeDeclarationLen,
-                            compileRes.inputDescriptor.positions
-                        )
-                    } else {
-                        const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(realPath)
-                        const content = qingkuaiSnapshot.getFullText()
-                        const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
-                        editQingKuaiScriptInfo(
-                            realPath,
-                            newContent,
-                            qingkuaiSnapshot.itos,
-                            qingkuaiSnapshot.slotInfo,
-                            qingkuaiSnapshot.scriptKind,
-                            qingkuaiSnapshot.typeDeclarationLen,
-                            qingkuaiSnapshot.positions
-                        )
-                    }
+                    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(realPath)
+                    const content = qingkuaiSnapshot.getFullText()
+                    const newContent = endsWithSpace ? content.slice(0, -1) : content + " "
+                    editQingKuaiScriptInfo(
+                        realPath,
+                        newContent,
+                        qingkuaiSnapshot.itos,
+                        qingkuaiSnapshot.slotInfo,
+                        qingkuaiSnapshot.scriptKind,
+                        qingkuaiSnapshot.typeDeclarationLen,
+                        qingkuaiSnapshot.positions
+                    )
                 }
                 server.sendNotification(TPICHandler.RefreshDiagnostic, realPath)
             } else {
