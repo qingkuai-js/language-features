@@ -90,9 +90,9 @@ export function recoverPositions(cp: number[]) {
     for (let i = 0; i < cp.length; i++) {
         for (let j = 0; j < cp[i]; j++) {
             recovered.push({
-                line: i + 1,
+                index: i,
                 column: j,
-                index: recovered.length + 1
+                line: i + 1,
             })
         }
     }
