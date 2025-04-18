@@ -1,29 +1,26 @@
-import type {
-    QingkuaiConfiguration,
-    QingkuaiConfigurationWithDir
-} from "../../../../../types/common"
 import type { ConfigureFileParams } from "../../../../../types/communication"
+import type { QingkuaiConfigurationWithDir, RealPath } from "../../../../../types/common"
 
 import path from "node:path"
-import { relativePathRE } from "../../regular"
+import { RefreshDiagnosticKind } from "../../constant"
 import { projectService, server, ts } from "../../state"
 import { refreshDiagnostics } from "../diagnostic/refresh"
-import { isUndefined } from "../../../../../shared-util/assert"
-import { deleteQingkuaiConfig, getQingkuaiConfig, setQingkuaiConfig } from "./method"
+import { TPICHandler } from "../../../../../shared-util/constant"
+import { deleteQingkuaiConfig, setQingkuaiConfig } from "./method"
 
 export function attachChangeConfig() {
-    server.onNotification("deleteConfig", (dir: string) => {
+    server.onNotification(TPICHandler.DeleteConfig, (dir: RealPath) => {
         refreshDiagnosticsDelay()
         deleteQingkuaiConfig(dir)
     })
 
-    server.onNotification("updateConfig", (config: QingkuaiConfigurationWithDir) => {
+    server.onNotification(TPICHandler.UpdateConfig, (config: QingkuaiConfigurationWithDir) => {
         refreshDiagnosticsDelay()
         setQingkuaiConfig(config.dir, config)
     })
 
-    // 此方法用于将typescript相关的配置项与文件关联，qk文件不会经过ts的客户端扩展处理需要手动添加配置信息
-    server.onNotification("configureFile", (params: ConfigureFileParams) => {
+    // 此方法用于将typescript相关的配置项与文件关联，qingkuai文件不会经过ts的客户端扩展处理需要手动添加配置信息
+    server.onNotification(TPICHandler.ConfigureFile, (params: ConfigureFileParams) => {
         convertImportFileExcludePatternsPreferences(
             params.config.preference.autoImportFileExcludePatterns!,
             params.workspacePath
@@ -34,24 +31,6 @@ export function attachChangeConfig() {
             formatOptions: params.config.formatCodeSettings
         })
     })
-}
-
-// 根据文件路径查找影响它的配置文件
-export function getConfigByFileName(fileName: string): QingkuaiConfiguration {
-    let currentDirname = path.dirname(fileName)
-    while (currentDirname !== path.parse(currentDirname).root) {
-        const configuration = getQingkuaiConfig(currentDirname)
-        if (!isUndefined(configuration)) {
-            return configuration
-        } else {
-            currentDirname = path.dirname(currentDirname)
-        }
-    }
-    return {}
-}
-
-function refreshDiagnosticsDelay() {
-    setTimeout(() => refreshDiagnostics("///qk", false), 1000)
 }
 
 // typescript版本低于5.4.0时autoImportFileExcludePatterns配置项
@@ -70,10 +49,14 @@ function convertImportFileExcludePatternsPreferences(
         }
         if (p.startsWith("*")) {
             patterns[i] = wildcardPrefix + p
-        } else if (relativePathRE.test(p)) {
+        } else if (/^\.\.?($|[\/\\])/.test(p)) {
             patterns[i] = path.join(workspacePath, p)
         } else {
             return wildcardPrefix + "**" + path.sep + p
         }
     })
+}
+
+function refreshDiagnosticsDelay() {
+    setTimeout(() => refreshDiagnostics(RefreshDiagnosticKind.qingkuaiConfig, false), 1000)
 }

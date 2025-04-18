@@ -11,7 +11,7 @@
         "language features"
     ],
     "description": "A Typescript plugin for Qingkuai.",
-    "dependencies": {
-        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
+    "devDependencies": {
+        "qingkuai-language-service": "file:../language-service"
     }
 }

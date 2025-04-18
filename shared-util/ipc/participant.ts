@@ -18,6 +18,7 @@ import { createMessageBuffer, createBufferReader } from "./buffer"
 
 export const defaultParticipant: IpcParticipant = {
     close: NOOP,
+    onClose: NOOP,
     onRequest: NOOP,
     sendRequest: NOOP,
     onNotification: NOOP,
@@ -26,10 +27,10 @@ export const defaultParticipant: IpcParticipant = {
 
 export function createServer(sockPath: string) {
     const handlers = new Map<string, GeneralFunc>()
-    const resolvers = new Map<number, GeneralFunc>()
+    const resolvers = new Map<string, GeneralFunc>()
     return new Promise<IpcParticipant>((resolve, reject) => {
         const server = net.createServer(socket => {
-            resolve(newParticipant(socket, handlers, resolvers))
+            resolve(newParticipant(socket, handlers, resolvers, "server"))
         })
         server.listen(sockPath)
         server.on("error", err => reject(err))
@@ -38,10 +39,10 @@ export function createServer(sockPath: string) {
 
 export function connectTo(sockPath: string) {
     const handlers = new Map<string, GeneralFunc>()
-    const resolvers = new Map<number, GeneralFunc>()
+    const resolvers = new Map<string, GeneralFunc>()
     return new Promise<IpcParticipant>((resolve, reject) => {
         const client = net.createConnection(sockPath, () => {
-            resolve(newParticipant(client, handlers, resolvers))
+            resolve(newParticipant(client, handlers, resolvers, "client"))
         })
         client.on("error", err => reject(err))
     })
@@ -50,7 +51,8 @@ export function connectTo(sockPath: string) {
 function newParticipant(
     socket: Socket,
     handlers: SocketHandlers,
-    resolvers: RequestResolvers
+    resolvers: RequestResolvers,
+    type: "server" | "client"
 ): IpcParticipant {
     const reader = createBufferReader()
     const onRequest: OnRequestMethod = setHandler
@@ -58,18 +60,22 @@ function newParticipant(
     const onNotification: OnNotificationMethod = setHandler
 
     const sendRequest: SendRequestMethod = (name, params) => {
-        const requestId = getReleaseId()
+        const requestId = type[0] + getReleaseId()
         send(name, params, requestId)
         return new Promise(resolve => {
             resolvers.set(requestId, resolve)
         })
     }
 
+    socket.setNoDelay(true)
     socket.on("data", buffer => {
         reader.read(buffer, ({ messageId, methodName, body }) => {
             const resolver = resolvers.get(messageId)
             if (!isUndefined(resolver)) {
-                return resolver(body), releaseId(messageId)
+                resolver(body)
+                resolvers.delete(messageId)
+                releaseId(parseInt(messageId.slice(1)))
+                return
             }
 
             const response = handlers.get(methodName)?.(body)
@@ -82,7 +88,11 @@ function newParticipant(
         })
     })
 
-    function send(name: string, data: any, id = 0) {
+    function onClose(callback: () => void) {
+        socket.on("close", callback)
+    }
+
+    function send(name: string, data: any, id = "") {
         socket.write(createMessageBuffer(data, name, id))
     }
 
@@ -91,6 +101,7 @@ function newParticipant(
     }
 
     return {
+        onClose,
         onRequest,
         sendRequest,
         onNotification,

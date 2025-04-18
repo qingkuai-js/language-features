@@ -4,5 +4,8 @@
     "author": "lgq",
     "main": "index.js",
     "type": "module",
-    "license": "MIT"
+    "license": "MIT",
+    "devDependencies": {
+        "qingkuai-language-service": "file:../language-service"
+    }
 }

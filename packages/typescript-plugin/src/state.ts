@@ -1,43 +1,42 @@
+import type TS from "typescript"
+import type { SetStateOptions } from "./types"
 import type { QingKuaiSnapShot } from "./snapshot"
-import type { TS, TSProjectService, QingKuaiDiagnostic, SetStateParams, TSSession } from "./types"
+import type { RealPath } from "../../../types/common"
+import type { GeneralFunc } from "../../../types/util"
 
-import path from "node:path"
 import { inspect } from "../../../shared-util/log"
 import { defaultParticipant } from "../../../shared-util/ipc/participant"
 
+export let ts: typeof TS
 export let server = defaultParticipant
-
-export let ts: TS
-export let session: TSSession | undefined
-export let projectService: TSProjectService
+export let lsProjectKindChanged = false
+export let session: TS.server.Session | undefined
+export let projectService: TS.server.ProjectService
 
 // 已打开的文件列表
-export const openQingkuaiFiles = new Set<string>()
+export const openQingkuaiFiles = new Set<RealPath>()
 
 // 快照缓存，键为映射文件名称，值为QingkuaiSnapshot
-export const snapshotCache = new Map<string, QingKuaiSnapShot>()
+export const snapshotCache = new Map<RealPath, QingKuaiSnapShot>()
 
-// import语句导入目标为目录时解析为qingkuai源文件的记录
-export const resolvedQingkuaiModule = new Map<string, Set<string>>()
-
-// qingkuai自定义错误缓存
-export const qingkuaiDiagnostics = new Map<string, QingKuaiDiagnostic[]>()
-
-// typescript扩展客户端命令执行状态
+// typescript扩展客户端命令执行状态，键名为要等待的命令，值为Promise和他的解决方法
 export const commandStatus = new Map<string, readonly [Promise<any>, GeneralFunc]>()
 
-export function setState(value: SetStateParams) {
-    if (value.ts) {
-        ts = value.ts
+export function setState(options: SetStateOptions) {
+    if (options.ts) {
+        ts = options.ts
     }
-    if (value.server) {
-        server = value.server
+    if (options.server) {
+        server = options.server
     }
-    if (value.session) {
-        session = value.session
+    if (options.session) {
+        session = options.session
     }
-    if (value.projectService) {
-        projectService = value.projectService
+    if (options.projectService) {
+        projectService = options.projectService
+    }
+    if (options.lsProjectKindChanged) {
+        lsProjectKindChanged = options.lsProjectKindChanged
     }
 }
 
@@ -47,6 +46,3 @@ export const Logger = {
     warn: (v: any) => server.sendNotification("log/info", inspect(v)),
     error: (v: any) => server.sendNotification("log/error", inspect(v))
 }
-
-export const typeDeclarationFilePath = path.resolve(__dirname, "../dts/qingkuai.d.ts")
-export const typeRefStatement = `/// <reference types="${typeDeclarationFilePath}" />\n`

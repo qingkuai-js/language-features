@@ -1,3 +1,9 @@
+export function debugAssert(v: any) {
+    if (!v) {
+        debugger
+    }
+}
+
 export function isNull(v: any): v is null {
     return v === null
 }

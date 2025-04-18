@@ -1,18 +1,13 @@
 import type TS from "typescript"
-import type { QingkuaiConfigurationWithDir } from "../../../types/common"
+import type { ConfigPluginParms } from "../../../types/communication"
 
-import {
-    proxyTypescriptLanguageServiceMethods,
-    proxyTypescriptProjectServiceAndSystemMethods
-} from "./proxy"
-import fs from "node:fs"
-import { attachLanguageServerIPCHandlers } from "./server"
-import { ensureGetSnapshotOfQingkuaiFile } from "./util/qingkuai"
+import { ts, setState } from "./state"
+import { proxyTypescript } from "./proxy"
+import { createIpcServer } from "./server"
+import { initializeAdapter } from "./adapter"
+import { isUndefined } from "../../../shared-util/assert"
+import { qkContext } from "qingkuai-language-service/adapters"
 import { initQingkuaiConfig } from "./server/configuration/method"
-import { createServer } from "../../../shared-util/ipc/participant"
-import { ts, setState, typeRefStatement, projectService } from "./state"
-import { initialEditQingkuaiFileSnapshot } from "./server/content/method"
-import { isQingkuaiFileName, isUndefined } from "../../../shared-util/assert"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
@@ -23,8 +18,7 @@ export = function init(modules: { typescript: typeof TS }) {
                     ts: modules.typescript,
                     projectService: info.project.projectService
                 })
-                proxyTypescriptProjectServiceAndSystemMethods()
-
+                initializeAdapter(modules.typescript)
                 info.project.projectService.setHostConfiguration({
                     extraFileExtensions: [
                         {
@@ -35,43 +29,13 @@ export = function init(modules: { typescript: typeof TS }) {
                     ]
                 })
             }
-
-            info.project.getFileNames().forEach(fileName => {
-                if (!isQingkuaiFileName(fileName)) {
-                    return
-                }
-                initialEditQingkuaiFileSnapshot(fileName)
-            })
-
-            proxyTypescriptLanguageServiceMethods(info)
-
-            return Object.assign({}, info.languageService)
+            return proxyTypescript(info), Object.assign({}, info.languageService)
         },
 
-        onConfigurationChanged(params: {
-            sockPath: string
-            triggerFileName: string
-            configurations: QingkuaiConfigurationWithDir[]
-        }) {
+        onConfigurationChanged(params: ConfigPluginParms) {
+            createIpcServer(params.sockPath)
             initQingkuaiConfig(params.configurations)
-
-            if (params.triggerFileName) {
-                // @ts-expect-error: access private property
-                const textStorage = projectService.getScriptInfo(params.triggerFileName).textStorage
-                textStorage.svc = undefined
-                textStorage.reload(
-                    ensureGetSnapshotOfQingkuaiFile(params.triggerFileName).getFullText()
-                )
-            }
-
-            // 创建ipc通道，并监听来自qingkuai语言服务器的请求
-            if (!fs.existsSync(params.sockPath)) {
-                createServer(params.sockPath).then(server => {
-                    setState({ server })
-                    attachLanguageServerIPCHandlers()
-                    server.onRequest("getQingkuaiDtsReferenceStatement", () => typeRefStatement)
-                })
-            }
+            qkContext.recordRealPath(params.triggerFileName)
         }
     }
 }

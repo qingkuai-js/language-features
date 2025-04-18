@@ -1,20 +1,38 @@
 {
-    "name": "qingkuai-extension-vscode",
+    "name": "qingkuai-vscode-extension",
     "version": "1.0.0",
     "author": "lgq",
     "license": "MIT",
+    "publisher": "qingkuai-tools",
+    "main": "./dist/client.js",
     "description": "qingkuai language support for vscode",
+    "displayName": "Qingkuai",
+    "icon": "imgs/logo.png",
     "engines": {
         "vscode": "^1.93.0"
     },
     "categories": [
-        "Other"
+        "Programming Languages"
     ],
     "activationEvents": [
         "workspaceContains:**/*.qk"
     ],
-    "main": "../../dist/client.js",
     "contributes": {
+        "commands": [
+            {
+                "command": "qingkuai.restartLanguageServer",
+                "title": "Restart Language Server",
+                "category": "Qingkuai"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "qingkuai.restartLanguageServer",
+                    "when": "resourceFilename =~ /\\.(?:qk|qingkuairc)/"
+                }
+            ]
+        },
         "languages": [
             {
                 "id": "qingkuai-emmet",
@@ -32,8 +50,8 @@
                     "qk"
                 ],
                 "icon": {
-                    "light": "./imgs/qingkuai.svg",
-                    "dark": "./imgs/qingkuai.svg"
+                    "light": "./imgs/qingkuai.png",
+                    "dark": "./imgs/qingkuai.png"
                 },
                 "configuration": "./language-configuration.json"
             }
@@ -42,8 +60,9 @@
             {
                 "language": "qingkuai",
                 "scopeName": "source.qk",
-                "path": "./syntaxes/qk.tmLanguage.json",
+                "path": "./syntaxes/qingkuai.tmLanguage.json",
                 "embeddedLanguages": {
+                    "source.jsdoc": "jsdoc",
                     "source.js": "javascript",
                     "source.ts": "typescript",
                     "source.css": "css",
@@ -67,7 +86,7 @@
             {
                 "language": "qingkuai-emmet",
                 "scopeName": "source.qke",
-                "path": "./syntaxes/qke.tmLanguage.json",
+                "path": "./syntaxes/qingkuai-emmet.tmLanguage.json",
                 "embeddedLanguages": {
                     "source.qk": "qingkuai"
                 }
@@ -86,13 +105,19 @@
         "jsonValidation": [
             {
                 "fileMatch": ".qingkuairc",
-                "url": "./config-validation.json"
+                "url": "./qingkuairc-schema.json"
+            },
+            {
+                "fileMatch": ".prettierrc",
+                "url": "./qingkuai-prettierrc-schema.json"
             }
         ],
         "configurationDefaults": {
             "files.associations": {
-                ".qingkuairc": "json"
-            }
+                ".qingkuairc": "json",
+                ".prettierrc": "json"
+            },
+            "path-autocomplete.extensionOnImport": true
         },
         "configuration": {
             "title": "Qingkuai",
@@ -100,7 +125,7 @@
                 "qingkuai.typescriptDiagnosticsExplain": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Allow to add explain to ambiguous typescript diagnostic message."
+                    "description": "Allow to add explain to ambiguous typescript diagnostic message for qingkuai file."
                 },
                 "qingkuai.insertSpaceAroundInterpolation": {
                     "type": "boolean",
@@ -140,21 +165,50 @@
                         "entity",
                         "attribute"
                     ],
+                    "uniqueItems": true,
                     "description": "Whether to enable hover tip for HTML tags, attributes and entity characters."
+                },
+                "qingkuai.additionalCodeLens": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "slot",
+                            "component"
+                        ]
+                    },
+                    "default": [
+                        "slot",
+                        "component"
+                    ],
+                    "uniqueItems": true,
+                    "description": "Additional code lenses that need to be enabled. Provided that typescript(or javascript).referencesCodeLens.enabled is enabled."
                 }
             }
         }
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/qingkuai-js/language-features.git",
+        "directory": "packages/vscode-extension"
+    },
     "scripts": {
-        "build:grammers": "npm run build:grammer && npm run build:emmet-grammer",
-        "build:grammer": "cd ./syntaxes/src && npx js-yaml ./qk.tmLanguage.yaml > ../qk.tmLanguage.json && npx prettier --write ../qk.tmLanguage.json",
-        "build:emmet-grammer": "cd ./syntaxes/src && npx js-yaml ./qk-emmet.tmLanguage.yaml > ../qke.tmLanguage.json && npx prettier --write ../qke.tmLanguage.json"
+        "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
+        "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
+        "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json",
+        "vsce:post": "cd ../../ && rimraf --glob '**/package-lock.json' && rimraf --glob '**/node_modules' && pnpm install",
+        "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
+        "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
+        "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
+        "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0"
     },
     "dependencies": {
-        "typescript-plugin-qingkuai": "workspace:^",
-        "qingkuai": "file:/users/lianggaoqiang/desktop/QingKuai/qingkuai"
+        "prettier": "^3.5.2",
+        "prettier-plugin-qingkuai": "^1.0.22",
+        "qingkuai": "^1.0.41",
+        "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }

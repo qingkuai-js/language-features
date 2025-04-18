@@ -1,11 +1,26 @@
+/// <reference lib="dom" />
+
 type GeneralFunc = (...args: any) => any
 type AnyObject = Record<AnyObjectKey, any>
 type Constructible = new (..._: any) => any
 type AnyObjectKey = string | number | symbol
 type NotFunction<T> = Exclude<T, GeneralFunc>
-type ReactReturnType<T> = T extends unknown ? undefined : T
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
 type ExtractSlotNames<T extends Constructible> = keyof ConstructorParameters<T>[2]
+
+type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
+    ? HTMLElementTagNameMap[K]
+    : HTMLElement
+
+type ExtractEventHandlerKind<K> = K extends keyof HTMLElementEventMap
+    ? HTMLElementEventMap[K]
+    : Event
+
+type UnescapeOptions = Partial<{
+    escapeTags?: string[]
+    escapeStyle?: boolean
+    escapeScript?: boolean
+}>
 
 interface DerivedFunc {
     <T>(expression: NotFunction<T>): T
@@ -13,11 +28,12 @@ interface DerivedFunc {
 }
 
 interface ReloadedGetKVPair {
-    <T>(_: Set<T>): [number, T]
-    <K, V>(_: Map<K, V>): [K, V]
-    <T>(_: Array<T>): [number, T]
+    <T>(_: Set<T>): [T, T]
+    <K, V>(_: Map<K, V>): [V, K]
+    <T>(_: Array<T>): [T, number]
     (_: number): [number, number]
-    <K extends string | number | symbol, V>(_: Record<K, V>): [K, V]
+    (_: string): [string, number]
+    <K extends string | number | symbol, V>(_: Record<K, V>): [V, K]
 }
 
 interface WatchFunc {
@@ -28,36 +44,44 @@ interface WatchFunc {
     <T>(getter: () => T, callback: (pre: T, cur: T) => void): () => void
 }
 
-declare const __c__: {
-    Receiver: any
+export namespace __c__ {
+    type EmptyObject = {
+        [symbol]?: never
+    }
 
-    GetKVPair: ReloadedGetKVPair
-    GetTypedValue: <T>() => T
-    GetResolve: <T>(_: T) => ExtractResolveType<T>
-    GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
+    var Receiver: any
+    const symbol: unique symbol
+
+    const GetKVPair: ReloadedGetKVPair
+    const GetTypedValue: <T>() => T
+    const GetResolve: <T>(_: T) => ExtractResolveType<T>
+    const GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
         _: T,
         __: K
     ) => Readonly<ConstructorParameters<T>[2][K]>
 
-    SatisfyString: (_: string) => void
-    SatisfyBoolean: (_: boolean) => void
-    SatisfyPromise: (_: Promise<any>) => void
-    SatisfyComponent: <T extends Constructible>(
+    const SatisfyString: (_: string) => void
+    const SatisfyBoolean: (_: boolean) => void
+    const SatisfyPromise: (_: Promise<any>) => void
+    const SatisfyHtmlDirective: (_?: UnescapeOptions) => void
+    const SatisfyElement: <K>(_: ExtractElementKind<K>) => void
+    const SatisfyTargetDirective: (_: HTMLElement | string) => void
+    const SatisfyEventHandler: <K>(_: (_: ExtractEventHandlerKind<K>) => void) => void
+
+    const SatisfyComponent: <T extends Constructible>(
         _: T,
         __: ConstructorParameters<T>[0],
         ___: ConstructorParameters<T>[1]
     ) => void
-    SatisfyRefGroup: <T extends Set<any> | Array<any>>(
+    const SatisfyRefGroup: <T extends Set<any> | Array<any>>(
         _: T,
         __: T extends Set<infer U> ? U : T extends Array<infer U> ? U : any
     ) => void
-
-    [K: AnyObjectKey]: any
 }
 
-declare const wat: WatchFunc
-declare const waT: WatchFunc
-declare const Wat: WatchFunc
-declare const der: DerivedFunc
-declare function stc<T>(value: T): ReactReturnType<T>
-declare function rea<T>(value: T, level?: number): ReactReturnType<T>
+export const wat: WatchFunc
+export const waT: WatchFunc
+export const Wat: WatchFunc
+export const der: DerivedFunc
+export function stc<T = undefined>(value: T): T
+export function rea<T = undefined>(value: T, level?: number): T

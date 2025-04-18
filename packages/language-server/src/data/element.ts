@@ -6331,6 +6331,18 @@ export const htmlDirectives = [
         useage: '<UserCard>\n\t<div\n\t\tslot="info"\n\t\t#slot={{age, name}}\n\t>\n\t\tReceived age: {age}\n\t\tReceived name: {name}\n\t</div>\n</UserCard>',
         description:
             "The slot directive is used to receive the object passed by the slot tag attribute inside the component, and it can also declare identifiers(destructible) for this object through attribute value, the identifiers is accessible under the scope of the current element."
+    },
+    {
+        name: "html",
+        useage: '<spread\n\t#html={\n\t\t{\n\t\t\tescapeStyle: true,\n\t\t\tescapeScript: true,\n\t\t\tescapeTags: ["html", "body"]\n\t\t}\n\t}\n>\n\t{htmlContent}\n</spread>',
+        description:
+            "The html directive is used to render string as html content, and you can control whether to escape script, style or specific tag names by passing a value to it."
+    },
+    {
+        name: "target",
+        useage: '<tag #target={document.body}>\n\t<!-- transfor into body -->\n</tag>\n\n<tag #target={".container"}>\n\t<!-- transfor into document.querySelector(".container") -->\n</tag>',
+        description:
+            'The target directive is used to move an element into a target element as its child node.  Its value can be either the target element itself or a CSS selector that identifies the target element, such as "body", ".box", or "#uniqid". If pass a selector but the corresponding element is not exist, the node will remain in its original position.'
     }
 ]
 
@@ -6350,7 +6362,7 @@ export const embeddedLangTags = [
         attributes: [],
         references: [],
         name: "lang-" + item[0],
-        description: `The lang-js element is used to embed the ${language} language processed by qingkuai compiler.`
+        description: `\n\nThe lang-js element is used to embed the ${language} language processed by qingkuai compiler.`
     }
     return ret
 })
@@ -6405,7 +6417,7 @@ export function getDirectiveDocumentation(
     if (!needUseage) {
         description += " Note: this directive is processed by qingkuai compiler."
     } else {
-        description += `This directive is processed by qingkuai compiler, useage likes below:\n\n${mdCodeBlockGen("qk", item.useage)}`
+        description += `\n\nThis directive is processed by qingkuai compiler, useage likes below:\n\n${mdCodeBlockGen("qk", item.useage)}`
     }
     return { kind: "markdown", value: description }
 }

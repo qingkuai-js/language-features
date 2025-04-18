@@ -1,4 +1,5 @@
 import type { ScriptKind } from "typescript"
+import type { RealPath } from "../../../../../types/common"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 
 import { QingKuaiSnapShot } from "../../snapshot"
@@ -6,16 +7,25 @@ import { projectService, snapshotCache } from "../../state"
 
 // 增量更新qk文件ScriptInfo的内容
 export function editQingKuaiScriptInfo(
-    fileName: string,
+    fileName: RealPath,
     content: string,
     itos: number[],
     slotInfo: SlotInfo,
     scriptKind: ScriptKind,
+    typeDeclarationLen: number,
     positions: ASTPositionWithFlag[]
 ) {
     const oldSnapshot = snapshotCache.get(fileName)!
     const scriptInfo = projectService.getScriptInfo(fileName)!
-    const newSnapshot = new QingKuaiSnapShot(content, false, scriptKind, itos, slotInfo, positions)
+    const newSnapshot = new QingKuaiSnapShot(
+        content,
+        false,
+        scriptKind,
+        itos,
+        typeDeclarationLen,
+        slotInfo,
+        positions
+    )
 
     const change = newSnapshot.getChangeRange(oldSnapshot)
     const changeStart = change.span.start

@@ -1,13 +1,55 @@
 import type {
     NumNum,
+    RealPath,
     NumNumArray,
     PrettierConfiguration,
     TSClientConfiguration,
-    ExtensionConfiguration
+    ExtensionConfiguration,
+    QingkuaiConfigurationWithDir
 } from "./common"
+import type TS from "typescript"
 import type { SlotInfo } from "qingkuai/compiler"
-import type { CompletionEntryData, ScriptElementKind, TextSpan } from "typescript"
-import type { Range, CompletionItemLabelDetails, Command } from "vscode-languageserver"
+import type { Range, WorkspaceEdit } from "vscode-languageserver/node"
+
+export interface ConfigPluginParms {
+    sockPath: string
+    triggerFileName: string
+    configurations: QingkuaiConfigurationWithDir[]
+}
+
+export interface ConnectToTsServerParams {
+    sockPath: string
+    isReconnect: boolean
+}
+
+export interface RefreshDiagnosticParams {
+    byFileName: string
+    scriptKindChanged: boolean
+}
+
+export interface RenameFileParams {
+    oldPath: RealPath
+    newPath: RealPath
+}
+
+export type RenameFileResult = {
+    fileName: string
+    changes: {
+        range: Range
+        newText: string
+    }[]
+}[]
+
+export interface ApplyWorkspaceEditParams {
+    edit: WorkspaceEdit
+    message?: string
+    isRefactoring?: boolean
+}
+
+export interface FindComponentTagRangeParams {
+    fileName: RealPath
+    componentTag: string
+}
 
 export interface RetransmissionParams<T = any> {
     data: T
@@ -15,7 +57,7 @@ export interface RetransmissionParams<T = any> {
 }
 
 export interface TPICCommonRequestParams {
-    fileName: string
+    fileName: RealPath
     pos: number
 }
 
@@ -48,12 +90,12 @@ export interface ComponentIdentifierInfo {
     attributes: ComponentAttributeItem[]
 }
 
-export interface GetClientConfigParams {
+export interface GetClientLanguageConfigParams {
     filePath: string
     scriptPartIsTypescript: boolean
 }
 
-export interface GetClientConfigResult {
+export interface GetClientLanguageConfigResult {
     workspacePath: string
     prettierConfig: PrettierConfiguration
     typescriptConfig: TSClientConfiguration
@@ -66,12 +108,18 @@ export interface ConfigureFileParams {
     config: TSClientConfiguration
 }
 
+export interface GetSemanticTokensParams {
+    fileName: string
+    start: number
+    length: number
+}
+
 export interface ResolveCompletionParams {
     pos: number
-    fileName: string
     entryName: string
+    fileName: RealPath
     source?: string
-    ori?: CompletionEntryData
+    original?: TS.CompletionEntryData
 }
 
 export interface FindReferenceResultItem {
@@ -86,48 +134,9 @@ export interface FindDefinitionResultItem {
 }
 
 export interface FindDefinitionResult {
-    range: NumNum
+    range: Range
     definitions: FindDefinitionResultItem[]
 }
-
-export interface ResolveCompletionTextEdit {
-    start: number
-    end: number
-    newText: string
-}
-
-export interface ResolveCompletionResult {
-    detail?: string
-    command?: Command
-    documentation?: string
-    textEdits?: ResolveCompletionTextEdit[]
-}
-
-export interface GetCompletionResultEntry {
-    name: string
-    label: string
-    kind: ScriptElementKind
-    source?: string
-    detail?: string
-    sortText?: string
-    isColor?: boolean
-    filterText?: string
-    insertText?: string
-    isSnippet?: boolean
-    preselect?: boolean
-    deprecated?: boolean
-    data?: CompletionEntryData
-    replacementSpan?: TextSpan
-    commitCharacters?: string[]
-    labelDetails?: CompletionItemLabelDetails
-}
-
-export type GetCompletionResult = {
-    isIncomplete: boolean
-    defaultCommitCharacters: string[]
-    defaultRepalcementSpan?: TextSpan
-    entries: GetCompletionResultEntry[]
-} | null
 
 export interface InsertSnippetParam {
     text: string
@@ -135,34 +144,62 @@ export interface InsertSnippetParam {
 }
 
 export interface UpdateSnapshotParams {
-    fileName: string
+    fileName: RealPath
+    version: number
     interCode: string
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
-    cp: NumNumArray // compressed positions
+    typeDeclarationLen: number
+    cp: number[] // compressed positions
     citos: NumNumArray // compressed itos
     cpf: NumNumArray // compressed position flags
 }
 
 export interface TSDiagnosticRelatedInformation {
-    range?: Range
-    start: number
-    length: number
+    range: Range
     message: string
-    filePath: string
+    filePath: RealPath
 }
-export interface TSDiagnostic {
+export interface GetDiagnosticResultItem {
     kind: number
     code: number
-    start: number
-    length: number
+    range: Range
     source: string
     message: string
     deprecated: boolean
     unnecessary: boolean
-    relatedInformation: TSDiagnosticRelatedInformation[]
+    relatedInformations: TSDiagnosticRelatedInformation[]
+}
+
+export type GetClientConfigParams<T = any> = {
+    uri: string
+    section: string
+} & (
+    | {
+          name: string
+          defaultValue?: T
+      }
+    | {
+          includes?: string[]
+      }
+)
+
+export type SignatureHelpParams = TPICCommonRequestParams & {
+    isRetrigger: boolean
+    triggerCharacter?: "," | "(" | "<"
 }
 
 export type FindDefinitionParams = TPICCommonRequestParams & {
     preferGoToSourceDefinition: boolean
+}
+
+export type GetCompletionsResultEntry = TS.CompletionEntry & {
+    label: string
+    isColor: boolean
+    isDeprecated: boolean
+    detail: string | undefined
+}
+
+export type GetCompletionsResult = Omit<TS.CompletionInfo, "entries"> & {
+    entries: GetCompletionsResultEntry[]
 }

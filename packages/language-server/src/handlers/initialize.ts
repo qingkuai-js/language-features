@@ -1,26 +1,32 @@
-import { connectSuccess } from "../messages"
-import { Logger, setIsTestingEnv } from "../state"
+import { Messages } from "../messages"
+import { Logger, setState } from "../state"
 import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
+import { COMPLETION_TRIGGER_CHARS } from "qingkuai-language-service"
 
-export const initialize: InitializeHandler = () => {
-    // 测试中不会调用initialize
-    setIsTestingEnv(false)
+export const initialize: InitializeHandler = params => {
+    // 测试环境下不会调用initialize
+    setState({
+        isTestingEnv: false
+    })
 
-    Logger.info(connectSuccess)
+    Logger.info(Messages.LanguageServerStarted)
 
     return {
         capabilities: {
             textDocumentSync: TextDocumentSyncKind.Incremental,
+            colorProvider: true,
             hoverProvider: true,
-            referencesProvider:true,
+            referencesProvider: true,
             definitionProvider: true,
             typeDefinitionProvider: true,
+            implementationProvider: true,
+            documentFormattingProvider: true,
             renameProvider: {
                 prepareProvider: true
             },
-            documentFormattingProvider: {
-                workDoneProgress: true
+            codeLensProvider: {
+                resolveProvider: true
             },
             signatureHelpProvider: {
                 triggerCharacters: ["(", "<", ","],
@@ -31,16 +37,7 @@ export const initialize: InitializeHandler = () => {
                 completionItem: {
                     labelDetailsSupport: true
                 },
-                triggerCharacters: [
-                    ["<", ">", "!", "@", "#", "&", "-", "=", "|", "/"],
-
-                    // script needs trigger characters
-                    [".", "'", '"', "`", ":", ",", "_"],
-
-                    // prettier-ignore
-                    // emmet needs trigger characters
-                    [".", "+", "*", "]", "^", "$", ")", "}", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
-                ].flat()
+                triggerCharacters: COMPLETION_TRIGGER_CHARS
             }
         }
     }

@@ -1,0 +1,29 @@
+{
+    "name": "qingkuai-language-service",
+    "license": "MIT",
+    "author": "mlgq",
+    "version": "1.0.3",
+    "keywords": [
+        "qingkuai",
+        "language-service"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        },
+        "./adapters": {
+            "import": "./dist/adapters.js",
+            "require": "./dist/adapters.cjs",
+            "types": "./dist/adapters.d.ts"
+        }
+    },
+    "scripts": {
+        "postpublish": "curl -X PUT 'https://registry-direct.npmmirror.com/-/package/qingkuai-language-service/syncs'"
+    },
+    "devDependencies": {
+        "vscode-languageserver-types": "^3.17.5"
+    },
+    "description": "The language service for qingkuai"
+}

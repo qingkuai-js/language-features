@@ -1,33 +1,46 @@
 import type {
     ConfigureFileParams,
     UpdateSnapshotParams,
-    GetClientConfigParams,
-    GetClientConfigResult
+    GetClientLanguageConfigParams,
+    GetClientLanguageConfigResult
 } from "../../../types/communication"
-import type { CachedCompileResultItem } from "./types/service"
-import type { PositionFlagKeys, TemplateNode } from "qingkuai/compiler"
+import type { TemplateNode } from "qingkuai/compiler"
+import type { CompileResult, RealPath } from "../../../types/common"
 
 import {
+    tpic,
+    connection,
+    isTestingEnv,
+    typeRefStatement,
+    tpicConnectedPromise,
+    limitedScriptLanguageFeatures
+} from "./state"
+import {
+    getRangeGen,
     compressItos,
+    getPositionGen,
+    getInterIndexGen,
     compressPosition,
-    compressPositionFlags,
-    getScriptKindKey
+    getScriptKindKey,
+    getSourceIndexGen,
+    isPositionFlagSetGen,
+    compressPositionFlags
 } from "../../../shared-util/qingkuai"
-import { readFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
-import { compile, PositionFlag } from "qingkuai/compiler"
+import { URI } from "vscode-uri"
+import { compile } from "qingkuai/compiler"
+import { ensureGetTextDocument } from "./util"
 import { isUndefined } from "../../../shared-util/assert"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { tpic, connection, isTestingEnv, typeRefStatement, tpicConnectedPromise } from "./state"
-
-// 文档的扩展配置项，键为TextDocument.uri（string）
-const extensionConfigCache = new Map<string, GetClientConfigResult>()
+import { LSHandler, TPICHandler } from "../../../shared-util/constant"
 
 // 避免多个客户端事件可能会导致频繁编译，crc缓存最新版本的编译结果
-const compileResultCache = new Map<string, Promise<CachedCompileResultItem>>()
+const compileResultCache = new Map<string, Promise<CompileResult>>()
+
+// 文档配置项，键为TextDocument.uri（string）
+const clientConfigCache = new Map<string, GetClientLanguageConfigResult>()
 
 // 以检查模式解析qk源码文件，版本相同时不会重复解析（测试时无需判断）
-export async function getCompileRes(document: TextDocument, synchronize = true) {
+export async function getCompileRes(document: TextDocument) {
     const cached = await compileResultCache.get(document.uri)
 
     // 确保首次编译时机在语言服务器与ts插件成功建立ipc连接后
@@ -49,118 +62,79 @@ export async function getCompileRes(document: TextDocument, synchronize = true) 
     })
     const getOffset = document.offsetAt.bind(document)
     const isTS = compileRes.inputDescriptor.script.isTS
-    const filePath = isTestingEnv ? document.uri : fileURLToPath(document.uri)
+    const getPosition = getPositionGen(compileRes.inputDescriptor.positions)
+    const filePath = (isTestingEnv ? document.uri : URI.parse(document.uri).fsPath) as RealPath
 
-    // 获取指定开始索引至结束索引的vscode格式范围表达（Range）
-    // 如果未传入结束索引，返回的范围固定指向开始位置（Position）
-    const getRange = (start: number, end?: number) => {
-        if (isUndefined(end)) {
-            end = start
-        }
-        return {
-            start: getPosition(start),
-            end: getPosition(end)
-        }
-    }
-
-    // 获取指定索引的vscode格式位置表达（Position）
-    const getPosition = (offset: number) => {
-        const { positions } = compileRes.inputDescriptor
-        return {
-            line: positions[offset].line - 1,
-            character: positions[offset].column
-        }
-    }
-
-    // 通过中间代码索引换取源码索引
-    const getSourceIndex = (interIndex: number, isEnd = false) => {
-        const sourceIndex = compileRes.interIndexMap.itos[interIndex]
-        if (sourceIndex !== -1 || !isEnd) {
-            return sourceIndex
-        }
-
-        const preSourceIndex = compileRes.interIndexMap.itos[interIndex - 1]
-        return preSourceIndex === -1 ? -1 : preSourceIndex + 1
-    }
-
-    // 通过源码索引换取中间代码索引
-    const getInterIndex = (sourceIndex: number) => {
-        return compileRes.interIndexMap.stoi[sourceIndex]
-    }
-
-    // 验证某个索引的位置信息是否设置了指定的标志位
-    const isPositionFlagSet = (index: number, key: PositionFlagKeys) => {
-        const positionInfo = compileRes.inputDescriptor.positions[index]
-        if (isUndefined(positionInfo)) {
-            return false
-        }
-        return (positionInfo.flag & PositionFlag[key]) !== 0
-    }
-
-    const ccri: CachedCompileResultItem = {
+    const ccri: CompileResult = {
         ...compileRes,
-        getRange,
         filePath,
         getOffset,
         getPosition,
-        getInterIndex,
-        getSourceIndex,
-        isPositionFlagSet,
+        uri: document.uri,
         componentInfos: [],
         config: null as any,
         isSynchronized: false,
         version: document.version,
-        builtInTypeDeclarationEndIndex: typeRefStatement.length + (isTS ? 119 : 114)
+        getRange: getRangeGen(getPosition),
+        scriptLanguageId: isTS ? "typescript" : "javascript",
+        getInterIndex: getInterIndexGen(compileRes.interIndexMap.stoi),
+        getSourceIndex: getSourceIndexGen(compileRes.interIndexMap.itos),
+        isPositionFlagSet: isPositionFlagSetGen(compileRes.inputDescriptor.positions),
+        builtInTypeDeclarationEndIndex: typeRefStatement.length + compileRes.typeDeclarationLen
     }
 
     // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
-    const pms = new Promise<CachedCompileResultItem>(async resolve => {
+    const pms = new Promise<CompileResult>(async resolve => {
         await synchronizeContentToTypescriptPlugin(ccri)
         await getConfigurationOfFile(ccri)
         resolve(ccri)
     })
 
     // 将编译结果同步到typescript-plugin-qingkuai
-    async function synchronizeContentToTypescriptPlugin(cr: CachedCompileResultItem) {
-        if (!isTestingEnv && synchronize && !cr.isSynchronized) {
-            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>("updateSnapshot", {
-                interCode: cr.code,
-                fileName: cr.filePath,
-                scriptKindKey: getScriptKindKey(cr),
-                slotInfo: cr.inputDescriptor.slotInfo,
-                citos: compressItos(cr.interIndexMap.itos),
-                cp: compressPosition(cr.inputDescriptor.positions),
-                cpf: compressPositionFlags(cr.inputDescriptor.positions)
-            })
+    async function synchronizeContentToTypescriptPlugin(cr: CompileResult) {
+        if (!isTestingEnv && !cr.isSynchronized && !limitedScriptLanguageFeatures) {
+            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>(
+                TPICHandler.UpdateSnapshot,
+                {
+                    interCode: cr.code,
+                    version: cr.version,
+                    fileName: cr.filePath,
+                    scriptKindKey: getScriptKindKey(cr),
+                    slotInfo: cr.inputDescriptor.slotInfo,
+                    typeDeclarationLen: cr.typeDeclarationLen,
+                    citos: compressItos(cr.interIndexMap.itos),
+                    cp: compressPosition(cr.inputDescriptor.positions),
+                    cpf: compressPositionFlags(cr.inputDescriptor.positions)
+                }
+            )
         }
     }
 
-    async function getConfigurationOfFile(cr: CachedCompileResultItem) {
-        if (extensionConfigCache.has(document.uri)) {
-            cr.config = extensionConfigCache.get(document.uri)!
+    async function getConfigurationOfFile(cr: CompileResult) {
+        if (clientConfigCache.has(document.uri)) {
+            cr.config = clientConfigCache.get(document.uri)!
         } else {
-            const res: GetClientConfigResult = await connection.sendRequest(
-                "qingkuai/getClientConfig",
+            const res: GetClientLanguageConfigResult = await connection.sendRequest(
+                LSHandler.GetLanguageConfig,
                 {
                     filePath: cr.filePath,
                     scriptPartIsTypescript: cr.inputDescriptor.script.isTS
-                } satisfies GetClientConfigParams
+                } satisfies GetClientLanguageConfigParams
             )
             updatePrettierConfigurationForQingkuaiFile(res)
 
-            if (res.typescriptConfig) {
+            if (!limitedScriptLanguageFeatures && res.typescriptConfig) {
                 updateTypescriptConfigurationForQingkuaiFile(res)
-                tpic.sendNotification<ConfigureFileParams>("configureFile", {
+                tpic.sendNotification<ConfigureFileParams>(TPICHandler.ConfigureFile, {
                     fileName: cr.filePath,
                     config: res.typescriptConfig,
                     workspacePath: res.workspacePath
                 })
             }
-            extensionConfigCache.set(document.uri, (cr.config = res))
+            clientConfigCache.set(document.uri, (cr.config = res))
         }
     }
-
-    return compileResultCache.set(document.uri, pms), await pms
+    return await pms, compileResultCache.set(document.uri, pms), ccri
 }
 
 // 递归遍历qingkuai编译结果的Template Node AST
@@ -174,42 +148,34 @@ export function walk<T>(nodes: TemplateNode[], cb: (node: TemplateNode) => T | u
     }
 }
 
+// 清空已缓存的配置内容
+export function cleanConfigCache() {
+    clientConfigCache.clear()
+}
+
 // 获取未打开的文档的编译结果
 export async function getCompileResByPath(path: string) {
-    const cache = compileResultCache.get(path)
-    if (!isUndefined(cache)) {
-        return await cache
-    }
-
-    const document = TextDocument.create(
-        `file://${path}`,
-        "qingkuai",
-        1,
-        readFileSync(path, "utf-8")
-    )
-    return await getCompileRes(document, false)
+    return await getCompileRes(ensureGetTextDocument(URI.file(path).toString()))
 }
 
-// 清空已缓存的配置内容
-export function clearConfigCache() {
-    extensionConfigCache.clear()
-}
-
-function updatePrettierConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+function updatePrettierConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {
     const { prettierConfig: pc, extensionConfig: ec } = config
-    if (isUndefined(pc.spaceAroundInterpolation)) {
-        pc.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
+    if (isUndefined(pc.qingkuai)) {
+        pc.qingkuai = {}
     }
-    if (isUndefined(pc.componentTagFormatPreference)) {
-        pc.componentTagFormatPreference = ec.componentTagFormatPreference
+    if (isUndefined(pc.qingkuai.spaceAroundInterpolation)) {
+        pc.qingkuai.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
     }
-    if (isUndefined(pc.componentAttributeFormatPreference)) {
-        pc.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
+    if (isUndefined(pc.qingkuai.componentTagFormatPreference)) {
+        pc.qingkuai.componentTagFormatPreference = ec.componentTagFormatPreference
+    }
+    if (isUndefined(pc.qingkuai.componentAttributeFormatPreference)) {
+        pc.qingkuai.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
     }
 }
 
 // prettier-ignore
-function updateTypescriptConfigurationForQingkuaiFile(config: GetClientConfigResult) {
+function updateTypescriptConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {
     // @ts-expect-error: change read-only property
     config.typescriptConfig.formatCodeSettings.semicolons = config.prettierConfig.semi ? "insert" : "remove"
 

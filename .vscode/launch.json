@@ -5,8 +5,13 @@
             "name": "Run Extension",
             "type": "extensionHost",
             "request": "launch",
+            "sourceMaps": true,
             "autoAttachChildProcesses": true,
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "outFiles": [
+                "${workspaceFolder}/packages/language-service/dist/**/*",
+                "${workspaceFolder}/packages/vscode-extension/dist/**/*",
+                "${workspaceFolder}/packages/typescript-plugin/dist/**/*"
+            ],
             "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"],
             "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"]
         }

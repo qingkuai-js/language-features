@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "json schema for qingkuai configuration",
+    "type": "object",
+    "properties": {
+        "reserveHtmlComments": {
+            "type": "string",
+            "default": "development",
+            "enum": ["never", "all", "development", "production"],
+            "description": "Whether to reserve HTML comment nodes."
+        },
+        "exposeDependencies": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to attach reactive value dependencies to component instance."
+        },
+        "exposeDestructions": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to attach destruction methods of HTML nodes to component instance."
+        },
+        "insertTipComments": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether to allow interpretive comments to be inserted into compilation result."
+        },
+        "convenientDerivedDeclaration": {
+            "type": "boolean",
+            "default": true,
+            "description": "If the identifier for variable declaration starts with $, it will be compiled as derived reactive state."
+        },
+        "resolveImportExtension": {
+            "type": "boolean",
+            "default": true,
+            "description": "If the package imported by the import statement does not have an extension, the file with qk extension will is found first."
+        }
+    },
+    "additionalProperties": false
+}
