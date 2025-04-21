@@ -1,13 +1,8 @@
-import type {
-    ComponentIdentifierInfo,
-    GetClientLanguageConfigResult
-} from "../../../../types/communication"
+import type { Range } from "vscode-languageserver"
 import type { GeneralFunc } from "../../../../types/util"
 import type { ProjectKind } from "qingkuai-language-service"
-import type { Position, Range } from "vscode-languageserver"
+import type { PromiseWithState } from "../../../../types/common"
 import type { IpcParticipant } from "../../../../shared-util/ipc/types"
-import type { CompileResult, PositionFlagKeys } from "qingkuai/compiler"
-import type { PromiseWithState, RealPath } from "../../../../types/common"
 
 export type SetStateOptions = Partial<{
     tpic: IpcParticipant

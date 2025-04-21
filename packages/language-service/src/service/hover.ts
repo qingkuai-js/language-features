@@ -1,6 +1,6 @@
 import type { Hover } from "vscode-languageserver-types"
 import type { CompileResult } from "../../../../types/common"
-import type { GetCssConfigFunc, GetScriptHoverFunc } from "../types/service"
+import type { GetComponentInfosFunc, GetCssConfigFunc, GetScriptHoverFunc } from "../types/service"
 
 import {
     findTagData,
@@ -24,7 +24,8 @@ export async function doHover(
     offset: number,
     isTestingEnv: boolean,
     getCssConfig: GetCssConfigFunc,
-    getScriptHover: GetScriptHoverFunc
+    getScriptHover: GetScriptHoverFunc,
+    getComponentInfos: GetComponentInfosFunc
 ): Promise<Hover | null> {
     const source = cr.inputDescriptor.source
     const currentNode = findNodeAt(cr.templateNodes, offset)
@@ -66,7 +67,7 @@ export async function doHover(
         const hoverRange = cr.getRange(...tagRanges[isStart ? 0 : 1]!)
 
         if (!isTestingEnv && currentNode.componentTag) {
-            for (const info of cr.componentInfos) {
+            for (const info of await getComponentInfos(cr.filePath)) {
                 if (info.name === currentNode.componentTag) {
                     return {
                         range: hoverRange,
@@ -120,7 +121,7 @@ export async function doHover(
         }
 
         if (!isTestingEnv && currentNode.componentTag) {
-            const componentInfo = cr.componentInfos.filter(info => {
+            const componentInfo = (await getComponentInfos(cr.filePath)).filter(info => {
                 return info.name === currentNode.componentTag
             })[0]
             for (const attr of componentInfo?.attributes || []) {

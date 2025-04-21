@@ -8,8 +8,8 @@ import type { DiagnosticKind } from "../../types/service"
 import type { RealPath } from "../../../../../types/common"
 
 import { lsRange } from "../convert/struct"
-import { getLineAndCharacter, qingkuaiDiagnostics } from "../state"
 import { getRealPath, getSourceIndex } from "../qingkuai"
+import { getLineAndCharacter, qingkuaiDiagnostics } from "../state"
 import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 import { isQingkuaiFileName, isString, isUndefined } from "../../../../../shared-util/assert"
@@ -26,6 +26,7 @@ export function getAndConvertDiagnostics(
     if (isSemanticProject) {
         diagnosticMethods.push("getSemanticDiagnostics", "getSuggestionDiagnostics")
     }
+
     diagnosticMethods.forEach(m => {
         diagnostics.push(...languageService[m](fileName))
     })

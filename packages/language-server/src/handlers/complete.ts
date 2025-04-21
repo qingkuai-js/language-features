@@ -13,6 +13,7 @@ import {
     ScriptCompletionDetail,
     resolveScriptBlockCompletion
 } from "qingkuai-language-service"
+import { getComponentInfos } from "../client"
 import { CompletionItem } from "vscode-languageserver"
 import { isString } from "../../../../shared-util/assert"
 import { getCompileRes, getCompileResByPath } from "../compile"
@@ -36,6 +37,7 @@ export const complete: CompletionHandler = async ({ textDocument, position, cont
         isTestingEnv,
         projectKind,
         insertSnippet,
+        getComponentInfos,
         getScriptCompletions
     )
 }

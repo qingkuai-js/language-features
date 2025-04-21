@@ -1,7 +1,6 @@
 import type TS from "typescript"
 import type { RealPath } from "../../../../../types/common"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
-import type { ComponentIdentifierInfo } from "../../../../../types/communication"
 
 import { projectService } from "../../state"
 import { editQingKuaiScriptInfo } from "./scriptInfo"
@@ -17,11 +16,11 @@ export function updateQingkuaiSnapshot(
     scriptKind: TS.ScriptKind,
     typeDeclarationLen: number,
     positions: ASTPositionWithFlag[]
-): ComponentIdentifierInfo[] {
-    const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(fileName)
+) {
+    const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
 
     const editScriptInfoCommon = (text: string) => {
-        if (qingkuaiSnapshot.scriptKind !== scriptKind) {
+        if (originalScriptKind !== scriptKind) {
             updateScriptKindOfQingkuaiFile(fileName, scriptKind)
         }
         editQingKuaiScriptInfo(
@@ -37,13 +36,18 @@ export function updateQingkuaiSnapshot(
     editScriptInfoCommon(content)
 
     // 将补全了全局类型声明及默认导出语句的内容更新到快照
-    const res = convertor.ensureExport(
-        getDefaultLanguageService(fileName)!,
-        fileName,
-        content,
-        typeDeclarationLen
+    editScriptInfoCommon(
+        convertor.ensureExport(
+            getDefaultLanguageService(fileName)!,
+            fileName,
+            content,
+            typeDeclarationLen
+        )
     )
-    return editScriptInfoCommon(res.content), res.componentIdentifierInfos
+    ensureGetSnapshotOfQingkuaiFile(fileName).attributeInfos = convertor.getComponentAttributes(
+        getDefaultLanguageService(fileName)!,
+        fileName
+    )
 }
 
 // 动态修改qk文件的脚本类型

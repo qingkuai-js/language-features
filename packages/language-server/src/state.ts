@@ -31,6 +31,12 @@ export function setState(options: SetStateOptions) {
     if (!isUndefined(options.typeRefStatement)) {
         typeRefStatement = options.typeRefStatement
     }
+    if (options.tpicConnectedPromise) {
+        tpicConnectedPromise = options.tpicConnectedPromise
+    }
+    if (options.tpicConnectedResolver) {
+        tpicConnectedResolver = options.tpicConnectedResolver
+    }
     if (!isUndefined(options.limitedScriptLanguageFeatures)) {
         limitedScriptLanguageFeatures = options.limitedScriptLanguageFeatures
     }

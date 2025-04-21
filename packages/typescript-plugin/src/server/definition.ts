@@ -62,8 +62,8 @@ export function attachFindDefinition() {
                         })
                         return {
                             fileName: realPath,
-                            targetRange: contextRange,
-                            targetSelectionRange: range
+                            targetSelectionRange: range,
+                            targetRange: contextRange ?? range
                         }
                     }
                     return {

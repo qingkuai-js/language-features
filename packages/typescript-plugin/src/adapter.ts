@@ -60,7 +60,8 @@ function getCompileInfo(fileName: string): AdapterCompileInfo {
         slotInfo: qingkuaiSnapshot.slotInfo,
         positions: qingkuaiSnapshot.positions,
         scriptKind: qingkuaiSnapshot.scriptKind,
-        content: qingkuaiSnapshot.getFullText()
+        content: qingkuaiSnapshot.getFullText(),
+        attributeInfos: qingkuaiSnapshot.attributeInfos
     }
 }
 

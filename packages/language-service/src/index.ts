@@ -13,9 +13,10 @@ export type {
     CustomPath,
     CompileResult,
     PromiseWithState,
-    QingkuaiConfiguration
+    QingkuaiConfiguration,
+    ComponentIdentifierInfo
 } from "../../../types/common"
-export type { InsertSnippetParam, ComponentIdentifierInfo } from "../../../types/communication"
+export type { InsertSnippetParam } from "../../../types/communication"
 
 export { doHover } from "./service/hover"
 export { format } from "./service/format"

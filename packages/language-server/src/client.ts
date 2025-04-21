@@ -3,6 +3,8 @@ import type {
     ConnectToTsServerParams,
     FindComponentTagRangeParams
 } from "../../../types/communication"
+import type { GeneralFunc } from "../../../types/util"
+import type { ComponentIdentifierInfo } from "../../../types/common"
 
 import { URI } from "vscode-uri"
 import { getCompileResByPath } from "./compile"
@@ -16,8 +18,10 @@ import { connectTo, defaultParticipant } from "../../../shared-util/ipc/particip
 
 // 连接到typescript-plugin-qingkuai创建的ipc服务器，并将客户端句柄记录到tpic，后续qingkuai语言服务器将通过tpic与ts服务器进行通信
 export async function connectTsServer(params: ConnectToTsServerParams) {
+    let originalResolver: GeneralFunc | undefined = undefined
     if (params.isReconnect) {
         const promiseAndResolver = generatePromiseAndResolver()
+        originalResolver = tpicConnectedResolver
         setState({
             typeRefStatement: "",
             tpic: defaultParticipant,
@@ -43,6 +47,7 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
                 typeRefStatement: await client.sendRequest(TPICHandler.GetTypeRefStatement, "")
             })
 
+            originalResolver?.()
             tpicConnectedResolver()
             Logger.info(Messages.ConnectTsServerPluginSuccess)
             Logger.info(communicationWayInfo(params.sockPath))
@@ -54,6 +59,13 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
     }
 
     Logger.error(Messages.ConnectTsServerPluginFailed)
+}
+
+export async function getComponentInfos(fileName: string) {
+    return await tpic.sendRequest<string, ComponentIdentifierInfo[]>(
+        TPICHandler.GetComponentInfos,
+        fileName
+    )
 }
 
 function attachClientHandlers() {

@@ -1,12 +1,23 @@
-import type {
-    ComponentAttributeItem,
-    ComponentIdentifierInfo
-} from "../../../../../types/communication"
 import type TS from "typescript"
 import type { RealPath } from "../../../../../types/common"
 import type { QingkuaiRuntimeCommonMessage } from "../../types/service"
 import type { QingkuaiCompilerCommonMessage } from "../../types/service"
 
+import {
+    ts,
+    path,
+    getConfig,
+    getCompileInfo,
+    typeRefStatement,
+    qingkuaiDiagnostics
+} from "../state"
+import {
+    isNull,
+    isString,
+    isNumber,
+    debugAssert,
+    isUndefined
+} from "../../../../../shared-util/assert"
 import {
     validIdentifierRE,
     watchCompilerFuncRE,
@@ -22,38 +33,13 @@ import {
     JS_PROPS_DECLARATION_LEN,
     JS_REFS_DECLARATION_LEN
 } from "../../../../../shared-util/constant"
-import {
-    ts,
-    path,
-    getConfig,
-    getCompileInfo,
-    typeRefStatement,
-    getFullFileNames,
-    qingkuaiDiagnostics,
-    getTsLanguageService,
-    resolvedQingkuaiModule
-} from "../state"
-import {
-    walk,
-    getLength,
-    isEventType,
-    isInTopScope,
-    findVariableDeclarationOfReactFunc
-} from "../ts-ast"
-import {
-    isNull,
-    isString,
-    isNumber,
-    debugAssert,
-    isUndefined,
-    isQingkuaiFileName
-} from "../../../../../shared-util/assert"
 import { COMPILER_FUNCS } from "../../constants"
 import { stringify } from "../../../../../shared-util/sundry"
 import { commonMessage as runtimeCommonMessage } from "qingkuai"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
 import { commonMessage as compilerCommonMessage, util } from "qingkuai/compiler"
-import { getRealPath, isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"
+import { isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"
+import { walk, getLength, isInTopScope, findVariableDeclarationOfReactFunc } from "../ts-ast"
 
 export function ensureExport(
     languageService: TS.LanguageService,
@@ -66,20 +52,16 @@ export function ensureExport(
     const sourceFile = program.getSourceFile(fileName)!
     debugAssert(!!sourceFile)
 
-    const dirPath = path.dir(fileName)
     const config = getConfig(fileName)
     const contentArr = content.split("")
     const existingGlobalType = new Set<string>()
     const diagnosticsCache: TS.Diagnostic[] = []
     const compileInfo = getCompileInfo(fileName)
     const storedTypes = new Map<number, string>()
-    const importedQingkuaiFileNames = new Set<string>()
     const typeRefStatementLen = typeRefStatement.length
     const slotInfoKeys = Object.keys(compileInfo.slotInfo)
     const isTS = compileInfo.scriptKind === ts.ScriptKind.TS
-    const qingkuaiModules = resolvedQingkuaiModule.get(fileName)
     const componentName = filePathToComponentName(path, fileName)
-    const componentIdentifierInfos: ComponentIdentifierInfo[] = []
     const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
 
     // 将每个待提取类型的索引记录到storedTypes
@@ -195,31 +177,14 @@ export function ensureExport(
         // importGlobalIdentifier为一个键为模块导出标识符名称，值为导入标识符名称的映射表，当导入
         // 标识符名称与全局类型标识符名称一致，且其可作为类型标识符使用时，视为该全局类型标识符已被声明
         if (isTS && ts.isImportDeclaration(node) && isInTopScope(node)) {
-            if (!isUndefined(node.importClause?.name)) {
-                const identifierName = node.importClause.name.text
-                if (globalTypeIdentifierRE.test(identifierName)) {
-                    const symbol = typeChecker.getSymbolAtLocation(node.importClause.name)
-                    const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
-                    if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
-                        existingGlobalType.add(identifierName)
-                    }
-                }
-                if (
-                    ts.isStringLiteral(node.moduleSpecifier) &&
-                    qingkuaiModules?.has(node.moduleSpecifier.text)
-                ) {
-                    let componentFileName = path.resolve(dirPath, node.moduleSpecifier.text)
-                    if (!isQingkuaiFileName(componentFileName)) {
-                        componentFileName += ".qk"
-                    }
-                    componentIdentifierInfos.push({
-                        imported: true,
-                        name: identifierName,
-                        relativePath: node.moduleSpecifier.text,
-                        slotNams: getComponentSlotNames(componentFileName),
-                        attributes: getComponentAttributes(componentFileName)
-                    })
-                    importedQingkuaiFileNames.add(componentFileName)
+            if (
+                !isUndefined(node.importClause?.name) &&
+                globalTypeIdentifierRE.test(node.importClause.name.text)
+            ) {
+                const symbol = typeChecker.getSymbolAtLocation(node.importClause.name)
+                const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
+                if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
+                    existingGlobalType.add(node.importClause.name.text)
                 }
             }
 
@@ -484,91 +449,7 @@ export function ensureExport(
             constructor(_, __, ___){}
         }`)
     }
-
-    for (const currentFileName of getFullFileNames()) {
-        if (
-            isQingkuaiFileName(currentFileName) &&
-            currentFileName !== fileName.toString() &&
-            !importedQingkuaiFileNames.has(currentFileName)
-        ) {
-            let relativePath = getRelativePathWithStartDot(dirPath, currentFileName)
-            if (config?.resolveImportExtension) {
-                relativePath = relativePath.slice(0, -path.ext(relativePath).length)
-            }
-            componentIdentifierInfos.push({
-                imported: false,
-                attributes: [],
-                relativePath: relativePath,
-                slotNams: getComponentSlotNames(currentFileName),
-                name: filePathToComponentName(path, currentFileName)
-            })
-        }
-    }
-    return { content: contentArr.join(""), componentIdentifierInfos }
-}
-
-// 获取组件的attribute信息
-function getComponentAttributes(componentFileName: string) {
-    const program = getTsLanguageService(componentFileName)?.getProgram()!
-    debugAssert(!!program)
-
-    const sourceFile = program.getSourceFile(componentFileName)
-    if (!sourceFile) {
-        return []
-    }
-
-    const attributes: ComponentAttributeItem[] = []
-    const typeChecker = program.getTypeChecker()
-
-    // @ts-expect-error: access private property
-    for (const [name, symbol] of sourceFile.locals) {
-        if (globalTypeIdentifierRE.test(name)) {
-            let type: TS.Type
-            if (!ts.isJSDocTypedefTag(symbol.declarations[0])) {
-                type = typeChecker.getDeclaredTypeOfSymbol(symbol)
-            } else {
-                type = typeChecker.getTypeFromTypeNode(symbol.declarations[0].typeExpression)
-            }
-
-            if (!type.symbol || !(type.symbol.flags & ts.SymbolFlags.Type)) {
-                continue
-            }
-
-            type.getProperties().forEach(property => {
-                const stringCandidates: string[] = []
-                const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
-
-                if (propertyType.isUnion()) {
-                    propertyType.types.forEach(t => {
-                        if (t.flags & ts.TypeFlags.StringLiteral) {
-                            stringCandidates.push(JSON.parse(typeChecker.typeToString(t)))
-                        }
-                    })
-                } else if (propertyType.flags & ts.TypeFlags.StringLiteral) {
-                    stringCandidates.push(JSON.parse(typeChecker.typeToString(propertyType)))
-                }
-
-                attributes.push({
-                    stringCandidates,
-                    name: property.name,
-                    kind: name.slice(0, -1),
-                    type: typeChecker.typeToString(propertyType),
-                    isEvent: name === GlobalTypeIdentifier.Prop && isEventType(propertyType)
-                })
-            })
-        }
-    }
-
-    return attributes
-}
-
-export function getRelativePathWithStartDot(from: string, to: string) {
-    const relativePath = path.relative(from, to)
-    return /\.{1,2}\//.test(relativePath) ? relativePath : `./${relativePath}`
-}
-
-function getComponentSlotNames(componentFileName: string) {
-    return Object.keys(getCompileInfo(getRealPath(componentFileName)).slotInfo)
+    return contentArr.join("")
 }
 
 // 获取编译器commonMessage中的诊断信息

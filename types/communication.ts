@@ -2,6 +2,7 @@ import type {
     NumNum,
     RealPath,
     NumNumArray,
+    ComponentAttributeItem,
     PrettierConfiguration,
     TSClientConfiguration,
     ExtensionConfiguration,
@@ -66,28 +67,12 @@ export interface HoverTipResult {
     posRange: NumNum
 }
 
-export interface ComponentAttributeItem {
-    kind: "Prop" | "Ref"
-    name: string
-    type: string
-    isEvent: boolean
-    stringCandidates: string[]
-}
-
 export interface RenameLocationItem {
     fileName: string
     loc?: Range
     range?: NumNum
     prefix?: string
     suffix?: string
-}
-
-export interface ComponentIdentifierInfo {
-    name: string
-    imported: boolean
-    slotNams: string[]
-    relativePath: string
-    attributes: ComponentAttributeItem[]
 }
 
 export interface GetClientLanguageConfigParams {

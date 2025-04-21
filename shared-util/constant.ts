@@ -60,6 +60,7 @@ export enum TPICHandler {
     WaitForTSCommand = "waitForTypescriptCommand",
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",
+    GetComponentInfos = "getCompnentIdentifierInfos",
     GetTypeRefStatement = "getQingkuaiDtsReferenceStatement",
     Retransmission = "retransmissionToQingkuaiLanguageServer",
     InfferedProjectAsTypescript = "InfferedLanguageServerProjectAsTypescript"

@@ -6,13 +6,22 @@ import type {
     CompletionItem,
     CompletionList
 } from "vscode-languageserver-types"
+import type {
+    GetRangeFunc,
+    CompileResult,
+    ComponentAttributeItem
+} from "../../../../../types/common"
+import type {
+    InsertSnippetFunc,
+    GetComponentInfosFunc,
+    GetScriptCompletionsFunc
+} from "../../types/service"
 import type { ProjectKind } from "../../constants"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { HTMLElementDataAttributeItem } from "../../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
-import type { CompileResult, GetRangeFunc } from "../../../../../types/common"
-import type { GetScriptCompletionsFunc, InsertSnippetFunc } from "../../types/service"
-import type { ComponentAttributeItem, InsertSnippetParam } from "../../../../../types/communication"
+import type { ComponentIdentifierInfo } from "../../../../../types/common"
+import type { InsertSnippetParam } from "../../../../../types/communication"
 
 import {
     slotTagData,
@@ -51,6 +60,7 @@ export async function doComplete(
     isTestingEnv: boolean,
     projectKind: ProjectKind,
     insertSnippet: InsertSnippetFunc,
+    getComponentInfos: GetComponentInfosFunc,
     getScriptCompletions: GetScriptCompletionsFunc
 ): Promise<CompletionList | CompletionItem[] | null> {
     const source = cr.inputDescriptor.source
@@ -84,6 +94,7 @@ export async function doComplete(
 
     // 文本节点范围内触发emmet、实体字符及自定义标签补全建议
     // 如果父节点结束标签未闭合且前两个字符为</，则自动闭合结束标签
+    const componentInfos = await getComponentInfos(cr.filePath)
     if (isEmptyString(currentNode.tag)) {
         if (
             !isNull(currentNode.parent) &&
@@ -95,13 +106,20 @@ export async function doComplete(
 
         const completions = [
             ...doCharacterEntityComplete(getRange, source, offset),
-            ...doCustomTagComplete(cr, offset, currentNode, projectKind)
+            ...doCustomTagComplete(cr, offset, currentNode, projectKind, componentInfos)
         ]
 
         // 如果是由<触发的补全建议获取，则列举所有标签名建议
         if (source[offset - 1] === "<") {
             completions.push(
-                ...doTagComplete(getRange(offset), cr, offset, currentNode, projectKind)
+                ...doTagComplete(
+                    getRange(offset),
+                    cr,
+                    offset,
+                    currentNode,
+                    projectKind,
+                    componentInfos
+                )
             )
         }
 
@@ -122,7 +140,8 @@ export async function doComplete(
             cr,
             offset,
             currentNode,
-            projectKind
+            projectKind,
+            componentInfos
         )
     }
 
@@ -159,7 +178,7 @@ export async function doComplete(
     const valueStartIndex = attr?.value.loc.start.index ?? Infinity
 
     // 当前节点若是组件，则找到它的属性信息
-    const componentAttributes = cr.componentInfos.find(info => {
+    const componentAttributes = componentInfos.find(info => {
         return info.name === currentNode.componentTag
     })?.attributes
 
@@ -203,7 +222,7 @@ export async function doComplete(
 
             const valueRange = getRange(valueStartIndex, valueEndIndex)
             if (attrKey === "slot" && currentNode.parent?.componentTag) {
-                const componentInfo = cr.componentInfos.find(info => {
+                const componentInfo = componentInfos.find(info => {
                     return info.name === currentNode.parent!.componentTag
                 })
                 if (!componentInfo) {
@@ -390,7 +409,8 @@ function doCustomTagComplete(
     cr: CompileResult,
     offset: number,
     node: TemplateNode,
-    projectKind: ProjectKind
+    projectKind: ProjectKind,
+    componentInfos: ComponentIdentifierInfo[]
 ) {
     const ret: CompletionItem[] = []
     const { source } = cr.inputDescriptor
@@ -453,7 +473,7 @@ function doCustomTagComplete(
             })
         })
 
-        cr.componentInfos.forEach(item => {
+        componentInfos.forEach(item => {
             let additionalTextEdits: TextEdit[] | undefined = undefined
             if (!item.imported) {
                 const addImportIndex = Math.max(0, cr.inputDescriptor.script.loc.start.index)

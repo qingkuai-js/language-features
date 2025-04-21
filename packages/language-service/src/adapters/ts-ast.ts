@@ -123,3 +123,19 @@ export function findNodeAtPosition(
     }
     return find(sourceFile)
 }
+
+export function isSymbolKey(symbol: TS.Symbol): boolean {
+    if (!symbol.declarations) {
+        return false
+    }
+    return symbol.declarations.some(decl => {
+        const name = (decl as TS.NamedDeclaration).name
+        if (!name || !("expression" in name)) {
+            return false
+        }
+        return (
+            (ts.isIdentifier(name.expression) && name.expression.escapedText === "symbol") ||
+            (ts.isComputedPropertyName(name) && ts.isPropertyAccessExpression(name.expression))
+        )
+    })
+}

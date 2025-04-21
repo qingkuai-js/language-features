@@ -1,10 +1,11 @@
 import type {
     GetCompileResultFunc,
+    GetComponentInfosFunc,
     FindScriptDefinitionsFunc,
     FindScriptTypeDefinitionsFunc
 } from "../types/service"
-import type { CompileResult, CustomPath, NumNum } from "../../../../types/common"
 import type { LocationLink, Range } from "vscode-languageserver-types"
+import type { CompileResult, CustomPath, NumNum } from "../../../../types/common"
 
 import { URI } from "vscode-uri"
 import { excuteCssCommonHandler } from "../util/css"
@@ -16,10 +17,11 @@ export async function findDefinitions(
     offset: number,
     path: CustomPath,
     getCompileRes: GetCompileResultFunc,
+    getComponentInfos: GetComponentInfosFunc,
     findScriptDefinitions: FindScriptDefinitionsFunc
 ) {
     if (cr.isPositionFlagSet(offset, "inStyle")) {
-        const cssRet =  excuteCssCommonHandler("findDefinition", cr, offset)
+        const cssRet = excuteCssCommonHandler("findDefinition", cr, offset)
         return cssRet && [cssRet]
     }
 
@@ -45,7 +47,7 @@ export async function findDefinitions(
             }
 
             if (currentNode.parent?.componentTag && attribute.key.raw === "slot") {
-                const componentInfo = cr.componentInfos.find(info => {
+                const componentInfo = (await getComponentInfos(cr.filePath)).find(info => {
                     return info.name === currentNode.parent!.componentTag
                 })
                 if (!componentInfo) {
@@ -135,13 +137,14 @@ async function getComponentSlotDefinition(
                 const selectionRange: NumNum = nameAttr
                     ? [nameAttr.loc.start.index, nameAttr.loc.end.index]
                     : [node.range[0], node.range[0] + node.tag.length + 1]
-                return  [{
-                    originSelectionRange,
-                    targetUri: componentFileUri,
-                    targetRange: cr.getRange(...node.range),
-                    targetSelectionRange: cr.getRange(...selectionRange)
-                }]
-                
+                return [
+                    {
+                        originSelectionRange,
+                        targetUri: componentFileUri,
+                        targetRange: cr.getRange(...node.range),
+                        targetSelectionRange: cr.getRange(...selectionRange)
+                    }
+                ]
             }
         }
         return undefined

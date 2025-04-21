@@ -22,7 +22,12 @@ import { attachChangeConfig } from "./configuration/handler"
 import { attachPrepareRename, attachRename } from "./rename"
 import { qkContext, typeRefStatement } from "qingkuai-language-service/adapters"
 import { attachGetDiagnostic, attachRefreshDiagnostic } from "./diagnostic/handler"
-import { attachDocumentManager, attachGetLanguageId, attachUpdateSnapshot } from "./content/handler"
+import {
+    attachDocumentManager,
+    attachGetComponentInfos,
+    attachGetLanguageId,
+    attachUpdateSnapshot
+} from "./content/handler"
 
 export function attachLanguageServerIPCHandlers() {
     runAll([
@@ -42,6 +47,7 @@ export function attachLanguageServerIPCHandlers() {
         attachDocumentManager,
         attachGetSignatureHelp,
         attachRefreshDiagnostic,
+        attachGetComponentInfos,
         attachFindImplementation
     ])
 }

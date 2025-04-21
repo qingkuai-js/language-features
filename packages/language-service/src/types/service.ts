@@ -16,16 +16,18 @@ import type {
     CustomPath,
     MaybePromise,
     CompileResult,
-    QingkuaiConfiguration
+    QingkuaiConfiguration,
+    ComponentAttributeItem
 } from "../../../../types/common"
 import type TS from "typescript"
 import type Prettier from "prettier"
+import type { ProjectKind } from "../constants"
 import type { HoverSettings } from "vscode-css-languageservice"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as runtimeCommonMessage } from "qingkuai"
 import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
-import { ProjectKind } from "../constants"
+import { ComponentIdentifierInfo } from "../../dist"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"
@@ -63,6 +65,7 @@ export interface AdapterCompileInfo {
     slotInfo: SlotInfo
     scriptKind: TS.ScriptKind
     positions: ASTPositionWithFlag[]
+    attributeInfos: ComponentAttributeItem[]
 }
 
 export type ScriptCompletionData = {
@@ -188,3 +191,4 @@ export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | und
 export type GetTsLanguageServiceFunc = (fileName: string) => TS.LanguageService | undefined
 export type GetQingkuaiConfigFunc = (fileName: RealPath) => QingkuaiConfiguration | undefined
 export type GetScriptNavTreeFunc = (fileName: RealPath) => MaybePromise<TS.NavigationTree | null>
+export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentIdentifierInfo[]>
