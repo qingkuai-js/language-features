@@ -41,6 +41,7 @@ import {
     formatImportStatement
 } from "../../util/qingkuai"
 import { util } from "qingkuai/compiler"
+import { isPositionEqual } from "../../util/sundry"
 import { eventModifiers } from "../../data/event-modifier"
 import { createStyleSheetAndDocument } from "../../util/css"
 import { getAndProcessScriptBlockCompletions } from "./script"
@@ -584,11 +585,13 @@ function doComponentAttributeNameComplete(
         return null
     }
 
-    const existing = new Set(
-        node.attributes.map(item => {
-            return util.kebab2Camel(item.key.raw.replace(/^[!@#&]/, ""))
-        })
-    )
+    const existing = new Set<string>()
+    for (const item of node.attributes) {
+        if (!isPositionEqual(item.loc.start, range.start)) {
+            existing.add(util.kebab2Camel(item.key.raw.replace(/^[!@#&]/, "")))
+        }
+    }
+
     const completions: CompletionItem[] = []
     attributes?.forEach(attr => {
         if (existing.has(attr.name)) {
@@ -607,7 +610,7 @@ function doComponentAttributeNameComplete(
             let suffix = ""
             if (useStartChar) {
                 suffix = "={$0}"
-            } else if (attr.type !== "boolean") {
+            } else if (!/boolean(?: \| undefined)?/.test(attr.type)) {
                 suffix = `=${normalQuote}$0${normalQuote}`
             }
 
@@ -741,6 +744,9 @@ function doAttributeNameComplete(
     const isDynamicOrEvent = startChar && (isEvent || isDynamic)
 
     node.attributes.forEach(({ key }) => {
+        if (isPositionEqual(key.loc.start, range.start)) {
+            return
+        }
         switch (key.raw[0]) {
             case "@":
                 existingEvents.add(key.raw.slice(1))
@@ -749,7 +755,12 @@ function doAttributeNameComplete(
                 existingDirectives.add(key.raw.slice(1))
                 break
             default:
-                existingAttributes.add(key.raw.slice(+/^[!&]/.test(key.raw)))
+                const pureKey = key.raw.slice(+/^[!&]/.test(key.raw))
+                if (node.componentTag || pureKey !== "class") {
+                    existingAttributes.add(pureKey)
+                } else {
+                    existingAttributes.add(key.raw)
+                }
                 break
         }
     })
@@ -784,7 +795,10 @@ function doAttributeNameComplete(
     if (startChar !== "#") {
         const isDuplicate = (name: string) => {
             if (!isEvent) {
-                return existingAttributes.has(name)
+                if (node.componentTag || name !== "class") {
+                    return existingAttributes.has(name)
+                }
+                return existingAttributes.has(startChar + name)
             }
             return existingEvents.has(name.replace(/^on/, ""))
         }

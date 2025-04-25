@@ -12,4 +12,4 @@ export const init = (options: CreateLsAdaptersOptions) => {
 }
 
 export { resolvedQingkuaiModule, typeDeclarationFilePath } from "./state"
-export { getCompileInfo, typeRefStatement, qingkuaiDiagnostics } from "./state"
+export { getCompileInfo, typeRefStatement, qingkuaiDiagnostics, getConfig } from "./state"

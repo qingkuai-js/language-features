@@ -15,9 +15,10 @@ export type {
     PromiseWithState,
     QingkuaiConfiguration,
     ComponentAttributeItem,
-    ComponentIdentifierInfo,
+    ComponentIdentifierInfo
 } from "../../../types/common"
 export type { InsertSnippetParam } from "../../../types/communication"
+export type { ShowReferencesCommandParams } from "../../../types/command"
 
 export { doHover } from "./service/hover"
 export { format } from "./service/format"

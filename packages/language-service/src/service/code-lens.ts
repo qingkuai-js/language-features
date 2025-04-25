@@ -113,11 +113,8 @@ export async function resolveCodeLens(
     const locations: Location[] = []
     const label = componentName ? "useage" : type
     let findResult = await findCodeLens(fileName, interIndex, type)
-    if (!findResult) {
-        return codeLens
-    }
 
-    // 过滤实现中与现实codeLens开始位置形同的项目
+    // 过滤实现中与现实codeLens开始位置相同的项目
     if (findResult && type === "implementation") {
         findResult = findResult.filter(item => {
             return (

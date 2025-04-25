@@ -9,6 +9,12 @@ import { ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { createServer } from "../../../../shared-util/ipc/participant"
 
+import {
+    attachGetLanguageId,
+    attachUpdateSnapshot,
+    attachDocumentManager,
+    attachGetComponentInfos
+} from "./content/handler"
 import { attachHoverTip } from "./hover"
 import { attachCodeLens } from "./code-lens"
 import { attachWaitCommand } from "./command"
@@ -22,12 +28,6 @@ import { attachChangeConfig } from "./configuration/handler"
 import { attachPrepareRename, attachRename } from "./rename"
 import { qkContext, typeRefStatement } from "qingkuai-language-service/adapters"
 import { attachGetDiagnostic, attachRefreshDiagnostic } from "./diagnostic/handler"
-import {
-    attachDocumentManager,
-    attachGetComponentInfos,
-    attachGetLanguageId,
-    attachUpdateSnapshot
-} from "./content/handler"
 
 export function attachLanguageServerIPCHandlers() {
     runAll([
