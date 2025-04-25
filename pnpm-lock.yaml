@@ -33,10 +33,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.22
-        version: 1.0.22(prettier@3.5.3)(qingkuai@1.0.41)
+        version: 1.0.22(prettier@3.5.3)(qingkuai@file:../../Qingkuai/qingkuai)
       qingkuai:
-        specifier: ^1.0.41
-        version: 1.0.41
+        specifier: file:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
+        version: file:../../Qingkuai/qingkuai
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -105,10 +105,10 @@ importers:
         version: 3.5.3
       prettier-plugin-qingkuai:
         specifier: ^1.0.22
-        version: 1.0.22(prettier@3.5.3)(qingkuai@1.0.41)
+        version: 1.0.22(prettier@3.5.3)(qingkuai@file:../../Qingkuai/qingkuai)
       qingkuai:
-        specifier: ^1.0.41
-        version: 1.0.41
+        specifier: file:/Users/lianggaoqiang/Desktop/Qingkuai/qingkuai
+        version: file:../../Qingkuai/qingkuai
       typescript-plugin-qingkuai:
         specifier: file:../typescript-plugin
         version: link:../typescript-plugin
@@ -729,6 +729,7 @@ packages:
 
   prettier-plugin-qingkuai@1.0.22:
     resolution: {integrity: sha512-nDhFoIa+Sra2fqpi3nChE+zWZt666srzTNO6t3FpDiP6wfxg3Ttyh9/ybzJ55ZmC0tM4+ncZ75kOwTCd4ttUAg==}
+    version: 1.0.22
     peerDependencies:
       prettier: ^3.5.3
       qingkuai: ^1.0.29
@@ -738,8 +739,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  qingkuai@1.0.41:
-    resolution: {integrity: sha512-1BrgV/0HzVOuNEuimM+pz3z00xVg4wkuAn8qERBMue5OhEBK/THf9gQk7livzBmddbbU0g8vc4dUn6/RL3hJ5Q==}
+  qingkuai@file:../../Qingkuai/qingkuai:
+    resolution: {directory: ../../Qingkuai/qingkuai, type: directory}
 
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
@@ -1457,16 +1458,16 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.22(prettier@3.5.3)(qingkuai@1.0.41):
+  prettier-plugin-qingkuai@1.0.22(prettier@3.5.3)(qingkuai@file:../../Qingkuai/qingkuai):
     dependencies:
       '@babel/code-frame': 7.26.2
       lines-and-columns: 2.0.4
       prettier: 3.5.3
-      qingkuai: 1.0.41
+      qingkuai: file:../../Qingkuai/qingkuai
 
   prettier@3.5.3: {}
 
-  qingkuai@1.0.41:
+  qingkuai@file:../../Qingkuai/qingkuai:
     dependencies:
       '@babel/parser': 7.27.0
       '@jridgewell/sourcemap-codec': 1.5.0

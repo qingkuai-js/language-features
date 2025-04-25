@@ -6363,12 +6363,12 @@ export const embeddedLangTags = [
     ["js", "javascript"],
     ["ts", "typescript"]
 ].map(item => {
-    const language = item[1] || item[0].replace("lang-", "")
+    const language = item[1] || item[0]
     const ret: HTMLElementDataTagItem = {
         attributes: [],
         references: [],
         name: "lang-" + item[0],
-        description: `\n\nThe lang-js element is used to embed the ${language} language processed by qingkuai compiler.`
+        description: `\n\nThe lang-${item[0]} element is used to embed the ${language} language processed by qingkuai compiler.`
     }
     return ret
 })

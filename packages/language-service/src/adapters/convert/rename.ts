@@ -31,12 +31,7 @@ export function renameAndConvert(
         const { start, length } = item.textSpan
         const realPath = getRealPath(item.fileName)
         const locationItem: RenameLocationItem = { fileName: realPath }
-        if (item.prefixText) {
-            locationItem.prefix = item.prefixText
-        }
-        if (item.suffixText) {
-            locationItem.suffix = item.suffixText
-        }
+        ;[locationItem.prefix, locationItem.suffix] = [item.prefixText, item.suffixText]
 
         if (isQingkuaiFileName(item.fileName)) {
             const sourceStart = getSourceIndex(item.fileName, start)

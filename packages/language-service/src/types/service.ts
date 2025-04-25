@@ -17,17 +17,17 @@ import type {
     MaybePromise,
     CompileResult,
     QingkuaiConfiguration,
-    ComponentAttributeItem
+    ComponentAttributeItem,
+    ComponentIdentifierInfo
 } from "../../../../types/common"
 import type TS from "typescript"
 import type Prettier from "prettier"
 import type { ProjectKind } from "../constants"
 import type { HoverSettings } from "vscode-css-languageservice"
-import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as runtimeCommonMessage } from "qingkuai"
+import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
-import { ComponentIdentifierInfo } from "../../dist"
 
 export type DiagnosticKind =
     | "getSemanticDiagnostics"

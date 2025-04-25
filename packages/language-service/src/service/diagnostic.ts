@@ -52,8 +52,7 @@ export async function getDiagnostic(
     })
 
     // 处理javascript/typescript语言服务的诊断结果
-    const ret = await getScriptDiagnostics(cr.filePath)
-    for (const item of ret) {
+    for (const item of await getScriptDiagnostics(cr.filePath)) {
         const tags: DiagnosticTag[] = []
         const relatedInformation: DiagnosticRelatedInformation[] = []
         if (item.deprecated) {

@@ -14,7 +14,8 @@ export type {
     CompileResult,
     PromiseWithState,
     QingkuaiConfiguration,
-    ComponentIdentifierInfo
+    ComponentAttributeItem,
+    ComponentIdentifierInfo,
 } from "../../../types/common"
 export type { InsertSnippetParam } from "../../../types/communication"
 

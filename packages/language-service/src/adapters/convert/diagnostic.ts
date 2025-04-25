@@ -8,17 +8,19 @@ import type { DiagnosticKind } from "../../types/service"
 import type { RealPath } from "../../../../../types/common"
 
 import { lsRange } from "../convert/struct"
-import { getRealPath, getSourceIndex } from "../qingkuai"
+import { getRealPath, getSourceIndex, isPositionFlagSetBySourceIndex } from "../qingkuai"
 import { getLineAndCharacter, qingkuaiDiagnostics } from "../state"
 import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 import { isQingkuaiFileName, isString, isUndefined } from "../../../../../shared-util/assert"
+import { PositionFlagKeys } from "qingkuai/compiler"
 
 export function getAndConvertDiagnostics(
     languageService: TS.LanguageService,
     fileName: RealPath,
     isSemanticProject: boolean
 ): GetDiagnosticResultItem[] {
+    const realPath = getRealPath(fileName)
     const diagnostics: TS.Diagnostic[] = []
     const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
 
@@ -32,12 +34,12 @@ export function getAndConvertDiagnostics(
     })
 
     const result: GetDiagnosticResultItem[] = []
-    for (const item of diagnostics.concat(qingkuaiDiagnostics.get(getRealPath(fileName)) || [])) {
+    for (const item of diagnostics.concat(qingkuaiDiagnostics.get(realPath) || [])) {
         const start = item.start ?? 0
         const end = start + (item.length ?? 0)
         const ss = getSourceIndex(fileName, start)
         const se = getSourceIndex(fileName, end, true)
-        if (isIndexesInvalid(ss, se)) {
+        if (isIndexesInvalid(ss, se) || shouldBeIgnored(realPath, item, ss, se)) {
             continue
         }
 
@@ -80,6 +82,25 @@ export function getAndConvertDiagnostics(
         })
     }
     return result
+}
+
+function shouldBeIgnored(
+    fileName: RealPath,
+    item: TS.Diagnostic,
+    sourceStart: number,
+    sourceEnd: number
+) {
+    switch (item.code) {
+        case 2684: {
+            return (
+                isPositionFlagSetBySourceIndex(fileName, sourceEnd, "inNormalTagInlineEvent") ||
+                isPositionFlagSetBySourceIndex(fileName, sourceStart, "inNormalTagInlineEvent")
+            )
+        }
+        default: {
+            return false
+        }
+    }
 }
 
 // 诊断信息为链表形式时，将其整理为一个字符串表示
