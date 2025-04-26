@@ -6,7 +6,13 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
-    const languageExternal = ["vscode", "prettier", "qingkuai", "qingkuai/compiler"]
+    const languageExternal = [
+        "vscode",
+        "prettier",
+        "qingkuai",
+        "qingkuai/compiler",
+        "qingkuai/internal"
+    ]
 
     if (isWatchMode) {
         languageExternal.push(

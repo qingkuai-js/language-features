@@ -35,7 +35,7 @@ import {
 } from "../../../../../shared-util/constant"
 import { COMPILER_FUNCS } from "../../constants"
 import { stringify } from "../../../../../shared-util/sundry"
-import { commonMessage as runtimeCommonMessage } from "qingkuai"
+import { commonMessage as runtimeCommonMessage } from "qingkuai/internal"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
 import { commonMessage as compilerCommonMessage, util } from "qingkuai/compiler"
 import { isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"

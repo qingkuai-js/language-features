@@ -35,14 +35,16 @@ export function getComponentInfos(languageService: TS.LanguageService, fileName:
                     ts.isStringLiteral(node.moduleSpecifier) &&
                     qingkuaiModules?.has(node.moduleSpecifier.text)
                 ) {
+                    let relativePath = node.moduleSpecifier.text
                     let componentFileName = path.resolve(dirPath, node.moduleSpecifier.text)
                     if (!isQingkuaiFileName(componentFileName)) {
+                        relativePath += ".qk"
                         componentFileName += ".qk"
                     }
                     componentInfos.push({
+                        relativePath,
                         imported: true,
                         name: identifierName,
-                        relativePath: node.moduleSpecifier.text,
                         slotNams: getComponentSlotNames(componentFileName),
                         attributes: getCompileInfo(componentFileName).attributeInfos
                     })
