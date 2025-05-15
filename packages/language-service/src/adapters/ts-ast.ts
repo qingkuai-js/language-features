@@ -68,10 +68,10 @@ export function findVariableDeclarationOfReactFunc(node: TS.Node) {
     return ts.isVariableDeclaration(parent) ? parent : null
 }
 
-export function isAssignable(node: TS.Node, typeChecker: TS.TypeChecker) {
+export function isAssignable(node: TS.Node, allowConst: boolean, typeChecker: TS.TypeChecker) {
     if (ts.isIdentifier(node)) {
         const symbol = typeChecker.getSymbolAtLocation(node)
-        if (!symbol) {
+        if (!symbol || allowConst) {
             return true
         }
         for (const decl of symbol.declarations ?? []) {

@@ -6414,6 +6414,16 @@ export function findTagAttributeData(tag: string, attrName: string) {
     }
 }
 
+export function isBooleanAttribute(attribute: HTMLElementDataAttributeItem) {
+    if (!attribute.description) {
+        return false
+    }
+    if (isString(attribute.description)) {
+        return attribute.description.startsWith("This Boolean attribute")
+    }
+    return attribute.description.value.startsWith("This Boolean attribute")
+}
+
 // 获取模板指令的描述文档
 export function getDirectiveDocumentation(
     item: (typeof htmlDirectives)[number],

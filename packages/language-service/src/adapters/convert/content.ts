@@ -33,19 +33,19 @@ import {
     JS_PROPS_DECLARATION_LEN,
     JS_REFS_DECLARATION_LEN
 } from "../../../../../shared-util/constant"
+import {
+    walk,
+    getLength,
+    isInTopScope,
+    isAssignable,
+    findVariableDeclarationOfReactFunc
+} from "../ts-ast"
 import { COMPILER_FUNCS } from "../../constants"
 import { stringify } from "../../../../../shared-util/sundry"
 import { commonMessage as runtimeCommonMessage } from "qingkuai/internal"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
 import { commonMessage as compilerCommonMessage, util } from "qingkuai/compiler"
 import { isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"
-import {
-    walk,
-    getLength,
-    isInTopScope,
-    findVariableDeclarationOfReactFunc,
-    isAssignable
-} from "../ts-ast"
 
 export function ensureExport(
     languageService: TS.LanguageService,
@@ -182,17 +182,19 @@ export function ensureExport(
         }
 
         // 检查引用属性值是否合法
-        if (
-            ts.isParenthesizedExpression(node) &&
-            refAttrValueStartIndexes.has(start) &&
-            !isAssignable(node.expression, typeChecker)
-        ) {
-            recordQingkuaiDiagnostic(
-                node.expression.getStart(),
-                getLength(node.expression),
-                ts.DiagnosticCategory.Error,
-                getCompilerCommonMessage("BadValueToReferenceAttribute", node.expression.getText())
-            )
+        if (ts.isParenthesizedExpression(node) && refAttrValueStartIndexes.has(start)) {
+            const allowConst = content[start - 1] !== " "
+            if (!isAssignable(node.expression, allowConst, typeChecker)) {
+                recordQingkuaiDiagnostic(
+                    node.expression.getStart(),
+                    getLength(node.expression),
+                    ts.DiagnosticCategory.Error,
+                    getCompilerCommonMessage(
+                        "BadValueToReferenceAttribute",
+                        node.expression.getText()
+                    )
+                )
+            }
         }
 
         // 脚本类型为ts时，判断有没有通过import语句从其他文件导入全局类型标识符

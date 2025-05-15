@@ -31,6 +31,7 @@ import {
     htmlDirectives,
     embeddedLangTags,
     getDocumentation,
+    isBooleanAttribute,
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../../data/element"
@@ -127,8 +128,8 @@ export async function doComplete(
         return completions.concat(doEmmetComplete(document, getPosition(offset))?.items ?? [])
     }
 
-    // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、=、|、-
-    if (/[^!@#&>=\|\-\/]/.test(trigger)) {
+    // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、=、|、-、'、"、{
+    if (/[^!@#&>='"\|\-\/\{]/.test(trigger)) {
         return null
     }
 
@@ -186,10 +187,21 @@ export async function doComplete(
     let hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
     // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
+    // 如果上一个字符为引号或开始大括号，且不存在对应的结束字符，则插入对应的结束字符
     // 如果属性为非动态/引用/指令/事件且htmlData中该属性valueSet不为v或当前为组件节点则在次请求补全建议
-    if (attr && valueStartIndex === attr.loc.end.index && source[offset - 1] === "=") {
+    if (
+        attr &&
+        ((/['"\{]/.test(source[offset - 1]) && attr.loc.end.index === -1) ||
+            (valueStartIndex === attr.loc.end.index && source[offset - 1] === "="))
+    ) {
         const snippetItem: InsertSnippetParam = {
-            text: isInterpolation ? "{$0}" : '"$0"'
+            text: ""
+        }
+        if (source[offset - 1] === "=") {
+            const quote = cr.config.prettierConfig?.singleQuote ? "'" : '"'
+            snippetItem.text = isInterpolation ? "{$0}" : `${quote}$0${quote}`
+        } else {
+            snippetItem.text = isInterpolation ? "$0}" : `$0${source[offset - 1]}`
         }
         if (!isInterpolation) {
             let shouldTriggerSuggest = false
@@ -771,7 +783,7 @@ function doAttributeNameComplete(
         let assignText = ""
         const valueSet = attribute.valueSet || "v"
         const extraRet: Partial<CompletionItem> = {}
-        if (!hasValue) {
+        if (!hasValue && !isBooleanAttribute(attribute)) {
             assignText = isDynamicOrEvent ? "={$0}" : '="$0"'
             extraRet.insertTextFormat = InsertTextFormat.Snippet
         }
