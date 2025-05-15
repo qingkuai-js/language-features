@@ -61,7 +61,8 @@ function getCompileInfo(fileName: string): AdapterCompileInfo {
         positions: qingkuaiSnapshot.positions,
         scriptKind: qingkuaiSnapshot.scriptKind,
         content: qingkuaiSnapshot.getFullText(),
-        attributeInfos: qingkuaiSnapshot.attributeInfos
+        attributeInfos: qingkuaiSnapshot.attributeInfos,
+        refAttrValueStartIndexes: qingkuaiSnapshot.refAttrValueStartIndexes
     }
 }
 

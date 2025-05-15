@@ -101,7 +101,8 @@ export async function getCompileRes(document: TextDocument) {
                 typeDeclarationLen: cr.typeDeclarationLen,
                 citos: compressItos(cr.interIndexMap.itos),
                 cp: compressPosition(cr.inputDescriptor.positions),
-                cpf: compressPositionFlags(cr.inputDescriptor.positions)
+                cpf: compressPositionFlags(cr.inputDescriptor.positions),
+                refAttrStartIndexes: cr.inputDescriptor.refAttrValueStartIndexes
             })
         }
     }

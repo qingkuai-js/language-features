@@ -74,7 +74,8 @@ export const refreshDiagnostics = debounce(
                         qingkuaiSnapshot.slotInfo,
                         qingkuaiSnapshot.scriptKind,
                         qingkuaiSnapshot.typeDeclarationLen,
-                        qingkuaiSnapshot.positions
+                        qingkuaiSnapshot.positions,
+                        qingkuaiSnapshot.refAttrValueStartIndexes
                     )
                 }
                 server.sendNotification(TPICHandler.RefreshDiagnostic, realPath)

@@ -80,7 +80,8 @@ export function attachUpdateSnapshot() {
             rest.slotInfo,
             scriptKind,
             rest.typeDeclarationLen,
-            positions
+            positions,
+            new Set(rest.refAttrStartIndexes)
         )
         refreshDiagnostics(fileName, scriptKindChanged)
     })

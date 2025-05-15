@@ -39,7 +39,13 @@ import { commonMessage as runtimeCommonMessage } from "qingkuai/internal"
 import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
 import { commonMessage as compilerCommonMessage, util } from "qingkuai/compiler"
 import { isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"
-import { walk, getLength, isInTopScope, findVariableDeclarationOfReactFunc } from "../ts-ast"
+import {
+    walk,
+    getLength,
+    isInTopScope,
+    findVariableDeclarationOfReactFunc,
+    isAssignable
+} from "../ts-ast"
 
 export function ensureExport(
     languageService: TS.LanguageService,
@@ -62,11 +68,12 @@ export function ensureExport(
     const slotInfoKeys = Object.keys(compileInfo.slotInfo)
     const isTS = compileInfo.scriptKind === ts.ScriptKind.TS
     const componentName = filePathToComponentName(path, fileName)
+    const { slotInfo, itos, refAttrValueStartIndexes } = compileInfo
     const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
 
     // 将每个待提取类型的索引记录到storedTypes
     slotInfoKeys.forEach(slotName => {
-        compileInfo.slotInfo[slotName].properties.forEach(property => {
+        slotInfo[slotName].properties.forEach(property => {
             if (isNumber(property[2])) {
                 storedTypes.set(property[2], "")
             }
@@ -103,7 +110,7 @@ export function ensureExport(
         category: TS.DiagnosticCategory,
         message: ReturnType<typeof getCompilerCommonMessage>
     ) => {
-        if (isUndefined(compileInfo.itos[start]) || compileInfo.itos[start] === -1) {
+        if (isUndefined(itos[start]) || itos[start] === -1) {
             return
         }
 
@@ -123,6 +130,7 @@ export function ensureExport(
     // 另外此处还处理一些与qingkuai编译器中对于脚本部分类似的检查逻辑（禁用的标识符等），
     // 因为检查模式下qingkuai编译器不会使用@babel/parser解析嵌入脚本代码以提高编译效率
     walk(sourceFile, node => {
+        const [start, length] = [node.getStart(), getLength(node)]
         if (
             ts.isBinaryExpression(node) &&
             storedTypes.has(node.right.pos) &&
@@ -139,14 +147,14 @@ export function ensureExport(
             ts.isNewExpression(node) &&
             ts.isIdentifier(node.expression) &&
             isComponentIdentifier(fileName, node.expression, typeChecker) &&
-            isPositionFlagSetByInterIndex(fileName, node.getStart(), "inScript")
+            isPositionFlagSetByInterIndex(fileName, start, "inScript")
         ) {
-            eliminateContentByRange(node.getStart(), node.expression.getStart())
+            eliminateContentByRange(start, node.expression.getStart())
             eliminateContentByRange(node.expression.getEnd(), node.getEnd())
             contentArr[node.expression.getStart() - 1] = ";"
             contentArr[node.getEnd() - 1] = ";"
             recordQingkuaiDiagnostic(
-                node.getStart(),
+                start,
                 getLength(node),
                 ts.DiagnosticCategory.Error,
                 getRuntimeCommonMessage("InstantiateComponentManually")
@@ -170,7 +178,21 @@ export function ensureExport(
 
         // 脚本类型为ts时，检查是否通过类型别名或接口声明全局类型标识符
         if (isTS && (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))) {
-            isInTopScope(node) && markGlobalTypeExisting(node.name.text, node.getStart())
+            isInTopScope(node) && markGlobalTypeExisting(node.name.text, start)
+        }
+
+        // 检查引用属性值是否合法
+        if (
+            ts.isParenthesizedExpression(node) &&
+            refAttrValueStartIndexes.has(start) &&
+            !isAssignable(node.expression, typeChecker)
+        ) {
+            recordQingkuaiDiagnostic(
+                node.expression.getStart(),
+                getLength(node.expression),
+                ts.DiagnosticCategory.Error,
+                getCompilerCommonMessage("BadValueToReferenceAttribute", node.expression.getText())
+            )
         }
 
         // 脚本类型为ts时，判断有没有通过import语句从其他文件导入全局类型标识符
@@ -210,7 +232,7 @@ export function ensureExport(
         // 检查是否使用了禁止的标识符
         if (ts.isIdentifier(node) && util.isBannedIdentifier(node.text)) {
             recordQingkuaiDiagnostic(
-                node.getStart(),
+                start,
                 getLength(node),
                 ts.DiagnosticCategory.Error,
                 getCompilerCommonMessage("IdentifierFormatIsNotAllowed", node.text)
@@ -224,7 +246,6 @@ export function ensureExport(
                 return m.kind === ts.SyntaxKind.ExportKeyword
             })
         ) {
-            const [start, length] = [node.getStart(), getLength(node)]
             recordQingkuaiDiagnostic(
                 start,
                 length,
@@ -283,11 +304,7 @@ export function ensureExport(
         ) {
             const funcName = node.expression.text
             if (reactCompilerFuncRE.test(funcName)) {
-                const commonDiagnosticArgs = [
-                    node.getStart(),
-                    getLength(node),
-                    ts.DiagnosticCategory.Error
-                ] as const
+                const commonDiagnosticArgs = [start, length, ts.DiagnosticCategory.Error] as const
                 if (!isInTopScope(node)) {
                     // 检查响应性声明相关编译器助手函数是否在非顶部作用域使用（编译致命错误）
                     recordQingkuaiDiagnostic(
@@ -314,8 +331,8 @@ export function ensureExport(
                     ) {
                         // 检查编译器响应性声明相关助手函数所属的变量声明语句是否为解构声明且无参数（编译致命错误）
                         recordQingkuaiDiagnostic(
-                            node.getStart(),
-                            getLength(node),
+                            start,
+                            length,
                             ts.DiagnosticCategory.Error,
                             getCompilerCommonMessage("DestructureReactFuncWithNoArg", funcName)
                         )
@@ -354,16 +371,16 @@ export function ensureExport(
                         (funcName === "der" || funcName === "stc")
                     ) {
                         recordQingkuaiDiagnostic(
-                            node.getStart(),
-                            getLength(node),
+                            start,
+                            length,
                             ts.DiagnosticCategory.Warning,
                             getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 1)
                         )
                     }
                     if (!isTS && funcName === "rea" && node.arguments.length > 2) {
                         recordQingkuaiDiagnostic(
-                            node.getStart(),
-                            getLength(node),
+                            start,
+                            length,
                             ts.DiagnosticCategory.Warning,
                             getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
                         )
@@ -373,8 +390,8 @@ export function ensureExport(
                 if (node.arguments.length < 2) {
                     // 检查watch相关编译器助手函数是否存在缺少参数的情况（编译致命错误）
                     recordQingkuaiDiagnostic(
-                        node.getStart(),
-                        getLength(node),
+                        start,
+                        length,
                         ts.DiagnosticCategory.Error,
                         getCompilerCommonMessage(
                             "WatchCompilerFuncMissingArg",
@@ -419,7 +436,7 @@ export function ensureExport(
 
     // 根据storedTypes记录的类型组合出当前文件所表示的组件的slot类型
     const slotType = slotInfoKeys.reduce((ret, slotName, i) => {
-        const { properties } = compileInfo.slotInfo[slotName]
+        const { properties } = slotInfo[slotName]
         const key = validIdentifierRE.test(slotName) ? slotName : stringify(slotName)
         const value = properties.reduce((ret, property, i) => {
             const [name, _, iot] = property // iot: Index(of inter code) Or Type(string)

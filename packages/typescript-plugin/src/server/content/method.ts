@@ -22,7 +22,8 @@ export function initialEditQingkuaiFileSnapshot(fileName: RealPath) {
                 qingkuaiSnapshot.slotInfo,
                 qingkuaiSnapshot.scriptKind,
                 qingkuaiSnapshot.typeDeclarationLen,
-                qingkuaiSnapshot.positions
+                qingkuaiSnapshot.positions,
+                qingkuaiSnapshot.refAttrValueStartIndexes
             )
         })
         replaceSourceContentWithInterCodeOfScritptInfo(qingkuaiSnapshot, scriptInfo)

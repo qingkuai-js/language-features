@@ -55,6 +55,7 @@ export namespace __c__ {
     const GetKVPair: ReloadedGetKVPair
     const GetTypedValue: <T>() => T
     const GetResolve: <T>(_: T) => ExtractResolveType<T>
+    const GetEventHandler: <T>(_: T) => ExtractEventHandlerKind<typeof _>
     const GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
         _: T,
         __: K
@@ -66,16 +67,13 @@ export namespace __c__ {
     const SatisfyHtmlDirective: (_?: UnescapeOptions) => void
     const SatisfyElement: <K>(_: ExtractElementKind<K>) => void
     const SatisfyTargetDirective: (_: HTMLElement | string) => void
+    const SatisfyRefGroup: <T>(_: Set<T> | Array<T>, __: T) => void
     const SatisfyEventHandler: <K>(_: (_: ExtractEventHandlerKind<K>) => void) => void
 
     const SatisfyComponent: <T extends Constructible>(
         _: T,
         __: ConstructorParameters<T>[0],
         ___: ConstructorParameters<T>[1]
-    ) => void
-    const SatisfyRefGroup: <T extends Set<any> | Array<any>>(
-        _: T,
-        __: T extends Set<infer U> ? U : T extends Array<infer U> ? U : any
     ) => void
 }
 

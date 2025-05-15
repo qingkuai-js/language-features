@@ -135,6 +135,7 @@ export interface UpdateSnapshotParams {
     slotInfo: SlotInfo
     scriptKindKey: "JS" | "TS"
     typeDeclarationLen: number
+    refAttrStartIndexes: number[]
     cp: number[] // compressed positions
     citos: NumNumArray // compressed itos
     cpf: NumNumArray // compressed position flags

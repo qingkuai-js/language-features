@@ -8,12 +8,11 @@ import type { DiagnosticKind } from "../../types/service"
 import type { RealPath } from "../../../../../types/common"
 
 import { lsRange } from "../convert/struct"
-import { getRealPath, getSourceIndex, isPositionFlagSetBySourceIndex } from "../qingkuai"
 import { getLineAndCharacter, qingkuaiDiagnostics } from "../state"
 import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
+import { getRealPath, getSourceIndex, isPositionFlagSetBySourceIndex } from "../qingkuai"
 import { isQingkuaiFileName, isString, isUndefined } from "../../../../../shared-util/assert"
-import { PositionFlagKeys } from "qingkuai/compiler"
 
 export function getAndConvertDiagnostics(
     languageService: TS.LanguageService,

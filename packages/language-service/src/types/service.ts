@@ -65,6 +65,7 @@ export interface AdapterCompileInfo {
     slotInfo: SlotInfo
     scriptKind: TS.ScriptKind
     positions: ASTPositionWithFlag[]
+    refAttrValueStartIndexes: Set<number>
     attributeInfos: ComponentAttributeItem[]
 }
 

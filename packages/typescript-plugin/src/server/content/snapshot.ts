@@ -15,7 +15,8 @@ export function updateQingkuaiSnapshot(
     slotInfo: SlotInfo,
     scriptKind: TS.ScriptKind,
     typeDeclarationLen: number,
-    positions: ASTPositionWithFlag[]
+    positions: ASTPositionWithFlag[],
+    refAttrValueStartIndexes: Set<number>
 ) {
     const originalScriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
 
@@ -30,7 +31,8 @@ export function updateQingkuaiSnapshot(
             slotInfo,
             scriptKind,
             typeDeclarationLen,
-            positions
+            positions,
+            refAttrValueStartIndexes
         )
     }
     editScriptInfoCommon(content)

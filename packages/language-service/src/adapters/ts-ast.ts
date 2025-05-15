@@ -68,6 +68,37 @@ export function findVariableDeclarationOfReactFunc(node: TS.Node) {
     return ts.isVariableDeclaration(parent) ? parent : null
 }
 
+export function isAssignable(node: TS.Node, typeChecker: TS.TypeChecker) {
+    if (ts.isIdentifier(node)) {
+        const symbol = typeChecker.getSymbolAtLocation(node)
+        if (!symbol) {
+            return true
+        }
+        for (const decl of symbol.declarations ?? []) {
+            if (
+                ts.isVariableDeclaration(decl) &&
+                ts.isVariableDeclarationList(decl.parent) &&
+                decl.parent.flags & ts.NodeFlags.Const
+            ) {
+                return false
+            }
+
+            if (
+                ts.isImportSpecifier(decl) ||
+                ts.isImportClause(decl) ||
+                ts.isNamespaceImport(decl)
+            ) {
+                return false
+            }
+        }
+        return true
+    }
+    if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) {
+        return false
+    }
+    return !node.questionDotToken
+}
+
 // 判断符号的定义处是否为qingkuai类型声明文件
 export function isDeclarationOfGlobalType(symbol: TS.Symbol | undefined) {
     return (
