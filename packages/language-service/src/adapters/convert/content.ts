@@ -191,7 +191,8 @@ export function ensureExport(
                     ts.DiagnosticCategory.Error,
                     getCompilerCommonMessage(
                         "BadValueToReferenceAttribute",
-                        node.expression.getText()
+                        node.expression.getText(),
+                        allowConst
                     )
                 )
             }

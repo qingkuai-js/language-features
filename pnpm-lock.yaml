@@ -32,8 +32,8 @@ importers:
         specifier: ^3.5.2
         version: 3.5.3
       prettier-plugin-qingkuai:
-        specifier: ^1.0.22
-        version: 1.0.22(prettier@3.5.3)(qingkuai@1.0.43)
+        specifier: ^1.0.23
+        version: 1.0.23(prettier@3.5.3)(qingkuai@1.0.43)
       qingkuai:
         specifier: ^1.0.43
         version: 1.0.43
@@ -104,8 +104,8 @@ importers:
         specifier: ^3.5.2
         version: 3.5.3
       prettier-plugin-qingkuai:
-        specifier: ^1.0.22
-        version: 1.0.22(prettier@3.5.3)(qingkuai@1.0.43)
+        specifier: ^1.0.23
+        version: 1.0.23(prettier@3.5.3)(qingkuai@1.0.43)
       qingkuai:
         specifier: ^1.0.43
         version: 1.0.43
@@ -731,8 +731,8 @@ packages:
     resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
     engines: {node: ^10 || ^12 || >=14}
 
-  prettier-plugin-qingkuai@1.0.22:
-    resolution: {integrity: sha512-nDhFoIa+Sra2fqpi3nChE+zWZt666srzTNO6t3FpDiP6wfxg3Ttyh9/ybzJ55ZmC0tM4+ncZ75kOwTCd4ttUAg==}
+  prettier-plugin-qingkuai@1.0.23:
+    resolution: {integrity: sha512-MRXMLW86I2JktqW3488eR9H4b6jr785zEewzsBJ28M9/02S0hEmXCQGt0OBYSk9mdLJqBiwFGZihtnuNkHCBBg==}
     peerDependencies:
       prettier: ^3.5.3
       qingkuai: ^1.0.29
@@ -1463,7 +1463,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prettier-plugin-qingkuai@1.0.22(prettier@3.5.3)(qingkuai@1.0.43):
+  prettier-plugin-qingkuai@1.0.23(prettier@3.5.3)(qingkuai@1.0.43):
     dependencies:
       '@babel/code-frame': 7.27.1
       lines-and-columns: 2.0.4

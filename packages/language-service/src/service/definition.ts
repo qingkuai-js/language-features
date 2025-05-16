@@ -30,7 +30,21 @@ export async function findDefinitions(
     if (!cr.isPositionFlagSet(offset, "inScript")) {
         const currentNode = findNodeAt(cr.templateNodes, offset)
         if (!currentNode || !(currentNode.componentTag || currentNode.parent?.componentTag)) {
-            return null
+            const currentAttribute = currentNode && findAttribute(offset, currentNode)
+            if (!currentAttribute) {
+                return null
+            }
+            if (
+                !currentAttribute ||
+                currentAttribute.quote !== "none" ||
+                !/^[!@&]/.test(currentAttribute.key.raw)
+            ) {
+                return null
+            }
+            originSelectionRange = cr.getRange(
+                currentAttribute.key.loc.start.index,
+                currentAttribute.key.loc.end.index
+            )
         }
 
         const tagRanges = findTagRanges(currentNode, offset)
