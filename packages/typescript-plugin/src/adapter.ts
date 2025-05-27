@@ -36,6 +36,16 @@ export function initializeAdapter(ts: typeof TS) {
     })
 }
 
+function getFullFileNames() {
+    const resultSet = new Set<string>()
+    forEachProject(p => {
+        for (const f of p.getScriptFileNames()) {
+            resultSet.add(f)
+        }
+    })
+    return Array.from(resultSet)
+}
+
 function getTsLanguageService(fileName: string) {
     return getDefaultLanguageService(fileName)
 }
@@ -43,11 +53,6 @@ function getTsLanguageService(fileName: string) {
 function getLineAndCharacter(fileName: string, pos: number) {
     const sourceFile = getDefaultSourceFile(fileName)
     return sourceFile && sourceFile.getLineAndCharacterOfPosition(pos)
-}
-
-function getFullFileNames() {
-    const result: string[] = []
-    return forEachProject(p => result.push(...p.getScriptFileNames())), result
 }
 
 function getCompileInfo(fileName: string): AdapterCompileInfo {

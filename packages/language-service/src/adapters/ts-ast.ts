@@ -7,6 +7,21 @@ import { isString, isUndefined } from "../../../../shared-util/assert"
 export function getKindName(node: TS.Node) {
     return ts.SyntaxKind[node.kind]
 }
+
+// 判断是否是顶层await表达式节点
+export function isTopLevelAwait(node: TS.Node) {
+    if (!ts.isAwaitExpression(node)) {
+        return false
+    }
+    while (node && !ts.isSourceFile(node)) {
+        if (ts.isFunctionLike(node)) {
+            return false
+        }
+        node = node.parent
+    }
+    return true
+}
+
 // 获取节点文本的长度（不包含结尾的空白字符及分号）
 export function getLength(nodeOrText: TS.Node | string) {
     if (!isString(nodeOrText)) {
@@ -33,6 +48,20 @@ export function isInTopScope(node: TS.Node): boolean {
     return true
 }
 
+// 查找响应性声明相关编译器助手函数所属的变量声明节点
+export function isReactFuncDecalration(node: TS.Node) {
+    const { parent } = node
+    if (
+        ts.isAsExpression(parent) ||
+        ts.isSatisfiesExpression(parent) ||
+        ts.isTypeAssertionExpression(parent) ||
+        ts.isParenthesizedExpression(parent)
+    ) {
+        return isReactFuncDecalration(parent.parent)
+    }
+    return ts.isVariableDeclaration(parent) ? parent : null
+}
+
 export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {
     while (node.kind !== kind) {
         node = node.parent
@@ -52,20 +81,6 @@ export function isEventType(type: TS.Type) {
         return type.types.some(isEventType)
     }
     return !!(type.getCallSignatures().length || type.symbol?.name === "Function")
-}
-
-// 查找响应性声明相关编译器助手函数所属的变量声明节点
-export function findVariableDeclarationOfReactFunc(node: TS.Node) {
-    const { parent } = node
-    if (
-        ts.isAsExpression(parent) ||
-        ts.isSatisfiesExpression(parent) ||
-        ts.isTypeAssertionExpression(parent) ||
-        ts.isParenthesizedExpression(parent)
-    ) {
-        return findVariableDeclarationOfReactFunc(parent.parent)
-    }
-    return ts.isVariableDeclaration(parent) ? parent : null
 }
 
 export function isAssignable(node: TS.Node, allowConst: boolean, typeChecker: TS.TypeChecker) {

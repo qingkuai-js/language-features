@@ -2,6 +2,7 @@ import type TS from "typescript"
 
 import { getRealPath } from "../qingkuai"
 import { isUndefined } from "../../../../../shared-util/assert"
+import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 
 // 将JsDoc中的标签信息转换为Markdown字符串
 export function convertJsDocTagsToMarkdown(tags: TS.JSDocTagInfo[]) {
@@ -69,7 +70,10 @@ export function convertDisplayPartsToPlainTextWithLink(parts: TS.SymbolDisplayPa
             )
             return ret + `[${part.text}](command:qingkuai.openFileByFilePath?${args})`
         }
-        return (ret + (part.kind === "link" ? "" : part.text || "")).replace("__c__.", "")
+        return (ret + (part.kind === "link" ? "" : part.text || "")).replace(
+            INTER_NAMESPACE + ".",
+            ""
+        )
     }, "")
 }
 

@@ -16,7 +16,7 @@
         "@vscode/emmet-helper": "^2.11.0",
         "prettier": "^3.5.2",
         "prettier-plugin-qingkuai": "^1.0.23",
-        "qingkuai": "^1.0.43",
+        "qingkuai": "^1.0.44",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
         "rollup-plugin-dts": "^6.2.1",
@@ -34,7 +34,7 @@
     },
     "pnpm": {
         "patchedDependencies": {
-            "emmet@2.4.11": "patches/emmet@2.4.11.patch"
+            "emmet": "patches/emmet.patch"
         }
     }
 }

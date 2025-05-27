@@ -38,7 +38,8 @@ import {
     getLength,
     isInTopScope,
     isAssignable,
-    findVariableDeclarationOfReactFunc
+    isTopLevelAwait,
+    isReactFuncDecalration
 } from "../ts-ast"
 import { COMPILER_FUNCS } from "../../constants"
 import { stringify } from "../../../../../shared-util/sundry"
@@ -131,6 +132,7 @@ export function ensureExport(
     // 因为检查模式下qingkuai编译器不会使用@babel/parser解析嵌入脚本代码以提高编译效率
     walk(sourceFile, node => {
         const [start, length] = [node.getStart(), getLength(node)]
+
         if (
             ts.isBinaryExpression(node) &&
             storedTypes.has(node.right.pos) &&
@@ -140,6 +142,16 @@ export function ensureExport(
             const type = typeChecker.getTypeAtLocation(node.right)
             const typeStr = typeChecker.typeToString(type)
             storedTypes.set(node.right.pos, typeStr)
+        }
+
+        // 不支持顶层await表达式
+        if (isTopLevelAwait(node)) {
+            recordQingkuaiDiagnostic(
+                start,
+                length,
+                ts.DiagnosticCategory.Error,
+                getCompilerCommonMessage("TopLevelAwaitNotBeSupported")
+            )
         }
 
         // 擦除手动实例化组件的语句
@@ -316,7 +328,7 @@ export function ensureExport(
                     )
                 }
 
-                const variableDeclarationNode = findVariableDeclarationOfReactFunc(node)
+                const variableDeclarationNode = isReactFuncDecalration(node)
                 if (isNull(variableDeclarationNode)) {
                     // 检查编译器响应性声明相关助手函数是否未在变量定义语句中使用（编译致命错误）
                     recordQingkuaiDiagnostic(

@@ -46,6 +46,7 @@ import { isPositionEqual } from "../../util/sundry"
 import { eventModifiers } from "../../data/event-modifier"
 import { createStyleSheetAndDocument } from "../../util/css"
 import { getAndProcessScriptBlockCompletions } from "./script"
+import { SPREAD_TAG } from "../../../../../shared-util/constant"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../../data/entity"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
@@ -125,7 +126,10 @@ export async function doComplete(
             )
         }
 
-        return completions.concat(doEmmetComplete(document, getPosition(offset))?.items ?? [])
+        return {
+            isIncomplete: true,
+            items: completions.concat(doEmmetComplete(document, getPosition(offset))?.items ?? [])
+        }
     }
 
     // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、=、|、-、'、"、{
@@ -648,7 +652,7 @@ function doComponentAttributeNameComplete(
 }
 
 // 获取引用属性名补全建议，普通标的引用属性签建议列表如下：
-// input -> &value, radio/checkbox -> &value/checked，select -> &value
+// input -> &value, checkbox -> &value/checked，select -> &value
 function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, range: Range) {
     const recommend: string[] = []
     const existing = new Set<string>()
@@ -680,16 +684,16 @@ function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, ran
                 }
             }
             if (!cantUseRef) {
-                if (!/radio|checkbox/.test(type)) {
+                if (type != "radio" && type !== "checkbox") {
                     extendRecommand("value")
                 } else {
-                    extendRecommand("checked", "group")
+                    extendRecommand("checked")
                 }
             }
             break
         }
         default: {
-            if (node.tag !== "slot" && node.tag !== "spread") {
+            if (node.tag !== "slot" && node.tag !== SPREAD_TAG) {
                 extendRecommand("dom")
             }
             break

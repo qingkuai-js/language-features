@@ -30,6 +30,6 @@ export async function format(
         if (!e.message) {
             error("Fatal error encountered while formatting document(no related information)")
         }
-        error("Fatala error encountered while formatting document: " + stripAnsi(e.message))
+        error("Fatal error encountered while formatting document: " + stripAnsi(e.message))
     }
 }

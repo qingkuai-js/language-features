@@ -40,8 +40,8 @@ interface WatchFunc {
     <T>(
         expression: NotFunction<T>,
         callback: (pre: NotFunction<T>, cur: NotFunction<T>) => void
-    ): () => void
-    <T>(getter: () => T, callback: (pre: T, cur: T) => void): () => void
+    ): (fn?: GeneralFunc) => void
+    <T>(getter: () => T, callback: (pre: T, cur: T) => void): (fn?: GeneralFunc) => void
 }
 
 export namespace __c__ {
