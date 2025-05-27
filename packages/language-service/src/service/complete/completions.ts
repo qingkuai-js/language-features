@@ -26,6 +26,7 @@ import type { InsertSnippetParam } from "../../../../../types/communication"
 import {
     slotTagData,
     findTagData,
+    builtInTags,
     findValueSet,
     htmlElements,
     htmlDirectives,
@@ -431,6 +432,7 @@ function doCustomTagComplete(
 ) {
     const ret: CompletionItem[] = []
     const { source } = cr.inputDescriptor
+    const parentIsComponent = !!node.parent?.componentTag
     const emmetTagNameIndex = source.slice(0, offset).search(emmetTagNameRE)
 
     if (emmetTagNameIndex !== -1) {
@@ -473,6 +475,35 @@ function doCustomTagComplete(
                 textEdit: { range, newText: '<slot name="$1">$0</slot>' }
             })
         }
+
+        // 为内置元素添加emmet支持
+
+        builtInTags.forEach(({ name, description }) => {
+            const quote = cr.config.prettierConfig?.singleQuote ? "'" : '"'
+            const attr = parentIsComponent ? ` name=${quote}$1${quote}` : " #$1"
+            const item: CompletionItem = {
+                label: name,
+                insertTextFormat: InsertTextFormat.Snippet,
+                textEdit: {
+                    range,
+                    newText:
+                        (startWithLT ? "" : "<") +
+                        name +
+                        (startWithLT ? "" : `${attr}>\n\t$0\n</${name}>`)
+                },
+                documentation: {
+                    kind: "markdown",
+                    value: description as string
+                }
+            }
+            if (!parentIsComponent) {
+                item.command = {
+                    title: "suggest",
+                    command: Commands.TriggerSuggest
+                }
+            }
+            ret.push(item)
+        })
 
         // 上下文中以大写开头的标识符提示为组件标签
         util.getContextIdentifiers(node).forEach(identifier => {

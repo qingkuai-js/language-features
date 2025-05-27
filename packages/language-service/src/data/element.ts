@@ -6373,6 +6373,16 @@ export const embeddedLangTags = [
     return ret
 })
 
+export const builtInTags: HTMLElementDataTagItem[] = [
+    {
+        attributes: [],
+        references: [],
+        name: "qk:spread",
+        description:
+            "The qk:spread element is a built-in virtual element used to apply structural directives (such as #for, #show, #await, etc.) to multiple sibling elements without introducing an extra wrapper in the rendered DOM. Useage likes bellow:\n```qk\n<qk:spread #for={3}>\n\t<p>...</p>\n\t<p>xxx</p>\n</qk:spread>\n\n<!-- spread nodes for slot -->\n<Component>\n\t<qk:spread>\n\t\t<p>...<p>\n\t\t<p>xxx</p>\n\t</qk:spread>\n</Component>\n\n<!-- directive for text node -->\n<qk:spread #if={visible}>\n\t...\n</qk:spred>\n```"
+    }
+]
+
 export function findTagData(tag: string) {
     if (tag.startsWith("lang-")) {
         for (const item of embeddedLangTags) {
