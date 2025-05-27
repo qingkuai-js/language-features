@@ -6,6 +6,7 @@ type Constructible = new (..._: any) => any
 type AnyObjectKey = string | number | symbol
 type NotFunction<T> = Exclude<T, GeneralFunc>
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
+type ExtractProps<T extends Constructible> = ConstructorParameters<T>[0]
 type ExtractSlotNames<T extends Constructible> = keyof ConstructorParameters<T>[2]
 
 type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
@@ -15,6 +16,12 @@ type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
 type ExtractEventHandlerKind<K> = K extends keyof HTMLElementEventMap
     ? HTMLElementEventMap[K]
     : Event
+
+type ExtractEventParams<T, K extends string> = T extends Constructible
+    ? K extends keyof ExtractProps<T>
+        ? Parameters<ExtractProps<T>[K]>
+        : any
+    : any
 
 type UnescapeOptions = Partial<{
     escapeTags?: string[]
@@ -60,6 +67,7 @@ export namespace __c__ {
         _: T,
         __: K
     ) => Readonly<ConstructorParameters<T>[2][K]>
+    const GetComponentEventParams: <T, K extends string>(_: T, __: K) => ExtractEventParams<T, K>
 
     const SatisfyString: (_: string) => void
     const SatisfyBoolean: (_: boolean) => void
