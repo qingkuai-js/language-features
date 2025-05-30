@@ -10,4 +10,4 @@ A powerful Visual Studio Code extension that provides full language features for
 
 ## Links
 
-[Documentation](https://qingkuai.dev) | [Repository](https://github.com/qingkuai-js/qingkuai) | [Issues](https://github.com/qingkuai-js/qingkuai/issues) | []()
+[Documentation](https://qingkuai.dev) | [Repository](https://github.com/qingkuai-js/qingkuai) | [Issues](https://github.com/qingkuai-js/qingkuai/issues)
