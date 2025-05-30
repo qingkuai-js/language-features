@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-language-features",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "lgq",
     "license": "MIT",
     "displayName": "QingKuai",
@@ -221,8 +221,8 @@
     },
     "dependencies": {
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.24",
-        "qingkuai": "^1.0.45",
+        "prettier-plugin-qingkuai": "^1.0.25",
+        "qingkuai": "^1.0.46",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }
