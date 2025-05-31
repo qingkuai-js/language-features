@@ -9,9 +9,9 @@ import type { RealPath } from "../../../../../types/common"
 
 import { lsRange } from "../convert/struct"
 import { getLineAndCharacter, qingkuaiDiagnostics } from "../state"
-import { getRealPath, getSourceIndex } from "../qingkuai"
 import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
+import { getRealPath, getSourceIndex, isPositionFlagSetBySourceIndex } from "../qingkuai"
 import { isQingkuaiFileName, isString, isUndefined } from "../../../../../shared-util/assert"
 
 export function getAndConvertDiagnostics(
@@ -19,6 +19,7 @@ export function getAndConvertDiagnostics(
     fileName: RealPath,
     isSemanticProject: boolean
 ): GetDiagnosticResultItem[] {
+    const realPath = getRealPath(fileName)
     const diagnostics: TS.Diagnostic[] = []
     const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
 
@@ -26,17 +27,18 @@ export function getAndConvertDiagnostics(
     if (isSemanticProject) {
         diagnosticMethods.push("getSemanticDiagnostics", "getSuggestionDiagnostics")
     }
+
     diagnosticMethods.forEach(m => {
         diagnostics.push(...languageService[m](fileName))
     })
 
     const result: GetDiagnosticResultItem[] = []
-    for (const item of diagnostics.concat(qingkuaiDiagnostics.get(getRealPath(fileName)) || [])) {
+    for (const item of diagnostics.concat(qingkuaiDiagnostics.get(realPath) || [])) {
         const start = item.start ?? 0
         const end = start + (item.length ?? 0)
         const ss = getSourceIndex(fileName, start)
         const se = getSourceIndex(fileName, end, true)
-        if (isIndexesInvalid(ss, se)) {
+        if (isIndexesInvalid(ss, se) || shouldBeIgnored(realPath, item, ss, se)) {
             continue
         }
 
@@ -79,6 +81,25 @@ export function getAndConvertDiagnostics(
         })
     }
     return result
+}
+
+function shouldBeIgnored(
+    fileName: RealPath,
+    item: TS.Diagnostic,
+    sourceStart: number,
+    sourceEnd: number
+) {
+    switch (item.code) {
+        case 2684: {
+            return (
+                isPositionFlagSetBySourceIndex(fileName, sourceEnd, "inNormalTagInlineEvent") ||
+                isPositionFlagSetBySourceIndex(fileName, sourceStart, "inNormalTagInlineEvent")
+            )
+        }
+        default: {
+            return false
+        }
+    }
 }
 
 // 诊断信息为链表形式时，将其整理为一个字符串表示

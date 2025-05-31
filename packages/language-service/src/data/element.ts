@@ -6334,7 +6334,7 @@ export const htmlDirectives = [
     },
     {
         name: "html",
-        useage: '<spread\n\t#html={\n\t\t{\n\t\t\tescapeStyle: true,\n\t\t\tescapeScript: true,\n\t\t\tescapeTags: ["html", "body"]\n\t\t}\n\t}\n>\n\t{htmlContent}\n</spread>',
+        useage: '<qk:spread\n\t#html={\n\t\t{\n\t\t\tescapeStyle: true,\n\t\t\tescapeScript: true,\n\t\t\tescapeTags: ["html", "body"]\n\t\t}\n\t}\n>\n\t{htmlContent}\n</qk:spread>',
         description:
             "The html directive is used to render string as html content, and you can control whether to escape script, style or specific tag names by passing a value to it."
     },
@@ -6352,7 +6352,7 @@ export const htmlDirectives = [
     }
 ]
 
-// 添加自定义标签数据
+// 嵌入语言标签
 export const embeddedLangTags = [
     ["css"],
     ["sass"],
@@ -6363,15 +6363,25 @@ export const embeddedLangTags = [
     ["js", "javascript"],
     ["ts", "typescript"]
 ].map(item => {
-    const language = item[1] || item[0].replace("lang-", "")
+    const language = item[1] || item[0]
     const ret: HTMLElementDataTagItem = {
         attributes: [],
         references: [],
         name: "lang-" + item[0],
-        description: `\n\nThe lang-js element is used to embed the ${language} language processed by qingkuai compiler.`
+        description: `\n\nThe lang-${item[0]} element is used to embed the ${language} language processed by qingkuai compiler.`
     }
     return ret
 })
+
+export const builtInTags: HTMLElementDataTagItem[] = [
+    {
+        attributes: [],
+        references: [],
+        name: "qk:spread",
+        description:
+            "The qk:spread element is a built-in virtual element used to apply structural directives (such as #for, #show, #await, etc.) to multiple sibling elements without introducing an extra wrapper in the rendered DOM. Useage likes bellow:\n```qk\n<qk:spread #for={3}>\n\t<p>...</p>\n\t<p>xxx</p>\n</qk:spread>\n\n<!-- spread nodes for slot -->\n<Component>\n\t<qk:spread>\n\t\t<p>...<p>\n\t\t<p>xxx</p>\n\t</qk:spread>\n</Component>\n\n<!-- directive for text node -->\n<qk:spread #if={visible}>\n\t...\n</qk:spred>\n```"
+    }
+]
 
 export function findTagData(tag: string) {
     if (tag.startsWith("lang-")) {
@@ -6412,6 +6422,16 @@ export function findTagAttributeData(tag: string, attrName: string) {
             return attribute
         }
     }
+}
+
+export function isBooleanAttribute(attribute: HTMLElementDataAttributeItem) {
+    if (!attribute.description) {
+        return false
+    }
+    if (isString(attribute.description)) {
+        return attribute.description.startsWith("This Boolean attribute")
+    }
+    return attribute.description.value.startsWith("This Boolean attribute")
 }
 
 // 获取模板指令的描述文档

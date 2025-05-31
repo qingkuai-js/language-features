@@ -17,13 +17,13 @@ import {
 } from "../../../../../shared-util/qingkuai"
 import { fileURLToPath } from "node:url"
 import { updateQingkuaiSnapshot } from "./snapshot"
-import { isFileOpening } from "../../util/typescript"
 import { refreshDiagnostics } from "../diagnostic/refresh"
-import { qkContext } from "qingkuai-language-service/adapters"
 import { TPICHandler } from "../../../../../shared-util/constant"
 import { ensureGetSnapshotOfQingkuaiFile } from "../../util/qingkuai"
 import { isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { convertor, qkContext } from "qingkuai-language-service/adapters"
 import { replaceSourceContentWithInterCodeOfScritptInfo } from "./method"
+import { getDefaultLanguageService, isFileOpening } from "../../util/typescript"
 
 export function attachDocumentManager() {
     server.onNotification(TPICHandler.DidOpen, (uri: string) => {
@@ -73,17 +73,17 @@ export function attachUpdateSnapshot() {
             server.sendNotification(TPICHandler.InfferedProjectAsTypescript, null)
         }
 
-        const componentIdentifiers = updateQingkuaiSnapshot(
+        updateQingkuaiSnapshot(
             fileName,
             rest.interCode,
             recoverItos(rest.citos),
             rest.slotInfo,
             scriptKind,
             rest.typeDeclarationLen,
-            positions
+            positions,
+            new Set(rest.refAttrStartIndexes)
         )
         refreshDiagnostics(fileName, scriptKindChanged)
-        return componentIdentifiers
     })
 }
 
@@ -95,5 +95,12 @@ export function attachGetLanguageId() {
 
         const scriptKind = ensureGetSnapshotOfQingkuaiFile(fileName).scriptKind
         return scriptKind === ts.ScriptKind.TS ? "typescript" : "javascript"
+    })
+}
+
+export function attachGetComponentInfos() {
+    server.onRequest(TPICHandler.GetComponentInfos, (fileName: string) => {
+        const langaugeService = getDefaultLanguageService(fileName)!
+        return convertor.getComponentInfos(langaugeService, fileName)
     })
 }

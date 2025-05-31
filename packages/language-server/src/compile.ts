@@ -71,7 +71,6 @@ export async function getCompileRes(document: TextDocument) {
         getOffset,
         getPosition,
         uri: document.uri,
-        componentInfos: [],
         config: null as any,
         isSynchronized: false,
         version: document.version,
@@ -93,20 +92,18 @@ export async function getCompileRes(document: TextDocument) {
     // 将编译结果同步到typescript-plugin-qingkuai
     async function synchronizeContentToTypescriptPlugin(cr: CompileResult) {
         if (!isTestingEnv && !cr.isSynchronized && !limitedScriptLanguageFeatures) {
-            cr.componentInfos = await tpic.sendRequest<UpdateSnapshotParams>(
-                TPICHandler.UpdateSnapshot,
-                {
-                    interCode: cr.code,
-                    version: cr.version,
-                    fileName: cr.filePath,
-                    scriptKindKey: getScriptKindKey(cr),
-                    slotInfo: cr.inputDescriptor.slotInfo,
-                    typeDeclarationLen: cr.typeDeclarationLen,
-                    citos: compressItos(cr.interIndexMap.itos),
-                    cp: compressPosition(cr.inputDescriptor.positions),
-                    cpf: compressPositionFlags(cr.inputDescriptor.positions)
-                }
-            )
+            await tpic.sendRequest<UpdateSnapshotParams>(TPICHandler.UpdateSnapshot, {
+                interCode: cr.code,
+                version: cr.version,
+                fileName: cr.filePath,
+                scriptKindKey: getScriptKindKey(cr),
+                slotInfo: cr.inputDescriptor.slotInfo,
+                typeDeclarationLen: cr.typeDeclarationLen,
+                citos: compressItos(cr.interIndexMap.itos),
+                cp: compressPosition(cr.inputDescriptor.positions),
+                cpf: compressPositionFlags(cr.inputDescriptor.positions),
+                refAttrStartIndexes: cr.inputDescriptor.refAttrValueStartIndexes
+            })
         }
     }
 
@@ -134,7 +131,7 @@ export async function getCompileRes(document: TextDocument) {
             clientConfigCache.set(document.uri, (cr.config = res))
         }
     }
-    return await pms, compileResultCache.set(document.uri, pms), ccri
+    return compileResultCache.set(document.uri, pms), await pms, ccri
 }
 
 // 递归遍历qingkuai编译结果的Template Node AST

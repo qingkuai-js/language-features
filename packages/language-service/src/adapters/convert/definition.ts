@@ -21,13 +21,13 @@ export function getAndConvertDefinitions(
 
     const originRange = lsRange.fromTextSpan(fileName, data.textSpan) || DEFAULT_RANGE
     const dealtDefinitions = (data.definitions || []).map(item => {
-        const range = lsRange.fromTextSpan(item.fileName, item.textSpan)!
+        const range = lsRange.fromTextSpan(item.fileName, item.textSpan) || DEFAULT_RANGE
         if (item.contextSpan) {
             const contextRange = lsRange.fromTextSpan(item.fileName, item.contextSpan)!
             return {
                 fileName: item.fileName,
-                targetRange: contextRange,
-                targetSelectionRange: range
+                targetSelectionRange: range,
+                targetRange: contextRange ?? range
             }
         }
         return {

@@ -2,7 +2,7 @@ import type TS from "typescript"
 
 import path from "node:path"
 import { isString } from "../../../../shared-util/assert"
-import { qkContext } from "qingkuai-language-service/adapters"
+import { getConfig, qkContext } from "qingkuai-language-service/adapters"
 import { excludeProperty } from "../../../../shared-util/sundry"
 import { openQingkuaiFiles, projectService, ts } from "../state"
 
@@ -50,10 +50,17 @@ export function forEachProject(cb: (p: TS.server.Project) => void) {
 }
 
 export function getUserPreferences(fileName: string): TS.UserPreferences {
-    return  excludeProperty(
+    const ret = excludeProperty(
         projectService.getPreferences(ts.server.toNormalizedPath(fileName)),
         "lazyConfiguredProjectsFromExternalProject"
     )
+    if (getConfig(qkContext.getRealPath(fileName))?.resolveImportExtension) {
+        return {
+            ...ret,
+            importModuleSpecifierEnding: "js"
+        }
+    }
+    return ret
 }
 
 export function getFormattingOptions(fileName: string) {

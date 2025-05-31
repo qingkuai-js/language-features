@@ -13,7 +13,8 @@ export function editQingKuaiScriptInfo(
     slotInfo: SlotInfo,
     scriptKind: ScriptKind,
     typeDeclarationLen: number,
-    positions: ASTPositionWithFlag[]
+    positions: ASTPositionWithFlag[],
+    refAttrValueStartIndexes: Set<number>
 ) {
     const oldSnapshot = snapshotCache.get(fileName)!
     const scriptInfo = projectService.getScriptInfo(fileName)!
@@ -22,9 +23,10 @@ export function editQingKuaiScriptInfo(
         false,
         scriptKind,
         itos,
-        typeDeclarationLen,
         slotInfo,
-        positions
+        typeDeclarationLen,
+        positions,
+        refAttrValueStartIndexes
     )
 
     const change = newSnapshot.getChangeRange(oldSnapshot)

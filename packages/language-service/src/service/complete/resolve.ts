@@ -50,7 +50,7 @@ export async function resolveScriptBlockCompletion(
 
     const scriptStartIndex = cr.inputDescriptor.script.loc.start.index
     const [detailSections, textEdits]: [string[], TextEditWithPosRange[]] = [[], []]
-    if (completionDetail?.codeActions) {
+    if (completionDetail?.codeActions?.length) {
         let hasRemainingCommandOrEdits = false
         for (let i = 0; i < completionDetail.codeActions.length; i++) {
             const action = completionDetail.codeActions[i]

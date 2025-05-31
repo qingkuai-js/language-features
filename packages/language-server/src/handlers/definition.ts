@@ -9,6 +9,7 @@ import type { CompileResult, RealPath } from "../../../../types/common"
 import type { DefinitionHandler, TypeDefinitionHandler } from "../types/handlers"
 
 import { CUSTOM_PATH } from "../constants"
+import { getComponentInfos } from "../client"
 import { findDefinitions } from "qingkuai-language-service"
 import { findTypeDefinitions } from "qingkuai-language-service"
 import { getCompileRes, getCompileResByPath } from "../compile"
@@ -23,7 +24,14 @@ export const findDefinition: DefinitionHandler = async ({ textDocument, position
 
     const cr = await getCompileRes(document)
     const offset = document.offsetAt(position)
-    return findDefinitions(cr, offset, CUSTOM_PATH, getCompileResByPath, findScriptBlockDefinitions)
+    return findDefinitions(
+        cr,
+        offset,
+        CUSTOM_PATH,
+        getCompileResByPath,
+        getComponentInfos,
+        findScriptBlockDefinitions
+    )
 }
 
 export const findTypeDefinition: TypeDefinitionHandler = async (

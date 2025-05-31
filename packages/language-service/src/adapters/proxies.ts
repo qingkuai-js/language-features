@@ -15,12 +15,15 @@ export function proxyGetCompletionsAtPosition(languageService: TS.LanguageServic
         )
         if (originalResult?.entries) {
             originalResult.entries = originalResult.entries.filter(entry => {
-                return (
-                    !entry.source ||
-                    !typeDeclarationFilePath.startsWith(
+                if (!entry.source) {
+                    return true
+                }
+                if (/\.\//.test(entry.source)) {
+                    return !typeDeclarationFilePath.startsWith(
                         path.resolve(path.dir(fileName), entry.source)
                     )
-                )
+                }
+                return entry.source !== "qingkuai/internal"
             })
         }
         return originalResult

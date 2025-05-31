@@ -7,6 +7,21 @@ import { isString, isUndefined } from "../../../../shared-util/assert"
 export function getKindName(node: TS.Node) {
     return ts.SyntaxKind[node.kind]
 }
+
+// 判断是否是顶层await表达式节点
+export function isTopLevelAwait(node: TS.Node) {
+    if (!ts.isAwaitExpression(node)) {
+        return false
+    }
+    while (node && !ts.isSourceFile(node)) {
+        if (ts.isFunctionLike(node)) {
+            return false
+        }
+        node = node.parent
+    }
+    return true
+}
+
 // 获取节点文本的长度（不包含结尾的空白字符及分号）
 export function getLength(nodeOrText: TS.Node | string) {
     if (!isString(nodeOrText)) {
@@ -33,6 +48,20 @@ export function isInTopScope(node: TS.Node): boolean {
     return true
 }
 
+// 查找响应性声明相关编译器助手函数所属的变量声明节点
+export function isReactFuncDecalration(node: TS.Node) {
+    const { parent } = node
+    if (
+        ts.isAsExpression(parent) ||
+        ts.isSatisfiesExpression(parent) ||
+        ts.isTypeAssertionExpression(parent) ||
+        ts.isParenthesizedExpression(parent)
+    ) {
+        return isReactFuncDecalration(parent.parent)
+    }
+    return ts.isVariableDeclaration(parent) ? parent : null
+}
+
 export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {
     while (node.kind !== kind) {
         node = node.parent
@@ -54,18 +83,35 @@ export function isEventType(type: TS.Type) {
     return !!(type.getCallSignatures().length || type.symbol?.name === "Function")
 }
 
-// 查找响应性声明相关编译器助手函数所属的变量声明节点
-export function findVariableDeclarationOfReactFunc(node: TS.Node) {
-    const { parent } = node
-    if (
-        ts.isAsExpression(parent) ||
-        ts.isSatisfiesExpression(parent) ||
-        ts.isTypeAssertionExpression(parent) ||
-        ts.isParenthesizedExpression(parent)
-    ) {
-        return findVariableDeclarationOfReactFunc(parent.parent)
+export function isAssignable(node: TS.Node, allowConst: boolean, typeChecker: TS.TypeChecker) {
+    if (ts.isIdentifier(node)) {
+        const symbol = typeChecker.getSymbolAtLocation(node)
+        if (!symbol || allowConst) {
+            return true
+        }
+        for (const decl of symbol.declarations ?? []) {
+            if (
+                ts.isVariableDeclaration(decl) &&
+                ts.isVariableDeclarationList(decl.parent) &&
+                decl.parent.flags & ts.NodeFlags.Const
+            ) {
+                return false
+            }
+
+            if (
+                ts.isImportSpecifier(decl) ||
+                ts.isImportClause(decl) ||
+                ts.isNamespaceImport(decl)
+            ) {
+                return false
+            }
+        }
+        return true
     }
-    return ts.isVariableDeclaration(parent) ? parent : null
+    if (!ts.isPropertyAccessExpression(node) && !ts.isElementAccessExpression(node)) {
+        return false
+    }
+    return !node.questionDotToken
 }
 
 // 判断符号的定义处是否为qingkuai类型声明文件
@@ -122,4 +168,20 @@ export function findNodeAtPosition(
         return undefined
     }
     return find(sourceFile)
+}
+
+export function isSymbolKey(symbol: TS.Symbol): boolean {
+    if (!symbol.declarations) {
+        return false
+    }
+    return symbol.declarations.some(decl => {
+        const name = (decl as TS.NamedDeclaration).name
+        if (!name || !("expression" in name)) {
+            return false
+        }
+        return (
+            (ts.isIdentifier(name.expression) && name.expression.escapedText === "symbol") ||
+            (ts.isComputedPropertyName(name) && ts.isPropertyAccessExpression(name.expression))
+        )
+    })
 }

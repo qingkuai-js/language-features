@@ -1,17 +1,20 @@
 import type { IScriptSnapshot, ScriptKind } from "typescript"
+import type { ComponentAttributeItem } from "../../../types/common"
 import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
 
 export class QingKuaiSnapShot implements IScriptSnapshot {
     public version = 1
+    public attributeInfos: ComponentAttributeItem[] = []
 
     constructor(
         private text: string,
         public initial: boolean,
         public scriptKind: ScriptKind,
         public readonly itos: number[],
-        public readonly typeDeclarationLen: number,
         public readonly slotInfo: SlotInfo,
-        public readonly positions: ASTPositionWithFlag[]
+        public readonly typeDeclarationLen: number,
+        public readonly positions: ASTPositionWithFlag[],
+        public readonly refAttrValueStartIndexes: Set<number>
     ) {}
 
     getFullText() {

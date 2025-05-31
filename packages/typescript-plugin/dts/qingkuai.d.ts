@@ -6,6 +6,7 @@ type Constructible = new (..._: any) => any
 type AnyObjectKey = string | number | symbol
 type NotFunction<T> = Exclude<T, GeneralFunc>
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
+type ExtractProps<T extends Constructible> = ConstructorParameters<T>[0]
 type ExtractSlotNames<T extends Constructible> = keyof ConstructorParameters<T>[2]
 
 type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
@@ -15,6 +16,12 @@ type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap
 type ExtractEventHandlerKind<K> = K extends keyof HTMLElementEventMap
     ? HTMLElementEventMap[K]
     : Event
+
+type ExtractEventParams<T, K extends string> = T extends Constructible
+    ? K extends keyof ExtractProps<T>
+        ? Parameters<ExtractProps<T>[K]>
+        : any
+    : any
 
 type UnescapeOptions = Partial<{
     escapeTags?: string[]
@@ -40,8 +47,8 @@ interface WatchFunc {
     <T>(
         expression: NotFunction<T>,
         callback: (pre: NotFunction<T>, cur: NotFunction<T>) => void
-    ): () => void
-    <T>(getter: () => T, callback: (pre: T, cur: T) => void): () => void
+    ): (fn?: GeneralFunc) => void
+    <T>(getter: () => T, callback: (pre: T, cur: T) => void): (fn?: GeneralFunc) => void
 }
 
 export namespace __c__ {
@@ -55,10 +62,12 @@ export namespace __c__ {
     const GetKVPair: ReloadedGetKVPair
     const GetTypedValue: <T>() => T
     const GetResolve: <T>(_: T) => ExtractResolveType<T>
+    const GetEventHandler: <T>(_: T) => ExtractEventHandlerKind<typeof _>
     const GetSlotProp: <T extends Constructible, K extends ExtractSlotNames<T>>(
         _: T,
         __: K
     ) => Readonly<ConstructorParameters<T>[2][K]>
+    const GetComponentEventParams: <T, K extends string>(_: T, __: K) => ExtractEventParams<T, K>
 
     const SatisfyString: (_: string) => void
     const SatisfyBoolean: (_: boolean) => void
@@ -66,16 +75,13 @@ export namespace __c__ {
     const SatisfyHtmlDirective: (_?: UnescapeOptions) => void
     const SatisfyElement: <K>(_: ExtractElementKind<K>) => void
     const SatisfyTargetDirective: (_: HTMLElement | string) => void
+    const SatisfyRefGroup: <T>(_: Set<T> | Array<T>, __: T) => void
     const SatisfyEventHandler: <K>(_: (_: ExtractEventHandlerKind<K>) => void) => void
 
     const SatisfyComponent: <T extends Constructible>(
         _: T,
         __: ConstructorParameters<T>[0],
         ___: ConstructorParameters<T>[1]
-    ) => void
-    const SatisfyRefGroup: <T extends Set<any> | Array<any>>(
-        _: T,
-        __: T extends Set<infer U> ? U : T extends Array<infer U> ? U : any
     ) => void
 }
 

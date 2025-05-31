@@ -12,6 +12,8 @@ import type {
 import type TS from "typescript"
 import type { CustomFS, CustomPath, RealPath } from "../../../../types/common"
 
+import { INTER_NAMESPACE } from "../../../../shared-util/constant"
+
 export let ts: typeof TS
 export let fs: CustomFS
 export let path: CustomPath
@@ -48,5 +50,5 @@ export function createLsAdapter(options: CreateLsAdaptersOptions) {
     getFormattingOptions = options.getFormattingOptions
     typeDeclarationFilePath = options.typeDeclarationFilePath
     getInterIndexByLineAndCharacter = options.getInterIndexByLineAndCharacter
-    typeRefStatement = `import {__c__,wat,waT,Wat,der,stc,rea} from "${typeDeclarationFilePath}"\n`
+    typeRefStatement = `import {${INTER_NAMESPACE},wat,waT,Wat,der,stc,rea} from "${typeDeclarationFilePath}"\n`
 }

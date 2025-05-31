@@ -6,22 +6,33 @@ import type {
     CompletionItem,
     CompletionList
 } from "vscode-languageserver-types"
+import type {
+    GetRangeFunc,
+    CompileResult,
+    ComponentAttributeItem
+} from "../../../../../types/common"
+import type {
+    InsertSnippetFunc,
+    GetComponentInfosFunc,
+    GetScriptCompletionsFunc
+} from "../../types/service"
 import type { ProjectKind } from "../../constants"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { HTMLElementDataAttributeItem } from "../../types/data"
 import type { TextDocument } from "vscode-languageserver-textdocument"
-import type { CompileResult, GetRangeFunc } from "../../../../../types/common"
-import type { GetScriptCompletionsFunc, InsertSnippetFunc } from "../../types/service"
-import type { ComponentAttributeItem, InsertSnippetParam } from "../../../../../types/communication"
+import type { ComponentIdentifierInfo } from "../../../../../types/common"
+import type { InsertSnippetParam } from "../../../../../types/communication"
 
 import {
     slotTagData,
     findTagData,
+    builtInTags,
     findValueSet,
     htmlElements,
     htmlDirectives,
     embeddedLangTags,
     getDocumentation,
+    isBooleanAttribute,
     findTagAttributeData,
     getDirectiveDocumentation
 } from "../../data/element"
@@ -32,9 +43,11 @@ import {
     formatImportStatement
 } from "../../util/qingkuai"
 import { util } from "qingkuai/compiler"
+import { isPositionEqual } from "../../util/sundry"
 import { eventModifiers } from "../../data/event-modifier"
 import { createStyleSheetAndDocument } from "../../util/css"
 import { getAndProcessScriptBlockCompletions } from "./script"
+import { SPREAD_TAG } from "../../../../../shared-util/constant"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
 import { htmlEntities, htmlEntitiesKeys } from "../../data/entity"
 import { doComplete as _doEmmetComplete } from "@vscode/emmet-helper"
@@ -51,6 +64,7 @@ export async function doComplete(
     isTestingEnv: boolean,
     projectKind: ProjectKind,
     insertSnippet: InsertSnippetFunc,
+    getComponentInfos: GetComponentInfosFunc,
     getScriptCompletions: GetScriptCompletionsFunc
 ): Promise<CompletionList | CompletionItem[] | null> {
     const source = cr.inputDescriptor.source
@@ -84,6 +98,7 @@ export async function doComplete(
 
     // 文本节点范围内触发emmet、实体字符及自定义标签补全建议
     // 如果父节点结束标签未闭合且前两个字符为</，则自动闭合结束标签
+    const componentInfos = await getComponentInfos(cr.filePath)
     if (isEmptyString(currentNode.tag)) {
         if (
             !isNull(currentNode.parent) &&
@@ -95,21 +110,31 @@ export async function doComplete(
 
         const completions = [
             ...doCharacterEntityComplete(getRange, source, offset),
-            ...doCustomTagComplete(cr, offset, currentNode, projectKind)
+            ...doCustomTagComplete(cr, offset, currentNode, projectKind, componentInfos)
         ]
 
         // 如果是由<触发的补全建议获取，则列举所有标签名建议
         if (source[offset - 1] === "<") {
             completions.push(
-                ...doTagComplete(getRange(offset), cr, offset, currentNode, projectKind)
+                ...doTagComplete(
+                    getRange(offset),
+                    cr,
+                    offset,
+                    currentNode,
+                    projectKind,
+                    componentInfos
+                )
             )
         }
 
-        return completions.concat(doEmmetComplete(document, getPosition(offset))?.items ?? [])
+        return {
+            isIncomplete: true,
+            items: completions.concat(doEmmetComplete(document, getPosition(offset))?.items ?? [])
+        }
     }
 
-    // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、=、|、-
-    if (/[^!@#&>=\|\-\/]/.test(trigger)) {
+    // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、=、|、-、'、"、{
+    if (/[^!@#&>='"\|\-\/\{]/.test(trigger)) {
         return null
     }
 
@@ -122,7 +147,8 @@ export async function doComplete(
             cr,
             offset,
             currentNode,
-            projectKind
+            projectKind,
+            componentInfos
         )
     }
 
@@ -159,17 +185,28 @@ export async function doComplete(
     const valueStartIndex = attr?.value.loc.start.index ?? Infinity
 
     // 当前节点若是组件，则找到它的属性信息
-    const componentAttributes = cr.componentInfos.find(info => {
+    const componentAttributes = componentInfos.find(info => {
         return info.name === currentNode.componentTag
     })?.attributes
 
     let hasValue = valueStartIndex !== Infinity && valueStartIndex !== -1
 
     // 如果上前一个字符为等号且不存在引号或大括号，则自动添加引号对或大括号对
+    // 如果上一个字符为引号或开始大括号，且不存在对应的结束字符，则插入对应的结束字符
     // 如果属性为非动态/引用/指令/事件且htmlData中该属性valueSet不为v或当前为组件节点则在次请求补全建议
-    if (attr && valueStartIndex === attr.loc.end.index && source[offset - 1] === "=") {
+    if (
+        attr &&
+        ((/['"\{]/.test(source[offset - 1]) && attr.loc.end.index === -1) ||
+            (valueStartIndex === attr.loc.end.index && source[offset - 1] === "="))
+    ) {
         const snippetItem: InsertSnippetParam = {
-            text: isInterpolation ? "{$0}" : '"$0"'
+            text: ""
+        }
+        if (source[offset - 1] === "=") {
+            const quote = cr.config.prettierConfig?.singleQuote ? "'" : '"'
+            snippetItem.text = isInterpolation ? "{$0}" : `${quote}$0${quote}`
+        } else {
+            snippetItem.text = isInterpolation ? "$0}" : `$0${source[offset - 1]}`
         }
         if (!isInterpolation) {
             let shouldTriggerSuggest = false
@@ -203,7 +240,7 @@ export async function doComplete(
 
             const valueRange = getRange(valueStartIndex, valueEndIndex)
             if (attrKey === "slot" && currentNode.parent?.componentTag) {
-                const componentInfo = cr.componentInfos.find(info => {
+                const componentInfo = componentInfos.find(info => {
                     return info.name === currentNode.parent!.componentTag
                 })
                 if (!componentInfo) {
@@ -390,10 +427,12 @@ function doCustomTagComplete(
     cr: CompileResult,
     offset: number,
     node: TemplateNode,
-    projectKind: ProjectKind
+    projectKind: ProjectKind,
+    componentInfos: ComponentIdentifierInfo[]
 ) {
     const ret: CompletionItem[] = []
     const { source } = cr.inputDescriptor
+    const parentIsComponent = !!node.parent?.componentTag
     const emmetTagNameIndex = source.slice(0, offset).search(emmetTagNameRE)
 
     if (emmetTagNameIndex !== -1) {
@@ -437,6 +476,35 @@ function doCustomTagComplete(
             })
         }
 
+        // 为内置元素添加emmet支持
+
+        builtInTags.forEach(({ name, description }) => {
+            const quote = cr.config.prettierConfig?.singleQuote ? "'" : '"'
+            const attr = parentIsComponent ? ` name=${quote}$1${quote}` : " #$1"
+            const item: CompletionItem = {
+                label: name,
+                insertTextFormat: InsertTextFormat.Snippet,
+                textEdit: {
+                    range,
+                    newText:
+                        (startWithLT ? "" : "<") +
+                        name +
+                        (startWithLT ? "" : `${attr}>\n\t$0\n</${name}>`)
+                },
+                documentation: {
+                    kind: "markdown",
+                    value: description as string
+                }
+            }
+            if (!parentIsComponent) {
+                item.command = {
+                    title: "suggest",
+                    command: Commands.TriggerSuggest
+                }
+            }
+            ret.push(item)
+        })
+
         // 上下文中以大写开头的标识符提示为组件标签
         util.getContextIdentifiers(node).forEach(identifier => {
             if (!/^[A-Z]/.test(identifier)) {
@@ -453,7 +521,7 @@ function doCustomTagComplete(
             })
         })
 
-        cr.componentInfos.forEach(item => {
+        componentInfos.forEach(item => {
             let additionalTextEdits: TextEdit[] | undefined = undefined
             if (!item.imported) {
                 const addImportIndex = Math.max(0, cr.inputDescriptor.script.loc.start.index)
@@ -564,11 +632,13 @@ function doComponentAttributeNameComplete(
         return null
     }
 
-    const existing = new Set(
-        node.attributes.map(item => {
-            return util.kebab2Camel(item.key.raw.replace(/^[!@#&]/, ""))
-        })
-    )
+    const existing = new Set<string>()
+    for (const item of node.attributes) {
+        if (!isPositionEqual(item.loc.start, range.start)) {
+            existing.add(util.kebab2Camel(item.key.raw.replace(/^[!@#&]/, "")))
+        }
+    }
+
     const completions: CompletionItem[] = []
     attributes?.forEach(attr => {
         if (existing.has(attr.name)) {
@@ -587,7 +657,7 @@ function doComponentAttributeNameComplete(
             let suffix = ""
             if (useStartChar) {
                 suffix = "={$0}"
-            } else if (attr.type !== "boolean") {
+            } else if (!/boolean(?: \| undefined)?/.test(attr.type)) {
                 suffix = `=${normalQuote}$0${normalQuote}`
             }
 
@@ -613,7 +683,7 @@ function doComponentAttributeNameComplete(
 }
 
 // 获取引用属性名补全建议，普通标的引用属性签建议列表如下：
-// input -> &value, radio/checkbox -> &value/checked，select -> &value
+// input -> &value, checkbox -> &value/checked，select -> &value
 function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, range: Range) {
     const recommend: string[] = []
     const existing = new Set<string>()
@@ -645,16 +715,16 @@ function doReferenceAttributeComplete(node: TemplateNode, hasValue: boolean, ran
                 }
             }
             if (!cantUseRef) {
-                if (!/radio|checkbox/.test(type)) {
+                if (type != "radio" && type !== "checkbox") {
                     extendRecommand("value")
                 } else {
-                    extendRecommand("checked", "group")
+                    extendRecommand("checked")
                 }
             }
             break
         }
         default: {
-            if (node.tag !== "slot" && node.tag !== "spread") {
+            if (node.tag !== "slot" && node.tag !== SPREAD_TAG) {
                 extendRecommand("dom")
             }
             break
@@ -721,6 +791,9 @@ function doAttributeNameComplete(
     const isDynamicOrEvent = startChar && (isEvent || isDynamic)
 
     node.attributes.forEach(({ key }) => {
+        if (isPositionEqual(key.loc.start, range.start)) {
+            return
+        }
         switch (key.raw[0]) {
             case "@":
                 existingEvents.add(key.raw.slice(1))
@@ -729,7 +802,12 @@ function doAttributeNameComplete(
                 existingDirectives.add(key.raw.slice(1))
                 break
             default:
-                existingAttributes.add(key.raw.slice(+/^[!&]/.test(key.raw)))
+                const pureKey = key.raw.slice(+/^[!&]/.test(key.raw))
+                if (node.componentTag || pureKey !== "class") {
+                    existingAttributes.add(pureKey)
+                } else {
+                    existingAttributes.add(key.raw)
+                }
                 break
         }
     })
@@ -740,7 +818,7 @@ function doAttributeNameComplete(
         let assignText = ""
         const valueSet = attribute.valueSet || "v"
         const extraRet: Partial<CompletionItem> = {}
-        if (!hasValue) {
+        if (!hasValue && !isBooleanAttribute(attribute)) {
             assignText = isDynamicOrEvent ? "={$0}" : '="$0"'
             extraRet.insertTextFormat = InsertTextFormat.Snippet
         }
@@ -764,7 +842,10 @@ function doAttributeNameComplete(
     if (startChar !== "#") {
         const isDuplicate = (name: string) => {
             if (!isEvent) {
-                return existingAttributes.has(name)
+                if (node.componentTag || name !== "class") {
+                    return existingAttributes.has(name)
+                }
+                return existingAttributes.has(startChar + name)
             }
             return existingEvents.has(name.replace(/^on/, ""))
         }

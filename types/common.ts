@@ -2,7 +2,7 @@ import type TS from "typescript"
 import type { FixedArray } from "./util"
 import type { Options as PrettierOptions } from "prettier"
 import type { Position, Range } from "vscode-languageserver/node"
-import type { ComponentIdentifierInfo, GetClientLanguageConfigResult } from "./communication"
+import type { GetClientLanguageConfigResult } from "./communication"
 import type { CompileResult as QingkuaiCompileResult, PositionFlagKeys } from "qingkuai/compiler"
 
 export type NumNumArray = NumNum[]
@@ -36,6 +36,22 @@ export interface CustomPath {
     base: (path: string) => string
     resolve: (...segments: string[]) => string
     relative: (from: string, to: string) => string
+}
+
+export interface ComponentAttributeItem {
+    kind: "Prop" | "Ref"
+    name: string
+    type: string
+    isEvent: boolean
+    stringCandidates: string[]
+}
+
+export interface ComponentIdentifierInfo {
+    name: string
+    imported: boolean
+    slotNams: string[]
+    relativePath: string
+    attributes: ComponentAttributeItem[]
 }
 
 export interface ExtensionConfiguration {
@@ -81,7 +97,6 @@ export type CompileResult = QingkuaiCompileResult & {
     getRange: GetRangeFunc
     isSynchronized: boolean
     builtInTypeDeclarationEndIndex: number
-    componentInfos: ComponentIdentifierInfo[]
     scriptLanguageId: "typescript" | "javascript"
     config: Partial<GetClientLanguageConfigResult>
 

@@ -8,6 +8,7 @@ import type { AnyObject } from "../../../../types/util"
 import type { RealPath } from "../../../../types/common"
 
 import { getCompileRes } from "../compile"
+import { getComponentInfos } from "../client"
 import { doHover } from "qingkuai-language-service"
 import { tpic, documents, isTestingEnv, connection } from "../state"
 import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
@@ -18,7 +19,14 @@ export const hover: HoverHandler = async ({ textDocument, position }, token) => 
     }
 
     const cr = await getCompileRes(documents.get(textDocument.uri)!)
-    return doHover(cr, cr.getOffset(position), isTestingEnv, getCssConfig, getScriptBlockHoverTip)
+    return doHover(
+        cr,
+        cr.getOffset(position),
+        isTestingEnv,
+        getCssConfig,
+        getScriptBlockHoverTip,
+        getComponentInfos
+    )
 }
 
 async function getCssConfig(uri: string): Promise<AnyObject> {

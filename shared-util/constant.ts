@@ -24,6 +24,7 @@ export const DEFAULT_QINGKUAI_CONFIGURATION = {
     convenientDerivedDeclaration: true
 }
 
+export const SPREAD_TAG = "qk:spread"
 export const INTER_NAMESPACE = "__c__"
 export const EXPORT_DEFAULT_OFFSET = 21
 export const TS_REFS_DECLARATION_LEN = 27
@@ -60,6 +61,7 @@ export enum TPICHandler {
     WaitForTSCommand = "waitForTypescriptCommand",
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",
+    GetComponentInfos = "getCompnentIdentifierInfos",
     GetTypeRefStatement = "getQingkuaiDtsReferenceStatement",
     Retransmission = "retransmissionToQingkuaiLanguageServer",
     InfferedProjectAsTypescript = "InfferedLanguageServerProjectAsTypescript"

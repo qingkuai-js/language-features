@@ -12,6 +12,7 @@ import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
 import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 import { excuteCssCommonHandler, createStyleSheetAndDocument } from "../util/css"
+import { stringifyRange } from "../util/sundry"
 
 export async function rename(
     cr: CompileResult,
@@ -129,7 +130,6 @@ async function doScriptBlockRename(
     getCompileRes: GetCompileResultFunc,
     renameInScriptBlock: RenameInScriptBlockFunc
 ): Promise<WorkspaceEdit | null> {
-    const textEdits: Record<string, TextEdit[]> = {}
     const locations = await renameInScriptBlock(
         cr.filePath,
         isInterOffset ? offset : cr.getInterIndex(offset)
@@ -138,15 +138,26 @@ async function doScriptBlockRename(
         return null
     }
 
+    const existingRenameInfos = new Set<string>()
+    const textEdits: Record<string, TextEdit[]> = {}
+
     for (const item of locations) {
+        let newText = (item.prefix || "") + newName + (item.suffix || "")
+
         const uri = URI.file(item.fileName).toString()
         const existing = textEdits[uri] || (textEdits[uri] = [])
-        let newText = (item.prefix || "") + newName + (item.suffix || "")
+
+        const extendTextEdit = (range: Range, newText: string) => {
+            const existing = textEdits[uri] || (textEdits[uri] = [])
+            const infoKey = `${uri}\0${stringifyRange(range)}`
+            if (!existingRenameInfos.has(infoKey)) {
+                existing.push({ range, newText })
+            }
+            existingRenameInfos.add(infoKey)
+        }
+
         if (item.loc) {
-            existing.push({
-                range: item.loc,
-                newText: util.kebab2Camel(newText)
-            })
+            extendTextEdit(item.loc, util.kebab2Camel(newText))
             continue
         }
 
@@ -164,12 +175,10 @@ async function doScriptBlockRename(
                 findTagRanges(currentNode, start + 1, true).forEach(range => {
                     const useKebab = prettierConfig?.componentTagFormatPreference === "kebab"
                     if (range) {
-                        existing.push({
-                            range: getRange(...range),
-                            newText: useKebab
-                                ? util.camel2Kebab(newText)
-                                : util.kebab2Camel(newText)
-                        })
+                        extendTextEdit(
+                            getRange(...range),
+                            useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
+                        )
                     }
                 })
                 continue
@@ -184,8 +193,7 @@ async function doScriptBlockRename(
                 }
             }
         }
-
-        existing.push({ newText, range: getRange(start, end) })
+        extendTextEdit(getRange(start, end), newText)
     }
     return { changes: textEdits } satisfies WorkspaceEdit
 }

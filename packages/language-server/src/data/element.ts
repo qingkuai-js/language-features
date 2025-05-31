@@ -6334,7 +6334,7 @@ export const htmlDirectives = [
     },
     {
         name: "html",
-        useage: '<spread\n\t#html={\n\t\t{\n\t\t\tescapeStyle: true,\n\t\t\tescapeScript: true,\n\t\t\tescapeTags: ["html", "body"]\n\t\t}\n\t}\n>\n\t{htmlContent}\n</spread>',
+        useage: '<qk:spread\n\t#html={\n\t\t{\n\t\t\tescapeStyle: true,\n\t\t\tescapeScript: true,\n\t\t\tescapeTags: ["html", "body"]\n\t\t}\n\t}\n>\n\t{htmlContent}\n</qk:spread>',
         description:
             "The html directive is used to render string as html content, and you can control whether to escape script, style or specific tag names by passing a value to it."
     },
