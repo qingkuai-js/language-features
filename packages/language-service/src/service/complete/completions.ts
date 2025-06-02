@@ -154,10 +154,10 @@ export async function doComplete(
 
     // 开始标签输入结束时自动插入结束标签
     if (
-        nodeEndIndex === -1 &&
         currentNode.tag !== "!" &&
         source[offset - 1] === ">" &&
-        offset === startTagEndIndex
+        offset === startTagEndIndex &&
+        !hasMatchedEndTag(currentNode)
     ) {
         return insertSnippet(`$0</${currentNode.tag}>`), null
     }
@@ -294,7 +294,7 @@ export async function doComplete(
             // 返回普通标签属性值建议
             return doAttributeValueComplete(currentNode.tag, attrKey, valueRange)
         }
-    } else if (isUndefined(attr) || offset <= keyEndIndex) {
+    } else if (!/['"]/.test(trigger) && (isUndefined(attr) || offset <= keyEndIndex)) {
         const prettierConfig = cr.config.prettierConfig
         const keyRange = getRange(keyStartIndex, keyEndIndex)
         const normalQuote = prettierConfig?.singleQuote ? "'" : '"'
@@ -967,4 +967,19 @@ function doAttributeNameComplete(
     }
 
     return ret
+}
+
+// 判断标签是否具有匹配的结束标签，与解析逻辑不同的是，如果标签与父元素标签
+// 一致且父标签不存在结束标签时视为当前标签不存在匹配的结束标签（向上递归查询）
+function hasMatchedEndTag(node: TemplateNode) {
+    if (node.range[1] === -1) {
+        return false
+    }
+    while (node.parent?.tag === node.tag) {
+        if (node.parent.range[1] === -1) {
+            return false
+        }
+        node = node.parent
+    }
+    return true
 }
