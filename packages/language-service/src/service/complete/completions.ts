@@ -818,7 +818,7 @@ function doAttributeNameComplete(
         let assignText = ""
         const valueSet = attribute.valueSet || "v"
         const extraRet: Partial<CompletionItem> = {}
-        if (!hasValue && !isBooleanAttribute(attribute)) {
+        if (!hasValue && !isBooleanAttribute(node.tag, attribute)) {
             assignText = isDynamicOrEvent ? "={$0}" : '="$0"'
             extraRet.insertTextFormat = InsertTextFormat.Snippet
         }

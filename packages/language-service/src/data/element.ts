@@ -15,6 +15,10 @@ import type {
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
+const inferredBooleanAttributes: Record<string, Set<string>> = {
+    input: new Set(["autofocus", "checked", "disabled"])
+}
+
 export const slotTagData: HTMLElementDataTagItem = {
     name: "slot",
     description: {
@@ -6424,9 +6428,9 @@ export function findTagAttributeData(tag: string, attrName: string) {
     }
 }
 
-export function isBooleanAttribute(attribute: HTMLElementDataAttributeItem) {
+export function isBooleanAttribute(tag: string, attribute: HTMLElementDataAttributeItem) {
     if (!attribute.description) {
-        return false
+        return inferredBooleanAttributes[tag]?.has(attribute.name)
     }
     if (isString(attribute.description)) {
         return attribute.description.startsWith("This Boolean attribute")
