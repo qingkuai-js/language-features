@@ -1,8 +1,7 @@
-import type { CustomPath, PromiseWithState } from "../types/common"
+import type { PromiseWithState } from "../types/common"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
 import { randomBytes } from "node:crypto"
-import { basename, dirname, extname, relative, resolve } from "node:path"
 
 export function sleep(ms: number) {
     return new Promise(resolve => {
@@ -34,26 +33,6 @@ export function generatePromiseAndResolver() {
     }) as any
     promise.state = "pending"
     return [promise, resolver] as const
-}
-
-export function generateCustomPathByNodePath(): CustomPath {
-    return {
-        ext(path: string) {
-            return extname(path)
-        },
-        dir(path: string) {
-            return dirname(path)
-        },
-        resolve(...paths: string[]) {
-            return resolve(...paths)
-        },
-        relative(from: string, to: string) {
-            return relative(from, to)
-        },
-        base(path: string) {
-            return basename(path, extname(path))
-        }
-    }
 }
 
 // 防抖函数生成器，getId是一个获取调用id的方法，执行这个方法时会传入
@@ -88,6 +67,16 @@ export function createRandomHash(length: number) {
 // 获取数组的最后一个元素
 export function lastElem<T extends any[]>(arr: T): T[number] {
     return arr[arr.length - 1]
+}
+
+export function traverseObject<T extends AnyObject>(
+    o: T,
+    callback: (key: keyof T, value: T[keyof T], index: number) => void
+) {
+    const keys = Object.keys(o)
+    for (let i = 0; i < keys.length; i++) {
+        callback(keys[i], o[keys[i]], i)
+    }
 }
 
 // Object.keys别名，返回带有类型的键数组

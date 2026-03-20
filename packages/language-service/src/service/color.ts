@@ -5,7 +5,7 @@ import { createStyleSheetAndDocument } from "../util/css"
 
 export function getDocumentColors(cr: CompileResult) {
     const result: ColorInformation[] = []
-    cr.inputDescriptor.styles.forEach(descriptor => {
+    cr.styleDescriptors.forEach(descriptor => {
         const [languageService, document, _, styleSheet] = createStyleSheetAndDocument(
             cr,
             descriptor.loc.start.index
@@ -16,7 +16,7 @@ export function getDocumentColors(cr: CompileResult) {
 }
 
 export function getColorPresentations(cr: CompileResult, range: Range, color: Color) {
-    const startOffset = cr.getOffset(range.start)
+    const startOffset = cr.document.offsetAt(range.start)
     const style = createStyleSheetAndDocument(cr, startOffset)
     const [languageService, styleDocument, _, styleSheet] = style
     return languageService.getColorPresentations(styleDocument, styleSheet, color, range)

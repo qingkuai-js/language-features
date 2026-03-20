@@ -1,39 +1,24 @@
-import type {
-    RenameFileParams,
-    RetransmissionParams,
-    RefreshDiagnosticParams
-} from "../../../types/communication"
-import type { RealPath } from "../../../types/common"
+import type { RenameFileParams, RetransmissionParams } from "../../../types/communication"
 
 import * as vscode from "vscode"
 import { basename } from "node:path"
-import { getConfigTarget } from "./config"
+import { getVscodeConfigTarget } from "./config"
 import { client, limitedScriptLanguageFeatures } from "./state"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
-import { LSHandler, TPICHandler } from "../../../shared-util/constant"
+import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
 
 export async function attachFileSystemHandlers() {
     if (!limitedScriptLanguageFeatures) {
         vscode.workspace.onDidRenameFiles(async ({ files }) => {
             for (const { oldUri, newUri } of files) {
-                const oldPath = oldUri.fsPath as RealPath
-                const newPath = newUri.fsPath as RealPath
-                if (!isQingkuaiFileName(oldPath) && !isQingkuaiFileName(newPath)) {
-                    client.sendNotification(LSHandler.Retransmission, {
-                        name: TPICHandler.RefreshDiagnostic,
-                        data: {
-                            byFileName: "///fs",
-                            scriptKindChanged: false
-                        } satisfies RefreshDiagnosticParams
-                    } satisfies RetransmissionParams)
-                    return
-                }
-
-                if (await shouldUpdateImports(newUri)) {
-                    client.sendNotification(LSHandler.RenameFile, {
-                        oldPath,
-                        newPath
-                    } satisfies RenameFileParams)
+                const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
+                if (isQingkuaiFileName(oldPath) && isQingkuaiFileName(newPath)) {
+                    if (await shouldUpdateImports(newUri)) {
+                        client.sendNotification(LS_HANDLERS.RenameFile, {
+                            oldPath,
+                            newPath
+                        } satisfies RenameFileParams)
+                    }
                 }
             }
         })
@@ -47,9 +32,9 @@ async function shouldUpdateImports(uri: vscode.Uri) {
     }
     const updateImportsConfigName = "updateImportsOnFileMove.enabled"
     const languageConfig = vscode.workspace.getConfiguration(
-        await client.sendRequest(LSHandler.Retransmission, {
+        await client.sendRequest(LS_HANDLERS.Retransmission, {
             data: uri.fsPath,
-            name: TPICHandler.GetLanguageId
+            name: TP_HANDLERS.GetLanguageId
         } satisfies RetransmissionParams),
         uri
     )
@@ -77,19 +62,19 @@ async function shouldUpdateImports(uri: vscode.Uri) {
     const buttons = [rejectItem, acceptItem, alwaysItem, neverItem]
     const choice = await vscode.window.showInformationMessage(message, { modal: true }, ...buttons)
 
-    const updateConfig = (value: ConfigValue) => {
+    const updateClientSetting = (value: ConfigValue) => {
         languageConfig.update(
             updateImportsConfigName,
             value,
-            getConfigTarget(languageConfig, updateImportsConfigName)
+            getVscodeConfigTarget(languageConfig, updateImportsConfigName)
         )
     }
 
     if (choice === alwaysItem) {
-        return updateConfig(ConfigValue.always), true
+        return (updateClientSetting(ConfigValue.always), true)
     }
     if (choice === neverItem) {
-        return updateConfig(ConfigValue.never), false
+        return (updateClientSetting(ConfigValue.never), false)
     }
     return choice === acceptItem
 }

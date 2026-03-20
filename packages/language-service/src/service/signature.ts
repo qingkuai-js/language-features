@@ -3,13 +3,15 @@ import type { SignatureHelp } from "vscode-languageserver-types"
 import type { SignatureHelpContext } from "vscode-languageserver"
 import type { GetScriptBlockSignatureFunc } from "../types/service"
 
+import { PositionFlag } from "qingkuai/compiler"
+
 export async function getSignatureHelp(
     cr: CompileResult,
     offset: number,
     context: SignatureHelpContext | undefined,
     getScriptSignature: GetScriptBlockSignatureFunc
 ): Promise<SignatureHelp | null> {
-    if (!cr.isPositionFlagSet(offset, "inScript")) {
+    if (!cr.isPositionFlagSetAtIndex(PositionFlag.InScript, offset)) {
         return null
     }
 

@@ -1,3 +1,11 @@
+# ---
+
+> packages version:
+
+fix some known issues:
+
+1. language service (caused by qingkuai compiler): the source index of the value of #key directive is not recorded in check mode, see: [Commit 3c4a39b](https://github.com/qingkuai-js/qingkuai/commit/3c4a39b4de179995c7cd89b1242d1a34a5bfb9c0)
+
 # 2025-06-04
 
 > packages version: vscode-extension@1.0.2, language-service@1.0.8

@@ -3,44 +3,49 @@
     "allOf": [{ "$ref": "https://json.schemastore.org/prettierrc" }],
     "properties": {
         "qingkuai": {
+            "type": "object",
+            "description": "Configuration options used by prettier-plugin-qingkuai when formatting `.qk` files.",
+            "markdownDescription": "Configuration options used by **prettier-plugin-qingkuai** when formatting `.qk` files.",
             "properties": {
                 "spaceAroundInterpolation": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Insert spaces at both ends of interpolation block."
+                    "description": "Controls whether spaces are inserted inside interpolation blocks.",
+                    "markdownDescription": "Controls whether spaces are inserted **inside interpolation blocks** in QingKuai templates.\n\nInterpolation blocks use **single curly braces**.\n\nExample:\n\nWithout spaces:\n\n```qingkuai\n{count}\n```\n\nWith spaces:\n\n```qingkuai\n{ count }\n```"
                 },
+
                 "componentTagFormatPreference": {
                     "type": "string",
                     "default": "camel",
+                    "description": "Controls the preferred naming style for component tags in QingKuai templates.",
                     "oneOf": [
                         {
                             "const": "camel",
-                            "description": "Prefer camel tag format, likes: &lt;MyComponent&gt;&lt;/MyComponent&gt;."
+                            "markdownDescription": "Prefer **camel case** component tags.\n\nExample:\n\n```qingkuai\n<MyComponent></MyComponent>\n```"
                         },
                         {
                             "const": "kebab",
-                            "description": "Prefer kebab tag format, likes: &lt;my-component&gt;&lt;/my-component&gt;."
+                            "markdownDescription": "Prefer **kebab case** component tags.\n\nExample:\n\n```qingkuai\n<my-component></my-component>\n```"
                         }
-                    ],
-                    "description": "Your prefered fomat of component tag in the qingkuai template."
+                    ]
                 },
+
                 "componentAttributeFormatPreference": {
                     "type": "string",
                     "default": "camel",
+                    "description": "Controls the preferred naming style for component attributes in QingKuai templates.",
                     "oneOf": [
                         {
                             "const": "camel",
-                            "description": "Prefer camel attribute format, likes: &lt;MyComponent MyCustomAttribute&gt;&lt;/MyComponent&gt;."
+                            "markdownDescription": "Prefer **camel case** component attributes.\n\nExample:\n\n```qingkuai\n<MyComponent myCustomAttribute />\n```"
                         },
                         {
                             "const": "kebab",
-                            "description": "Prefer kebab attribute format, likes: &lt;my-component my-custom-attribute&gt;&lt;/my-component&gt;."
+                            "markdownDescription": "Prefer **kebab case** component attributes.\n\nExample:\n\n```qingkuai\n<MyComponent my-custom-attribute />\n```"
                         }
-                    ],
-                    "description": "Your prefered fomat of component attribute in the qingkuai template."
+                    ]
                 }
-            },
-            "description": "prettier-plugin-qingkuai used configuration options when formatting .qk file."
+            }
         }
     }
 }

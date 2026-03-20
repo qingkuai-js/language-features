@@ -8,6 +8,5 @@ node_modules
 features.md
 **/package-lock.json
 packages/vscode-extension/*.vsix
-packages/typescript-plugin/src/log.ts
 packages/ext-vscode/syntaxes/qk.tmLanguage.json
 packages/ext-vscode/syntaxes/qk-emmet.tmLanguage.json

@@ -2,6 +2,7 @@ export function debugAssert(v: any) {
     if (!v) {
         debugger
     }
+    return !!v
 }
 
 export function isNull(v: any): v is null {

@@ -1,84 +1,39 @@
+import type TS from "typescript"
+
 import type {
-    RealPath,
     TSFormattingOptions,
     TSFormatCodeSettings,
     QingkuaiConfiguration,
     PrettierConfiguration,
-    QingkuaiConfigurationWithDir
+    ExtensionConfiguration
 } from "../../../types/common"
-import type TS from "typescript"
-import type { RetransmissionParams } from "../../../types/communication"
+import type { ScriptLanguageId } from "../../../types/communication"
 
-import fs from "node:fs"
-import path from "node:path"
 import * as vscode from "vscode"
+
+import nodeFs from "node:fs"
 import prettier from "prettier"
-import { client, limitedScriptLanguageFeatures } from "./state"
-import { LSHandler, TPICHandler } from "../../../shared-util/constant"
-import { isBoolean, isNumber, isString, isUndefined } from "../../../shared-util/assert"
+import nodePath from "node:path"
 
-// 获取扩展配置项
-export function getExtensionConfig(uri: vscode.Uri) {
-    return vscode.workspace.getConfiguration("qingkuai", uri)
-}
+import { client } from "./state"
+import { LS_HANDLERS } from "../../../shared-util/constant"
+import { isBoolean, isNumber } from "../../../shared-util/assert"
 
-// 获取初始化时由.qingkuairc配置文件定义的配置项
-export async function getInitQingkuaiConfig() {
-    const configurations: QingkuaiConfigurationWithDir[] = []
-    for (const folder of vscode.workspace.workspaceFolders ?? []) {
-        const folderPath = folder.uri.fsPath
-        for (const filePath of fs.readdirSync(folderPath, { recursive: true })) {
-            if (isString(filePath) && filePath.endsWith(".qingkuairc")) {
-                const fileAbsPath = path.join(folderPath, filePath)
-                const config = await loadQingkuaiConfig(fileAbsPath)
-                if (!isUndefined(config)) {
-                    configurations.push({
-                        ...config,
-                        dir: folderPath as RealPath
-                    })
-                }
-            }
-        }
-    }
-    return configurations
-}
-
-// 监听工作区范围内.qingkuairc配置文件的修改和删除事件
+// 监听工作区范围内 .qingkuairc 配置文件的修改和删除事件
 export function startQingkuaiConfigWatcher() {
-    if (!limitedScriptLanguageFeatures) {
-        const watcher = vscode.workspace.createFileSystemWatcher("**/.qingkuairc", true)
-        watcher.onDidChange(async uri => {
-            client.sendNotification(LSHandler.Retransmission, {
-                name: TPICHandler.UpdateConfig,
-                data: {
-                    dir: path.dirname(uri.path),
-                    ...(await loadQingkuaiConfig(uri.path))
-                }
-            } satisfies RetransmissionParams)
-        })
-        watcher.onDidDelete(uri => {
-            client.sendNotification(LSHandler.Retransmission, {
-                name: TPICHandler.DeleteConfig,
-                data: path.dirname(uri.path)
-            } satisfies RetransmissionParams)
-        })
-    }
+    startConfigFileWatcher("**/.qingkuairc")
 }
 
 export function startPrettierConfigWatcher() {
-    const watcher = vscode.workspace.createFileSystemWatcher(
-        "**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}"
-    )
-    watcher.onDidChange(notifyServerCleanConfigCache)
-    watcher.onDidDelete(notifyServerCleanConfigCache)
+    startConfigFileWatcher("**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}")
 }
 
 // 向语言服务器发送清空配置缓存的通知
 export function notifyServerCleanConfigCache() {
-    client.sendNotification(LSHandler.CleanLanguageConfigCache, null)
+    client.sendNotification(LS_HANDLERS.CleanLanguageConfigCache, null)
 }
 
-export function getConfigTarget(config: vscode.WorkspaceConfiguration, section: string) {
+export function getVscodeConfigTarget(config: vscode.WorkspaceConfiguration, section: string) {
     const inspected = config.inspect(section)
     if (inspected?.workspaceValue) {
         return vscode.ConfigurationTarget.Workspace
@@ -89,15 +44,32 @@ export function getConfigTarget(config: vscode.WorkspaceConfiguration, section: 
     return vscode.ConfigurationTarget.Global
 }
 
-// 获取typescript配置项
-export function getTypescriptConfig(uri: vscode.Uri, isTypescriptDocument: boolean) {
-    const options = getFormattingOptions(uri)
-    if (isUndefined(options)) {
-        return
+export function getQingkuaiConfig(uri: vscode.Uri): QingkuaiConfiguration {
+    let dirPath = nodePath.dirname(uri.fsPath)
+    const root = nodePath.parse(uri.fsPath).root
+    while (dirPath !== root) {
+        const configFilePath = nodePath.resolve(dirPath, ".qingkuairc")
+        if (nodeFs.existsSync(configFilePath)) {
+            return loadQingkuaiConfig(configFilePath)
+        }
+        dirPath = nodePath.resolve(dirPath, "../")
     }
     return {
-        preference: getTSPreferences(uri, isTypescriptDocument),
-        formatCodeSettings: getTSFormatCodeSettings(uri, options, isTypescriptDocument)
+        interpretiveComments: false,
+        reactivityMode: "reactive",
+        whitespace: "trim-collapse",
+        resolveImportExtension: true,
+        shorthandDerivedDeclaration: true,
+        preserveHtmlComments: "development"
+    }
+}
+
+// 获取 typescript 配置项
+export function getTypescriptConfig(uri: vscode.Uri, scriptLanguageId: ScriptLanguageId) {
+    const options = getFormattingOptions(uri)
+    return {
+        preference: getTSPreferences(uri, scriptLanguageId),
+        formatCodeSettings: getTSFormatCodeSettings(uri, options, scriptLanguageId)
     }
 }
 
@@ -110,28 +82,82 @@ export async function getPrettierConfig(uri: vscode.Uri) {
     return Object.assign({}, byVscode as any, byConfigFile || {}) as PrettierConfiguration
 }
 
-async function loadQingkuaiConfig(path: string) {
-    try {
-        return JSON.parse(fs.readFileSync(path, "utf-8") || "{}") as QingkuaiConfiguration
-    } catch {
-        const value = await vscode.window.showWarningMessage(
-            `Load configuration from "${path}" is failed, please check its contents.`,
-            "Open Config File"
-        )
-        if (value === "Open Config File") {
-            const document = await vscode.workspace.openTextDocument(path)
-            vscode.window.showTextDocument(document)
+export function getClientConfig(uri: vscode.Uri, section: string, key: string) {
+    if (section === "javascript" || section === "typescript") {
+        const priorityConfig = vscode.workspace.getConfiguration("js/ts", uri)
+        const inspectRes = priorityConfig.inspect(`js/ts.${key}`)
+        if (
+            !inspectRes?.workspaceValue ||
+            !inspectRes.workspaceLanguageValue ||
+            !inspectRes.globalValue ||
+            !inspectRes.globalLanguageValue ||
+            !inspectRes.workspaceFolderValue ||
+            !inspectRes.workspaceFolderLanguageValue
+        ) {
+            return priorityConfig.get(key)
         }
     }
+    return vscode.workspace.getConfiguration(section, uri).get(key)
+}
+
+function loadQingkuaiConfig(path: string) {
+    const defaultConfig: QingkuaiConfiguration = {
+        whitespace: "trim-collapse",
+        reactivityMode: "reactive",
+        preserveHtmlComments: "never",
+        interpretiveComments: true,
+        resolveImportExtension: true,
+        shorthandDerivedDeclaration: true
+    }
+    try {
+        return Object.assign(
+            defaultConfig,
+            JSON.parse(nodeFs.readFileSync(path, "utf-8") || "{}")
+        ) as QingkuaiConfiguration
+    } catch {
+        vscode.window
+            .showWarningMessage(
+                `Load configuration from "${path}" is failed, please check its contents.`,
+                "Open Config File"
+            )
+            .then(async value => {
+                if (value === "Open Config File") {
+                    const document = await vscode.workspace.openTextDocument(path)
+                    vscode.window.showTextDocument(document)
+                }
+            })
+        return defaultConfig
+    }
+}
+
+// 获取扩展配置项
+export function getExtensionConfig(uri: vscode.Uri): ExtensionConfiguration {
+    const config = vscode.workspace.getConfiguration("qingkuai", uri)
+    return {
+        htmlHoverTip: config.get("htmlHoverTip"),
+        additionalCodeLens: config.get("additionalCodeLens"),
+        hoverTipReactiveStatus: config.get("hoverTipReactiveStatus"),
+        componentTagFormatPreference: config.get("componentTagFormatPreference"),
+        insertSpaceAroundInterpolation: config.get("insertSpaceAroundInterpolation"),
+        typescriptDiagnosticsExplain: config.get("typescriptDiagnosticsExplain"),
+        componentAttributeFormatPreference: config.get("componentAttributeFormatPreference")
+    } as any
+}
+
+function startConfigFileWatcher(globalPattern: string) {
+    const watcher = vscode.workspace.createFileSystemWatcher(globalPattern)
+    watcher.onDidCreate(notifyServerCleanConfigCache)
+    watcher.onDidChange(notifyServerCleanConfigCache)
+    watcher.onDidDelete(notifyServerCleanConfigCache)
 }
 
 // prettier-ignore
 function getTSFormatCodeSettings(
         uri: vscode.Uri,
         options: TSFormattingOptions,
-        isTypescriptDocument: boolean
+        scriptLanguageId: ScriptLanguageId
     ): TSFormatCodeSettings {
-        const config = vscode.workspace.getConfiguration(`${isTypescriptDocument?"type":"java"}script.format`, uri)
+        const config = vscode.workspace.getConfiguration(`${scriptLanguageId}.format`, uri)
         return {
             newLineCharacter: "\n",
             tabSize: options.tabSize,
@@ -161,11 +187,10 @@ function getTSFormatCodeSettings(
 // prettier-ignore
 function getTSPreferences(
         uri: vscode.Uri,
-        isTypescriptDocument: boolean
+        scriptLanguageId: ScriptLanguageId
     ): TS.UserPreferences {
-        const scriptKindName = isTypescriptDocument? "typescript" : "javascript"
-        const config = vscode.workspace.getConfiguration(scriptKindName, uri)
-        const preferencesConfig = vscode.workspace.getConfiguration(`${scriptKindName}.preferences`, uri)
+        const config = vscode.workspace.getConfiguration(scriptLanguageId, uri)
+        const preferencesConfig = vscode.workspace.getConfiguration(`${scriptLanguageId}.preferences`, uri)
 
         const preferences: TS.UserPreferences = {
             ...config.get("unstable"),
@@ -200,19 +225,15 @@ function getTSPreferences(
         return preferences
     }
 
-function getFormattingOptions(uri: vscode.Uri): TSFormattingOptions | undefined {
+function getFormattingOptions(uri: vscode.Uri): TSFormattingOptions {
     const editor = vscode.window.visibleTextEditors.find(
         editor => editor.document.uri.toString() === uri.toString()
     )
-    if (!editor) {
-        return undefined
-    }
-
     return {
-        insertSpaces: isBoolean(editor.options.insertSpaces)
+        insertSpaces: isBoolean(editor?.options.insertSpaces)
             ? editor.options.insertSpaces
             : undefined,
-        tabSize: isNumber(editor.options.tabSize) ? editor.options.tabSize : undefined
+        tabSize: isNumber(editor?.options.tabSize) ? editor.options.tabSize : undefined
     }
 }
 

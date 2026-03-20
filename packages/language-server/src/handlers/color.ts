@@ -1,7 +1,7 @@
 import type { GetColorPresentations, GetDocumentColor } from "../types/handlers"
 
 import { documents } from "../state"
-import { getCompileRes } from "../compile"
+import { getCompileResult } from "../compile"
 import { getDocumentColors as _getDocumentColor } from "qingkuai-language-service"
 import { getColorPresentations as _getColorPresentations } from "qingkuai-language-service"
 
@@ -10,7 +10,7 @@ export const getDocumentColor: GetDocumentColor = async ({ textDocument }, token
     if (!document || token.isCancellationRequested) {
         return null
     }
-    return _getDocumentColor(await getCompileRes(document))
+    return _getDocumentColor(await getCompileResult(document))
 }
 
 export const getColorPresentations: GetColorPresentations = async (
@@ -21,5 +21,5 @@ export const getColorPresentations: GetColorPresentations = async (
     if (!document || token.isCancellationRequested) {
         return null
     }
-    return _getColorPresentations(await getCompileRes(document), range, color)
+    return _getColorPresentations(await getCompileResult(document), range, color)
 }

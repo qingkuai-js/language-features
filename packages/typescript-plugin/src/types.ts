@@ -1,29 +1,10 @@
 import type TS from "typescript"
-import type { SlotInfo } from "qingkuai/compiler"
-import type { IpcParticipant } from "../../../shared-util/ipc/types"
 
-export interface QingKuaiFileInfo {
-    offset: number
-    version: number
-    isOpen: boolean
-    itos: number[]
-    interCode: string
-    slotInfo: SlotInfo
-    mappingFileName: string
-    scriptKind: TS.ScriptKind
-    getPos(pos: number): number
-}
+import type { IpcParticipant } from "../../../shared-util/ipc/types"
+import type { TypescriptAdapter } from "qingkuai-language-service/adapters"
 
 export type SetStateOptions = Partial<{
     ts: typeof TS
     server: IpcParticipant
-    session: TS.server.Session
-    lsProjectKindChanged: boolean
-    projectService: TS.server.ProjectService
+    adapter: TypescriptAdapter
 }>
-
-export type ConvertProtocolTextSpanWithContextVerifier = (
-    fileName: string,
-    sourceIndex: number,
-    itemKind: "start" | "end" | "contextStart" | "contextEnd"
-) => boolean

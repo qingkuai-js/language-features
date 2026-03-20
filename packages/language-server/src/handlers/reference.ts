@@ -2,13 +2,11 @@ import type {
     FindReferenceResultItem,
     TPICCommonRequestParams
 } from "../../../../types/communication"
-import type { RealPath } from "../../../../types/common"
 import type { ReferenceHandler } from "../types/handlers"
 
-import { CUSTOM_PATH } from "../constants"
+import { getCompileResult } from "../compile"
 import { findReferences } from "qingkuai-language-service"
-import { TPICHandler } from "../../../../shared-util/constant"
-import { getCompileRes, getCompileResByPath } from "../compile"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
 import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 
 export const findReference: ReferenceHandler = async ({ textDocument, position }, token) => {
@@ -16,17 +14,18 @@ export const findReference: ReferenceHandler = async ({ textDocument, position }
     if (!document || token.isCancellationRequested || limitedScriptLanguageFeatures) {
         return null
     }
-
-    const cr = await getCompileRes(document)
-    const offset = document.offsetAt(position)
-    return findReferences(cr, offset, CUSTOM_PATH, getCompileResByPath, getScriptBlockReferences)
+    return findReferences(
+        await getCompileResult(document),
+        document.offsetAt(position),
+        getScriptBlockReferences
+    )
 }
 
 async function getScriptBlockReferences(
-    fileName: RealPath,
+    fileName: string,
     pos: number
 ): Promise<FindReferenceResultItem[] | null> {
-    return await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.FindReference, {
+    return await tpic.sendRequest<TPICCommonRequestParams>(TP_HANDLERS.FindReference, {
         fileName,
         pos
     })

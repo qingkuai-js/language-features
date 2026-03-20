@@ -5,9 +5,10 @@ import type { Diagnostic, DiagnosticRelatedInformation } from "vscode-languagese
 
 import { URI } from "vscode-uri"
 import { stringifyRange } from "../util/sundry"
+import { PositionFlag } from "qingkuai/compiler"
 import { badComponentAttrMessageRE } from "../regular"
 import { isNull } from "../../../../shared-util/assert"
-import { createStyleSheetAndDocument, walk } from "../util/css"
+import { createStyleSheetAndDocument, walkStyleSheet } from "../util/css"
 import { GetDiagnosticResultItem } from "../../../../types/communication"
 import { DiagnosticSeverity, DiagnosticTag } from "vscode-languageserver-types"
 
@@ -34,13 +35,13 @@ export async function getDiagnostic(
             source: "qk",
             code: value.code,
             message: value.message,
-            range: cr.getRange(value.loc.start.index, value.loc.end.index),
+            range: cr.getVscodeRange(value.loc.start.index, value.loc.end.index),
             severity: type === "error" ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning
         }
     })
 
     // 添加样式块的诊断信息
-    cr.inputDescriptor.styles.forEach(descriptor => {
+    cr.styleDescriptors.forEach(descriptor => {
         const [languageService, document, _, styleSheet] = createStyleSheetAndDocument(
             cr,
             descriptor.loc.start.index
@@ -70,8 +71,8 @@ export async function getDiagnostic(
                 }
             })
         }
-        if (cr.config.extensionConfig?.typescriptDiagnosticsExplain) {
-            attachQingkuaiExplain(cr, item, cr.getOffset(item.range.start))
+        if (cr.config?.extensionConfig?.typescriptDiagnosticsExplain) {
+            attachQingkuaiExplain(cr, item, cr.document.offsetAt(item.range.start))
         }
         extendDiagnostic({
             ...item,
@@ -107,13 +108,9 @@ function attachQingkuaiExplain(
         diagnostic.message += `\n(Qingkuai explain): ${msg}`
     }
     switch (diagnostic.code) {
-        case 2351:
-            if (cr.isPositionFlagSet(sourceIndex, "isComponentStart")) {
-                addMessage(`The value of identifier is not a qingkuai component.`)
-            }
-            break
+        // 待办：此方法判断不准确
         case 2353: {
-            if (cr.isPositionFlagSet(sourceIndex, "isAttributeStart")) {
+            if (cr.isPositionFlagSetAtIndex(PositionFlag.IsAttributeStart, sourceIndex)) {
                 const m = badComponentAttrMessageRE.exec(diagnostic.message)
                 if (!isNull(m)) {
                     addMessage(`The attribute name is not a property of component's ${m[1]} type.`)
@@ -126,18 +123,18 @@ function attachQingkuaiExplain(
 
 function checkStyleBlock(document: TextDocument, styleSheet: any) {
     const ret: Diagnostic[] = []
-    walk(styleSheet, node => {
+    walkStyleSheet(styleSheet, node => {
         if (node.type === 52) {
             ret.push({
-                source: "qk",
-                code: "4001",
-                severity: DiagnosticSeverity.Warning,
                 range: {
                     start: document.positionAt(node.offset),
                     end: document.positionAt(node.offset + 10)
                 },
                 message:
-                    "@keyframes will not be scoped, so it's recommended to declare it in an external file and import it at the application's entry point."
+                    "@keyframes will not be scoped, so it's recommended to declare it in an external file and import it at the application's entry point.",
+                source: "qk",
+                code: "4001",
+                severity: DiagnosticSeverity.Warning
             })
         }
     })

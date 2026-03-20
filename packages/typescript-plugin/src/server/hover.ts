@@ -1,19 +1,10 @@
 import type { TPICCommonRequestParams, HoverTipResult } from "../../../../types/communication"
 
-import { server } from "../state"
-import { TPICHandler } from "../../../../shared-util/constant"
-import { getDefaultLanguageService } from "../util/typescript"
-import { convertor } from "qingkuai-language-service/adapters"
+import { adapter, tsPluginIpcServer } from "../state"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
 
 export function attachHoverTip() {
-    server.onRequest<TPICCommonRequestParams, HoverTipResult | null>(
-        TPICHandler.HoverTip,
-        params => {
-            const languageService = getDefaultLanguageService(params.fileName)
-            if (!languageService) {
-                return null
-            }
-            return convertor.getAndConvertHoverTip(languageService, params)
-        }
+    tsPluginIpcServer.onRequest<TPICCommonRequestParams, HoverTipResult | null>(TP_HANDLERS.HoverTip, params =>
+        adapter.service.getHoverTip(params)
     )
 }

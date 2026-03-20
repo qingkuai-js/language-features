@@ -1,136 +1,78 @@
-import type TS from "typescript"
+import type { AdapterPath, TsNormalizedPath, ComponentInfo } from "../../../../../types/common"
+import type { TypescriptAdapter } from "../adapter"
 
-import {
-    ts,
-    path,
-    getConfig,
-    getCompileInfo,
-    getFullFileNames,
-    resolvedQingkuaiModule
-} from "../state"
-import { getRealPath } from "../qingkuai"
-import { globalTypeIdentifierRE } from "../../regular"
-import { isEventType, isInTopScope, isSymbolKey, walk } from "../ts-ast"
-import { GlobalTypeIdentifier } from "../../../../../shared-util/constant"
-import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
-import { ComponentAttributeItem, ComponentIdentifierInfo } from "../../../../../types/common"
+import { isInTopScope, walkTsNode } from "../ts-ast"
 import { debugAssert, isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
 
-export function getComponentInfos(languageService: TS.LanguageService, fileName: string) {
-    const dirPath = path.dir(fileName)
-    const realPath = getRealPath(fileName)
-    const config = getConfig(realPath)
-    const program = languageService.getProgram()!
-    const sourceFile = program.getSourceFile(fileName)!
-    const qingkuaiModules = resolvedQingkuaiModule.get(realPath)
-    debugAssert(!!sourceFile)
+export function getComponentInfos(adapter: TypescriptAdapter, filePath: TsNormalizedPath) {
+    const sourceFile = adapter?.getDefaultSourceFile(filePath)!
+    if (!debugAssert(sourceFile)) {
+        return []
+    }
 
+    const dirPath = adapter.path.dir(filePath)
+    const config = adapter.getQingkuaiConfig(filePath)
     const importedQingkuaiFileNames = new Set<string>()
-    const componentInfos: ComponentIdentifierInfo[] = []
-    walk(sourceFile, node => {
-        if (ts.isImportDeclaration(node) && isInTopScope(node)) {
+    const componentInfos: ComponentInfo[] = []
+    const qingkuaiModules = adapter.resolvedQingkuaiModules.get(filePath)
+
+    walkTsNode(sourceFile, node => {
+        if (adapter.ts.isImportDeclaration(node) && isInTopScope(node)) {
             if (!isUndefined(node.importClause?.name)) {
                 const identifierName = node.importClause.name.text
                 if (
-                    ts.isStringLiteral(node.moduleSpecifier) &&
+                    adapter.ts.isStringLiteral(node.moduleSpecifier) &&
                     qingkuaiModules?.has(node.moduleSpecifier.text)
                 ) {
-                    let relativePath = node.moduleSpecifier.text
-                    let componentFileName = path.resolve(dirPath, node.moduleSpecifier.text)
-                    if (!isQingkuaiFileName(componentFileName)) {
-                        relativePath += ".qk"
-                        componentFileName += ".qk"
-                    }
+                    let relative = adapter.getNormalizedPath(node.moduleSpecifier.text)
+                    let absolute = adapter.path.resolve(dirPath, node.moduleSpecifier.text)
+
+                    const extension = !isQingkuaiFileName(relative) ? ".qk" : ""
+                    const targetFileInfo = adapter.service.ensureGetQingkuaiFileInfo(
+                        absolute + extension
+                    )
                     componentInfos.push({
-                        relativePath,
                         imported: true,
                         name: identifierName,
-                        slotNams: getComponentSlotNames(componentFileName),
-                        attributes: getCompileInfo(componentFileName).attributeInfos
+                        absolutePath: targetFileInfo.path,
+                        relativePath: relative + extension,
+                        slotNames: targetFileInfo.slotNames,
+                        attributes: targetFileInfo.attributes,
+                        type: targetFileInfo.defaultExportTypeStr
                     })
-                    importedQingkuaiFileNames.add(componentFileName)
+                    importedQingkuaiFileNames.add(absolute + extension)
                 }
             }
         }
     })
-    for (const currentFileName of getFullFileNames()) {
+
+    for (const targetFileName of adapter.getDefaultProject(filePath)!.getScriptFileNames()) {
+        const targetFilePath = adapter.getNormalizedPath(targetFileName)
         if (
-            isQingkuaiFileName(currentFileName) &&
-            currentFileName !== fileName.toString() &&
-            !importedQingkuaiFileNames.has(currentFileName)
+            targetFilePath !== filePath &&
+            isQingkuaiFileName(targetFilePath) &&
+            !importedQingkuaiFileNames.has(targetFilePath)
         ) {
-            let relativePath = getRelativePathWithStartDot(dirPath, currentFileName)
+            let relativePath = getRelativePathWithStartDot(adapter.path, dirPath, targetFilePath)
+            const targetFileInfo = adapter.service.ensureGetQingkuaiFileInfo(targetFilePath)
             if (config?.resolveImportExtension) {
-                relativePath = relativePath.slice(0, -path.ext(relativePath).length)
+                relativePath = relativePath.slice(0, -adapter.path.ext(relativePath).length)
             }
             componentInfos.push({
                 imported: false,
-                attributes: [],
                 relativePath: relativePath,
-                slotNams: getComponentSlotNames(currentFileName),
-                name: filePathToComponentName(path, currentFileName)
+                absolutePath: targetFilePath,
+                name: targetFileInfo.componentName,
+                slotNames: targetFileInfo.slotNames,
+                attributes: targetFileInfo.attributes,
+                type: targetFileInfo.defaultExportTypeStr
             })
         }
     }
     return componentInfos
 }
 
-// 获取组件的attribute信息
-export function getComponentAttributes(languageService: TS.LanguageService, fileName: string) {
-    const program = languageService.getProgram()!
-    const typeChecker = program.getTypeChecker()
-    const attributes: ComponentAttributeItem[] = []
-    const sourceFile = program.getSourceFile(fileName)!
-    debugAssert(!!sourceFile)
-
-    // @ts-expect-error: access private property
-    sourceFile.locals?.forEach((symbol, name) => {
-        if (globalTypeIdentifierRE.test(name)) {
-            let type: TS.Type
-            if (!ts.isJSDocTypedefTag(symbol.declarations[0])) {
-                type = typeChecker.getDeclaredTypeOfSymbol(symbol)
-            } else {
-                type = typeChecker.getTypeFromTypeNode(symbol.declarations[0].typeExpression as any)
-            }
-
-            if (!type.symbol || !(type.symbol.flags & ts.SymbolFlags.Type)) {
-                return
-            }
-
-            type.getProperties().forEach(property => {
-                const stringCandidates: string[] = []
-                const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
-
-                if (propertyType.isUnion()) {
-                    propertyType.types.forEach(t => {
-                        if (t.flags & ts.TypeFlags.StringLiteral) {
-                            stringCandidates.push(JSON.parse(typeChecker.typeToString(t)))
-                        }
-                    })
-                } else if (propertyType.flags & ts.TypeFlags.StringLiteral) {
-                    stringCandidates.push(JSON.parse(typeChecker.typeToString(propertyType)))
-                }
-
-                if (!isSymbolKey(property)) {
-                    attributes.push({
-                        stringCandidates,
-                        name: property.name,
-                        kind: name.slice(0, -1),
-                        type: typeChecker.typeToString(propertyType),
-                        isEvent: name === GlobalTypeIdentifier.Prop && isEventType(propertyType)
-                    })
-                }
-            })
-        }
-    })
-    return attributes
-}
-
-function getRelativePathWithStartDot(from: string, to: string) {
-    const relativePath = path.relative(from, to)
+function getRelativePathWithStartDot(adapterPath: AdapterPath, from: string, to: string) {
+    const relativePath = adapterPath.relative(from, to)
     return /\.{1,2}\//.test(relativePath) ? relativePath : `./${relativePath}`
-}
-
-function getComponentSlotNames(componentFileName: string) {
-    return Object.keys(getCompileInfo(getRealPath(componentFileName)).slotInfo)
 }

@@ -1,10 +1,9 @@
 import type { GetDiagnosticResultItem } from "../../../../types/communication"
 
-import { getCompileRes } from "../compile"
-import { RealPath } from "../../../../types/common"
+import { getCompileResult } from "../compile"
 import { debounce } from "../../../../shared-util/sundry"
 import { getDiagnostic } from "qingkuai-language-service"
-import { TPICHandler } from "../../../../shared-util/constant"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
 import { tpic, documents, connection, isTestingEnv, limitedScriptLanguageFeatures } from "../state"
 
 export const publishDiagnostics = debounce(
@@ -14,7 +13,7 @@ export const publishDiagnostics = debounce(
             return null
         }
 
-        const cr = await getCompileRes(document)
+        const cr = await getCompileResult(document)
         const diagnostics = await getDiagnostic(cr, getScriptDiagnostics)
         connection.sendDiagnostics({ uri, diagnostics })
     },
@@ -34,12 +33,12 @@ function debounceIdGetter(uri: string) {
     return uri
 }
 
-async function getScriptDiagnostics(fileName: RealPath): Promise<GetDiagnosticResultItem[]> {
+async function getScriptDiagnostics(fileName: string): Promise<GetDiagnosticResultItem[]> {
     if (limitedScriptLanguageFeatures) {
         return []
     }
     return await tpic.sendRequest<string, GetDiagnosticResultItem[]>(
-        TPICHandler.GetDiagnostic,
+        TP_HANDLERS.GetDiagnostic,
         fileName
     )
 }

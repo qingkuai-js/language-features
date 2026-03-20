@@ -1,4 +1,4 @@
-// 返回Date对象表示的时间的格式化表示（2006-01-02 15:04:05)
+// 返回 Date 对象表示的时间的格式化表示（2006-01-02 15:04:05)
 export function formatDate(date: Date) {
     const year = date.getFullYear()
     const day = ("" + date.getDate()).padStart(2, "0")

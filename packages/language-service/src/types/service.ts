@@ -1,50 +1,44 @@
+import type TS from "typescript"
+import type Prettier from "prettier"
+
 import type {
     HoverTipResult,
+    SignatureHelpParams,
     RenameLocationItem,
-    InsertSnippetParam,
+    InsertSnippetParams,
     GetCompletionsResult,
-    FindDefinitionResult,
+    FindDefinitionsResult,
     FindReferenceResultItem,
     ResolveCompletionParams,
     GetDiagnosticResultItem,
-    FindDefinitionResultItem
+    FindDefinitionsResultItem
 } from "../../../../types/communication"
 import type {
-    NumNum,
-    RealPath,
-    CustomFS,
-    CustomPath,
+    Pair,
     MaybePromise,
     CompileResult,
-    QingkuaiConfiguration,
-    ComponentAttributeItem,
-    ComponentIdentifierInfo
+    ComponentInfo,
+    TsPluginQingkuaiConfig
 } from "../../../../types/common"
-import type TS from "typescript"
-import type Prettier from "prettier"
-import type { ProjectKind } from "../constants"
+import type { ProjectKind } from "../enums"
 import type { HoverSettings } from "vscode-css-languageservice"
-import type { ASTPositionWithFlag, SlotInfo } from "qingkuai/compiler"
-import type { commonMessage as runtimeCommonMessage } from "qingkuai/internal"
-import type { commonMessage as compilerCommonMessage } from "qingkuai/compiler"
+import type { CompletionTriggerKind } from "vscode-languageserver"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
-export type DiagnosticKind =
+export type TsGetDiagsMethod =
     | "getSemanticDiagnostics"
     | "getSyntacticDiagnostics"
     | "getSuggestionDiagnostics"
 
 export interface CodeLensData {
-    fileName: RealPath
+    fileName: string
     interIndex: number
     position: Position
-    slotName?: string
-    componentName?: string
-    type: "reference" | "implementation"
+    type: CodeLensKind
 }
 
 export interface CodeLensConfig {
-    referencesCodeLens: {
+    referencesCodeLens?: {
         enabled: boolean
         showOnAllFunctions: boolean
     }
@@ -55,24 +49,14 @@ export interface CodeLensConfig {
 }
 
 export interface TextEditWithPosRange {
-    range: NumNum
+    range: Pair<number>
     newText: string
 }
 
-export interface AdapterCompileInfo {
-    itos: number[]
-    content: string
-    slotInfo: SlotInfo
-    scriptKind: TS.ScriptKind
-    positions: ASTPositionWithFlag[]
-    refAttrValueStartIndexes: Set<number>
-    attributeInfos: ComponentAttributeItem[]
-}
-
-export type ScriptCompletionData = {
+export type CompletionData = ResolveCompletionParams & {
     kind: "script"
     projectKind: ProjectKind
-} & ResolveCompletionParams
+}
 
 export type ScriptCompletionDetail = Omit<
     TS.CompletionEntryDetails,
@@ -86,69 +70,42 @@ export type ScriptCompletionDetail = Omit<
     })[]
 }
 
-export interface CreateLsAdaptersOptions {
-    ts: typeof TS
-    fs: CustomFS
-    path: CustomPath
-    typeDeclarationFilePath: string
-    getConfig: GetQingkuaiConfigFunc
-    getFullFileNames: GetFullFileNamesFunc
-    getUserPreferences: GetUserPreferencesFunc
-    getCompileInfo: GetAdapterCompileResultFunc
-    getLineAndCharacter: GetLineAndCharacterFunc
-    getFormattingOptions: GetFormattingOptionsFunc
-    getTsLanguageService: GetTsLanguageServiceFunc
-    getInterIndexByLineAndCharacter: GetInterIndexByLineAndCharacterFunc
-}
-
 export type GetCodeLensConfigFunc = (
     uri: string,
     languageId: string
 ) => MaybePromise<CodeLensConfig>
 
-export type GetLineAndCharacterFunc = (
-    fileName: string,
-    pos: number
-) => TS.LineAndCharacter | undefined
-
 export type GetScriptHoverFunc = (
-    fileName: RealPath,
+    fileName: string,
     pos: number
 ) => MaybePromise<HoverTipResult | null>
 
 export type GetScriptBlockSignatureFunc = (
-    fileName: RealPath,
+    fileName: string,
     pos: number,
     isRetrigger: boolean,
-    triggerCharacter?: string
+    triggerCharacter: SignatureHelpParams["triggerCharacter"]
 ) => MaybePromise<SignatureHelp | null>
-
-export type GetInterIndexByLineAndCharacterFunc = (
-    fileName: string,
-    lineAndCharacter: TS.LineAndCharacter
-) => number
 
 export type PrepareRenameInScriptBlockFunc = (
     cr: CompileResult,
     pos: number
-) => MaybePromise<NumNum | null>
-
-export type GetScriptDiagnosticsFunc = (
-    fileName: RealPath
-) => MaybePromise<GetDiagnosticResultItem[]>
+) => MaybePromise<Pair<number> | null>
 
 export type FindScriptDefinitionsFunc = (
     cr: CompileResult,
     pos: number
-) => MaybePromise<FindDefinitionResult | null>
+) => MaybePromise<FindDefinitionsResult | null>
 
 export type GetScriptCompletionsFunc = (
-    fileName: RealPath,
-    pos: number
+    fileName: string,
+    pos: number,
+    triggerCharacter: string,
+    triggerKind: CompletionTriggerKind | undefined
 ) => MaybePromise<GetCompletionsResult | null>
 
 export type RenameInScriptBlockFunc = (
-    fileName: RealPath,
+    fileName: string,
     pos: number
 ) => MaybePromise<RenameLocationItem[] | null>
 
@@ -157,39 +114,37 @@ export type GetScriptCompletionDetailFunc = (
 ) => MaybePromise<ScriptCompletionDetail | null>
 
 export type FindScriptReferencesFunc = (
-    fileName: RealPath,
+    fileName: string,
     offset: number
 ) => MaybePromise<FindReferenceResultItem[] | null>
 
 export type GetScriptImplementationsFunc = (
-    fileName: RealPath,
+    fileName: string,
     pos: number
 ) => MaybePromise<FindReferenceResultItem[] | null>
 
-export type resolveScriptCodeLensFunc = (
-    fileName: RealPath,
+export type DoResolveCodeLensFunc = (
+    fileName: string,
     pos: number,
     type: "reference" | "implementation"
 ) => MaybePromise<FindReferenceResultItem[] | null>
 
 export type FindScriptTypeDefinitionsFunc = (
-    fileName: RealPath,
+    fileName: string,
     pos: number
-) => MaybePromise<FindDefinitionResultItem[] | null>
+) => MaybePromise<FindDefinitionsResultItem[] | null>
 
-export type GetFullFileNamesFunc = () => string[]
-export type GetRealPathFunc = (fileName: string) => RealPath
-export type CompletionData = ScriptCompletionData | { kind: "emmet" }
-export type QingkuaiRuntimeCommonMessage = typeof runtimeCommonMessage
-export type QingkuaiCompilerCommonMessage = typeof compilerCommonMessage
-export type InsertSnippetFunc = (item: string | InsertSnippetParam) => void
+export type CodeLensKind = "implementation" | "reference" | "assignment"
+
+export type PrettierAndPlugins = [typeof Prettier, ...Array<string | Prettier.Plugin>]
+
+export type InsertSnippetFunc = (item: string | InsertSnippetParams) => void
 export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
-export type GetAdapterCompileResultFunc = (fileName: string) => AdapterCompileInfo
-export type PrettierAndPlugins = [typeof Prettier, ...Array<string | Prettier.Plugin>]
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
-export type GetTsLanguageServiceFunc = (fileName: string) => TS.LanguageService | undefined
-export type GetQingkuaiConfigFunc = (fileName: RealPath) => QingkuaiConfiguration | undefined
-export type GetScriptNavTreeFunc = (fileName: RealPath) => MaybePromise<TS.NavigationTree | null>
-export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentIdentifierInfo[]>
+export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentInfo[]>
+export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig | undefined
+export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.NavigationTree | null>
+export type GetScriptDiagnosticsFunc = (fileName: string) => MaybePromise<GetDiagnosticResultItem[]>
+

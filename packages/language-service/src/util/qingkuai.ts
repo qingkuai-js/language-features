@@ -1,17 +1,16 @@
+import type { ProjectKind } from "../enums"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { Range } from "vscode-languageserver-types"
-import type { FixedArray } from "../../../../types/util"
 import type { GetCompileResultFunc } from "../types/service"
-import type { NumNum, PrettierConfiguration, RealPath } from "../../../../types/common"
+import type { Pair, PrettierConfiguration } from "../../../../types/common"
 
-import { ProjectKind } from "../constants"
 import { isEmptyString } from "../../../../shared-util/assert"
 
 // 整理自动添加的import语句的格式
 export function formatImportStatement(
     statement: string,
     source: string,
-    posRange: NumNum,
+    posRange: Pair<number>,
     projectKind: ProjectKind,
     prettierConfig?: PrettierConfiguration
 ) {
@@ -36,22 +35,27 @@ export function formatImportStatement(
 
 // 获取指定文件中指定组件开始标签的范围
 export async function findComponentTagRanges(
-    fileName: RealPath,
+    fileName: string,
     componentTag: string,
     getCompileRes: GetCompileResultFunc
 ): Promise<Range[]> {
     const ranges: Range[] = []
-    const cr = await getCompileRes(fileName)
-    walk(cr.templateNodes, node => {
+    const entry = await getCompileRes(fileName)
+    walkTemplateNodes(entry.templateNodes, node => {
         if (node.componentTag === componentTag) {
-            ranges.push(cr.getRange(node.range[0], node.range[0] + node.tag.length + 1))
+            ranges.push(
+                entry.getVscodeRange(
+                    node.loc.start.index,
+                    node.loc.start.index + node.tag.length + 1
+                )
+            )
         }
     })
     return ranges
 }
 
-// 找到源码中某个索引所处的attribute
-export function findAttribute(index: number, node: TemplateNode) {
+// 找到源码中某个索引所处的 TemplateAttribute
+export function findTemplateAttribute(index: number, node: TemplateNode) {
     for (let i = 0; i < node.attributes.length; i++) {
         const attribute = node.attributes[i]
         const endIndex = attribute.loc.end.index
@@ -70,19 +74,22 @@ export function findAttribute(index: number, node: TemplateNode) {
     }
 }
 
-// 找到某个TemplateNode节点标签名范围（包括开始标签和结束标签），如果offset不在开始或结束标签名范围内则返回空数组
+// 找到某个 TemplateNode 节点标签名范围（包括开始标签和结束标签），如果offset不在开始或结束标签名范围内则返回空对象
 // 默认情况下，如果位于标签名结束的后一个位置，是不算做在标签名范围内的，例如<div_>或</div_>的下划线处，若要改变这一行为，
 // 请传入第二个参数为true（此处理为了是为了兼容某些特殊情况，例如重名标签名时，如果光标在标签名之后一个位置，也应正常处理）
-export function findTagRanges(node: TemplateNode, offset: number, includeEndChar = false) {
-    // @ts-ignore
-    const ret: FixedArray<NumNum | undefined, 2> = []
+export function findTagNameRanges(
+    node: TemplateNode,
+    offset: number,
+    includeClosingMarker = false
+) {
+    const findRes: Partial<Record<"start" | "end", Pair<number>>> = {}
 
     // 文本节点无标签
     if (isEmptyString(node.tag)) {
-        return ret
+        return findRes
     }
 
-    const delta = +includeEndChar
+    const delta = +includeClosingMarker
     const tagLen = node.tag.length
     const statTagNameStartIndex = node.loc.start.index + 1
     const startTagNameEndIndex = statTagNameStartIndex + tagLen
@@ -91,18 +98,18 @@ export function findTagRanges(node: TemplateNode, offset: number, includeEndChar
         (offset >= statTagNameStartIndex && offset < startTagNameEndIndex + delta) ||
         (offset >= endTagNameStartIndex && offset < endTagNameStartIndex + tagLen + delta)
     ) {
-        ret[0] = [statTagNameStartIndex, startTagNameEndIndex]
+        findRes.start = [statTagNameStartIndex, startTagNameEndIndex]
         if (endTagNameStartIndex !== 1) {
-            ret[1] = [endTagNameStartIndex, endTagNameStartIndex + tagLen]
+            findRes.end = [endTagNameStartIndex, endTagNameStartIndex + tagLen]
         }
     }
 
-    return ret
+    return findRes
 }
 
-// 找到指定offset所处的事件修饰符的名称及范围，不存在时返回undefined
-// 注意：调用此方法要确保offse在一个事件属性范围内，若不在事件属性范围内并不是一定返回undefined
-export function findEventModifier(source: string, offset: number, range: NumNum) {
+// 找到指定 offset 所处的事件修饰符的名称及范围，不存在时返回 undefined
+// 注意：调用此方法要确保offse在一个事件属性范围内，若不在事件属性范围内并不是一定返回 undefined
+export function findEventModifier(source: string, offset: number, range: Pair<number>) {
     let endIndex = offset
     let startIndex = offset - 1
 
@@ -117,33 +124,49 @@ export function findEventModifier(source: string, offset: number, range: NumNum)
         return undefined
     }
 
-    const modifierRange: NumNum = [startIndex + 1, endIndex]
+    const modifierRange: Pair<number> = [startIndex + 1, endIndex]
     return {
         range: modifierRange,
         name: source.slice(...modifierRange)
     }
 }
 
+// 找到指定索引处所位于的 TextContentPart
+export function findTextContentPartAt(node: TemplateNode, offset: number) {
+    if (!isEmptyString(node.tag)) {
+        return
+    }
+    for (const part of node.content) {
+        if (offset >= part.loc.start.index && offset <= part.loc.end.index) {
+            return part
+        }
+    }
+}
+
 // 递归遍历qingkuai编译结果的Template Node AST
-export function walk<T>(nodes: TemplateNode[], cb: (node: TemplateNode) => T | undefined) {
+export function walkTemplateNodes<T>(
+    nodes: TemplateNode[],
+    cb: (node: TemplateNode) => T | undefined
+) {
     for (const node of nodes) {
         const ret = cb(node)
         if (ret) {
             return ret
         }
-        node.children.length && walk(node.children, cb)
+        node.children.length && walkTemplateNodes(node.children, cb)
     }
 }
 
-// 找到源码中某个索引所处的AST节点
-export function findNodeAt(nodes: TemplateNode[], offset: number): TemplateNode | undefined {
+// 找到源码中某个索引所处的 TemplateNode 节点
+export function findTemplateNodeAt(nodes: TemplateNode[], index: number): TemplateNode | undefined {
     for (const currentNode of nodes) {
-        const [start, end] = currentNode.range
-        if (offset >= start && (end === -1 || offset < end)) {
+        const endIndex = currentNode.loc.end.index
+        const startIndex = currentNode.loc.start.index
+        if (index >= startIndex && (endIndex === -1 || index < endIndex)) {
             if (currentNode.children.length === 0) {
                 return currentNode
             }
-            return findNodeAt(currentNode.children, offset) || currentNode
+            return findTemplateNodeAt(currentNode.children, index) || currentNode
         }
     }
 }

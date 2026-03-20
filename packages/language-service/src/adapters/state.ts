@@ -1,54 +1,79 @@
-import type {
-    GetFullFileNamesFunc,
-    GetQingkuaiConfigFunc,
-    GetUserPreferencesFunc,
-    GetLineAndCharacterFunc,
-    CreateLsAdaptersOptions,
-    GetFormattingOptionsFunc,
-    GetTsLanguageServiceFunc,
-    GetAdapterCompileResultFunc,
-    GetInterIndexByLineAndCharacterFunc
-} from "../types/service"
-import type TS from "typescript"
-import type { CustomFS, CustomPath, RealPath } from "../../../../types/common"
+// import type TS from "typescript"
+// import type {
+//     GetQingkuaiConfigFunc,
+//     GetUserPreferencesFunc,
+//     GetFormattingOptionsFunc
+// } from "../types/service"
+// import type { AdapterFS, AdapterPath } from "../../../../types/common"
 
-import { INTER_NAMESPACE } from "../../../../shared-util/constant"
+// import {
+//     proxyGetScriptKind,
+//     proxyGetCompletionsAtPosition,
+//     proxyResolveModuleNameLiterals,
+//     proxyGetScriptSnapshot
+// } from "./proxies"
+// import { TypescriptAdapter } from "./instance"
+// import { runAll } from "../../../../shared-util/sundry"
+// import { isUndefined } from "../../../../shared-util/assert"
+
+// export let ts: typeof TS
+// export let adapterFs: AdapterFS
+// export let adapterPath: AdapterPath
+// export let project: TS.server.Project
+// export let typeDeclarationFilePath: string
+// export let languageService: TS.LanguageService
+// export let getQingkuaiConfig: GetQingkuaiConfigFunc
+// export let getUserPreferences: GetUserPreferencesFunc
+// export let languageServiceHost: TS.LanguageServiceHost
+// export let getFormattingOptions: GetFormattingOptionsFunc
+
+// // qingkuai自定义错误缓存
+// export const qingkuaiDiagnostics = new Map<TS.server.NormalizedPath, TS.Diagnostic[]>()
+
+// // qingkuai 文件导入映射，导入方文件名 -> 被导入的 qingkuai 文件名列表
+// export const resolvedQingkuaiModules = new Map<TS.server.NormalizedPath, Set<string>>()
+
+// export function createTypescriptAdapter(options: {
+//     ts: typeof TS
+//     fs: AdapterFS
+//     path: AdapterPath
+//     project: TS.server.Project
+//     typeDeclarationFilePath: string
+//     languageService: TS.LanguageService
+//     getQingkuaiConfig: GetQingkuaiConfigFunc
+//     getUserPreferences: GetUserPreferencesFunc
+//     languageServiceHost: TS.LanguageServiceHost
+//     getFormattingOptions: GetFormattingOptionsFunc
+// }) {
+//     if (isUndefined(ts)) {
+//         ;({
+//             ts,
+//             project,
+//             languageService,
+//             getQingkuaiConfig,
+//             getUserPreferences,
+//             languageServiceHost,
+//             getFormattingOptions,
+//             typeDeclarationFilePath
+//         } = options)
+//         ;[adapterFs, adapterPath] = [options.fs, options.path]
+//     }
+//     runAll([
+//         proxyGetScriptKind,
+//         proxyGetScriptSnapshot,
+//         proxyGetCompletionsAtPosition,
+//         proxyResolveModuleNameLiterals
+//     ])
+//     return new TypescriptAdapter()
+// }
+
+import type TS from "typescript"
+import { SetStateOptions } from "../types/adapter"
 
 export let ts: typeof TS
-export let fs: CustomFS
-export let path: CustomPath
-export let typeRefStatement: string
 export let typeDeclarationFilePath: string
-export let getConfig: GetQingkuaiConfigFunc
-export let getFullFileNames: GetFullFileNamesFunc
-export let getUserPreferences: GetUserPreferencesFunc
-export let getCompileInfo: GetAdapterCompileResultFunc
-export let getLineAndCharacter: GetLineAndCharacterFunc
-export let getTsLanguageService: GetTsLanguageServiceFunc
-export let getFormattingOptions: GetFormattingOptionsFunc
-export let getInterIndexByLineAndCharacter: GetInterIndexByLineAndCharacterFunc
+export let projectService: TS.server.ProjectService
 
-// 将typscript中使用的文件名（NormalizedPath）转换为真实路径
-export const tsFileNameToRealPath = new Map<string, RealPath>()
-
-// import语句导入目标为目录时解析为qingkuai源文件的记录
-export const resolvedQingkuaiModule = new Map<RealPath, Set<string>>()
-
-// qingkuai自定义错误缓存
-export const qingkuaiDiagnostics = new Map<RealPath, TS.Diagnostic[]>()
-
-export function createLsAdapter(options: CreateLsAdaptersOptions) {
-    ts = options.ts
-    fs = options.fs
-    path = options.path
-    getConfig = options.getConfig
-    getCompileInfo = options.getCompileInfo
-    getFullFileNames = options.getFullFileNames
-    getUserPreferences = options.getUserPreferences
-    getLineAndCharacter = options.getLineAndCharacter
-    getTsLanguageService = options.getTsLanguageService
-    getFormattingOptions = options.getFormattingOptions
-    typeDeclarationFilePath = options.typeDeclarationFilePath
-    getInterIndexByLineAndCharacter = options.getInterIndexByLineAndCharacter
-    typeRefStatement = `import {${INTER_NAMESPACE},wat,waT,Wat,der,stc,rea} from "${typeDeclarationFilePath}"\n`
+export function setState(options: SetStateOptions) {
+    ;({ ts, projectService, typeDeclarationFilePath } = options)
 }

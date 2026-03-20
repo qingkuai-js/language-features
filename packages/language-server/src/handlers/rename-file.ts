@@ -1,13 +1,6 @@
-import type {
-    RenameFileResult,
-    RenameFileParams,
-    ApplyWorkspaceEditParams
-} from "../../../../types/communication"
-import type { WorkspaceEdit } from "vscode-languageserver/node"
+import type { RenameFileResult, RenameFileParams } from "../../../../types/communication"
 
-import { URI } from "vscode-uri"
-import { TextEdit } from "vscode-languageserver/node"
-import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
+import { LS_HANDLERS, TP_HANDLERS } from "../../../../shared-util/constant"
 import { connection, limitedScriptLanguageFeatures, tpic, tpicConnectedPromise } from "../state"
 
 export async function renameFile(params: RenameFileParams) {
@@ -19,21 +12,8 @@ export async function renameFile(params: RenameFileParams) {
         await tpicConnectedPromise
     }
 
-    const workspaceEdit: WorkspaceEdit = { changes: {} }
-    const res = await tpic.sendRequest<RenameFileParams, RenameFileResult>(
-        TPICHandler.RenameFile,
-        params
+    connection.sendNotification(
+        LS_HANDLERS.ApplyWorkspaceEdit,
+        await tpic.sendRequest<RenameFileParams, RenameFileResult>(TP_HANDLERS.RenameFile, params)
     )
-    for (const item of res) {
-        workspaceEdit.changes![URI.file(item.fileName).toString()] = item.changes.map(change => {
-            return TextEdit.replace(change.range, change.newText)
-        })
-    }
-    if (Object.keys(workspaceEdit.changes || {}).length) {
-        connection.sendNotification(LSHandler.ApplyWorkspaceEdit, {
-            edit: workspaceEdit,
-            isRefactoring: true,
-            message: "Qingkuai: imports changes is being applied"
-        } satisfies ApplyWorkspaceEditParams)
-    }
 }

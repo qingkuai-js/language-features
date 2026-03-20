@@ -1,18 +1,19 @@
 import type TS from "typescript"
 import type { FixedArray } from "./util"
+import type { Range } from "vscode-languageserver-types"
 import type { Options as PrettierOptions } from "prettier"
-import type { Position, Range } from "vscode-languageserver/node"
 import type { GetClientLanguageConfigResult } from "./communication"
-import type { CompileResult as QingkuaiCompileResult, PositionFlagKeys } from "qingkuai/compiler"
+import type { TextDocument } from "vscode-languageserver-textdocument"
+import type { ASTLocation, CompileIntermediateResult } from "qingkuai/compiler"
 
-export type NumNumArray = NumNum[]
-export type NumNum = FixedArray<number, 2>
+export type Pair<T = any> = FixedArray<T, 2>
 export type MaybePromise<T = any> = T | Promise<T>
+export type TsNormalizedPath = TS.server.NormalizedPath
 export type FuncWithCallBack = (cb: () => void) => void
-export type GetRangeFunc = (start: number, end?: number) => Range
 
-export type RealPath = string & {
-    _: never
+export interface GetVscodeRangeFunc {
+    (loc: ASTLocation): Range
+    (start: number, end?: number): Range
 }
 
 export type PromiseWithState<T = any> = Promise<T> & {
@@ -25,12 +26,12 @@ export interface OpenFileParams {
     end: number
 }
 
-export interface CustomFS {
+export interface AdapterFS {
     read: (path: string) => string
     exist: (path: string) => boolean
 }
 
-export interface CustomPath {
+export interface AdapterPath {
     ext: (path: string) => string
     dir: (path: string) => string
     base: (path: string) => string
@@ -39,22 +40,27 @@ export interface CustomPath {
 }
 
 export interface ComponentAttributeItem {
-    kind: "Prop" | "Ref"
+    kind: "Props" | "Refs"
     name: string
     type: string
-    isEvent: boolean
+    optional: boolean
+    mayBeEvent: boolean
+    couldBeString: boolean
     stringCandidates: string[]
 }
 
-export interface ComponentIdentifierInfo {
+export interface ComponentInfo {
     name: string
+    type: string
     imported: boolean
-    slotNams: string[]
+    slotNames: string[]
     relativePath: string
+    absolutePath: string
     attributes: ComponentAttributeItem[]
 }
 
 export interface ExtensionConfiguration {
+    hoverTipReactiveStatus: boolean
     typescriptDiagnosticsExplain: boolean
     insertSpaceAroundInterpolation: boolean
     additionalCodeLens: ("component" | "slot")[]
@@ -68,14 +74,14 @@ export interface TSFormattingOptions {
     insertSpaces: boolean | undefined
 }
 
-export type QingkuaiConfiguration = Partial<{
-    exposeDestructions: boolean
-    exposeDependencies: boolean
-    insertTipComments: boolean
+export type QingkuaiConfiguration = {
+    interpretiveComments: boolean
     resolveImportExtension: boolean
-    convenientDerivedDeclaration: boolean
-    reserveHtmlComments: "all" | "never" | "development" | "production"
-}>
+    shorthandDerivedDeclaration: boolean
+    reactivityMode: "reactive" | "shallow"
+    whitespace: "preserve" | "trim" | "collapse" | "trim-collapse"
+    preserveHtmlComments: "all" | "never" | "development" | "production"
+}
 
 export interface TSClientConfiguration {
     preference: TSUserPreferences
@@ -90,26 +96,19 @@ export type PrettierConfiguration = PrettierOptions & {
     }>
 }
 
-export type CompileResult = QingkuaiCompileResult & {
+export type CompileResult = CompileIntermediateResult & {
     uri: string
     version: number
-    filePath: RealPath
-    getRange: GetRangeFunc
+    filePath: string
+    document: TextDocument
     isSynchronized: boolean
-    builtInTypeDeclarationEndIndex: number
+    getVscodeRange: GetVscodeRangeFunc
     scriptLanguageId: "typescript" | "javascript"
-    config: Partial<GetClientLanguageConfigResult>
-
-    getOffset: (position: Position) => number
-    getPosition: (offset: number) => Position
-    getInterIndex: (sourceIndex: number) => number
-    getSourceIndex: (interIndex: number, isEnd?: boolean) => number
-    isPositionFlagSet: (index: number, key: PositionFlagKeys) => boolean
+    config: GetClientLanguageConfigResult | null
 }
 
-export type QingkuaiConfigurationWithDir = QingkuaiConfiguration & {
-    dir: RealPath
-}
+export type TsPluginQingkuaiConfig = Pick<QingkuaiConfiguration, "resolveImportExtension"> &
+    Pick<ExtensionConfiguration, "hoverTipReactiveStatus">
 
 export type TSUserPreferences = TS.server.protocol.UserPreferences
 export type TSFormatCodeSettings = TS.server.protocol.FormatCodeSettings

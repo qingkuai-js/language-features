@@ -1,41 +1,152 @@
 import type TS from "typescript"
+
 import type { ConfigPluginParms } from "../../../types/communication"
 
-import { ts, setState } from "./state"
+import nodeFs from "node:fs"
+import nodePath from "node:path"
+
 import { proxyTypescript } from "./proxy"
-import { createIpcServer } from "./server"
-import { initializeAdapter } from "./adapter"
+import { ts, setState, adapter } from "./state"
 import { isUndefined } from "../../../shared-util/assert"
-import { qkContext } from "qingkuai-language-service/adapters"
-import { initQingkuaiConfig } from "./server/configuration/method"
+import { attachLanguageServerIPCHandlers } from "./server"
+import { AdapterFS, AdapterPath } from "../../../types/common"
+import { createServer } from "../../../shared-util/ipc/participant"
+import { TypescriptAdapter } from "qingkuai-language-service/adapters"
+import { excludeProperty, traverseObject } from "../../../shared-util/sundry"
+import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
         create(info: TS.server.PluginCreateInfo) {
+            const project = info.project
+            const projectService = project.projectService
             if (isUndefined(ts)) {
                 setState({
-                    session: info.session,
                     ts: modules.typescript,
-                    projectService: info.project.projectService
+                    adapter: createAdapter(modules.typescript, projectService)
                 })
-                initializeAdapter(modules.typescript)
-                info.project.projectService.setHostConfiguration({
-                    extraFileExtensions: [
-                        {
-                            extension: ".qk",
-                            isMixedContent: false,
-                            scriptKind: modules.typescript.ScriptKind.Deferred
-                        }
-                    ]
-                })
+                // info.project.projectService.setHostConfiguration({
+                //     extraFileExtensions: [
+                //         {
+                //             extension: ".qk",
+                //             isMixedContent: false,
+                //             scriptKind: modules.typescript.ScriptKind.Deferred
+                //         }
+                //     ]
+                // })
             }
-            return proxyTypescript(info), Object.assign({}, info.languageService)
+            proxyTypescript(info)
+            return info.languageService
         },
 
         onConfigurationChanged(params: ConfigPluginParms) {
+            traverseObject(params.configurations, (fileName, config) => {
+                setQingkuaiConfig(fileName, config)
+            })
             createIpcServer(params.sockPath)
-            initQingkuaiConfig(params.configurations)
-            qkContext.recordRealPath(params.triggerFileName)
+        },
+
+        getExternalFiles(project: TS.server.Project, updateLevel: TS.ProgramUpdateLevel) {
+            if (
+                updateLevel === ts.ProgramUpdateLevel.Update ||
+                project.projectKind !== ts.server.ProjectKind.Configured
+            ) {
+                return []
+            }
+
+            const config = ts.readJsonConfigFile(
+                project.getProjectName(),
+                project.readFile.bind(project)
+            )
+            const parseHost: TS.ParseConfigHost = {
+                fileExists(path) {
+                    return project.fileExists(path)
+                },
+                readFile(path) {
+                    return project.readFile(path)
+                },
+                readDirectory(...args) {
+                    args[1] = [".qk"]
+                    return project.readDirectory(...args)
+                },
+                get useCaseSensitiveFileNames() {
+                    return project.useCaseSensitiveFileNames()
+                }
+            }
+            const parsed = ts.parseJsonSourceFileConfigFileContent(
+                config,
+                parseHost,
+                project.getCurrentDirectory()
+            )
+            return parsed.fileNames
         }
     }
+}
+
+// 创建ipc通道，并监听来自 qingkuai 语言服务器的请求
+function createIpcServer(sockPath: string) {
+    if (!nodeFs.existsSync(sockPath)) {
+        createServer(sockPath).then(server => {
+            setState({
+                server
+            })
+            attachLanguageServerIPCHandlers()
+        })
+    }
+}
+
+function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) {
+    const typeDecFilePath = nodePath.resolve(__dirname, "../dts/qingkuai")
+
+    const adapterFs: AdapterFS = {
+        exist: nodeFs.existsSync,
+        read: path => nodeFs.readFileSync(path, "utf-8")
+    }
+
+    const adapterPath: AdapterPath = {
+        ext(path: string) {
+            return nodePath.extname(path)
+        },
+        dir(path: string) {
+            return nodePath.dirname(path)
+        },
+        resolve(...paths: string[]) {
+            return nodePath.resolve(...paths)
+        },
+        relative(from: string, to: string) {
+            return nodePath.relative(from, to)
+        },
+        base(path: string) {
+            return nodePath.basename(path, nodePath.extname(path))
+        }
+    }
+
+    return new TypescriptAdapter(
+        ts,
+        adapterFs,
+        adapterPath,
+        typeDecFilePath,
+        projectService,
+        getQingkuaiConfig,
+        getUserPreferences,
+        getFormattingOptions
+    )
+}
+
+function getUserPreferences(fileName: string): TS.UserPreferences {
+    const ret = excludeProperty(
+        adapter.projectService.getPreferences(adapter.getNormalizedPath(fileName)),
+        "lazyConfiguredProjectsFromExternalProject"
+    )
+    if (adapter.getQingkuaiConfig(fileName)?.resolveImportExtension) {
+        return {
+            ...ret,
+            importModuleSpecifierEnding: "js"
+        }
+    }
+    return ret
+}
+
+function getFormattingOptions(fileName: string) {
+    return adapter.projectService.getFormatCodeOptions(adapter.getNormalizedPath(fileName))
 }

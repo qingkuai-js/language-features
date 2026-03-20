@@ -1,54 +1,27 @@
 import type {
-    ScriptCompletionData,
+    CompletionData,
     TextEditWithPosRange,
     GetCompileResultFunc,
     GetScriptCompletionDetailFunc
 } from "../../types/service"
 import type { CompletionItem, TextEdit } from "vscode-languageserver-types"
 
-import { parseTemplate } from "qingkuai/compiler"
-import { addImportTextEditRE } from "../../regular"
+import { CompletionImportTextEditRE } from "../../regular"
 import { formatImportStatement } from "../../util/qingkuai"
-import { isString } from "../../../../../shared-util/assert"
-
-export function resolveEmmetCompletion(item: CompletionItem) {
-    if (!isString(item.data?.kind)) {
-        return item
-    }
-
-    const textEdit = item.textEdit!
-    const newTextArr = textEdit.newText.split("")
-    parseTemplate(textEdit.newText, true).forEach(node => {
-        let sizesitCount = 0
-        node.attributes.forEach(attr => {
-            if (attr.quote && !attr.value.raw) {
-                sizesitCount++
-            }
-        })
-        node.attributes.forEach(attr => {
-            if (attr.quote !== "none" && /[!@#&]/.test(attr.key.raw[0])) {
-                newTextArr[attr.value.loc.end.index] = "}"
-                newTextArr[attr.value.loc.start.index - 1] = "{"
-            }
-        })
-    })
-    textEdit.newText = newTextArr.join("")
-    return (item.documentation = item.textEdit?.newText.replace(/\$\{\d+\}/g, "|")), item
-}
 
 export async function resolveScriptBlockCompletion(
     item: CompletionItem,
     getCompileRes: GetCompileResultFunc,
     getScriptCompletionDetail: GetScriptCompletionDetailFunc
 ): Promise<CompletionItem> {
-    const data: ScriptCompletionData = item.data
+    const data: CompletionData = item.data
     const cr = await getCompileRes(data.fileName)
     const completionDetail = await getScriptCompletionDetail(item)
     if (!completionDetail) {
         return item
     }
 
-    const scriptStartIndex = cr.inputDescriptor.script.loc.start.index
+    const scriptStartIndex = cr.scriptDescriptor.loc.start.index
     const [detailSections, textEdits]: [string[], TextEditWithPosRange[]] = [[], []]
     if (completionDetail?.codeActions?.length) {
         let hasRemainingCommandOrEdits = false
@@ -80,20 +53,20 @@ export async function resolveScriptBlockCompletion(
     if (textEdits.length) {
         const additionalTextEdits: TextEdit[] = []
         for (const item of textEdits) {
-            if (addImportTextEditRE.test(item.newText)) {
+            if (CompletionImportTextEditRE.test(item.newText)) {
                 const addImportIndex = Math.max(0, scriptStartIndex)
                 item.range = [addImportIndex, addImportIndex]
                 item.newText = formatImportStatement(
                     item.newText.trim(),
-                    cr.inputDescriptor.source,
+                    cr.document.getText(),
                     item.range,
                     data.projectKind,
-                    cr.config.prettierConfig
+                    cr.config?.prettierConfig
                 )
             }
             additionalTextEdits.push({
                 newText: item.newText,
-                range: cr.getRange(...item.range)
+                range: cr.getVscodeRange(...item.range)
             })
         }
         if (additionalTextEdits.length) {

@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "paths": {
+            "qingkuai-language-service/adapters": ["../language-service/src/adapters/adapter"]
+        }
+    },
+    "extends": "../../tsconfig.json"
+}

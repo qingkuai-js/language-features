@@ -29,11 +29,11 @@ export const eventModifiers = [
         description:
             "If the [prevent](https://qingkuai.dev) event modifier is set, [preventDefault](https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault) calling will be attached to event handler, this will prevent the default behavior of proxy(mostly browser)."
     },
-    {
-        name: "compose",
-        description:
-            "If the [compose](https://qingkuai.dev) event modifier is set, the input evnent handler will not be fired during input composing phase(likes during word choosing with Chinese Pinyin). Note: this modifier is only avaliable for input event."
-    },
+    // {
+    //     name: "compose",
+    //     description:
+    //         "If the [compose](https://qingkuai.dev) event modifier is set, the input evnent handler will not be fired during input composing phase(likes during word choosing with Chinese Pinyin). Note: this modifier is only avaliable for input event."
+    // },
     {
         name: "enter",
         description:

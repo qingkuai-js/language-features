@@ -1,62 +1,51 @@
 import type { ConfigureFileParams } from "../../../../../types/communication"
-import type { QingkuaiConfigurationWithDir, RealPath } from "../../../../../types/common"
 
-import path from "node:path"
-import { RefreshDiagnosticKind } from "../../constant"
-import { projectService, server, ts } from "../../state"
-import { refreshDiagnostics } from "../diagnostic/refresh"
-import { TPICHandler } from "../../../../../shared-util/constant"
-import { deleteQingkuaiConfig, setQingkuaiConfig } from "./method"
+import nodePath from "node:path"
+
+import { setQingkuaiConfig } from "./method"
+import { tsPluginIpcServer, ts, adapter } from "../../state"
+import { TP_HANDLERS } from "../../../../../shared-util/constant"
 
 export function attachChangeConfig() {
-    server.onNotification(TPICHandler.DeleteConfig, (dir: RealPath) => {
-        refreshDiagnosticsDelay()
-        deleteQingkuaiConfig(dir)
-    })
-
-    server.onNotification(TPICHandler.UpdateConfig, (config: QingkuaiConfigurationWithDir) => {
-        refreshDiagnosticsDelay()
-        setQingkuaiConfig(config.dir, config)
-    })
-
-    // 此方法用于将typescript相关的配置项与文件关联，qingkuai文件不会经过ts的客户端扩展处理需要手动添加配置信息
-    server.onNotification(TPICHandler.ConfigureFile, (params: ConfigureFileParams) => {
+    // 添加 typescript 的客户端配置选项到 qingkuai 文件的 ScriptInfo
+    tsPluginIpcServer.onNotification(TP_HANDLERS.ConfigureFile, (params: ConfigureFileParams) => {
+        const filePath = adapter.getNormalizedPath(params.fileName)
         convertImportFileExcludePatternsPreferences(
-            params.config.preference.autoImportFileExcludePatterns!,
-            params.workspacePath
+            params.typescriptConfig.preference.autoImportFileExcludePatterns!,
+            params.dirPath
         )
-        projectService.setHostConfiguration({
-            file: params.fileName,
-            preferences: params.config.preference,
-            formatOptions: params.config.formatCodeSettings
+        adapter.projectService.setHostConfiguration({
+            file: filePath,
+            preferences: params.typescriptConfig.preference,
+            formatOptions: params.typescriptConfig.formatCodeSettings
+        })
+        setQingkuaiConfig(filePath, {
+            resolveImportExtension: params.qingkuaiConfig.resolveImportExtension,
+            hoverTipReactiveStatus: params.extensionConfig.hoverTipReactiveStatus
         })
     })
 }
 
-// typescript版本低于5.4.0时autoImportFileExcludePatterns配置项
+// typescript 版本低于 5.4.0 时 autoImportFileExcludePatterns 配置项
 // 不支持以通配符开头，将以通配符开头或为相对路径的pattern转换为绝对路径
 function convertImportFileExcludePatternsPreferences(
     patterns: string[] | undefined,
-    workspacePath: string
+    dirPath: string
 ) {
     patterns?.forEach((p, i) => {
         let wildcardPrefix = ""
         if (ts.version < "5.4.0") {
-            wildcardPrefix = path.parse(workspacePath).root
+            wildcardPrefix = nodePath.parse(dirPath).root
         }
-        if (path.isAbsolute(p)) {
+        if (nodePath.isAbsolute(p)) {
             return
         }
         if (p.startsWith("*")) {
             patterns[i] = wildcardPrefix + p
         } else if (/^\.\.?($|[\/\\])/.test(p)) {
-            patterns[i] = path.join(workspacePath, p)
+            patterns[i] = nodePath.join(dirPath, p)
         } else {
-            return wildcardPrefix + "**" + path.sep + p
+            return wildcardPrefix + "**" + nodePath.sep + p
         }
     })
-}
-
-function refreshDiagnosticsDelay() {
-    setTimeout(() => refreshDiagnostics(RefreshDiagnosticKind.qingkuaiConfig, false), 1000)
 }

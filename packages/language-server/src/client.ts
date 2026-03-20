@@ -4,17 +4,19 @@ import type {
     FindComponentTagRangeParams
 } from "../../../types/communication"
 import type { GeneralFunc } from "../../../types/util"
-import type { ComponentIdentifierInfo } from "../../../types/common"
+import type { ComponentInfo } from "../../../types/common"
+
+import prettier from "prettier"
 
 import { URI } from "vscode-uri"
-import { getCompileResByPath } from "./compile"
+import { getCompileResultByPath } from "./compile"
 import { publishDiagnostics } from "./handlers/diagnostic"
 import { Messages, communicationWayInfo } from "./messages"
-import { LSHandler, TPICHandler } from "../../../shared-util/constant"
+import { findComponentTagRanges } from "qingkuai-language-service"
+import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
 import { generatePromiseAndResolver, sleep } from "../../../shared-util/sundry"
-import { findComponentTagRanges, ProjectKind } from "qingkuai-language-service"
 import { tpic, Logger, tpicConnectedResolver, setState, connection } from "./state"
-import { connectTo, defaultParticipant } from "../../../shared-util/ipc/participant"
+import { connectTo, DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 
 // 连接到typescript-plugin-qingkuai创建的ipc服务器，并将客户端句柄记录到tpic，后续qingkuai语言服务器将通过tpic与ts服务器进行通信
 export async function connectTsServer(params: ConnectToTsServerParams) {
@@ -23,9 +25,9 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
         const promiseAndResolver = generatePromiseAndResolver()
         originalResolver = tpicConnectedResolver
         setState({
-            typeRefStatement: "",
-            tpic: defaultParticipant,
-            projectKind: ProjectKind.JS,
+            tpic: DEFAULT_PARTICIPANT,
+            typeDeclarationFilePath: "",
+            projectKind: params.projectKind,
             tpicConnectedPromise: promiseAndResolver[0],
             tpicConnectedResolver: promiseAndResolver[1]
         })
@@ -37,14 +39,17 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
             const client = await connectTo(params.sockPath)
             setState({
                 tpic: client,
+                projectKind: params.projectKind,
                 limitedScriptLanguageFeatures: false
             })
             attachClientHandlers()
             attachRetransmissionHandlers()
 
-            // 获取qingkuai类型三斜线引用指令语句，qingkuai编译器在生成typescript中间代码时需要它
             setState({
-                typeRefStatement: await client.sendRequest(TPICHandler.GetTypeRefStatement, "")
+                typeDeclarationFilePath: await client.sendRequest(
+                    TP_HANDLERS.getTypeDeclarationFilePath,
+                    ""
+                )
             })
 
             originalResolver?.()
@@ -61,11 +66,18 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
     Logger.error(Messages.ConnectTsServerPluginFailed)
 }
 
-export async function getComponentInfos(fileName: string) {
-    return await tpic.sendRequest<string, ComponentIdentifierInfo[]>(
-        TPICHandler.GetComponentInfos,
+export async function getComponentInfos(fileName: string, typePrintWidth = 80) {
+    const componentInfos = await tpic.sendRequest<string, ComponentInfo[]>(
+        TP_HANDLERS.GetComponentInfos,
         fileName
     )
+    for (const info of componentInfos) {
+        info.type = await prettier.format(info.type, {
+            parser: "babel-ts",
+            printWidth: typePrintWidth
+        })
+    }
+    return componentInfos
 }
 
 function attachClientHandlers() {
@@ -77,34 +89,29 @@ function attachClientHandlers() {
         })
     })
 
-    // 将项目视为tyepscript项目，在自动添加script标签时会优先使用<lang-ts>
-    tpic.onNotification(TPICHandler.InfferedProjectAsTypescript, () => {
-        setState({ projectKind: ProjectKind.TS })
-    })
-
     // ts插件主动推送的诊断通知
-    tpic.onNotification(TPICHandler.RefreshDiagnostic, (fileName: string) => {
+    tpic.onNotification(TP_HANDLERS.RefreshDiagnostic, (fileName: string) => {
         publishDiagnostics(URI.file(fileName).toString())
     })
 
-    // ts server进程退出，多为typescript.restartTsServer命令调用
-    tpic.onClose(() => connection.sendNotification(LSHandler.TsServerIsKilled, null))
+    // tsserver 进程退出，多为 typescript.restartTsServer 命令调用
+    tpic.onClose(() => connection.sendNotification(LS_HANDLERS.TsServerIsKilled, null))
 
     tpic.onRequest<FindComponentTagRangeParams>(
-        TPICHandler.FindComponentTagRange,
+        TP_HANDLERS.FindComponentTagRange,
         async ({ fileName, componentTag }) => {
-            return findComponentTagRanges(fileName, componentTag, getCompileResByPath)
+            return findComponentTagRanges(fileName, componentTag, getCompileResultByPath)
         }
     )
 }
 
 function attachRetransmissionHandlers() {
-    // 事件转发，将tpic接受到的请求转发给vscode扩展客户端
-    tpic.onRequest(TPICHandler.Retransmission, async (params: RetransmissionParams) => {
+    // 事件转发，将 tpic 接受到的请求转发给 vscode 扩展客户端
+    tpic.onRequest(TP_HANDLERS.Retransmission, async (params: RetransmissionParams) => {
         return await connection.sendRequest(params.name, params.data)
     })
 
-    tpic.onNotification(TPICHandler.Retransmission, async (params: RetransmissionParams) => {
+    tpic.onNotification(TP_HANDLERS.Retransmission, async (params: RetransmissionParams) => {
         connection.sendNotification(params.name, params.data)
     })
 }

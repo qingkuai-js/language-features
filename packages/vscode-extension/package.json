@@ -15,6 +15,9 @@
         "Programming Languages"
     ],
     "activationEvents": [
+        "onLanguage:qingkuai",
+        "onLanguage:javascript",
+        "onLanguage:typescript",
         "workspaceContains:**/*.qk"
     ],
     "contributes": {
@@ -130,21 +133,22 @@
             "files.associations": {
                 ".qingkuairc": "json",
                 ".prettierrc": "json"
-            },
-            "path-autocomplete.extensionOnImport": true
+            }
         },
         "configuration": {
-            "title": "Qingkuai",
+            "title": "QingKuai",
             "properties": {
                 "qingkuai.typescriptDiagnosticsExplain": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Allow to add explain to ambiguous typescript diagnostic message for qingkuai file."
+                    "description": "Add explanations to ambiguous TypeScript diagnostics in QingKuai files.",
+                    "markdownDescription": "Controls whether **ambiguous TypeScript diagnostic messages** in `.qk` files include additional explanations to help you understand the issue."
                 },
                 "qingkuai.insertSpaceAroundInterpolation": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Whether to insert a space around interpolation block."
+                    "description": "Insert spaces around interpolation blocks.",
+                    "markdownDescription": "Controls whether spaces are inserted **around interpolation blocks** in templates.\n\nInterpolation blocks use **single curly braces `{ }`**."
                 },
                 "qingkuai.componentTagFormatPreference": {
                     "type": "string",
@@ -153,7 +157,11 @@
                         "kebab"
                     ],
                     "default": "camel",
-                    "description": "Your preferred component tag format for formatting and completion suggestions."
+                    "description": "Preferred component tag format for formatting and completion suggestions.",
+                    "markdownEnumDescriptions": [
+                        "Prefer **camelCase** for component tags.\n\nExample:\n```qingkuai\n<MyComponent></MyComponent>\n```",
+                        "Prefer **kebab-case** for component tags.\n\nExample:\n```qingkuai\n<my-component></my-component>\n```"
+                    ]
                 },
                 "qingkuai.componentAttributeFormatPreference": {
                     "type": "string",
@@ -162,7 +170,11 @@
                         "kebab"
                     ],
                     "default": "camel",
-                    "description": "Your preferred component attribute format for formatting and completion suggestions."
+                    "description": "Preferred component attribute format for formatting and completion suggestions.",
+                    "markdownEnumDescriptions": [
+                        "Prefer **camelCase** for component attributes.\n\nExample:\n```qingkuai\n<MyComponent myCustomAttribute />\n```",
+                        "Prefer **kebab-case** for component attributes.\n\nExample:\n```qingkuai\n<MyComponent my-custom-attribute />\n```"
+                    ]
                 },
                 "qingkuai.htmlHoverTip": {
                     "type": "array",
@@ -179,8 +191,7 @@
                         "entity",
                         "attribute"
                     ],
-                    "uniqueItems": true,
-                    "description": "Whether to enable hover tip for HTML tags, attributes and entity characters."
+                    "uniqueItems": true
                 },
                 "qingkuai.additionalCodeLens": {
                     "type": "array",
@@ -196,7 +207,14 @@
                         "component"
                     ],
                     "uniqueItems": true,
-                    "description": "Additional code lenses that need to be enabled. Provided that typescript(or javascript).referencesCodeLens.enabled is enabled."
+                    "description": "Additional code lenses to enable if [embeddedScriptLanguageId].referencesCodeLens is enabled.",
+                    "markdownDescription": "Controls which **additional code lenses** are enabled in `.qk` files.\n\nThis only works if `javascript/typescript.referencesCodeLens.enabled` (or JavaScript equivalent) is true."
+                },
+                "qingkuai.hoverTipReactiveStatus": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable hover tips showing the inferred reactivity state of variables.",
+                    "markdownDescription": "Controls whether hovering over variables in `.qk` templates shows the **compiler-inferred reactivity status.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
                 }
             }
         }
@@ -222,7 +240,7 @@
     "dependencies": {
         "prettier": "^3.5.2",
         "prettier-plugin-qingkuai": "^1.0.25",
-        "qingkuai": "^1.0.47",
+        "qingkuai": "^1.0.48",
         "typescript-plugin-qingkuai": "file:../typescript-plugin"
     }
 }
