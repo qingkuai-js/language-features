@@ -103,7 +103,8 @@ export async function getCompileResult(document: TextDocument) {
                     stoi: compressNumberArray(ret.indexMap.stoi),
                     exportValueSourceRange: embeddedScriptStartTagNameRange,
                     identifierStatusInfo: compileResult.identifierStatusInfo,
-                    getTypeDelayIndexes: compileResult.getTypeDelayInterIndexes
+                    getTypeDelayIndexes: compileResult.getTypeDelayInterIndexes,
+                    positionFlags: compressNumberArray(ret.positions.map(pos => pos.flag))
                 })
             ret.indexMap.itos = recoverNumberArray(adjustedIndexMap.aitos)
             ret.indexMap.stoi = recoverNumberArray(adjustedIndexMap.astoi)

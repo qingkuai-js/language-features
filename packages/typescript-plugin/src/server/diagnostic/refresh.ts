@@ -3,9 +3,13 @@ import { debounce } from "../../../../../shared-util/sundry"
 import { TP_HANDLERS } from "../../../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../../../shared-util/assert"
 
-export const refreshDiagnostics = debounce(() => {
+export const refreshDiagnostics = debounce((byFileName?: string) => {
     adapter.forEachProject(project => {
         for (const fileName of project.getScriptFileNames()) {
+            if (fileName === byFileName) {
+                continue
+            }
+
             const isQingkuaiFile = isQingkuaiFileName(fileName)
             const filePath = adapter.getNormalizedPath(fileName)
             if (isQingkuaiFile) {

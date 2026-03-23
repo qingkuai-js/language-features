@@ -30,7 +30,7 @@ export function proxyEditContent(projectService: TS.server.ProjectService) {
                     ("" !== newText && " " !== newText) ||
                     scriptInfo.getSnapshot().getLength() !== end
                 ) {
-                    refreshDiagnostics()
+                    refreshDiagnostics(fileName)
                 }
                 editContent.call(scriptInfo, start, end, newText)
             }

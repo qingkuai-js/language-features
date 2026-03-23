@@ -3,6 +3,7 @@
 **/.DS_Store
 
 src
+scripts
 syntaxes/src
 node_modules/.bin
 node_modules/js-yaml

@@ -228,6 +228,8 @@
         "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
         "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
         "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json",
+        "vsce:local-package": "tsx ./scripts/build-with-local.ts package",
+        "vsce:local-publish": "tsx ./scripts/build-with-local.ts publish",
         "vsce:post": "cd ../../ && rimraf --glob '**/package-lock.json' && rimraf --glob '**/node_modules' && pnpm install",
         "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
         "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",

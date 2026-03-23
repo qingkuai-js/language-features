@@ -37,7 +37,7 @@ export default defineConfig(commandLineArgs => {
                 !(
                     log.code === "CIRCULAR_DEPENDENCY" &&
                     log.ids.every(id => {
-                        return id.includes("node_modules/.pnpm/semver")
+                        return /node_modules\/(?:\.pnpm\/)?semver/.test(id)
                     })
                 ) &&
                 !(

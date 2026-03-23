@@ -11,6 +11,8 @@ import { TypescriptAdapter } from "../adapter"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 import { isString, debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { QingkuaiFileInfo } from "../file"
+import { Pair } from "../../../../../types/common"
 
 export function getAndConvertDiagnostics(
     adapter: TypescriptAdapter,
@@ -40,7 +42,10 @@ export function getAndConvertDiagnostics(
         const end = start + (item.length ?? 0)
         const sourceStart = fileInfo.getSourceIndex(start)
         const sourceEnd = fileInfo.getSourceIndex(end)
-        if (isIndexesInvalid(sourceStart, sourceEnd)) {
+        if (
+            isIndexesInvalid(sourceStart, sourceEnd) ||
+            shouldDiagnosticBeIgnored(item, fileInfo, [sourceStart, sourceEnd])
+        ) {
             continue
         }
 
@@ -105,6 +110,21 @@ export function getAndConvertDiagnostics(
         })
     }
     return result
+}
+
+function shouldDiagnosticBeIgnored(
+    diag: TS.Diagnostic,
+    fileInfo: QingkuaiFileInfo,
+    sourceRange: Pair<number>
+) {
+    switch (diag.code) {
+        case 6133: {
+            if (fileInfo.isPositionFlagSetAtIndex("IsAttributeStart", sourceRange[0])) {
+                return true
+            }
+            break
+        }
+    }
 }
 
 function formatDiagnosticMessage(mt: string | TS.DiagnosticMessageChain, indentLevel = 0): string {

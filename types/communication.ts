@@ -75,6 +75,7 @@ export interface UpdateContentParams {
     fileName: string
     itos: Pair<number>[]
     stoi: Pair<number>[]
+    positionFlags: Pair<number>[]
     getTypeDelayIndexes: number[]
     positions: CompressedPositions
     identifierStatusInfo: Record<string, string>

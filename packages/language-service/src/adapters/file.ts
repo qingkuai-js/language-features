@@ -97,6 +97,11 @@ export function updateQingkuaiFile(
     const stoi = recoverNumberArray(params.stoi)
     const path = adapter.getNormalizedPath(params.fileName)
     const existing = adapter.qingkuaiFileInfos.get(path)
+    const positions = recoverPositions(params.positions)
+    const flags = recoverNumberArray(params.positionFlags)
+    for (let i = 0; i < positions.length; i++) {
+        positions[i].flag = flags[i]
+    }
     const newFileInfo = new QingkuaiFileInfo(
         params.content,
         params.isTS,
@@ -108,7 +113,7 @@ export function updateQingkuaiFile(
         adapter,
         itos,
         stoi,
-        recoverPositions(params.positions)
+        positions
     )
     newFileInfo.isOpen = !!existing?.isOpen
     newFileInfo.updateContent(params.content)
