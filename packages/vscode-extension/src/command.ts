@@ -1,10 +1,12 @@
 import type { GeneralFunc } from "../../../types/util"
 import type { OpenFileParams } from "../../../types/common"
+import type { QingkuaiCommandTypes } from "../../../types/command"
 
-import fs from "node:fs"
 import * as vscode from "vscode"
+
+import nodeFs from "node:fs"
+
 import { client } from "./state"
-import { ShowReferencesCommandParams } from "../../../types/command"
 import { runAll } from "../../../shared-util/sundry"
 
 export class QingkuaiCommands {
@@ -28,7 +30,7 @@ export class QingkuaiCommands {
         vscode.commands.registerCommand(
             this.openFileByPath,
             async ({ path, start, end }: OpenFileParams) => {
-                if (!fs.existsSync(path)) {
+                if (!nodeFs.existsSync(path)) {
                     return vscode.window.showWarningMessage(
                         `Can not open document: ${path}, as it does not exist.`
                     )
@@ -43,7 +45,7 @@ export class QingkuaiCommands {
 
         vscode.commands.registerCommand(
             this.showReferences,
-            (params: ShowReferencesCommandParams) => {
+            (params: QingkuaiCommandTypes.ShowReferencesParams) => {
                 const locations: vscode.Location[] = params.locations.map(location => {
                     return new vscode.Location(
                         vscode.Uri.parse(location.uri),

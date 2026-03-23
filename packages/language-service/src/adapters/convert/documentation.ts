@@ -1,8 +1,8 @@
 import type TS from "typescript"
 
-import { getRealPath } from "../qingkuai"
+import { ts } from "../state"
+import { LSU_AND_DOT } from "../../constants"
 import { isUndefined } from "../../../../../shared-util/assert"
-import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
 
 // 将JsDoc中的标签信息转换为Markdown字符串
 export function convertJsDocTagsToMarkdown(tags: TS.JSDocTagInfo[]) {
@@ -65,15 +65,12 @@ export function convertDisplayPartsToPlainTextWithLink(parts: TS.SymbolDisplayPa
                 JSON.stringify({
                     end: target.textSpan.start,
                     start: target.textSpan.start,
-                    path: getRealPath(target.fileName)
+                    path: ts.server.toNormalizedPath(target.fileName)
                 })
             )
             return ret + `[${part.text}](command:qingkuai.openFileByFilePath?${args})`
         }
-        return (ret + (part.kind === "link" ? "" : part.text || "")).replace(
-            INTER_NAMESPACE + ".",
-            ""
-        )
+        return (ret + (part.kind === "link" ? "" : part.text || "")).replace(LSU_AND_DOT, "")
     }, "")
 }
 

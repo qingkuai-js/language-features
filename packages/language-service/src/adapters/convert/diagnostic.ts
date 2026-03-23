@@ -1,126 +1,139 @@
-import TS from "typescript"
+import type TS from "typescript"
+
 import type {
     GetDiagnosticResultItem,
     TSDiagnosticRelatedInformation
 } from "../../../../../types/communication"
 import type { Range } from "vscode-languageserver-types"
-import type { DiagnosticKind } from "../../types/service"
-import type { RealPath } from "../../../../../types/common"
+import type { TsGetDiagsMethod } from "../../types/service"
 
-import { lsRange } from "../convert/struct"
-import { getLineAndCharacter, qingkuaiDiagnostics } from "../state"
-import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
+import { TypescriptAdapter } from "../adapter"
+import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
-import { getRealPath, getSourceIndex, isPositionFlagSetBySourceIndex } from "../qingkuai"
-import { isQingkuaiFileName, isString, isUndefined } from "../../../../../shared-util/assert"
+import { isString, debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { QingkuaiFileInfo } from "../file"
+import { Pair } from "../../../../../types/common"
 
 export function getAndConvertDiagnostics(
-    languageService: TS.LanguageService,
-    fileName: RealPath,
-    isSemanticProject: boolean
+    adapter: TypescriptAdapter,
+    fileName: string
 ): GetDiagnosticResultItem[] {
-    const realPath = getRealPath(fileName)
+    const filePath = adapter.getNormalizedPath(fileName)
+    const languageService = adapter.getDefaultLanguageService(filePath)!
+    if (!debugAssert(languageService)) {
+        return []
+    }
+
     const diagnostics: TS.Diagnostic[] = []
-    const diagnosticMethods: DiagnosticKind[] = ["getSyntacticDiagnostics"]
+    const result: GetDiagnosticResultItem[] = []
+    const fileInfo = adapter.service.ensureGetQingkuaiFileInfo(filePath)
+    const diagnosticMethods: TsGetDiagsMethod[] = ["getSyntacticDiagnostics"]
+    const isSemanticProject =
+        adapter.projectService.serverMode === adapter.ts.LanguageServiceMode.Semantic
 
     // Semtic模式下进行全部诊断，PartialSemantic/Syntactic模式下只进行语法检查
     if (isSemanticProject) {
         diagnosticMethods.push("getSemanticDiagnostics", "getSuggestionDiagnostics")
     }
+    diagnosticMethods.forEach(m => diagnostics.push(...languageService[m](fileName)))
 
-    diagnosticMethods.forEach(m => {
-        diagnostics.push(...languageService[m](fileName))
-    })
-
-    const result: GetDiagnosticResultItem[] = []
-    for (const item of diagnostics.concat(qingkuaiDiagnostics.get(realPath) || [])) {
+    for (const item of diagnostics) {
         const start = item.start ?? 0
         const end = start + (item.length ?? 0)
-        const ss = getSourceIndex(fileName, start)
-        const se = getSourceIndex(fileName, end, true)
-        if (isIndexesInvalid(ss, se) || shouldBeIgnored(realPath, item, ss, se)) {
+        const sourceStart = fileInfo.getSourceIndex(start)
+        const sourceEnd = fileInfo.getSourceIndex(end)
+        if (
+            isIndexesInvalid(sourceStart, sourceEnd) ||
+            shouldDiagnosticBeIgnored(item, fileInfo, [sourceStart, sourceEnd])
+        ) {
             continue
         }
 
         const relatedInformations: TSDiagnosticRelatedInformation[] = []
         const filteredRelatedInformations = (item.relatedInformation || []).filter(ri => !!ri.file)
-        for (const ri of filteredRelatedInformations) {
+        for (const relatedInfo of filteredRelatedInformations) {
+            const relatedSourceFile = relatedInfo.file
+            if (!relatedSourceFile) {
+                continue
+            }
+
             let range: Range
-            const start = ri.start ?? 0
-            const end = start + (ri.length ?? 0)
-            const realPath = getRealPath(ri.file!.fileName)
-            if (!isQingkuaiFileName(realPath)) {
+            const start = relatedInfo.start ?? 0
+            const end = start + (relatedInfo.length ?? 0)
+            const relatedFileInfo = adapter.service.ensureGetQingkuaiFileInfo(
+                relatedSourceFile.fileName
+            )
+            const relatedFilePath = adapter.getNormalizedPath(relatedSourceFile.fileName)
+            if (!isQingkuaiFileName(relatedFilePath ?? "")) {
                 range = {
-                    start: getLineAndCharacter(realPath, start)!,
-                    end: getLineAndCharacter(realPath, end)!
+                    start: relatedSourceFile.getLineAndCharacterOfPosition(start),
+                    end: relatedSourceFile.getLineAndCharacterOfPosition(end)
                 }
             } else {
-                const ss = getSourceIndex(realPath, start)
-                const se = getSourceIndex(realPath, end, true)
-                if (isIndexesInvalid(ss, se)) {
+                const relatedSourceStart = relatedFileInfo.getSourceIndex(start)
+                const relatedSourceEnd = relatedFileInfo.getSourceIndex(end)
+                if (isIndexesInvalid(relatedSourceStart, relatedSourceEnd)) {
                     continue
                 }
-                range = lsRange.fromSourceStartAndEnd(realPath, ss, se)
+
+                const relatedLocationConvertor =
+                    adapter.service.createLocationConvertor(relatedFilePath)
+                range = relatedLocationConvertor.languageServerRange.fromSourceStartAndEnd(
+                    relatedSourceStart,
+                    relatedSourceEnd
+                )
             }
             relatedInformations.push({
                 range,
-                filePath: getRealPath(ri.file!.fileName),
-                message: formatDiagnosticMessage(ri.messageText)
+                filePath: relatedFilePath,
+                message: formatDiagnosticMessage(relatedInfo.messageText)
             })
         }
 
+        const locationConvertor = adapter.service.createLocationConvertor(filePath)
+        const formattedMsg = formatDiagnosticMessage(item.messageText)
         result.push({
+            message: formattedMsg.replaceAll(
+                ` Did you mean '${qingkuaiConstants.LANGUAGE_SERVICE_UTIL}'?`,
+                ""
+            ),
+            range: locationConvertor.languageServerRange.fromSourceStartAndEnd(
+                sourceStart,
+                sourceEnd
+            ),
             relatedInformations,
             code: item.code,
             kind: item.category,
             source: item.source || "ts",
             deprecated: Boolean(item.reportsDeprecated),
-            unnecessary: Boolean(item.reportsUnnecessary),
-            message: formatDiagnosticMessage(item.messageText),
-            range: lsRange.fromSourceStartAndEnd(fileName, ss, se)
+            unnecessary: Boolean(item.reportsUnnecessary)
         })
     }
     return result
 }
 
-function shouldBeIgnored(
-    fileName: RealPath,
-    item: TS.Diagnostic,
-    sourceStart: number,
-    sourceEnd: number
+function shouldDiagnosticBeIgnored(
+    diag: TS.Diagnostic,
+    fileInfo: QingkuaiFileInfo,
+    sourceRange: Pair<number>
 ) {
-    switch (item.code) {
-        case 2684: {
-            return (
-                isPositionFlagSetBySourceIndex(fileName, sourceEnd, "inNormalTagInlineEvent") ||
-                isPositionFlagSetBySourceIndex(fileName, sourceStart, "inNormalTagInlineEvent")
-            )
-        }
-        default: {
-            return false
+    switch (diag.code) {
+        case 6133: {
+            if (fileInfo.isPositionFlagSetAtIndex("IsAttributeStart", sourceRange[0])) {
+                return true
+            }
+            break
         }
     }
 }
 
-// 诊断信息为链表形式时，将其整理为一个字符串表示
 function formatDiagnosticMessage(mt: string | TS.DiagnosticMessageChain, indentLevel = 0): string {
-    const indent = " ".repeat(indentLevel * 2)
-
-    const eliminate = (s: string) => {
-        return s.replace(` Did you mean '${INTER_NAMESPACE}'?`, "")
-    }
-
+    const indentStr = "  ".repeat(indentLevel)
     if (isString(mt)) {
-        return eliminate(mt)
+        return indentStr + mt
     }
-
-    if (isUndefined(mt.next)) {
-        return eliminate(mt.messageText)
-    }
-
-    const nextMsg = mt.next.reduce((p, c) => {
-        return p + indent + formatDiagnosticMessage(c, indentLevel + 1)
+    const nextMsg = mt.next?.reduce((p, c) => {
+        return p + "\n" + indentStr + formatDiagnosticMessage(c, indentLevel + 1)
     }, "")
-
-    return eliminate(mt.messageText) + "\n" + nextMsg
+    return indentStr + mt.messageText + (nextMsg ?? "")
 }

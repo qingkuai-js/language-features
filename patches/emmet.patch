@@ -1,5 +1,5 @@
 diff --git a/dist/emmet.cjs b/dist/emmet.cjs
-index 8d295bced45dd325629717900c308ef0ff6811cf..7e92da2ab7d0c7ec5726a7de419ada4e27d5d359 100644
+index 8d295bced45dd325629717900c308ef0ff6811cf..8fbc902a6b56e38af855379cd0a02212e0dd4269 100644
 --- a/dist/emmet.cjs
 +++ b/dist/emmet.cjs
 @@ -1242,7 +1242,7 @@ function convertAttribute(node, state) {
@@ -11,8 +11,17 @@ index 8d295bced45dd325629717900c308ef0ff6811cf..7e92da2ab7d0c7ec5726a7de419ada4e
          implied = true;
      }
      if (name && name[name.length - 1] === '.') {
+@@ -3213,7 +3213,7 @@ function pushAttribute(attr, state) {
+             name = getMultiValue(name, attributes, attr.multiple) || name;
+         }
+         name = attrName(name, config);
+-        if (config.options['jsx.enabled'] && attr.multiple) {
++        if (/^[!@#&]/.test(attr.name) || (config.options['jsx.enabled'] && attr.multiple)) {
+             lQuote = expressionStart;
+             rQuote = expressionEnd;
+         }
 diff --git a/dist/emmet.es.js b/dist/emmet.es.js
-index 1fa26984ab9fc6030ed748b3890ed4681d04e5c4..724ba257032b6b623eea08eeac1bb89466bc291a 100644
+index 1fa26984ab9fc6030ed748b3890ed4681d04e5c4..8bc23a2133e8e072421a9849e2d771e81c2418c9 100644
 --- a/dist/emmet.es.js
 +++ b/dist/emmet.es.js
 @@ -1238,7 +1238,7 @@ function convertAttribute(node, state) {
@@ -24,3 +33,12 @@ index 1fa26984ab9fc6030ed748b3890ed4681d04e5c4..724ba257032b6b623eea08eeac1bb894
          implied = true;
      }
      if (name && name[name.length - 1] === '.') {
+@@ -3209,7 +3209,7 @@ function pushAttribute(attr, state) {
+             name = getMultiValue(name, attributes, attr.multiple) || name;
+         }
+         name = attrName(name, config);
+-        if (config.options['jsx.enabled'] && attr.multiple) {
++        if (/^[!@#&]/.test(attr.name) || (config.options['jsx.enabled'] && attr.multiple)) {
+             lQuote = expressionStart;
+             rQuote = expressionEnd;
+         }

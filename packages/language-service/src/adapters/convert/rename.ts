@@ -1,27 +1,33 @@
+import type TS from "typescript"
+
 import type {
     RenameLocationItem,
     TPICCommonRequestParams
 } from "../../../../../types/communication"
-import type TS from "typescript"
-import type { NumNum } from "../../../../../types/common"
+import type { TypescriptAdapter } from "../adapter"
+import type { Pair } from "../../../../../types/common"
 
-import { getRealPath, getSourceIndex } from "../qingkuai"
-import { getLineAndCharacter, getUserPreferences } from "../state"
-import { isQingkuaiFileName } from "../../../../../shared-util/assert"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
+import { debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
 
-export function renameAndConvert(
-    languageService: TS.LanguageService,
-    { fileName, pos }: TPICCommonRequestParams
+export function getAndConvertRenameLocations(
+    adapter: TypescriptAdapter,
+    params: TPICCommonRequestParams
 ): RenameLocationItem[] | null {
+    const filePath = adapter.getNormalizedPath(params.fileName)
+    const languageService = adapter.getDefaultLanguageService(filePath)!
+    if (!debugAssert(languageService)) {
+        return null
+    }
+
     const locations: RenameLocationItem[] = []
-    const existringMap = new Map<string, Set<string>>()
+    const existingMap = new Map<string, Set<string>>()
     const renameLocations = languageService.findRenameLocations(
-        fileName,
-        pos,
+        filePath,
+        params.pos,
         false,
         false,
-        getUserPreferences(fileName)
+        adapter.getUserPreferences(filePath)
     )
     if (!renameLocations) {
         return null
@@ -29,28 +35,31 @@ export function renameAndConvert(
 
     renameLocations.forEach(item => {
         const { start, length } = item.textSpan
-        const realPath = getRealPath(item.fileName)
-        const locationItem: RenameLocationItem = { fileName: realPath }
+        const targetFilePath = adapter.getNormalizedPath(item.fileName)
+        const locationItem: RenameLocationItem = { fileName: targetFilePath }
         ;[locationItem.prefix, locationItem.suffix] = [item.prefixText, item.suffixText]
 
         if (isQingkuaiFileName(item.fileName)) {
-            const sourceStart = getSourceIndex(item.fileName, start)
-            const existing = existringMap.get(realPath) || new Set()
-            const sourceEnd = getSourceIndex(item.fileName, start + length, true)
+            const targetFileInfo = adapter.service.ensureGetQingkuaiFileInfo(targetFilePath)
+            const existing = existingMap.get(targetFilePath) || new Set()
+            const sourceStart = targetFileInfo.getSourceIndex(start)
+            const sourceEnd = targetFileInfo.getSourceIndex(start + length)
             const existringKey = `${sourceStart},${sourceEnd}`
             if (isIndexesInvalid(sourceStart, sourceEnd)) {
                 return
             }
             existing.add(existringKey)
-            existringMap.set(realPath, existing)
+            existingMap.set(targetFilePath, existing)
             locationItem.range = [sourceStart, sourceEnd]
         } else {
-            const startLineAndCharacter = getLineAndCharacter(item.fileName, start)
-            const endLineAndCharacter = getLineAndCharacter(item.fileName, start + length)
-            if (!startLineAndCharacter || !endLineAndCharacter) {
+            const targetSourceFile = adapter.getDefaultSourceFile(targetFilePath)!
+            if (!debugAssert(targetSourceFile)) {
                 return
             }
-            locationItem.loc = { start: startLineAndCharacter, end: endLineAndCharacter }
+            locationItem.loc = {
+                start: targetSourceFile.getLineAndCharacterOfPosition(start),
+                end: targetSourceFile.getLineAndCharacterOfPosition(start + length)
+            }
         }
 
         locations.push(locationItem)
@@ -58,11 +67,21 @@ export function renameAndConvert(
     return locations
 }
 
-export function prepareRenameAndConvert(
-    languageService: TS.LanguageService,
-    { fileName, pos }: TPICCommonRequestParams
-): NumNum | null {
-    const renameInfo = languageService.getRenameInfo(fileName, pos, getUserPreferences(fileName))
+export function getAndConvertPrepareRenameLocation(
+    adapter: TypescriptAdapter,
+    params: TPICCommonRequestParams
+): Pair<number> | null {
+    const filePath = adapter.getNormalizedPath(params.fileName)
+    const languageService = adapter.getDefaultLanguageService(filePath)!
+    if (!debugAssert(languageService)) {
+        return null
+    }
+
+    const renameInfo = languageService.getRenameInfo(
+        filePath,
+        params.pos,
+        adapter.getUserPreferences(filePath)
+    )
     if (!renameInfo || !renameInfo.canRename) {
         return null
     }
@@ -70,4 +89,32 @@ export function prepareRenameAndConvert(
         renameInfo.triggerSpan.start,
         renameInfo.triggerSpan.start + renameInfo.triggerSpan.length
     ]
+}
+
+// 非 qingkuai 文件获取重命名位置信息时，将 qingkuai 文件的位置信息修改到原始位置
+export function proxyFindRenameLocationsToConvert(
+    adapter: TypescriptAdapter,
+    project: TS.server.Project
+) {
+    const languageService = project.getLanguageService()
+    const findRenameLocations = languageService.findRenameLocations
+    languageService.findRenameLocations = (fileName, pos, ...rest) => {
+        // @ts-ignore
+        const originalRet = findRenameLocations.call(languageService, fileName, pos, ...rest)
+
+        /**
+         * 由 qingkuai 文件获取时此处不做处理，转而在 {@link getAndConvertPrepareRenameLocation} 中处理
+         */
+        if (!originalRet?.length || isQingkuaiFileName(fileName)) {
+            return originalRet
+        }
+
+        return originalRet.filter(item => {
+            const locationConvertor = adapter.service.createLocationConvertor(item.fileName)
+            return (
+                locationConvertor.textSpan.defaultValue !==
+                (item.textSpan = locationConvertor.textSpan.toSourceTextSpan(item.textSpan))
+            )
+        })
+    }
 }

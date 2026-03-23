@@ -1,9 +1,9 @@
+import type { CompileResult, Pair } from "../../../../types/common"
 import type { PrepareRename, RenameHandler } from "../types/handlers"
-import type { CompileResult, NumNum, RealPath } from "../../../../types/common"
 import type { RenameLocationItem, TPICCommonRequestParams } from "../../../../types/communication"
 
-import { TPICHandler } from "../../../../shared-util/constant"
-import { getCompileRes, getCompileResByPath } from "../compile"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
+import { getCompileResult, getCompileResultByPath } from "../compile"
 import { tpic, documents, isTestingEnv, limitedScriptLanguageFeatures } from "../state"
 import { rename as _rename, prepareRename as _prepareRename } from "qingkuai-language-service"
 
@@ -13,8 +13,9 @@ export const rename: RenameHandler = async ({ textDocument, position, newName },
         return
     }
 
-    const cr = await getCompileRes(document)
-    return _rename(cr, cr.getOffset(position), newName, getCompileResByPath, renameInScriptBlock)
+    const cr = await getCompileResult(document)
+    const offset = cr.document.offsetAt(position)
+    return _rename(cr, offset, newName, getCompileResultByPath, renameInScriptBlock)
 }
 
 export const prepareRename: PrepareRename = async ({ textDocument, position }, token) => {
@@ -23,23 +24,30 @@ export const prepareRename: PrepareRename = async ({ textDocument, position }, t
         return null
     }
 
-    const cr = await getCompileRes(document)
-    return _prepareRename(cr, cr.getOffset(position), prepareRenameInScriptBlock)
+    const cr = await getCompileResult(document)
+    const offset = cr.document.offsetAt(position)
+    return _prepareRename(cr, offset, prepareRenameInScriptBlock)
 }
 
 async function renameInScriptBlock(
-    fileName: RealPath,
+    fileName: string,
     pos: number
 ): Promise<RenameLocationItem[] | null> {
     if (isTestingEnv || limitedScriptLanguageFeatures) {
         return null
     }
-    return await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.Rename, { fileName, pos })
+    return await tpic.sendRequest<TPICCommonRequestParams>(TP_HANDLERS.Rename, { fileName, pos })
 }
 
-async function prepareRenameInScriptBlock(cr: CompileResult, pos: number): Promise<NumNum | null> {
-    return await tpic.sendRequest<TPICCommonRequestParams, NumNum>(TPICHandler.PrepareRename, {
-        pos,
-        fileName: cr.filePath
-    })
+async function prepareRenameInScriptBlock(
+    cr: CompileResult,
+    pos: number
+): Promise<Pair<number> | null> {
+    return await tpic.sendRequest<TPICCommonRequestParams, Pair<number>>(
+        TP_HANDLERS.PrepareRename,
+        {
+            pos,
+            fileName: cr.filePath
+        }
+    )
 }

@@ -1,18 +1,17 @@
 import type { SetStateOptions } from "./types/service"
 
-import { ProjectKind } from "qingkuai-language-service"
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
+import { ProjectKind } from "../../../shared-util/constant"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { getCSSLanguageService } from "vscode-css-languageservice"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
-import { defaultParticipant } from "../../../shared-util/ipc/participant"
+import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 import { TextDocuments, ProposedFeatures, createConnection } from "vscode-languageserver/node"
 
 export let isTestingEnv = true
-export let typeRefStatement = ""
 export let projectKind = ProjectKind.JS
-export let tpic = defaultParticipant // Typescript Plugin Icp Client
+export let typeDeclarationFilePath = ""
+export let tpic = DEFAULT_PARTICIPANT // Typescript Plugin Icp Client
 export let limitedScriptLanguageFeatures = process.env.LIMITED_SCRIPT !== "0"
 
 // 一个等待tpic连接连接成功才会解决的Promise，首次编译qk代码之前会等待tpic连接成功
@@ -28,8 +27,8 @@ export function setState(options: SetStateOptions) {
     if (!isUndefined(options.isTestingEnv)) {
         isTestingEnv = options.isTestingEnv
     }
-    if (!isUndefined(options.typeRefStatement)) {
-        typeRefStatement = options.typeRefStatement
+    if (!isUndefined(options.typeDeclarationFilePath)) {
+        typeDeclarationFilePath = options.typeDeclarationFilePath
     }
     if (options.tpicConnectedPromise) {
         tpicConnectedPromise = options.tpicConnectedPromise
@@ -43,7 +42,6 @@ export function setState(options: SetStateOptions) {
 }
 
 export const documents = new TextDocuments(TextDocument)
-export const cssLanguageService = getCSSLanguageService()
 export const waittingCommands = new Map<string, string>()
 export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()

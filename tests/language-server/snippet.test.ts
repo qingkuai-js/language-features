@@ -1,15 +1,15 @@
-import type { InsertSnippetParam } from "../../types/communication"
+import type { InsertSnippetParams } from "../../types/communication"
 
 import { connection } from "./index.test"
 import { doComplete } from "./complete.test"
 import { isNull } from "../../shared-util/assert"
 import { assert, describe, expect, it } from "vitest"
 import { formatSourceCode, openContentAsTextDocument } from "../../shared-util/tests"
-import { LSHandler } from "../../shared-util/constant"
+import { LS_HANDLERS } from "../../shared-util/constant"
 
 // 此变量用于存储assertSnippetItem方法中Promise的resolve参数，当接收到qingkuai语言服务器的
 // 插入片段响应后就会调用它并传入接收到的值，之后assertSnippetItem会判断接受到的值是否与期望相符
-let resolver: (value: InsertSnippetParam) => void
+let resolver: (value: InsertSnippetParams) => void
 
 describe("Html tag auto close functions:", () => {
     it("should insert close tag automatically when enttering >", async () => {
@@ -191,13 +191,13 @@ describe("Html attribute value auto quote functions:", () => {
     })
 })
 
-connection.onNotification(LSHandler.InsertSnippet, item => {
+connection.onNotification(LS_HANDLERS.InsertSnippet, item => {
     resolver(item)
 })
 
 // 断言qingkuai语言服务器是否响应了期望的插入片段结构，此方法有超时机制，1000ms内未收到通知则断言失败
-async function assertSnippetItem(expectItem: InsertSnippetParam | null) {
-    const receivedItem = await new Promise<InsertSnippetParam>(resolve => {
+async function assertSnippetItem(expectItem: InsertSnippetParams | null) {
+    const receivedItem = await new Promise<InsertSnippetParams>(resolve => {
         const expectIsNull = isNull(expectItem)
         const timeout = setTimeout(() => {
             resolve(assertSnippetItem as any)
@@ -205,7 +205,7 @@ async function assertSnippetItem(expectItem: InsertSnippetParam | null) {
                 assert.fail("No insert snippet item has been received")
             }
         }, 1000)
-        resolver = (item: InsertSnippetParam) => {
+        resolver = (item: InsertSnippetParams) => {
             resolve(item)
             clearTimeout(timeout)
         }

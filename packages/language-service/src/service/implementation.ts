@@ -3,13 +3,14 @@ import type { CompileResult } from "../../../../types/common"
 import type { GetScriptImplementationsFunc } from "../types/service"
 
 import { URI } from "vscode-uri"
+import { PositionFlag } from "qingkuai/compiler"
 
 export async function findImplementations(
     cr: CompileResult,
     offset: number,
     getImplementations: GetScriptImplementationsFunc
 ): Promise<Location[] | null> {
-    if (!cr.isPositionFlagSet(offset, "inScript")) {
+    if (!cr.isPositionFlagSetAtIndex(PositionFlag.InScript, offset)) {
         return null
     }
 

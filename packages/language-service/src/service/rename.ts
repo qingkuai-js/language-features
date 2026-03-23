@@ -4,15 +4,18 @@ import type {
     PrepareRenameInScriptBlockFunc
 } from "../types/service"
 import type { CompileResult } from "../../../../types/common"
+import { TemplateAttribute, TemplateNode } from "qingkuai/compiler"
 import type { Range, TextEdit, WorkspaceEdit } from "vscode-languageserver-types"
 
 import { URI } from "vscode-uri"
-import { util } from "qingkuai/compiler"
+import { stringifyRange } from "../util/sundry"
+import { jsValidIdentifierRE } from "../regular"
+import { PositionFlag, util } from "qingkuai/compiler"
+import { traverseObject } from "../../../../shared-util/sundry"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
 import { isEmptyString, isUndefined } from "../../../../shared-util/assert"
-import { findAttribute, findNodeAt, findTagRanges } from "../util/qingkuai"
 import { excuteCssCommonHandler, createStyleSheetAndDocument } from "../util/css"
-import { stringifyRange } from "../util/sundry"
+import { findTemplateAttribute, findTemplateNodeAt, findTagNameRanges } from "../util/qingkuai"
 
 export async function rename(
     cr: CompileResult,
@@ -21,61 +24,59 @@ export async function rename(
     getCompileRes: GetCompileResultFunc,
     renameInScriptBlock: RenameInScriptBlockFunc
 ): Promise<WorkspaceEdit | null> {
-    if (cr.isPositionFlagSet(offset, "inStyle")) {
+    if (cr.isPositionFlagSetAtIndex(PositionFlag.InStyle, offset)) {
         const [languageService, sd, sp, ss] = createStyleSheetAndDocument(cr, offset)
         return languageService.doRename(sd, sp, newName, ss)
     }
-    if (cr.isPositionFlagSet(offset, "inScript")) {
-        return await doScriptBlockRename(
-            cr,
-            offset,
-            newName,
-            false,
-            getCompileRes,
-            renameInScriptBlock
-        )
+    if (cr.isPositionFlagSetAtIndex(PositionFlag.InScript, offset)) {
+        return await doScriptBlockRename(cr, offset, newName, getCompileRes, renameInScriptBlock)
     }
 
-    const currentNode = findNodeAt(cr.templateNodes, offset)
+    const currentNode = findTemplateNodeAt(cr.templateNodes, offset)
     if (isUndefined(currentNode) || isEmptyString(currentNode.tag)) {
         return null
     }
 
     const textEdits: TextEdit[] = []
-    const tagRanges = findTagRanges(currentNode, offset, true)
+    const tagNameRanges = findTagNameRanges(currentNode, offset, true)
 
     // 组件标签重命名
-    if (currentNode.componentTag) {
-        let interIndex: number | undefined = undefined
-        if (tagRanges[0]) {
-            interIndex = cr.getInterIndex(currentNode.range[0])
+    if (currentNode.componentTag || currentNode.tag === "slot") {
+        let interIndex = -1
+        let sourceIndex = -1
+        if (tagNameRanges.start) {
+            if (jsValidIdentifierRE.test(newName)) {
+                newName = newName[0].toUpperCase() + newName.slice(1)
+            }
+            interIndex = cr.getInterIndex((sourceIndex = currentNode.loc.start.index + 1))
         } else {
-            const currentAttribute = findAttribute(offset, currentNode)
-            if (currentAttribute) {
-                interIndex = cr.getInterIndex(currentAttribute.key.loc.start.index)
+            const surroundingAttribute = findTemplateAttribute(offset, currentNode)
+            if (surroundingAttribute) {
+                const sourceLoc =
+                    currentNode.tag === "slot" && surroundingAttribute?.name.raw === "name"
+                        ? surroundingAttribute.value.loc
+                        : surroundingAttribute.name.loc
+                interIndex = cr.getInterIndex((sourceIndex = sourceLoc.start.index))
             }
         }
-        if (isUndefined(interIndex)) {
+        if (isIndexesInvalid(interIndex)) {
             return null
         }
         return doScriptBlockRename(
             cr,
-            interIndex,
+            sourceIndex,
             util.kebab2Camel(newName),
-            true,
             getCompileRes,
             renameInScriptBlock
         )
     }
 
     // HTML标签重命名
-    tagRanges.forEach(range => {
-        if (!isUndefined(range)) {
-            textEdits.push({
-                newText: newName,
-                range: cr.getRange(...range)
-            })
-        }
+    traverseObject(tagNameRanges, (_, range) => {
+        textEdits.push({
+            newText: newName,
+            range: cr.getVscodeRange(...range!)
+        })
     })
     if (textEdits.length > 0) {
         return {
@@ -92,32 +93,30 @@ export async function prepareRename(
     offset: number,
     prepareRenameInScriptBlock: PrepareRenameInScriptBlockFunc
 ): Promise<Range | null> {
-    if (cr.isPositionFlagSet(offset, "inStyle")) {
+    if (cr.isPositionFlagSetAtIndex(PositionFlag.InStyle, offset)) {
         return excuteCssCommonHandler("prepareRename", cr, offset) ?? null
     }
-    if (cr.isPositionFlagSet(offset, "inScript")) {
+    if (cr.isPositionFlagSetAtIndex(PositionFlag.InScript, offset)) {
         return await prepareScriptBlockRename(cr, offset, prepareRenameInScriptBlock)
     }
 
-    const currentNode = findNodeAt(cr.templateNodes, offset)
+    const currentNode = findTemplateNodeAt(cr.templateNodes, offset)
     if (isUndefined(currentNode) || isEmptyString(currentNode)) {
         return null
     }
 
-    if (currentNode.componentTag) {
-        const currentAttribute = findAttribute(offset, currentNode)
-        if (currentAttribute && currentAttribute.key.raw[0] !== "#") {
-            const delta = +/[!@&]/.test(currentAttribute.key.raw)
-            return cr.getRange(
-                currentAttribute.key.loc.start.index + delta,
-                currentAttribute.key.loc.end.index
-            )
+    if (currentNode.componentTag || currentNode.tag === "slot") {
+        const surroundingAttribute = findTemplateAttribute(offset, currentNode)
+        if (surroundingAttribute) {
+            return getComponentOrSlotAttributeRenameRange(cr, currentNode, surroundingAttribute)
         }
     }
 
-    const tagRanges = findTagRanges(currentNode, offset, true)
-    if (!isUndefined(tagRanges[0])) {
-        return cr.getRange(...tagRanges[offset <= tagRanges[0][1] ? 0 : 1]!)
+    const tagNameRanges = findTagNameRanges(currentNode, offset, true)
+    if (!isUndefined(tagNameRanges.start)) {
+        return cr.getVscodeRange(
+            ...tagNameRanges[offset <= tagNameRanges.start[1] ? "start" : "end"]!
+        )
     }
     return null
 }
@@ -126,14 +125,10 @@ async function doScriptBlockRename(
     cr: CompileResult,
     offset: number,
     newName: string,
-    isInterOffset: boolean,
     getCompileRes: GetCompileResultFunc,
     renameInScriptBlock: RenameInScriptBlockFunc
 ): Promise<WorkspaceEdit | null> {
-    const locations = await renameInScriptBlock(
-        cr.filePath,
-        isInterOffset ? offset : cr.getInterIndex(offset)
-    )
+    const locations = await renameInScriptBlock(cr.filePath, cr.getInterIndex(offset))
     if (!locations?.length) {
         return null
     }
@@ -142,10 +137,8 @@ async function doScriptBlockRename(
     const textEdits: Record<string, TextEdit[]> = {}
 
     for (const item of locations) {
-        let newText = (item.prefix || "") + newName + (item.suffix || "")
-
+        let newText = (item.prefix ?? "") + newName + (item.suffix ?? "")
         const uri = URI.file(item.fileName).toString()
-        const existing = textEdits[uri] || (textEdits[uri] = [])
 
         const extendTextEdit = (range: Range, newText: string) => {
             const existing = textEdits[uri] || (textEdits[uri] = [])
@@ -156,45 +149,54 @@ async function doScriptBlockRename(
             existingRenameInfos.add(infoKey)
         }
 
+        // 非 qk 文件
         if (item.loc) {
             extendTextEdit(item.loc, util.kebab2Camel(newText))
             continue
         }
 
-        let [start, end] = item.range!
-        const cr = await getCompileRes(item.fileName)
-        const prettierConfig = cr.config.prettierConfig
-        const { isPositionFlagSet, getRange, templateNodes } = cr
-        if (!isPositionFlagSet(start, "inScript")) {
-            if (isPositionFlagSet(start, "isComponentStart")) {
-                const currentNode = findNodeAt(templateNodes, start + 1)
-                if (!currentNode) {
-                    continue
-                }
-
-                findTagRanges(currentNode, start + 1, true).forEach(range => {
-                    const useKebab = prettierConfig?.componentTagFormatPreference === "kebab"
-                    if (range) {
-                        extendTextEdit(
-                            getRange(...range),
-                            useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
-                        )
-                    }
-                })
-                continue
-            }
-
-            // 若修改项目为组件属性修改，则将属性名修改为驼峰格式（若为插值属性需将开始位置+1）
-            if (isPositionFlagSet(start, "isAttributeStart")) {
-                const useKebab = prettierConfig?.componentAttributeFormatPreference === "kebab"
-                newText = useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
-                if (/[!@&]/.test(cr.inputDescriptor.source[start])) {
-                    start++
-                }
-            }
+        const [editStart, editEnd] = item.range!
+        const targetCompileRes = await getCompileRes(item.fileName)
+        const prettierConfig = targetCompileRes.config?.prettierConfig
+        const useKebab = prettierConfig?.componentTagFormatPreference === "kebab"
+        if (targetCompileRes.isPositionFlagSetAtIndex(PositionFlag.InScript, editStart)) {
+            extendTextEdit(targetCompileRes.getVscodeRange(editStart, editEnd), newText)
+            continue
         }
-        extendTextEdit(getRange(start, end), newText)
+
+        const currentNode = findTemplateNodeAt(targetCompileRes.templateNodes, editStart)
+        if (!currentNode) {
+            continue
+        }
+
+        const surroundingAttribute = findTemplateAttribute(editStart, currentNode)
+        if (surroundingAttribute) {
+            const renameRange = getComponentOrSlotAttributeRenameRange(
+                targetCompileRes,
+                currentNode,
+                surroundingAttribute
+            )!
+            if (currentNode.tag === "slot" && surroundingAttribute.name.raw === "name") {
+                extendTextEdit(renameRange, newText)
+            } else {
+                extendTextEdit(
+                    renameRange,
+                    useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
+                )
+            }
+
+            continue
+        }
+
+        traverseObject(findTagNameRanges(currentNode, editStart, true), (_, range) => {
+            extendTextEdit(
+                targetCompileRes.getVscodeRange(...range!),
+                useKebab ? util.camel2Kebab(newText) : util.kebab2Camel(newText)
+            )
+        })
+        continue
     }
+
     return { changes: textEdits } satisfies WorkspaceEdit
 }
 
@@ -208,7 +210,27 @@ async function prepareScriptBlockRename(
         return null
     }
 
-    const ss = cr.getSourceIndex(posRange[0])
-    const se = cr.getSourceIndex(posRange[1], true)
-    return isIndexesInvalid(ss, se) ? null : cr.getRange(ss, se)
+    const sourceStart = cr.getSourceIndex(posRange[0])
+    const sourceEnd = cr.getSourceIndex(posRange[1])
+    return isIndexesInvalid(sourceStart, sourceEnd)
+        ? null
+        : cr.getVscodeRange(sourceStart, sourceEnd)
+}
+
+function getComponentOrSlotAttributeRenameRange(
+    cr: CompileResult,
+    node: TemplateNode,
+    attribute: TemplateAttribute
+) {
+    if (node.tag === "slot" && attribute?.name.raw === "name" && attribute.value.raw) {
+        return cr.getVscodeRange(attribute.value.loc)
+    }
+    if (attribute && attribute.name.raw[0] !== "#") {
+        const delta = +/[!@&]/.test(attribute.name.raw)
+        return cr.getVscodeRange(
+            attribute.name.loc.start.index + delta,
+            attribute.name.loc.end.index
+        )
+    }
+    return null
 }

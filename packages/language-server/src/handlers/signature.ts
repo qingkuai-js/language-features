@@ -1,11 +1,10 @@
-import type { RealPath } from "../../../../types/common"
 import type { SignatureHelpHandler } from "../types/handlers"
 import type { SignatureHelp } from "vscode-languageserver/node"
 import type { SignatureHelpParams } from "../../../../types/communication"
 
-import { getCompileRes } from "../compile"
+import { getCompileResult } from "../compile"
 import { getSignatureHelp } from "qingkuai-language-service"
-import { TPICHandler } from "../../../../shared-util/constant"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
 import { documents, limitedScriptLanguageFeatures, tpic } from "../state"
 
 export const signatureHelp: SignatureHelpHandler = async (
@@ -17,18 +16,18 @@ export const signatureHelp: SignatureHelpHandler = async (
         return null
     }
 
-    const cr = await getCompileRes(document)
+    const cr = await getCompileResult(document)
     const offset = document.offsetAt(position)
     return getSignatureHelp(cr, offset, context, getScriptSignatureHelp)
 }
 
 async function getScriptSignatureHelp(
-    fileName: RealPath,
+    fileName: string,
     pos: number,
     isRetrigger: boolean,
-    triggerCharacter?: string
+    triggerCharacter: SignatureHelpParams["triggerCharacter"]
 ): Promise<SignatureHelp | null> {
-    return await tpic.sendRequest<SignatureHelpParams>(TPICHandler.GetSignatureHelp, {
+    return await tpic.sendRequest<SignatureHelpParams>(TP_HANDLERS.GetSignatureHelp, {
         fileName,
         pos,
         isRetrigger,

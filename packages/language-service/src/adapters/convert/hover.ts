@@ -1,64 +1,65 @@
-import type TS from "typescript"
-import type { NumNum } from "../../../../../types/common"
+import type { TypescriptAdapter } from "../adapter"
+import type { Pair } from "../../../../../types/common"
 import type { HoverTipResult, TPICCommonRequestParams } from "../../../../../types/communication"
 
 import { ts } from "../state"
-import { isUndefined } from "../../../../../shared-util/assert"
+import { LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
-import { getRealPath, isComponentIdentifier } from "../qingkuai"
-import { getNodeAt, isBuiltInGlobalDeclaration } from "../ts-ast"
-import { convertDisplayPartsToPlainTextWithLink } from "./typescript"
-import { GLOBAL_BUILTIN_VARS, INTER_NAMESPACE } from "../../../../../shared-util/constant"
+import { constants as qingkuaiConstants } from "qingkuai/compiler"
+import { getNodeAtPositionAndWithin, isInTopScope } from "../ts-ast"
+import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
+import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
 
 export function getAndConvertHoverTip(
-    languageService: TS.LanguageService,
+    adapter: TypescriptAdapter,
     { fileName, pos }: TPICCommonRequestParams
 ): HoverTipResult | null {
-    let replacer: string | RegExp = ""
-    const realPath = getRealPath(fileName)
-    const program = languageService.getProgram()
-    if (!program) {
+    const fileInfo = adapter.service.ensureGetQingkuaiFileInfo(fileName)
+    const program = adapter.getDefaultProgram(fileInfo.path)!
+    if (!debugAssert(program)) {
         return null
     }
 
+    let idStatusDisplay = ""
     const typeChecker = program.getTypeChecker()
-    const node = getNodeAt(program.getSourceFile(fileName)!, pos)
+    const config = adapter.getQingkuaiConfig(fileInfo.path)
+    const languageService = adapter.getDefaultLanguageService(fileInfo.path)!
+    const node = getNodeAtPositionAndWithin(program.getSourceFile(fileName)!, pos)
+
     if (node && ts.isIdentifier(node)) {
-        const nodeRange: NumNum = [node.getStart(), node.getEnd()]
-        if (GLOBAL_BUILTIN_VARS.has(node.text) && isBuiltInGlobalDeclaration(node, typeChecker)) {
-            replacer = INTER_NAMESPACE + "."
-        } else if (node.text === INTER_NAMESPACE) {
-            return {
-                posRange: nodeRange,
-                content: "any"
-            }
-        } else if (
-            node.parent &&
-            ts.isPropertyAccessExpression(node.parent) &&
-            node.parent.expression.getText() === INTER_NAMESPACE
-        ) {
-            return {
-                posRange: nodeRange,
-                content: "any"
-            }
-        } else if (isComponentIdentifier(realPath, node, typeChecker)) {
-            return {
-                posRange: [node.getStart(), node.getEnd()],
-                content: mdCodeBlockGen("ts", `(component) class ${node.text}`)
+        const nodeRange: Pair<number> = [node.getStart(), node.getEnd()]
+
+        // 顶部作用域标识符显示响应式状态
+        if (config?.hoverTipReactiveStatus && fileInfo.idStatusInfo[node.text]) {
+            const symbol = typeChecker.getSymbolAtLocation(node)
+            if (
+                symbol &&
+                symbol.declarations &&
+                !(symbol.flags & ts.SymbolFlags.Alias) &&
+                symbol.declarations.some(decl => isInTopScope(decl))
+            ) {
+                const statusInfo = fileInfo.idStatusInfo[node.text]
+                idStatusDisplay = ` // - ${statusInfo} -`
             }
         }
-    }
 
-    if (
-        node &&
-        node.parent &&
-        ts.isNewExpression(node.parent) &&
-        ts.isIdentifier(node.parent.expression) &&
-        isComponentIdentifier(realPath, node.parent.expression, typeChecker)
-    ) {
-        return {
-            posRange: [node.parent.expression.getStart(), node.parent.expression.getEnd()],
-            content: mdCodeBlockGen("ts", `(component) class ${node.parent.expression.text}`)
+        if (node.text === qingkuaiConstants.LANGUAGE_SERVICE_UTIL) {
+            return {
+                content: "any",
+                range: nodeRange
+            }
+        }
+
+        // 待办：思考是否可以用一种更好的方式去除内部方法悬停提示
+        if (
+            node.parent &&
+            ts.isPropertyAccessExpression(node.parent) &&
+            node.parent.expression.getText() === qingkuaiConstants.LANGUAGE_SERVICE_UTIL
+        ) {
+            return {
+                content: "any",
+                range: nodeRange
+            }
         }
     }
 
@@ -68,10 +69,13 @@ export function getAndConvertHoverTip(
     }
 
     const { start, length } = ret.textSpan
-    const display = convertDisplayPartsToPlainTextWithLink(ret.displayParts)
     const documentation = convertDisplayPartsToPlainTextWithLink(ret.documentation)
+    const display = convertDisplayPartsToPlainTextWithLink(ret.displayParts).replace(
+        LSU_AND_DOT,
+        ""
+    )
     return {
-        posRange: [start, start + length] as NumNum,
-        content: mdCodeBlockGen("ts", display.replace(replacer, "")) + "\n" + documentation
+        range: [start, start + length] as Pair<number>,
+        content: mdCodeBlockGen("ts", display + idStatusDisplay) + "\n" + documentation
     }
 }

@@ -223,7 +223,7 @@
         },
         "tag-structure-start": {
             "name": "meta.tag.normal.$2.start.qk",
-            "begin": "(<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)([a-z][a-zA-Z\\d_.:]*|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))(?=[\\s>/])",
+            "begin": "(<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)((?![a-z][a-zA-Z\\d_]*[-.])[a-z][a-zA-Z\\d_]*|qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))",
             "end": ">",
             "beginCaptures": {
                 "1": {
@@ -252,7 +252,7 @@
         },
         "tag-structure-end": {
             "name": "meta.tag.normal.$2.end.qk",
-            "begin": "(</)([a-z][a-zA-Z\\d_.:]*|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))(?=[\\s>])",
+            "begin": "(</)((?![a-z][a-zA-Z\\d_]*[-.])[a-z][a-zA-Z\\d_]*|qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))",
             "end": ">",
             "beginCaptures": {
                 "1": {
@@ -270,7 +270,7 @@
         },
         "self-closing-tags": {
             "name": "meta.tag.native.$2.void.qk",
-            "begin": "(<)(?!/)(br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)(?=[\\s>/])",
+            "begin": "(<)(?!/)(br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)",
             "end": "/?>",
             "beginCaptures": {
                 "1": {
@@ -298,8 +298,8 @@
             ]
         },
         "component-tags": {
-            "name": "meta.tag.component.$2.void.qk",
-            "begin": "(</?)([a-zA-Z][a-zA-Z\\d_\\-.:]*)(?=[\\s>/])",
+            "name": "meta.tag.component.$2.qk",
+            "begin": "(</?)([a-zA-Z][a-zA-Z\\d_\\-.]*)",
             "end": "/?>",
             "beginCaptures": {
                 "1": {
@@ -535,9 +535,17 @@
             },
             "patterns": [
                 {
+                    "match": "\\s+(from)\\s+",
+                    "captures": {
+                        "1": {
+                            "name": "keyword.control.qk"
+                        }
+                    }
+                },
+                {
                     "name": "meta.embeded.block.qk source.ts",
-                    "begin": "(?<={)",
-                    "end": "(?=})",
+                    "begin": "(?<=(?:{|\\s+from\\s+))",
+                    "end": "(?=(?:}|\\s+from\\s+))",
                     "patterns": [
                         {
                             "include": "source.ts#expression"

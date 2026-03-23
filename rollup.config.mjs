@@ -37,7 +37,7 @@ export default defineConfig(commandLineArgs => {
                 !(
                     log.code === "CIRCULAR_DEPENDENCY" &&
                     log.ids.every(id => {
-                        return id.includes("node_modules/.pnpm/semver")
+                        return /node_modules\/(?:\.pnpm\/)?semver/.test(id)
                     })
                 ) &&
                 !(
@@ -74,6 +74,7 @@ export default defineConfig(commandLineArgs => {
             input: "./packages/language-service/src/index.ts",
             output: {
                 format: "cjs",
+                sourcemap: true,
                 entryFileNames: "index.cjs",
                 dir: "./packages/language-service/dist"
             },
@@ -81,7 +82,7 @@ export default defineConfig(commandLineArgs => {
         },
         {
             ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/adapters/index.ts",
+            input: "./packages/language-service/src/adapters/adapter.ts",
             output: {
                 format: "es",
                 sourcemap: true,
@@ -92,9 +93,10 @@ export default defineConfig(commandLineArgs => {
         },
         {
             ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/adapters/index.ts",
+            input: "./packages/language-service/src/adapters/adapter.ts",
             output: {
                 format: "cjs",
+                sourcemap: true,
                 entryFileNames: "adapters.cjs",
                 dir: "./packages/language-service/dist"
             },
@@ -106,7 +108,7 @@ export default defineConfig(commandLineArgs => {
             ...languageOnWarnAndExternal,
             input: {
                 server: "./packages/language-server/src/index.ts",
-                client: "./packages/vscode-extension/src/index.ts"
+                client: "./packages/vscode-extension/src/extension.ts"
             },
             output: {
                 format: "cjs",
@@ -145,7 +147,7 @@ export default defineConfig(commandLineArgs => {
             },
             {
                 external: languageExternal,
-                input: "./packages/language-service/dist/temp-types/packages/language-service/src/adapters/index.d.ts",
+                input: "./packages/language-service/dist/temp-types/packages/language-service/src/adapters/adapter.d.ts",
                 output: {
                     format: "es",
                     entryFileNames: "adapters.d.ts",

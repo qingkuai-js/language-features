@@ -3,6 +3,8 @@
         "blockComment": ["<!--", "-->"]
     },
     "brackets": [
+        ["<!--", "-->"],
+        ["<", ">"],
         ["{", "}"],
         ["[", "]"],
         ["(", ")"]
@@ -14,7 +16,7 @@
         {
             "open": "'",
             "close": "'",
-            "notIn": ["string", "comment"]
+            "notIn": ["string"]
         },
         {
             "open": "\"",
@@ -24,12 +26,17 @@
         {
             "open": "`",
             "close": "`",
-            "notIn": ["string", "comment"]
+            "notIn": ["string"]
         },
         {
             "open": "/**",
             "close": " */",
-            "notIn": ["string"]
+            "notIn": ["string", "comment"]
+        },
+        {
+            "open": "<!--",
+            "close": "-->",
+            "notIn": ["string", "comment"]
         }
     ],
     "autoCloseBefore": ";:.,=}])><`\n\t",

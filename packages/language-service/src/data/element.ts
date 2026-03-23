@@ -15,6 +15,10 @@ import type {
 import { mdCodeBlockGen } from "../../../../shared-util/docs"
 import { isString, isUndefined } from "../../../../shared-util/assert"
 
+const inferredBooleanAttributes: Record<string, Set<string>> = {
+    input: new Set(["autofocus", "checked", "disabled"])
+}
+
 export const slotTagData: HTMLElementDataTagItem = {
     name: "slot",
     description: {
@@ -6362,13 +6366,26 @@ export const embeddedLangTags = [
     ["postcss"],
     ["js", "javascript"],
     ["ts", "typescript"]
-].map(item => {
-    const language = item[1] || item[0]
+].map(([tagEnd, id]) => {
+    const attributes: HTMLElementDataAttributeItem[] = []
+    if (tagEnd === "js" || tagEnd === "ts") {
+        attributes.push(
+            {
+                name: "reactive",
+                description: `This Boolean attribute enables deep reactivity inference for the current script block. When present, the compiler treats reactive state as deeply reactive, meaning nested objects and arrays are also tracked.`
+            },
+            {
+                name: "shallow",
+                description: `This Boolean attribute enables shallow reactivity inference for the current script block. When present, only the top-level value is treated as reactive, and nested objects or arrays are not automatically tracked.`
+            }
+        )
+    }
+
     const ret: HTMLElementDataTagItem = {
-        attributes: [],
+        attributes,
         references: [],
-        name: "lang-" + item[0],
-        description: `\n\nThe lang-${item[0]} element is used to embed the ${language} language processed by qingkuai compiler.`
+        name: "lang-" + tagEnd,
+        description: `\n\nThe lang-${tagEnd} element is used to embed the ${id || tagEnd} language processed by qingkuai compiler.`
     }
     return ret
 })
@@ -6424,9 +6441,9 @@ export function findTagAttributeData(tag: string, attrName: string) {
     }
 }
 
-export function isBooleanAttribute(attribute: HTMLElementDataAttributeItem) {
+export function isBooleanAttribute(tag: string, attribute: HTMLElementDataAttributeItem) {
     if (!attribute.description) {
-        return false
+        return inferredBooleanAttributes[tag]?.has(attribute.name)
     }
     if (isString(attribute.description)) {
         return attribute.description.startsWith("This Boolean attribute")

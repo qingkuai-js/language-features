@@ -1,7 +1,8 @@
-import { isUndefined } from "../assert"
-import { Message } from "./types"
+import type { Message } from "./types"
 
-// 将消息体转为buffer，此方法转换后的buffer前4个字节是消息体的长度
+import { isUndefined } from "../assert"
+
+// 将消息体转为 buffer，此方法转换后的buffer前4个字节是消息体的长度
 export function createMessageBuffer(data: any, name: string, id = "") {
     const messageBody = Buffer.from(
         JSON.stringify({
@@ -15,8 +16,8 @@ export function createMessageBuffer(data: any, name: string, id = "") {
     return Buffer.concat([messageLength, messageBody])
 }
 
-// 创建一个Buffer读取器，此方法与createMessageBuffer方法保持一致：将前4个字节读做消息体长度
-// 返回的读取器中的read方法考虑了粘包/分包处理，每成功读取一个完整的数据包会调用一次handler回调
+// 创建一个 Buffer 读取器，此方法与 createMessageBuffer 方法保持一致：将前4个字节读做消息体长度
+// 返回的读取器中的read方法考虑了粘包/分包处理，每成功读取一个完整的数据包会调用一次 handler 回调
 export function createBufferReader() {
     let preBuffer = Buffer.alloc(0)
     let messageLength: number | undefined = undefined
@@ -26,6 +27,8 @@ export function createBufferReader() {
             for (let prefixLen = 0; buffer.length; ) {
                 if (!isUndefined(messageLength)) {
                     prefixLen = 0
+                } else if (buffer.length < 4) {
+                    prefixLen = messageLength = 0
                 } else {
                     messageLength = buffer.readUInt32BE(0) + (prefixLen = 4)
                 }

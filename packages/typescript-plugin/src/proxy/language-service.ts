@@ -1,77 +1,18 @@
 import type TS from "typescript"
-import type { QingKuaiSnapShot } from "../snapshot"
 
-import { existsSync } from "node:fs"
-import { projectService, ts } from "../state"
-import { HAS_BEEN_PROXIED_BY_QINGKUAI } from "../constant"
-import { ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
-import { proxies, qkContext } from "qingkuai-language-service/adapters"
-import { initialEditQingkuaiFileSnapshot } from "../server/content/method"
-import { isQingkuaiFileName, isUndefined } from "../../../../shared-util/assert"
+import { adapter } from "../state"
+import { PROXIED_MARK } from "../constant"
+import { isQingkuaiFileName } from "../../../../shared-util/assert"
 
-export function proxyGetScriptKind(languageServiceHost: TS.LanguageServiceHost) {
-    const getScriptKind = languageServiceHost.getScriptKind?.bind(languageServiceHost)
-    if (isUndefined(getScriptKind)) {
-        return
-    }
-    languageServiceHost.getScriptKind = fileName => {
-        if (!isQingkuaiFileName(fileName)) {
-            return getScriptKind(fileName)
-        }
-        return ensureGetSnapshotOfQingkuaiFile(qkContext.getRealPath(fileName)).scriptKind
+// 首次获取诊断信息是完成 TypescriptAdapter 的初始化（确定 qingkuai 文件的类型定义内容）
+export function proxyGetSemanticDiagnostics(languageService: TS.LanguageService) {
+    const getSemanticDiagnostics = languageService.getSemanticDiagnostics
+    languageService.getSemanticDiagnostics = fileName => {
+        return (adapter.initilize(), getSemanticDiagnostics.call(languageService, fileName))
     }
 }
 
-export function proxyGetCompletionsAtPosition(languageService: TS.LanguageService) {
-    proxies.proxyGetCompletionsAtPosition(languageService)
-}
-
-export function proxyGetScriptVersion(languageServiceHost: TS.LanguageServiceHost) {
-    const getScriptVersion = languageServiceHost.getScriptVersion
-    languageServiceHost.getScriptVersion = fileName => {
-        if (!isQingkuaiFileName(fileName)) {
-            return getScriptVersion.call(languageServiceHost, fileName)
-        }
-        return ensureGetSnapshotOfQingkuaiFile(qkContext.getRealPath(fileName)).version.toString()
-    }
-}
-
-export function proxyGetScriptSnapshot(project: TS.server.Project) {
-    const getScriptSnapshot = project.getScriptSnapshot
-    project.getScriptSnapshot = fileName => {
-        if (!isQingkuaiFileName(fileName)) {
-            return getScriptSnapshot.call(project, fileName)
-        }
-
-        if (!existsSync(qkContext.getRealPath(fileName))) {
-            return undefined
-        }
-
-        const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(
-            ts.server.toNormalizedPath(fileName),
-            false
-        )
-        scriptInfo?.attachToProject(project)
-
-        const realPath = qkContext.getRealPath(fileName)
-        initialEditQingkuaiFileSnapshot(realPath)
-        return ensureGetSnapshotOfQingkuaiFile(realPath)
-    }
-}
-
-export function proxyResolveModuleNameLiterals(languageServiceHost: TS.LanguageServiceHost) {
-    const resolveModuleLiterals = languageServiceHost.resolveModuleNameLiterals
-    if (isUndefined(resolveModuleLiterals)) {
-        return
-    }
-    proxies.proxyResolveModuleNameLiterals(languageServiceHost, modulePath => {
-        const snapshot = languageServiceHost.getScriptSnapshot(modulePath) as QingKuaiSnapShot
-        const compilationSettings = languageServiceHost.getCompilationSettings()
-        return snapshot.scriptKind === ts.ScriptKind.TS || !!compilationSettings.allowJs
-    })
-}
-
-// 在getMoveToRefactoringFileSuggestions执行期间过滤掉program.getSourceFiles结果中的qingkuai文件
+// 在 getMoveToRefactoringFileSuggestions 执行期间过滤掉 program.getSourceFiles 结果中的 qingkuai 文件
 export function proxyGetMoveToRefactoringFileSuggestions(languageService: TS.LanguageService) {
     let getMoveToRefactoringFileSuggestionsIsRunning = false
     const { getMoveToRefactoringFileSuggestions } = languageService
@@ -81,12 +22,12 @@ export function proxyGetMoveToRefactoringFileSuggestions(languageService: TS.Lan
         getMoveToRefactoringFileSuggestionsIsRunning = true
 
         const originalRet = getMoveToRefactoringFileSuggestions.call(languageService, ...args)
-        return (getMoveToRefactoringFileSuggestionsIsRunning = false), originalRet
+        return ((getMoveToRefactoringFileSuggestionsIsRunning = false), originalRet)
     }
 
     function proxyGetSourceFiles(program: TS.Program) {
         const getSourceFiles = program.getSourceFiles.bind(program)
-        if ((getSourceFiles as any)[HAS_BEEN_PROXIED_BY_QINGKUAI]) {
+        if ((getSourceFiles as any)[PROXIED_MARK]) {
             return
         }
         program.getSourceFiles = () => {
@@ -96,6 +37,39 @@ export function proxyGetMoveToRefactoringFileSuggestions(languageService: TS.Lan
             }
             return originalRet.filter(item => !isQingkuaiFileName(item.fileName))
         }
-        ;(getSourceFiles as any)[HAS_BEEN_PROXIED_BY_QINGKUAI] = true
+        ;(getSourceFiles as any)[PROXIED_MARK] = true
+    }
+}
+
+// 获取文件重命名导致的内容变更时，将 qingkuai 文件中的变化修改为原始位置
+export function proxyGetEditsForFileRename(languageService: TS.LanguageService) {
+    const getEditsForFileRename = languageService.getEditsForFileRename
+    languageService.getEditsForFileRename = (oldFilePath, newFilePath, ...rest) => {
+        const originalRet = getEditsForFileRename.call(
+            languageService,
+            oldFilePath,
+            newFilePath,
+            ...rest
+        )
+        originalRet.forEach(item => {
+            let removeRE: RegExp
+            const editQingkuaiFile = isQingkuaiFileName(item.fileName)
+            const qingkuaiConfig = editQingkuaiFile
+                ? adapter.getQingkuaiConfig(item.fileName)
+                : undefined
+            const locationConvertor = adapter.service.createLocationConvertor(item.fileName)
+            if (qingkuaiConfig?.resolveImportExtension) {
+                removeRE = /\.qk(?:\/index(?:\.[jt]s)?)?$/
+            } else {
+                removeRE = /(?:\/index(?:\.[jt]s)?)?$/
+            }
+            item.textChanges.forEach(change => {
+                if (editQingkuaiFile) {
+                    change.span = locationConvertor.textSpan.toSourceTextSpan(change.span)
+                }
+                change.newText = change.newText.replace(removeRE, "")
+            })
+        })
+        return originalRet
     }
 }

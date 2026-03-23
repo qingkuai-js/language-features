@@ -1,5 +1,6 @@
-import type { ProjectKind } from "../../constants"
 import type { CompileResult } from "../../../../../types/common"
+import type { CompletionTriggerKind } from "vscode-languageserver"
+import type { ProjectKind } from "../../../../../shared-util/constant"
 import type { CompletionData, GetScriptCompletionsFunc } from "../../types/service"
 import type { Range, CompletionItem, CompletionList } from "vscode-languageserver-types"
 
@@ -8,48 +9,55 @@ import {
     CompletionItemTag,
     CompletionItemKind
 } from "vscode-languageserver-types"
-import { util } from "qingkuai/compiler"
-import { identifierRE } from "../../regular"
-import { findAttribute, findNodeAt } from "../../util/qingkuai"
-import { INVALID_COMPLETION_TEXT_LABELS } from "../../constants"
-import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
+import { parseDirectiveValue } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
+import { findTemplateAttribute, findTemplateNodeAt } from "../../util/qingkuai"
 
 export async function getAndProcessScriptBlockCompletions(
     cr: CompileResult,
     offset: number,
-    trigger: string,
+    triggerCharacter: string,
     projectKind: ProjectKind,
+    triggerKind: CompletionTriggerKind | undefined,
     getCompletions: GetScriptCompletionsFunc
 ): Promise<CompletionList | null> {
-    const response = await getCompletions(cr.filePath, cr.getInterIndex(offset))
+    const response = await getCompletions(
+        cr.filePath,
+        cr.getInterIndex(offset),
+        triggerCharacter,
+        triggerKind
+    )
     if (!response) {
         return null
     }
 
     let completionItems: CompletionItem[] = []
     const unsetTriggerCharacters = new Set<string>()
-    const currentNode = findNodeAt(cr.templateNodes, offset)
-    const attribute = currentNode ? findAttribute(offset, currentNode) : undefined
+    const currentNode = findTemplateNodeAt(cr.templateNodes, offset)
+    const attribute = currentNode ? findTemplateAttribute(offset, currentNode) : undefined
 
-    // 如果当前处于#for指令的第一个标识符范围内，禁止逗号作为commit character
-    if (attribute?.key.raw === "#for") {
-        const m = attribute.value.loc.start.index + util.findOutOfComment(attribute.value.raw, /\S/)
-        if (
-            m !== -1 &&
-            m <= offset &&
-            identifierRE.test(cr.inputDescriptor.source.slice(m, offset))
-        ) {
-            unsetTriggerCharacters.add(",")
-        }
+    // 如果当前处于 #for 或 #slot 的 patterns 范围内，禁止逗号作为 commit character
+    if (attribute?.name.raw === "#for" || attribute?.name.raw === "#slot") {
+        try {
+            const offsetInDirectiveValue = offset - attribute.value.loc.start.index
+            for (const pattern of parseDirectiveValue(attribute)!.patterns) {
+                if (
+                    pattern?.type === "Identifier" &&
+                    offsetInDirectiveValue >= pattern.start! &&
+                    offsetInDirectiveValue <= pattern.end!
+                ) {
+                    unsetTriggerCharacters.add(",")
+                }
+            }
+        } catch {}
     }
 
     let defaultEditRange: Range | undefined = undefined
     if (response.optionalReplacementSpan) {
         const { start, length } = response.optionalReplacementSpan
-        defaultEditRange = cr.getRange(
+        defaultEditRange = cr.getVscodeRange(
             cr.getSourceIndex(start),
-            cr.getSourceIndex(start + length, true)
+            cr.getSourceIndex(start + length)
         )
     }
 
@@ -100,12 +108,12 @@ export async function getAndProcessScriptBlockCompletions(
         }
         if (entry.replacementSpan) {
             const { start, length } = entry.replacementSpan
-            const se = cr.getSourceIndex(start + length, true)
+            const se = cr.getSourceIndex(start + length)
             const ss = cr.getSourceIndex(start)
             if (!isIndexesInvalid(ss, se)) {
                 currentItem.textEdit = {
                     newText: insertText,
-                    range: cr.getRange(ss, se)
+                    range: cr.getVscodeRange(ss, se)
                 }
             }
         } else if (defaultEditRange) {
@@ -118,35 +126,18 @@ export async function getAndProcessScriptBlockCompletions(
     })
 
     // 过滤无效的补全建议
-    completionItems = completionItems.filter(item => {
-        if (item.label === INTER_NAMESPACE) {
-            return false
-        }
-        if (
-            item.kind === CompletionItemKind.Text &&
-            INVALID_COMPLETION_TEXT_LABELS.has(item.label)
-        ) {
-            return false
-        }
-        if (/['"`]/.test(trigger)) {
-            return item.kind === CompletionItemKind.Constant
-        }
-        if (!INVALID_COMPLETION_TEXT_LABELS.has(item.label)) {
-            return true
-        }
-
-        const preContent = cr.code.slice(0, cr.getInterIndex(offset))
-        return !new RegExp(`${INTER_NAMESPACE}\\.\\s*`).test(preContent)
-    })
+    // completionItems = completionItems.filter(item => {
+    //     return !/['"`]/.test(trigger) || item.kind === CompletionItemKind.Constant
+    // })
 
     return {
-        items: completionItems,
-        isIncomplete: !!response.isIncomplete,
         itemDefaults: {
             commitCharacters: (response.defaultCommitCharacters || []).filter(char => {
                 return !unsetTriggerCharacters.has(char)
             })
-        }
+        },
+        items: completionItems,
+        isIncomplete: !!response.isIncomplete
     }
 }
 

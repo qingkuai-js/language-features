@@ -4,7 +4,7 @@ import type { DidOpenTextDocumentParams, Range } from "vscode-languageserver/nod
 import { expect } from "vitest"
 import { connection } from "../tests/language-server/index.test"
 
-// 将内容作为TextDocument打开并发送通知给语言服务器，此方法打开的文档uri为空字符串
+// 将内容作为 TextDocument 打开并发送通知给语言服务器，此方法打开的文档 uri 为空字符串
 export async function openContentAsTextDocument(content: string) {
     await connection.sendNotification("textDocument/didOpen", {
         textDocument: {
@@ -32,7 +32,6 @@ export function formatSourceCode(code: string) {
     )
 }
 
-// 断言Range结构，多次书写Range比较麻烦，这里只是一个简单的封装，将预期结构使用四个数字类型参数传入
 export function assertRange(
     ...[range, sl, sc, el, ec]: [Range | undefined, ...FixedArray<number, 4>]
 ) {
@@ -42,7 +41,6 @@ export function assertRange(
     })
 }
 
-// 由于Range结构书写比较麻烦，此方法通过传入四个数字参数以生成Range结构
 export function createRange(...[sl, sc, el, ec]: FixedArray<number, 4>): Range {
     return {
         start: {

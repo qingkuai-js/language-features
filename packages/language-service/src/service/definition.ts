@@ -1,101 +1,84 @@
-import type {
-    GetCompileResultFunc,
-    GetComponentInfosFunc,
-    FindScriptDefinitionsFunc,
-    FindScriptTypeDefinitionsFunc
-} from "../types/service"
+import type { CompileResult } from "../../../../types/common"
 import type { LocationLink, Range } from "vscode-languageserver-types"
-import type { CompileResult, CustomPath, NumNum } from "../../../../types/common"
+import type { FindScriptDefinitionsFunc, FindScriptTypeDefinitionsFunc } from "../types/service"
 
 import { URI } from "vscode-uri"
+import { PositionFlag } from "qingkuai/compiler"
 import { excuteCssCommonHandler } from "../util/css"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
-import { findAttribute, findNodeAt, findTagRanges, walk } from "../util/qingkuai"
+import { findTemplateAttribute, findTemplateNodeAt, findTagNameRanges } from "../util/qingkuai"
 
 export async function findDefinitions(
     cr: CompileResult,
     offset: number,
-    path: CustomPath,
-    getCompileRes: GetCompileResultFunc,
-    getComponentInfos: GetComponentInfosFunc,
     findScriptDefinitions: FindScriptDefinitionsFunc
 ) {
-    if (cr.isPositionFlagSet(offset, "inStyle")) {
+    if (cr.isPositionFlagSetAtIndex(PositionFlag.InStyle, offset)) {
         const cssRet = excuteCssCommonHandler("findDefinition", cr, offset)
         return cssRet && [cssRet]
     }
 
-    let interIndex = cr.getInterIndex(offset)
     let originSelectionRange: Range | undefined = undefined
-    if (!cr.isPositionFlagSet(offset, "inScript")) {
-        const currentNode = findNodeAt(cr.templateNodes, offset)
-        if (!currentNode || !(currentNode.componentTag || currentNode.parent?.componentTag)) {
-            const currentAttribute = currentNode && findAttribute(offset, currentNode)
-            if (!currentAttribute) {
-                return null
+
+    const breakToFindReferencesDirectly = () => {
+        if (!originSelectionRange) {
+            return null
+        }
+        return [
+            {
+                targetUri: cr.document.uri,
+                targetRange: originSelectionRange,
+                originSelectionRange: originSelectionRange,
+                targetSelectionRange: originSelectionRange
+            } satisfies LocationLink
+        ]
+    }
+
+    const surroundingNode = findTemplateNodeAt(cr.templateNodes, offset)
+    if (surroundingNode && !cr.isPositionFlagSetAtIndex(PositionFlag.InScript, offset)) {
+        const tagNameRanges = findTagNameRanges(surroundingNode, offset)
+        const surroundingAttribute = findTemplateAttribute(offset, surroundingNode)
+
+        // 将选择范围确定为标签名称/属性名称的范围
+        if (tagNameRanges.start && offset < tagNameRanges.start[1]) {
+            originSelectionRange = cr.getVscodeRange(...tagNameRanges.start)
+        }
+        if (tagNameRanges.end && offset > tagNameRanges.end[0]) {
+            originSelectionRange = cr.getVscodeRange(...tagNameRanges.end)
+        }
+        if (surroundingAttribute) {
+            if (surroundingNode.tag === "slot" && surroundingAttribute.name.raw === "name") {
+                originSelectionRange = cr.getVscodeRange(surroundingAttribute.loc)
+            } else {
+                originSelectionRange = cr.getVscodeRange(surroundingAttribute.name.loc)
             }
-            if (
-                !currentAttribute ||
-                currentAttribute.quote !== "none" ||
-                !/^[!@&]/.test(currentAttribute.key.raw)
-            ) {
-                return null
-            }
-            originSelectionRange = cr.getRange(
-                currentAttribute.key.loc.start.index,
-                currentAttribute.key.loc.end.index
-            )
         }
 
-        const tagRanges = findTagRanges(currentNode, offset)
-        if (tagRanges[0]) {
-            if (!currentNode.componentTag) {
-                return null
-            }
-            interIndex = cr.getInterIndex(currentNode.range[0])
-            originSelectionRange = cr.getRange(...tagRanges[offset < tagRanges[0][1] ? 0 : 1]!)
-        } else {
-            const attribute = findAttribute(offset, currentNode)
-            if (!attribute || attribute.key.raw.startsWith("#")) {
-                return null
-            }
+        // 嵌入脚本标签或没有 name 属性的 slot 标签处直接查找引用
+        if (
+            (surroundingNode.isEmbedded && /[jt]s$/.test(surroundingNode.tag)) ||
+            ("slot" === surroundingNode.tag &&
+                !cr.getTemplateNodeContext(surroundingNode).attributesMap.name)
+        ) {
+            return breakToFindReferencesDirectly()
+        }
 
-            if (currentNode.parent?.componentTag && attribute.key.raw === "slot") {
-                const componentInfo = (await getComponentInfos(cr.filePath)).find(info => {
-                    return info.name === currentNode.parent!.componentTag
-                })
-                if (!componentInfo) {
-                    return null
-                }
-
-                const componentFileName = path.resolve(
-                    cr.filePath,
-                    "../",
-                    componentInfo.relativePath
-                )
-                return await getComponentSlotDefinition(
-                    getCompileRes,
-                    componentFileName,
-                    attribute.value.raw,
-                    cr.getRange(attribute.loc.start.index, attribute.loc.end.index)
-                )
-            }
-
-            const keyEndIndex = attribute.key.loc.end.index
-            const keyStartIndex = attribute.key.loc.start.index
-            if (offset >= keyEndIndex || offset < keyStartIndex) {
-                return null
-            }
-            interIndex = cr.getInterIndex(keyStartIndex)
-            originSelectionRange = cr.getRange(keyStartIndex, keyEndIndex)
+        // 组件或其未使用 #slot 指令的直接子元素的标签将 offset 调整为开始标签名
+        if (
+            surroundingNode.componentTag ||
+            (surroundingNode.parent?.componentTag &&
+                !cr.getTemplateNodeContext(surroundingNode.parent).attributesMap["#slot"])
+        ) {
+            tagNameRanges.start && (offset = tagNameRanges.start[0])
         }
     }
 
+    const interIndex = cr.getInterIndex(offset)
     if (isIndexesInvalid(interIndex)) {
         return null
     }
 
-    const res = await findScriptDefinitions?.(cr, interIndex)
+    const res = await findScriptDefinitions(cr, interIndex)
     if (!res?.definitions.length) {
         return null
     }
@@ -117,7 +100,7 @@ export async function findTypeDefinitions(
     offset: number,
     findTypeDefinitions: FindScriptTypeDefinitionsFunc
 ) {
-    if (!cr.isPositionFlagSet(offset, "inScript")) {
+    if (!cr.isPositionFlagSetAtIndex(PositionFlag.InScript, offset)) {
         return null
     }
 
@@ -131,36 +114,5 @@ export async function findTypeDefinitions(
             targetUri: URI.file(item.fileName).toString(),
             targetSelectionRange: item.targetSelectionRange
         }
-    })
-}
-
-async function getComponentSlotDefinition(
-    getCompileRes: GetCompileResultFunc,
-    componentFileName: string,
-    slotName: string,
-    originSelectionRange: Range
-) {
-    const cr = await getCompileRes(componentFileName)
-    const componentFileUri = URI.file(componentFileName).toString()
-    return walk<LocationLink[]>(cr.templateNodes, node => {
-        if (node.tag === "slot") {
-            const nameAttr = node.attributes.find(attr => {
-                return attr.key.raw === "name"
-            })
-            if ((nameAttr?.value.raw || "default") === slotName) {
-                const selectionRange: NumNum = nameAttr
-                    ? [nameAttr.loc.start.index, nameAttr.loc.end.index]
-                    : [node.range[0], node.range[0] + node.tag.length + 1]
-                return [
-                    {
-                        originSelectionRange,
-                        targetUri: componentFileUri,
-                        targetRange: cr.getRange(...node.range),
-                        targetSelectionRange: cr.getRange(...selectionRange)
-                    }
-                ]
-            }
-        }
-        return undefined
     })
 }

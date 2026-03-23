@@ -4,7 +4,7 @@ import { InitializeHandler } from "../types/handlers"
 import { TextDocumentSyncKind } from "vscode-languageserver"
 import { COMPLETION_TRIGGER_CHARS } from "qingkuai-language-service"
 
-export const initialize: InitializeHandler = params => {
+export const initialize: InitializeHandler = () => {
     // 测试环境下不会调用initialize
     setState({
         isTestingEnv: false
@@ -33,10 +33,10 @@ export const initialize: InitializeHandler = params => {
                 retriggerCharacters: [")"]
             },
             completionProvider: {
-                resolveProvider: true,
                 completionItem: {
                     labelDetailsSupport: true
                 },
+                resolveProvider: true,
                 triggerCharacters: COMPLETION_TRIGGER_CHARS
             }
         }

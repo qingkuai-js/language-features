@@ -1,509 +1,279 @@
 import type TS from "typescript"
-import type { RealPath } from "../../../../../types/common"
-import type { QingkuaiRuntimeCommonMessage } from "../../types/service"
-import type { QingkuaiCompilerCommonMessage } from "../../types/service"
 
-import {
-    ts,
-    path,
-    getConfig,
-    getCompileInfo,
-    typeRefStatement,
-    qingkuaiDiagnostics
-} from "../state"
-import {
-    isNull,
-    isString,
-    isNumber,
-    debugAssert,
-    isUndefined
-} from "../../../../../shared-util/assert"
-import {
-    validIdentifierRE,
-    watchCompilerFuncRE,
-    reactCompilerFuncRE,
-    globalTypeIdentifierRE,
-    existingTopScopeIdentifierRE
-} from "../../regular"
-import {
-    INTER_NAMESPACE,
-    GlobalTypeIdentifier,
-    TS_PROPS_DECLARATION_LEN,
-    TS_REFS_DECLARATION_LEN,
-    JS_PROPS_DECLARATION_LEN,
-    JS_REFS_DECLARATION_LEN
-} from "../../../../../shared-util/constant"
-import {
-    walk,
-    getLength,
-    isInTopScope,
-    isAssignable,
-    isTopLevelAwait,
-    isReactFuncDecalration
-} from "../ts-ast"
-import { COMPILER_FUNCS } from "../../constants"
-import { stringify } from "../../../../../shared-util/sundry"
-import { commonMessage as runtimeCommonMessage } from "qingkuai/internal"
-import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
-import { commonMessage as compilerCommonMessage, util } from "qingkuai/compiler"
-import { isComponentIdentifier, isPositionFlagSetByInterIndex } from "../qingkuai"
+import type {
+    GlobalTypes,
+    ExtractedSlotName,
+    ExtractedSlotContext,
+    GlobalTypeDeclarationNode
+} from "../../types/adapter"
+import type { QingkuaiFileInfo } from "../file"
+import type { TypescriptAdapter } from "../adapter"
+import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
 
-export function ensureExport(
-    languageService: TS.LanguageService,
-    fileName: RealPath,
-    content: string,
-    typeDeclarationLen: number
+import { ts } from "../state"
+import { LSU_AND_DOT } from "../../constants"
+import { isInTopScope, walkTsNode } from "../ts-ast"
+import { traverseObject } from "../../../../../shared-util/sundry"
+import { constants as qingkuaiConstants, util } from "qingkuai/compiler"
+
+export function confirmTypesForCompileResult(
+    adapter: TypescriptAdapter,
+    fileInfo: QingkuaiFileInfo
 ) {
-    const program = languageService.getProgram()!
-    const typeChecker = program.getTypeChecker()
-    const sourceFile = program.getSourceFile(fileName)!
-    debugAssert(!!sourceFile)
+    let sourceFile!: TS.SourceFile
+    let typeChecker!: TS.TypeChecker
 
-    const config = getConfig(fileName)
-    const contentArr = content.split("")
-    const existingGlobalType = new Set<string>()
-    const diagnosticsCache: TS.Diagnostic[] = []
-    const compileInfo = getCompileInfo(fileName)
-    const storedTypes = new Map<number, string>()
-    const typeRefStatementLen = typeRefStatement.length
-    const slotInfoKeys = Object.keys(compileInfo.slotInfo)
-    const isTS = compileInfo.scriptKind === ts.ScriptKind.TS
-    const componentName = filePathToComponentName(path, fileName)
-    const { slotInfo, itos, refAttrValueStartIndexes } = compileInfo
-    const builtInTypeDeclarationEndIndex = typeRefStatement.length + typeDeclarationLen
-
-    // 将每个待提取类型的索引记录到storedTypes
-    slotInfoKeys.forEach(slotName => {
-        slotInfo[slotName].properties.forEach(property => {
-            if (isNumber(property[2])) {
-                storedTypes.set(property[2], "")
-            }
-        })
-    })
-    qingkuaiDiagnostics.set(fileName, diagnosticsCache)
-
-    // 将中间代码的指定范围用空白字符替换（用于需要被移除的语句）
-    const eliminateContentByLength = (start: number, length: number) => {
-        for (let i = 0; i < length; i++) {
-            contentArr[start + i] = " "
+    const updateSourceFile = (updateContent = true) => {
+        if (updateContent) {
+            fileInfo.updateContent(contentArr.join(""))
         }
+
+        const program = adapter.getDefaultProgram(fileInfo.path)!
+        sourceFile = program?.getSourceFile(fileInfo.path)!
+        typeChecker = program?.getTypeChecker()!
+        return sourceFile
     }
-    const eliminateContentByRange = (start: number, end: number) => {
-        for (let i = start; i < end; i++) {
+
+    if (fileInfo.typesConfirmed || !updateSourceFile(false)) {
+        return
+    }
+    fileInfo.typesConfirmed = true
+
+    const globalTypes: GlobalTypes = {}
+    const contentArr = fileInfo.code.split("")
+    const slotNames: ExtractedSlotName[] = []
+    const extractedSlotContexts: ExtractedSlotContext[][] = []
+    const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
+
+    const eliminateNode = (node: TS.Node) => {
+        const end = node.getEnd()
+        for (let i = node.getStart(); i < end; i++) {
             contentArr[i] = " "
         }
     }
 
-    // 标记已声明的全局类型标识符
-    const markGlobalTypeExisting = (identifierName: string, startIndex: number) => {
-        if (
-            startIndex > builtInTypeDeclarationEndIndex &&
-            globalTypeIdentifierRE.test(identifierName)
-        ) {
-            existingGlobalType.add(identifierName)
-        }
-    }
-
-    // 记录qingkuai自定义诊断信息
-    const recordQingkuaiDiagnostic = (
-        start: number,
-        length: number,
-        category: TS.DiagnosticCategory,
-        message: ReturnType<typeof getCompilerCommonMessage>
-    ) => {
-        if (isUndefined(itos[start]) || itos[start] === -1) {
+    const recordGlobalTypes = (node: GlobalTypeDeclarationNode) => {
+        if ((node.name?.text !== "Props" && node.name?.text !== "Refs") || !isInTopScope(node)) {
             return
         }
 
-        diagnosticsCache.push({
-            start,
-            length,
-            category,
-            source: "qk",
-            file: undefined,
-            code: message.code,
-            messageText: message.msg
-        })
+        const name = node.name.text
+        const existing = globalTypes[name]
+        if (!existing) {
+            globalTypes[name] = { defaultDeclaration: node }
+        } else if (
+            !globalTypes[name]?.used &&
+            existing.defaultDeclaration.getEnd() !== node.getEnd() &&
+            existing.defaultDeclaration.getStart() !== node.getStart()
+        ) {
+            globalTypes[name]!.used = typeChecker.getTypeAtLocation(node)
+        }
     }
 
-    // 分析中间代码AST，记录全局类型标识符的存在状态，类型别名声明和interface声明则
-    // 认为当前文件已声明全局类型标识符，对于导入的标识符，需要确定其是否能作为类型使用；
-    // 另外此处还处理一些与qingkuai编译器中对于脚本部分类似的检查逻辑（禁用的标识符等），
-    // 因为检查模式下qingkuai编译器不会使用@babel/parser解析嵌入脚本代码以提高编译效率
-    walk(sourceFile, node => {
-        const [start, length] = [node.getStart(), getLength(node)]
+    const insertExportDefaultStatement = (prefix: string, suffix: string) => {
+        insertText(`${prefix}export `)
+        insertText("default", fileInfo.exportValueSourceRange)
+        insertText(` 0${suffix}`)
+    }
 
-        if (
-            ts.isBinaryExpression(node) &&
-            storedTypes.has(node.right.pos) &&
-            node.left.getText() === INTER_NAMESPACE + ".Receiver" &&
-            node.operatorToken.kind === ts.SyntaxKind.EqualsToken
-        ) {
-            const type = typeChecker.getTypeAtLocation(node.right)
-            const typeStr = typeChecker.typeToString(type)
-            storedTypes.set(node.right.pos, typeStr)
-        }
+    const insertText = (text: string, sourceRange?: Pair<number>) => {
+        contentArr.push(...text.split(""))
+        fileInfo.adjustIndexMap([contentArr.length - text.length, contentArr.length], sourceRange)
+    }
 
-        // 不支持顶层await表达式
-        if (isTopLevelAwait(node)) {
-            recordQingkuaiDiagnostic(
-                start,
-                length,
-                ts.DiagnosticCategory.Error,
-                getCompilerCommonMessage("TopLevelAwaitNotBeSupported")
-            )
-        }
-
-        // 擦除手动实例化组件的语句
-        if (
-            ts.isNewExpression(node) &&
-            ts.isIdentifier(node.expression) &&
-            isComponentIdentifier(fileName, node.expression, typeChecker) &&
-            isPositionFlagSetByInterIndex(fileName, start, "inScript")
-        ) {
-            eliminateContentByRange(start, node.expression.getStart())
-            eliminateContentByRange(node.expression.getEnd(), node.getEnd())
-            contentArr[node.expression.getStart() - 1] = ";"
-            contentArr[node.getEnd() - 1] = ";"
-            recordQingkuaiDiagnostic(
-                start,
-                getLength(node),
-                ts.DiagnosticCategory.Error,
-                getRuntimeCommonMessage("InstantiateComponentManually")
-            )
-        }
-
-        // 脚本类型为js时，检查是否通过JSDoc声明全局类型标识符
-        if (!isTS && existingGlobalType.size < 2) {
-            const typeDefNodes = ts.getJSDocTags(node).filter(jsDocNode => {
-                return ts.isJSDocTypedefTag(jsDocNode)
-            })
-            if (typeDefNodes.length > 0 && isInTopScope(node)) {
-                typeDefNodes.forEach(typeDefNode => {
-                    markGlobalTypeExisting(
-                        ts.getNameOfJSDocTypedef(typeDefNode)?.text || "",
-                        typeDefNode.getStart()
-                    )
-                })
+    walkTsNode(sourceFile, node => {
+        // 若存在已声明的 Props 或 Refs 类型，则忽略默认值（EmptyObject）
+        if (!fileInfo.isTS) {
+            for (const jsDocTag of ts.getJSDocTags(node)) {
+                ts.isJSDocTypedefTag(jsDocTag) && recordGlobalTypes(jsDocTag)
+            }
+        } else {
+            if (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) {
+                recordGlobalTypes(node)
             }
         }
 
-        // 脚本类型为ts时，检查是否通过类型别名或接口声明全局类型标识符
-        if (isTS && (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))) {
-            isInTopScope(node) && markGlobalTypeExisting(node.name.text, start)
-        }
-
-        // 检查引用属性值是否合法
-        if (ts.isParenthesizedExpression(node) && refAttrValueStartIndexes.has(start)) {
-            const allowConst = content[start - 1] !== " "
-            if (!isAssignable(node.expression, allowConst, typeChecker)) {
-                recordQingkuaiDiagnostic(
-                    node.expression.getStart(),
-                    getLength(node.expression),
-                    ts.DiagnosticCategory.Error,
-                    getCompilerCommonMessage(
-                        "BadValueToReferenceAttribute",
-                        node.expression.getText(),
-                        allowConst
-                    )
-                )
-            }
-        }
-
-        // 脚本类型为ts时，判断有没有通过import语句从其他文件导入全局类型标识符
-        // importGlobalIdentifier为一个键为模块导出标识符名称，值为导入标识符名称的映射表，当导入
-        // 标识符名称与全局类型标识符名称一致，且其可作为类型标识符使用时，视为该全局类型标识符已被声明
-        if (isTS && ts.isImportDeclaration(node) && isInTopScope(node)) {
-            if (
-                !isUndefined(node.importClause?.name) &&
-                globalTypeIdentifierRE.test(node.importClause.name.text)
-            ) {
-                const symbol = typeChecker.getSymbolAtLocation(node.importClause.name)
-                const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
-                if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
-                    existingGlobalType.add(node.importClause.name.text)
-                }
-            }
-
-            // 对于命名空间导入语法无需处理，因为它并不能为qk文件声明全局类型标识符
-            if (
-                !isUndefined(node.importClause?.namedBindings) &&
-                ts.isNamedImports(node.importClause.namedBindings)
-            ) {
-                for (const element of node.importClause.namedBindings.elements) {
-                    if (!globalTypeIdentifierRE.test(element.name.text)) {
-                        continue
+        // 存在导入的 Props 或 Refs 类型时同样需要忽略默认值
+        if (ts.isImportDeclaration(node)) {
+            if (isInTopScope(node)) {
+                const identifiers: TS.Identifier[] = []
+                if (ts.isImportDeclaration(node) && node.importClause) {
+                    if (node.importClause.name) {
+                        identifiers.push(node.importClause.name)
                     }
-
-                    const symbol = typeChecker.getSymbolAtLocation(element.name)
-                    const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
-                    if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
-                        existingGlobalType.add(element.name.text)
-                    }
-                }
-            }
-        }
-
-        // 检查是否使用了禁止的标识符
-        if (ts.isIdentifier(node) && util.isBannedIdentifier(node.text)) {
-            recordQingkuaiDiagnostic(
-                start,
-                getLength(node),
-                ts.DiagnosticCategory.Error,
-                getCompilerCommonMessage("IdentifierFormatIsNotAllowed", node.text)
-            )
-        }
-
-        // 检查是否使用了export语句
-        if (
-            ts.isExportAssignment(node) ||
-            (node as TS.HasModifiers).modifiers?.some(m => {
-                return m.kind === ts.SyntaxKind.ExportKeyword
-            })
-        ) {
-            recordQingkuaiDiagnostic(
-                start,
-                length,
-                ts.DiagnosticCategory.Error,
-                getCompilerCommonMessage("BadExportRelatedStatement")
-            )
-            if (ts.isExportAssignment(node)) {
-                eliminateContentByLength(start, length)
-            }
-        }
-
-        if (
-            ts.isEnumDeclaration(node) ||
-            ts.isClassDeclaration(node) ||
-            ts.isModuleDeclaration(node) ||
-            ts.isVariableDeclaration(node) ||
-            ts.isFunctionDeclaration(node)
-        ) {
-            if (!isUndefined(node.name)) {
-                const identifierName = node.name.getText()
-                if (identifierName === "$arg") {
-                    // 名称为$arg的标识符可能在内联事件处理程序中会被覆盖（警告）
-                    if (isInTopScope(node)) {
-                        recordQingkuaiDiagnostic(
-                            node.name.getStart(),
-                            getLength(node.name),
-                            ts.DiagnosticCategory.Warning,
-                            getCompilerCommonMessage("IdentifierMaybeOverwritten", "$arg")
-                        )
-                    }
-                } else if (existingTopScopeIdentifierRE.test(identifierName)) {
-                    // 检查是否重复声明了顶部作用域已存在的标识符（编译致命错误）
-                    recordQingkuaiDiagnostic(
-                        node.name.getStart(),
-                        getLength(node.name),
-                        ts.DiagnosticCategory.Error,
-                        getCompilerCommonMessage("RegisterExsitingIdentifierName", identifierName)
-                    )
-                }
-            }
-        }
-
-        if (
-            ts.isCallExpression(node) &&
-            ts.isIdentifier(node.expression) &&
-            COMPILER_FUNCS.has(node.expression.text)
-        ) {
-            // console.log(node)
-        }
-
-        if (
-            ts.isCallExpression(node) &&
-            ts.isIdentifier(node.expression) &&
-            COMPILER_FUNCS.has(node.expression.text)
-            // && isDeclarationOfGlobalType(typeChecker.getSymbolAtLocation(node.expression))
-        ) {
-            const funcName = node.expression.text
-            if (reactCompilerFuncRE.test(funcName)) {
-                const commonDiagnosticArgs = [start, length, ts.DiagnosticCategory.Error] as const
-                if (!isInTopScope(node)) {
-                    // 检查响应性声明相关编译器助手函数是否在非顶部作用域使用（编译致命错误）
-                    recordQingkuaiDiagnostic(
-                        ...commonDiagnosticArgs,
-                        getCompilerCommonMessage("ReactCompilerFuncNotInTopScope")
-                    )
-                }
-
-                const variableDeclarationNode = isReactFuncDecalration(node)
-                if (isNull(variableDeclarationNode)) {
-                    // 检查编译器响应性声明相关助手函数是否未在变量定义语句中使用（编译致命错误）
-                    recordQingkuaiDiagnostic(
-                        ...commonDiagnosticArgs,
-                        getCompilerCommonMessage("ReactCompilerFuncWithoutVariableDeclaration")
-                    )
-                } else {
                     if (
-                        // prettier-ignore
-                        node.arguments.length === 0 &&
-                        (
-                            ts.isArrayBindingPattern(variableDeclarationNode.name) || 
-                            ts.isObjectBindingPattern(variableDeclarationNode.name) 
-                        )
+                        node.importClause.namedBindings &&
+                        !ts.isNamespaceImport(node.importClause.namedBindings)
                     ) {
-                        // 检查编译器响应性声明相关助手函数所属的变量声明语句是否为解构声明且无参数（编译致命错误）
-                        recordQingkuaiDiagnostic(
-                            start,
-                            length,
-                            ts.DiagnosticCategory.Error,
-                            getCompilerCommonMessage("DestructureReactFuncWithNoArg", funcName)
-                        )
+                        for (const spec of node.importClause.namedBindings.elements) {
+                            identifiers.push(spec.name)
+                        }
                     }
-
+                }
+                for (const id of identifiers) {
                     if (
-                        config?.convenientDerivedDeclaration &&
-                        variableDeclarationNode.name.getText().startsWith("$")
+                        (id.text === "Props" || id.text === "Refs") &&
+                        !globalTypes[id.text]?.used
                     ) {
-                        if (funcName === "der") {
-                            // 检查变量声明中是否混用$前缀和der方法（警告）
-                            recordQingkuaiDiagnostic(
-                                variableDeclarationNode.getStart(),
-                                getLength(variableDeclarationNode),
-                                ts.DiagnosticCategory.Warning,
-                                getCompilerCommonMessage("MixTwoSyntaxOfDerived")
-                            )
-                        } else {
-                            // 检查是否混用$前缀标识符和非der函数（具有二义性）
-                            recordQingkuaiDiagnostic(
-                                variableDeclarationNode.getStart(),
-                                getLength(variableDeclarationNode),
-                                ts.DiagnosticCategory.Error,
-                                getCompilerCommonMessage(
-                                    "ConvenientDerivedWithOtherReactFunc",
-                                    funcName
-                                )
+                        const symbol = typeChecker.getSymbolAtLocation(id)
+                        const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
+                        if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
+                            globalTypes[id.text]!.used = typeChecker.getTypeAtLocation(
+                                aliasedSymbol.declarations![0]
                             )
                         }
                     }
-
-                    // 脚本类型非ts时，检查rea、stc和der方法是否存在冗余参数
-                    if (
-                        !isTS &&
-                        node.arguments.length > 1 &&
-                        (funcName === "der" || funcName === "stc")
-                    ) {
-                        recordQingkuaiDiagnostic(
-                            start,
-                            length,
-                            ts.DiagnosticCategory.Warning,
-                            getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 1)
-                        )
-                    }
-                    if (!isTS && funcName === "rea" && node.arguments.length > 2) {
-                        recordQingkuaiDiagnostic(
-                            start,
-                            length,
-                            ts.DiagnosticCategory.Warning,
-                            getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
-                        )
-                    }
-                }
-            } else if (watchCompilerFuncRE.test(funcName)) {
-                if (node.arguments.length < 2) {
-                    // 检查watch相关编译器助手函数是否存在缺少参数的情况（编译致命错误）
-                    recordQingkuaiDiagnostic(
-                        start,
-                        length,
-                        ts.DiagnosticCategory.Error,
-                        getCompilerCommonMessage(
-                            "WatchCompilerFuncMissingArg",
-                            funcName,
-                            node.arguments.length
-                        )
-                    )
-                } else if (!isTS && node.arguments.length > 2) {
-                    // 脚本类型非ts时，检查watch相关编译器助手函数是否存在冗余参数（警告）
-                    recordQingkuaiDiagnostic(
-                        node.getStart(),
-                        getLength(node),
-                        ts.DiagnosticCategory.Warning,
-                        getCompilerCommonMessage("RedundantArgsForCompilerFunc", funcName, 2)
-                    )
                 }
             }
         }
     })
 
-    // 如果全局类型标识符已被声明，则将中间代码中的默认声明（never）部分用空白字符填充
-    if (existingGlobalType.has(GlobalTypeIdentifier.Ref)) {
-        if (isTS) {
-            eliminateContentByLength(
-                typeRefStatementLen + TS_PROPS_DECLARATION_LEN,
-                TS_REFS_DECLARATION_LEN + 2
-            )
-        } else {
-            eliminateContentByLength(
-                typeRefStatementLen + JS_PROPS_DECLARATION_LEN + 1,
-                JS_REFS_DECLARATION_LEN
-            )
+    // 移除默认的 Props 和 Refs 类型声明，并将采纳的 Props 和 Refs 类型中的键记录到组件属性信息
+    traverseObject(globalTypes, (_, info) => {
+        if (info?.used) {
+            eliminateNode(info.defaultDeclaration)
         }
-    }
-    if (existingGlobalType.has(GlobalTypeIdentifier.Prop)) {
-        if (isTS) {
-            eliminateContentByLength(typeRefStatementLen, TS_PROPS_DECLARATION_LEN)
-        } else {
-            eliminateContentByLength(typeRefStatementLen + 3, JS_PROPS_DECLARATION_LEN)
+    })
+
+    // 提取插槽类型信息
+    walkTsNode(updateSourceFile(), node => {
+        if (
+            ts.isCallExpression(node) &&
+            ts.isPropertyAccessExpression(node.expression) &&
+            ts.isIdentifier(node.expression.name) &&
+            ts.isIdentifier(node.expression.expression) &&
+            getTypeDelayIndexesSet.has(node.getStart()) &&
+            node.expression.getText() === qingkuaiConstants.GET_TYPE_DELAY_MARKING
+        ) {
+            const slotNameNode = node.arguments[0] as TS.StringLiteral
+            const contextPropertyNode = node.arguments[1] as TS.StringLiteral
+            if (slotNameNode.text !== slotNames[slotNames.length - 1]?.name) {
+                slotNames.push({
+                    name: slotNameNode.text,
+                    sourceRange: [
+                        fileInfo.getSourceIndex(slotNameNode.getStart()),
+                        fileInfo.getSourceIndex(slotNameNode.getEnd())
+                    ]
+                })
+                fileInfo.slotNames.push(slotNameNode.text)
+            }
+            ;(extractedSlotContexts[slotNames.length - 1] ??= []).push({
+                property: {
+                    name: contextPropertyNode.text,
+                    sourceRange: [
+                        fileInfo.getSourceIndex(contextPropertyNode.getStart()),
+                        fileInfo.getSourceIndex(contextPropertyNode.getEnd())
+                    ]
+                },
+                valueType: typeChecker.typeToString(
+                    typeChecker.getTypeAtLocation(node.arguments[2])
+                )
+            })
         }
-    }
+    })
 
-    // 根据storedTypes记录的类型组合出当前文件所表示的组件的slot类型
-    const slotType = slotInfoKeys.reduce((ret, slotName, i) => {
-        const { properties } = slotInfo[slotName]
-        const key = validIdentifierRE.test(slotName) ? slotName : stringify(slotName)
-        const value = properties.reduce((ret, property, i) => {
-            const [name, _, iot] = property // iot: Index(of inter code) Or Type(string)
-            const key = validIdentifierRE.test(name) ? name : stringify(name)
-            const value = isString(iot) ? stringify(iot) : storedTypes.get(iot)
-            return `${ret}${key}:${value}${i === properties.length - 1 ? "}" : ","}`
-        }, "{")
-        return `${ret}${key}:${value}${i === slotInfoKeys.length - 1 ? "" : ","}`
-    }, "")
+    // 提取组件的 Props 和 Refs 键值属性
+    traverseObject(globalTypes, (kind, info) => {
+        if (info?.used && info.used.flags & ts.TypeFlags.Object) {
+            for (const property of typeChecker.getPropertiesOfType(info.used)) {
+                const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
+                const attributeItem: ComponentAttributeItem = {
+                    kind,
+                    name: property.name,
+                    stringCandidates: [],
+                    type: typeChecker.typeToString(propertyType),
+                    optional: !!(property.flags & ts.SymbolFlags.Optional),
+                    mayBeEvent: kind === "Props" && isMayBeEventType(propertyType),
+                    couldBeString: !!(propertyType.flags & ts.TypeFlags.StringLike)
+                }
+                if (propertyType.isUnion()) {
+                    propertyType.types.forEach(t => {
+                        if (t.flags & ts.TypeFlags.StringLiteral) {
+                            attributeItem.stringCandidates.push(
+                                JSON.parse(typeChecker.typeToString(t))
+                            )
+                        }
+                        attributeItem.couldBeString ||= !!(t.flags & ts.TypeFlags.StringLike)
+                    })
+                } else if (propertyType.flags & ts.TypeFlags.StringLiteral) {
+                    attributeItem.stringCandidates.push(
+                        JSON.parse(typeChecker.typeToString(propertyType))
+                    )
+                }
+                if (isEnumerablePropertyOfGlobalTypes(property)) {
+                    fileInfo.attributes.push(attributeItem)
+                }
+            }
+        }
+    })
 
-    // 为中间代码添加全局类型声明及默认导出语句
-    if (isTS) {
-        contentArr.push(`export default class ${componentName} {
-            constructor(
-                _: ${GlobalTypeIdentifier.Prop},
-                __: ${GlobalTypeIdentifier.Ref},
-                ___: {${slotType}}
-            ){}
-        }`)
+    // 添加组件导出
+    if (!fileInfo.isTS) {
+        insertText(`/** @type `)
     } else {
-        contentArr.push(`export default class ${componentName} {
-            /**
-             * @param {${GlobalTypeIdentifier.Prop}} _
-             * @param {${GlobalTypeIdentifier.Ref}} __
-             * @param {{${slotType}}} __
-             */
-            constructor(_, __, ___){}
-        }`)
+        insertExportDefaultStatement("", " as any as ")
     }
-    return contentArr.join("")
+    insertText(LSU_AND_DOT)
+
+    const defaultExportTypeStartIndex = contentArr.length
+    insertText(`QingkuaiComponent<Props, Refs, `)
+
+    if (slotNames.length) {
+        insertText("{\n")
+
+        for (let i = 0; i < slotNames.length; i++) {
+            insertText(util.toPropertyKey(slotNames[i].name), slotNames[i].sourceRange)
+            insertText(": (context: {\n")
+
+            for (const { property, valueType } of extractedSlotContexts[i]) {
+                insertText(util.toPropertyKey(property.name), property.sourceRange)
+                insertText(`: ${valueType};`)
+            }
+            insertText("}) => void;")
+        }
+        insertText("}")
+    } else {
+        insertText(LSU_AND_DOT + "EmptyObject")
+    }
+    insertText(">")
+
+    // 记录组件文件的默认导出（export default）值类型
+    const fullDefaultExportTypeStr = contentArr.slice(defaultExportTypeStartIndex).join("")
+    fileInfo.defaultExportTypeStr = fullDefaultExportTypeStr.replace(LSU_AND_DOT, "")
+
+    if (!fileInfo.isTS) {
+        insertExportDefaultStatement(" */ ", "")
+    }
+    ;(insertText(";"), updateSourceFile())
 }
 
-// 获取编译器commonMessage中的诊断信息
-function getCompilerCommonMessage<K extends keyof QingkuaiCompilerCommonMessage>(
-    key: K,
-    ...args: Parameters<QingkuaiCompilerCommonMessage[K][1]>
-) {
-    return {
-        // @ts-ignore
-        msg: compilerCommonMessage[key][1](...args),
-        code: compilerCommonMessage[key][0]
+function isMayBeEventType(type: TS.Type): boolean {
+    if (type.isClass()) {
+        return false
     }
+    if (type.isUnion()) {
+        return type.types.some(item => isMayBeEventType(item))
+    }
+    return !!(type.getCallSignatures().length || type.symbol?.name === "Function")
 }
 
-// 获取运行时commonMessage中的诊断信息
-function getRuntimeCommonMessage<K extends keyof QingkuaiRuntimeCommonMessage>(
-    key: K,
-    ...args: Parameters<QingkuaiRuntimeCommonMessage[K][1]>
-) {
-    return {
-        // @ts-ignore
-        msg: runtimeCommonMessage[key][1](...args),
-        code: runtimeCommonMessage[key][0]
+function isEnumerablePropertyOfGlobalTypes(symbol: TS.Symbol) {
+    if (symbol.declarations?.length !== 1) {
+        return false
+    }
+
+    const declaration = symbol.declarations[0]
+    if (!("name" in declaration)) {
+        return false
+    }
+    switch ((declaration.name as any).kind) {
+        case ts.SyntaxKind.Identifier:
+        case ts.SyntaxKind.StringLiteral:
+        case ts.SyntaxKind.NumericLiteral: {
+            return true
+        }
+        default: {
+            return false
+        }
     }
 }

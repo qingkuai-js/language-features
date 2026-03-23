@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-language-features",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "lgq",
     "license": "MIT",
     "displayName": "QingKuai",
@@ -15,6 +15,9 @@
         "Programming Languages"
     ],
     "activationEvents": [
+        "onLanguage:qingkuai",
+        "onLanguage:javascript",
+        "onLanguage:typescript",
         "workspaceContains:**/*.qk"
     ],
     "contributes": {
@@ -130,21 +133,22 @@
             "files.associations": {
                 ".qingkuairc": "json",
                 ".prettierrc": "json"
-            },
-            "path-autocomplete.extensionOnImport": true
+            }
         },
         "configuration": {
-            "title": "Qingkuai",
+            "title": "QingKuai",
             "properties": {
                 "qingkuai.typescriptDiagnosticsExplain": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Allow to add explain to ambiguous typescript diagnostic message for qingkuai file."
+                    "description": "Add explanations to ambiguous TypeScript diagnostics in QingKuai files.",
+                    "markdownDescription": "Controls whether **ambiguous TypeScript diagnostic messages** in `.qk` files include additional explanations to help you understand the issue."
                 },
                 "qingkuai.insertSpaceAroundInterpolation": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Whether to insert a space around interpolation block."
+                    "description": "Insert spaces around interpolation blocks.",
+                    "markdownDescription": "Controls whether spaces are inserted **around interpolation blocks** in templates.\n\nInterpolation blocks use **single curly braces `{ }`**."
                 },
                 "qingkuai.componentTagFormatPreference": {
                     "type": "string",
@@ -153,7 +157,11 @@
                         "kebab"
                     ],
                     "default": "camel",
-                    "description": "Your preferred component tag format for formatting and completion suggestions."
+                    "description": "Preferred component tag format for formatting and completion suggestions.",
+                    "markdownEnumDescriptions": [
+                        "Prefer **camelCase** for component tags.\n\nExample:\n```qingkuai\n<MyComponent></MyComponent>\n```",
+                        "Prefer **kebab-case** for component tags.\n\nExample:\n```qingkuai\n<my-component></my-component>\n```"
+                    ]
                 },
                 "qingkuai.componentAttributeFormatPreference": {
                     "type": "string",
@@ -162,7 +170,11 @@
                         "kebab"
                     ],
                     "default": "camel",
-                    "description": "Your preferred component attribute format for formatting and completion suggestions."
+                    "description": "Preferred component attribute format for formatting and completion suggestions.",
+                    "markdownEnumDescriptions": [
+                        "Prefer **camelCase** for component attributes.\n\nExample:\n```qingkuai\n<MyComponent myCustomAttribute />\n```",
+                        "Prefer **kebab-case** for component attributes.\n\nExample:\n```qingkuai\n<MyComponent my-custom-attribute />\n```"
+                    ]
                 },
                 "qingkuai.htmlHoverTip": {
                     "type": "array",
@@ -179,8 +191,7 @@
                         "entity",
                         "attribute"
                     ],
-                    "uniqueItems": true,
-                    "description": "Whether to enable hover tip for HTML tags, attributes and entity characters."
+                    "uniqueItems": true
                 },
                 "qingkuai.additionalCodeLens": {
                     "type": "array",
@@ -196,7 +207,14 @@
                         "component"
                     ],
                     "uniqueItems": true,
-                    "description": "Additional code lenses that need to be enabled. Provided that typescript(or javascript).referencesCodeLens.enabled is enabled."
+                    "description": "Additional code lenses to enable if [embeddedScriptLanguageId].referencesCodeLens is enabled.",
+                    "markdownDescription": "Controls which **additional code lenses** are enabled in `.qk` files.\n\nThis only works if `javascript/typescript.referencesCodeLens.enabled` (or JavaScript equivalent) is true."
+                },
+                "qingkuai.hoverTipReactiveStatus": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable hover tips showing the inferred reactivity state of variables.",
+                    "markdownDescription": "Controls whether hovering over variables in `.qk` templates shows the **compiler-inferred reactivity status.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
                 }
             }
         }
@@ -210,6 +228,8 @@
         "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
         "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
         "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json",
+        "vsce:local-package": "tsx ./scripts/build-with-local.ts package",
+        "vsce:local-publish": "tsx ./scripts/build-with-local.ts publish",
         "vsce:post": "cd ../../ && rimraf --glob '**/package-lock.json' && rimraf --glob '**/node_modules' && pnpm install",
         "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
         "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
@@ -217,12 +237,18 @@
         "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install"
     },
     "devDependencies": {
-        "js-yaml": "^4.1.0"
+        "js-yaml": "^4.1.0",
+        "vsce": "^2.15.0"
     },
     "dependencies": {
         "prettier": "^3.5.2",
-        "prettier-plugin-qingkuai": "^1.0.25",
-        "qingkuai": "^1.0.46",
-        "typescript-plugin-qingkuai": "file:../typescript-plugin"
+        "prettier-plugin-qingkuai": "^1.0.26",
+        "qingkuai": "^1.0.48",
+        "typescript-plugin-qingkuai": "file:../typescript-plugin",
+        "vscode-css-languageservice": "^6.3.10",
+        "vscode-languageclient": "^9.0.1",
+        "vscode-languageserver": "^9.0.1",
+        "vscode-languageserver-textdocument": "^1.0.12",
+        "vscode-languageserver-types": "^3.17.5"
     }
 }

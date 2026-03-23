@@ -1,39 +1,30 @@
-import type { IpcParticipant } from "../../../../shared-util/ipc/types"
-
-import { existsSync } from "node:fs"
-import { forEachProject } from "../util/typescript"
-import { runAll } from "../../../../shared-util/sundry"
-import { lsProjectKindChanged, setState, ts } from "../state"
-import { TPICHandler } from "../../../../shared-util/constant"
-import { ensureGetSnapshotOfQingkuaiFile } from "../util/qingkuai"
-import { isQingkuaiFileName } from "../../../../shared-util/assert"
-import { createServer } from "../../../../shared-util/ipc/participant"
+import nodePath from "node:path"
 
 import {
+    attachUpdateContent,
     attachGetLanguageId,
-    attachUpdateSnapshot,
     attachDocumentManager,
     attachGetComponentInfos
-} from "./content/handler"
+} from "./files"
 import { attachHoverTip } from "./hover"
-import { attachCodeLens } from "./code-lens"
+import { tsPluginIpcServer } from "../state"
 import { attachWaitCommand } from "./command"
-import { attachRenameFile } from "./rename-file"
 import { attachGetCompletion } from "./complete"
 import { attachFindReference } from "./reference"
-import { attachFindDefinition } from "./definition"
+import { attachGetNavigationTree } from "./navtree"
+import { attachFindDefinitions } from "./definition"
 import { attachGetSignatureHelp } from "./signature"
+import { runAll } from "../../../../shared-util/sundry"
 import { attachFindImplementation } from "./implementation"
 import { attachChangeConfig } from "./configuration/handler"
-import { attachPrepareRename, attachRename } from "./rename"
-import { qkContext, typeRefStatement } from "qingkuai-language-service/adapters"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
+import { attachPrepareRename, attachRename, attachRenameFile } from "./rename"
 import { attachGetDiagnostic, attachRefreshDiagnostic } from "./diagnostic/handler"
 
 export function attachLanguageServerIPCHandlers() {
     runAll([
         attachRename,
         attachHoverTip,
-        attachCodeLens,
         attachRenameFile,
         attachWaitCommand,
         attachChangeConfig,
@@ -42,48 +33,17 @@ export function attachLanguageServerIPCHandlers() {
         attachGetDiagnostic,
         attachPrepareRename,
         attachGetCompletion,
-        attachUpdateSnapshot,
-        attachFindDefinition,
+        attachUpdateContent,
+        attachFindDefinitions,
         attachDocumentManager,
         attachGetSignatureHelp,
+        attachGetNavigationTree,
         attachRefreshDiagnostic,
         attachGetComponentInfos,
         attachFindImplementation
     ])
-}
 
-// 创建ipc通道，并监听来自qingkuai语言服务器的请求
-export function createIpcServer(sockPath: string) {
-    if (!existsSync(sockPath)) {
-        createServer(sockPath).then(server => {
-            setState({ server })
-            attachLanguageServerIPCHandlers()
-            ensureLanguageServerProjectKind(server)
-            server.onRequest(TPICHandler.GetTypeRefStatement, () => typeRefStatement)
-        })
-    }
-}
-
-export function ensureLanguageServerProjectKind(server: IpcParticipant) {
-    forEachProject(p => {
-        if (lsProjectKindChanged) {
-            return
-        }
-
-        for (const fileName of p.getFileNames()) {
-            const realPath = qkContext.getRealPath(fileName)
-            if (!isQingkuaiFileName(realPath || "")) {
-                continue
-            }
-
-            const qingkuaiSnapshot = ensureGetSnapshotOfQingkuaiFile(realPath!)
-            if (qingkuaiSnapshot.scriptKind === ts.ScriptKind.TS) {
-                setState({
-                    lsProjectKindChanged: true
-                })
-                server.sendNotification(TPICHandler.InfferedProjectAsTypescript, null)
-                break
-            }
-        }
+    tsPluginIpcServer.onRequest(TP_HANDLERS.getTypeDeclarationFilePath, () => {
+        return nodePath.resolve(__dirname, "../dts/qingkuai")
     })
 }

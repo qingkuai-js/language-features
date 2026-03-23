@@ -1,40 +1,29 @@
 import type {
-    FindDefinitionResult,
-    FindDefinitionParams,
-    GetClientConfigParams,
+    FindDefinitionsResult,
     TPICCommonRequestParams,
-    FindDefinitionResultItem
+    FindDefinitionsResultItem
 } from "../../../../types/communication"
-import type { CompileResult, RealPath } from "../../../../types/common"
+import type { CompileResult } from "../../../../types/common"
 import type { DefinitionHandler, TypeDefinitionHandler } from "../types/handlers"
 
-import { CUSTOM_PATH } from "../constants"
-import { getComponentInfos } from "../client"
-import { findDefinitions } from "qingkuai-language-service"
-import { findTypeDefinitions } from "qingkuai-language-service"
-import { getCompileRes, getCompileResByPath } from "../compile"
-import { LSHandler, TPICHandler } from "../../../../shared-util/constant"
-import { tpic, documents, connection, limitedScriptLanguageFeatures } from "../state"
+import { getCompileResult } from "../compile"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
+import { tpic, documents, limitedScriptLanguageFeatures } from "../state"
+import { findDefinitions as _findDefinitions } from "qingkuai-language-service"
+import { findTypeDefinitions as _findTypeDefinitions } from "qingkuai-language-service"
 
-export const findDefinition: DefinitionHandler = async ({ textDocument, position }, token) => {
+export const findDefinitions: DefinitionHandler = async ({ textDocument, position }, token) => {
     const document = documents.get(textDocument.uri)
     if (limitedScriptLanguageFeatures || !document || token.isCancellationRequested) {
         return null
     }
 
-    const cr = await getCompileRes(document)
+    const cr = await getCompileResult(document)
     const offset = document.offsetAt(position)
-    return findDefinitions(
-        cr,
-        offset,
-        CUSTOM_PATH,
-        getCompileResByPath,
-        getComponentInfos,
-        findScriptBlockDefinitions
-    )
+    return _findDefinitions(cr, offset, findScriptBlockDefinitions)
 }
 
-export const findTypeDefinition: TypeDefinitionHandler = async (
+export const findTypeDefinitions: TypeDefinitionHandler = async (
     { textDocument, position },
     token
 ) => {
@@ -43,36 +32,26 @@ export const findTypeDefinition: TypeDefinitionHandler = async (
         return null
     }
 
-    const cr = await getCompileRes(document)
+    const cr = await getCompileResult(document)
     const offset = document.offsetAt(position)
-    return await findTypeDefinitions(cr, offset, findScriptBlockTypeDefinitions)
+    return await _findTypeDefinitions(cr, offset, findScriptBlockTypeDefinitions)
 }
 
 async function findScriptBlockDefinitions(
     cr: CompileResult,
     pos: number
-): Promise<FindDefinitionResult | null> {
-    const preferGoToSourceDefinition: boolean = await connection.sendRequest(
-        LSHandler.GetClientConfig,
-        {
-            uri: cr.uri,
-            defaultValue: false,
-            section: cr.scriptLanguageId,
-            name: "preferGoToSourceDefinition"
-        } satisfies GetClientConfigParams<boolean>
-    )
-    return await tpic.sendRequest<FindDefinitionParams>(TPICHandler.FindDefinition, {
+): Promise<FindDefinitionsResult | null> {
+    return await tpic.sendRequest<TPICCommonRequestParams>(TP_HANDLERS.FindDefinition, {
         pos,
-        fileName: cr.filePath,
-        preferGoToSourceDefinition
+        fileName: cr.filePath
     })
 }
 
 async function findScriptBlockTypeDefinitions(
-    fileName: RealPath,
+    fileName: string,
     pos: number
-): Promise<FindDefinitionResultItem[] | null> {
-    return await tpic.sendRequest<TPICCommonRequestParams>(TPICHandler.findTypeDefinition, {
+): Promise<FindDefinitionsResultItem[] | null> {
+    return await tpic.sendRequest<TPICCommonRequestParams>(TP_HANDLERS.findTypeDefinition, {
         fileName,
         pos
     })

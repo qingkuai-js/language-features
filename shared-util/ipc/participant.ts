@@ -16,7 +16,7 @@ import { getReleaseId, releaseId } from "./id"
 import { isUndefined, isPromise } from "../assert"
 import { createMessageBuffer, createBufferReader } from "./buffer"
 
-export const defaultParticipant: IpcParticipant = {
+export const DEFAULT_PARTICIPANT: IpcParticipant = {
     close: NOOP,
     onClose: NOOP,
     onRequest: NOOP,

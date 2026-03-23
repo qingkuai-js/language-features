@@ -1,34 +1,32 @@
+import type TS from "typescript"
+
 import type {
     SignatureHelp,
     ParameterInformation,
     SignatureInformation
 } from "vscode-languageserver-types"
-import type TS from "typescript"
+import type { TypescriptAdapter } from "../adapter"
 import type { SignatureHelpParams } from "../../../../../types/communication"
 
-import { ts } from "../state"
-import { findAncestorUntil, getNodeAt } from "../ts-ast"
-import { INTER_NAMESPACE } from "../../../../../shared-util/constant"
-import { convertDisplayPartsToPlainTextWithLink, convertJsDocTagsToMarkdown } from "./typescript"
+import { debugAssert } from "../../../../../shared-util/assert"
+import { convertDisplayPartsToPlainTextWithLink, convertJsDocTagsToMarkdown } from "./documentation"
 
 export function getAndConvertSignatureHelp(
-    languageService: TS.LanguageService,
-    lsParams: SignatureHelpParams
+    adapter: TypescriptAdapter,
+    params: SignatureHelpParams
 ): SignatureHelp | null {
     let reason: TS.SignatureHelpTriggerReason | undefined = undefined
-    const { fileName, pos, isRetrigger, triggerCharacter } = lsParams
-    const sourceFile = languageService.getProgram()?.getSourceFile(fileName)
 
-    // __c__命名空间中的方法调用不触发签名帮助
-    if (sourceFile) {
-        const node = getNodeAt(sourceFile, pos)
-        const callee = node && findAncestorUntil(node, ts.SyntaxKind.CallExpression)
-        if (callee?.getText().startsWith(INTER_NAMESPACE)) {
-            return null
-        }
+    const triggerCharacter = params.triggerCharacter
+    const filePath = adapter.getNormalizedPath(params.fileName)
+    const languageService = adapter.getDefaultLanguageService(filePath)!
+    if (!debugAssert(languageService)) {
+        return null
     }
 
-    if (isRetrigger) {
+    // 待办：内部工具类不应触发签名帮助，和 hover 一样，查找一种能很好识别内部工具调用的方案
+
+    if (params.isRetrigger) {
         reason = {
             kind: "retrigger",
             triggerCharacter
@@ -44,8 +42,9 @@ export function getAndConvertSignatureHelp(
         }
     }
 
-    const options = { triggerReason: reason }
-    const getSignatureHelpRes = languageService?.getSignatureHelpItems(fileName, pos, options)
+    const getSignatureHelpRes = languageService?.getSignatureHelpItems(filePath, params.pos, {
+        triggerReason: reason
+    })
     if (!getSignatureHelpRes) {
         return null
     }

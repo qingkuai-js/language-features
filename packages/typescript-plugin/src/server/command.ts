@@ -1,13 +1,13 @@
-import { commandStatus, server } from "../state"
-import { TPICHandler } from "../../../../shared-util/constant"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
+import { tsServerCommandStatus, tsPluginIpcServer } from "../state"
 import { generatePromiseAndResolver } from "../../../../shared-util/sundry"
 
 export function attachWaitCommand() {
-    server.onRequest(TPICHandler.WaitForTSCommand, async (name: string) => {
-        let status = commandStatus.get(name)
+    tsPluginIpcServer.onRequest(TP_HANDLERS.WaitForTSCommand, async (name: string) => {
+        let status = tsServerCommandStatus.get(name)
         if (!status) {
-            commandStatus.set(name, (status = generatePromiseAndResolver()))
+            tsServerCommandStatus.set(name, (status = generatePromiseAndResolver()))
         }
-        return await status[0], commandStatus.delete(name), null
+        return (await status[0], tsServerCommandStatus.delete(name), null)
     })
 }

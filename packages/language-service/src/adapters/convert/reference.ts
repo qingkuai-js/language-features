@@ -1,61 +1,80 @@
+import type TS from "typescript"
+
 import type {
     FindReferenceResultItem,
     TPICCommonRequestParams
 } from "../../../../../types/communication"
-import type TS from "typescript"
-import type { GetCompileResultFunc } from "../../types/service"
+import type { TypescriptAdapter } from "../adapter"
 
-import { path, ts } from "../state"
-import { lsRange } from "./struct"
-import { getRealPath } from "../qingkuai"
-import { findNodeAtPosition } from "../ts-ast"
-import { findComponentTagRanges } from "../../util/qingkuai"
-import { isQingkuaiFileName } from "../../../../../shared-util/assert"
-import { GLOBAL_TYPE_IDNTIFIERS } from "../../../../../shared-util/constant"
-import { filePathToComponentName } from "../../../../../shared-util/qingkuai"
+import { debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
 
-export async function findAndConvertReferences(
-    languageService: TS.LanguageService,
-    getCompileRes: GetCompileResultFunc,
-    { fileName, pos }: TPICCommonRequestParams
-): Promise<FindReferenceResultItem[] | null> {
-    const sourceFile = languageService.getProgram()?.getSourceFile(fileName)
-    if (!sourceFile) {
+// 待办：优先使用 originFileName、originTextSpan 以及 originContextSpan 以支持 .d.ts.map 映射文件
+
+export function getAndConvertReferences(
+    adapter: TypescriptAdapter,
+    params: TPICCommonRequestParams
+): FindReferenceResultItem[] | null {
+    const result: FindReferenceResultItem[] = []
+    const filePath = adapter.getNormalizedPath(params.fileName)
+    const languageService = adapter.getDefaultLanguageService(filePath)!
+    if (!debugAssert(languageService)) {
         return null
     }
 
-    const result: FindReferenceResultItem[] = []
-    const node = findNodeAtPosition(sourceFile, pos)
-    if (
-        node?.parent &&
-        GLOBAL_TYPE_IDNTIFIERS.has(node.getText()) &&
-        (ts.isTypeAliasDeclaration(node.parent) || ts.isInterfaceDeclaration(node.parent))
-    ) {
-        for (const ref of languageService.getFileReferences(fileName)) {
-            if (!isQingkuaiFileName(fileName)) {
-                continue
+    /**
+     * 返回值已被 {@link proxyFindReferencesToConvert} 处理，所有 reference 项的位置信息都是基于源码的，无需进行索引映射
+     */
+    const data = languageService.findReferences(filePath, params.pos)
+    data?.forEach(item => {
+        item.references.forEach(reference => {
+            if (reference.isDefinition) {
+                return
             }
 
-            const refRealPath = getRealPath(ref.fileName)
-            const ranges = await findComponentTagRanges(
-                refRealPath,
-                filePathToComponentName(path, fileName),
-                getCompileRes
+            const referenceLocationConvertor = adapter.service.createLocationConvertor(
+                reference.fileName
             )
-            ranges.forEach(range => result.push({ fileName: refRealPath, range }))
-        }
-    }
-
-    const res = languageService.findReferences(fileName, pos)
-    for (const item of res || []) {
-        for (const ref of item.references) {
-            if (ref.isDefinition) {
-                continue
-            }
-
-            const range = lsRange.fromTextSpan(ref.fileName, ref.textSpan)
-            range && result.push({ fileName: getRealPath(ref.fileName), range })
-        }
-    }
+            result.push({
+                range: referenceLocationConvertor.languageServerRange.fromSourceTextSpan(
+                    reference.textSpan
+                ),
+                fileName: adapter.getNormalizedPath(reference.fileName)
+            })
+        })
+    })
     return result
+}
+
+export function proxyFindReferencesToConvert(
+    adapter: TypescriptAdapter,
+    project: TS.server.Project
+) {
+    const languageService = project.getLanguageService()
+    const findReferences = languageService.findReferences
+    languageService.findReferences = (fileName, position) => {
+        const originalRet = findReferences.call(languageService, fileName, position)
+        originalRet?.forEach(item => {
+            item.references = item.references.filter(reference => {
+                if (!isQingkuaiFileName(reference.fileName)) {
+                    return true
+                }
+
+                const interIndex = reference.textSpan.start
+                const referenceLocationConvertor = adapter.service.createLocationConvertor(
+                    reference.fileName
+                )
+                reference.textSpan = referenceLocationConvertor.textSpan.toSourceTextSpan(
+                    reference.textSpan
+                )
+                reference.contextSpan =
+                    reference.contextSpan &&
+                    referenceLocationConvertor.textSpan.toSourceTextSpan(reference.contextSpan)
+                return (
+                    reference.textSpan !== referenceLocationConvertor.textSpan.defaultValue &&
+                    referenceLocationConvertor.lineAndCharacter.fromInterIndex(interIndex).line > 2
+                )
+            })
+        })
+        return originalRet
+    }
 }

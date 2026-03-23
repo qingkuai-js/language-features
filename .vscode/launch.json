@@ -8,6 +8,7 @@
             "sourceMaps": true,
             "autoAttachChildProcesses": true,
             "outFiles": [
+                "${workspaceFolder}/packages/language-server/dist/**/*",
                 "${workspaceFolder}/packages/language-service/dist/**/*",
                 "${workspaceFolder}/packages/vscode-extension/dist/**/*",
                 "${workspaceFolder}/packages/typescript-plugin/dist/**/*"
