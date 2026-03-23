@@ -1,6 +1,6 @@
-import type { ProjectKind } from "../../enums"
 import type { CompileResult } from "../../../../../types/common"
 import type { CompletionTriggerKind } from "vscode-languageserver"
+import type { ProjectKind } from "../../../../../shared-util/constant"
 import type { CompletionData, GetScriptCompletionsFunc } from "../../types/service"
 import type { Range, CompletionItem, CompletionList } from "vscode-languageserver-types"
 

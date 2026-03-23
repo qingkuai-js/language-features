@@ -2,12 +2,11 @@ import type { SetStateOptions } from "./types/service"
 
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
+import { ProjectKind } from "../../../shared-util/constant"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { getCSSLanguageService } from "vscode-css-languageservice"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 import { TextDocuments, ProposedFeatures, createConnection } from "vscode-languageserver/node"
-import { ProjectKind } from "../../../shared-util/constant"
 
 export let isTestingEnv = true
 export let projectKind = ProjectKind.JS
@@ -43,7 +42,6 @@ export function setState(options: SetStateOptions) {
 }
 
 export const documents = new TextDocuments(TextDocument)
-export const cssLanguageService = getCSSLanguageService()
 export const waittingCommands = new Map<string, string>()
 export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()

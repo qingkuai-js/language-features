@@ -22,8 +22,16 @@
     "scripts": {
         "postpublish": "curl -X PUT 'https://registry-direct.npmmirror.com/-/package/qingkuai-language-service/syncs'"
     },
-    "devDependencies": {
-        "vscode-languageserver-types": "^3.17.5"
+    "description": "The language service for qingkuai",
+    "dependencies": {
+        "qingkuai": "^1.0.48",
+        "strip-ansi": "^7.2.0",
+        "vscode-css-languageservice": "^6.3.10",
+        "vscode-uri": "^3.1.0"
     },
-    "description": "The language service for qingkuai"
+    "devDependencies": {
+        "vscode-languageserver": "^9.0.1",
+        "vscode-languageserver-textdocument": "^1.0.12",
+        "vscode-languageserver-types": "^3.17.5"
+    }
 }

@@ -26,7 +26,12 @@ export function proxyEditContent(projectService: TS.server.ProjectService) {
         const editContent = scriptInfo?.editContent
         if (editContent && !isQingkuaiFileName(fileName) && !(editContent as any)[PROXIED_MARK]) {
             scriptInfo.editContent = (start, end, newText) => {
-                refreshDiagnostics()
+                if (
+                    ("" !== newText && " " !== newText) ||
+                    scriptInfo.getSnapshot().getLength() !== end
+                ) {
+                    refreshDiagnostics()
+                }
                 editContent.call(scriptInfo, start, end, newText)
             }
             ;(scriptInfo.editContent as any)[PROXIED_MARK] = true

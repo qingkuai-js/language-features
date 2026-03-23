@@ -1,5 +1,6 @@
+import type { Message } from "./types"
+
 import { isUndefined } from "../assert"
-import { Message } from "./types"
 
 // 将消息体转为 buffer，此方法转换后的buffer前4个字节是消息体的长度
 export function createMessageBuffer(data: any, name: string, id = "") {
@@ -26,6 +27,8 @@ export function createBufferReader() {
             for (let prefixLen = 0; buffer.length; ) {
                 if (!isUndefined(messageLength)) {
                     prefixLen = 0
+                } else if (buffer.length < 4) {
+                    prefixLen = messageLength = 0
                 } else {
                     messageLength = buffer.readUInt32BE(0) + (prefixLen = 4)
                 }

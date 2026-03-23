@@ -19,10 +19,10 @@ import type {
     InsertSnippetParams,
     GetClientLanguageConfigResult
 } from "../../../../../types/communication"
-import type { ProjectKind } from "../../enums"
 import type { ComponentInfo } from "../../../../../types/common"
 import type { CompletionTriggerKind } from "vscode-languageserver"
 import type { HTMLElementDataAttributeItem } from "../../types/data"
+import type { ProjectKind } from "../../../../../shared-util/constant"
 import type { TextDocument } from "vscode-languageserver-textdocument"
 import type { TemplateAttribute, TemplateNode } from "qingkuai/compiler"
 

@@ -1,5 +1,5 @@
-import type { AdapterPath, TsNormalizedPath, ComponentInfo } from "../../../../../types/common"
 import type { TypescriptAdapter } from "../adapter"
+import type { AdapterPath, TsNormalizedPath, ComponentInfo } from "../../../../../types/common"
 
 import { isInTopScope, walkTsNode } from "../ts-ast"
 import { debugAssert, isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"

@@ -1,7 +1,7 @@
-import type { ProjectKind } from "../enums"
 import type { TemplateNode } from "qingkuai/compiler"
 import type { Range } from "vscode-languageserver-types"
 import type { GetCompileResultFunc } from "../types/service"
+import type { ProjectKind } from "../../../../shared-util/constant"
 import type { Pair, PrettierConfiguration } from "../../../../types/common"
 
 import { isEmptyString } from "../../../../shared-util/assert"

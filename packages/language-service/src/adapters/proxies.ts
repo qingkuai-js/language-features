@@ -43,8 +43,9 @@ function proxyGetScriptSnapshot(
 ) {
     const getScriptSnapshot = languageServiceHost.getScriptSnapshot
     languageServiceHost.getScriptSnapshot = fileName => {
+        const originalRet = getScriptSnapshot.call(languageServiceHost, fileName)
         if (!isQingkuaiFileName(fileName)) {
-            return getScriptSnapshot.call(languageServiceHost, fileName)
+            return originalRet
         }
         return adapter.ts.ScriptSnapshot.fromString(
             adapter.service.ensureGetQingkuaiFileInfo(fileName).code

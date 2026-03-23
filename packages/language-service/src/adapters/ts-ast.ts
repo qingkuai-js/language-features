@@ -1,6 +1,6 @@
 import type TS from "typescript"
 
-import { ts, typeDeclarationFilePath } from "./state"
+import { ts } from "./state"
 import { isUndefined } from "../../../../shared-util/assert"
 
 export function getKindName(node: TS.Node) {

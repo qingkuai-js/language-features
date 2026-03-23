@@ -11,8 +11,8 @@ import type { ScriptCompletionDetail, TextEditWithPosRange } from "../../types/s
 
 import { ts } from "../state"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
-import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
+import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { CompletionImportTextEditRE, qkExtInImportRE } from "../../regular"
 import { debugAssert, isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
 import { INVALID_COMPLETION_TEXT_LABELS, LSU_AND_DOT, SCRIPT_EXTENSIONS } from "../../constants"

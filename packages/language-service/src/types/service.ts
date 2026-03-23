@@ -20,9 +20,9 @@ import type {
     ComponentInfo,
     TsPluginQingkuaiConfig
 } from "../../../../types/common"
-import type { ProjectKind } from "../enums"
 import type { HoverSettings } from "vscode-css-languageservice"
 import type { CompletionTriggerKind } from "vscode-languageserver"
+import type { ProjectKind } from "../../../../shared-util/constant"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
 export type TsGetDiagsMethod =
@@ -147,4 +147,3 @@ export type GetComponentInfosFunc = (fileName: string) => MaybePromise<Component
 export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig | undefined
 export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.NavigationTree | null>
 export type GetScriptDiagnosticsFunc = (fileName: string) => MaybePromise<GetDiagnosticResultItem[]>
-
