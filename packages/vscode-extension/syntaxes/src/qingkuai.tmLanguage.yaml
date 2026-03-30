@@ -115,7 +115,7 @@ repository:
   # tag start structure, likes <div>
   tag-structure-start:
     name: meta.tag.normal.$2.start.qk
-    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)((?![a-z][a-zA-Z\d_]*[-.])[a-z][a-zA-Z\d_]*|qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))
+    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)((?![a-z][a-zA-Z\d_]*[-.])qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss)|[a-z][a-zA-Z\d_]*)
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
@@ -130,7 +130,7 @@ repository:
   # tag end structure, likes: </div>
   tag-structure-end:
     name: meta.tag.normal.$2.end.qk
-    begin: (</)((?![a-z][a-zA-Z\d_]*[-.])[a-z][a-zA-Z\d_]*|qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))
+    begin: (</)((?![a-z][a-zA-Z\d_]*[-.])qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss)|[a-z][a-zA-Z\d_]*)
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }

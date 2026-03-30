@@ -1,13 +1,16 @@
 dist
 test-space
 node_modules
+packages/vscode-extension/scripts
 
 .history
 .DS_Store
 
 features.md
+.vscode/launch.json
 **/package-lock.json
+packages/vscode-extension/*.zip
 packages/vscode-extension/*.vsix
 packages/vscode-extension/syntaxes/qk.tmLanguage.json
-packages/vscode-extension/scripts/build-with-local.ts
+packages/vscode-extension/qingkuai-language-features-*
 packages/vscode-extension/syntaxes/qk-emmet.tmLanguage.json

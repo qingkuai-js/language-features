@@ -17,7 +17,6 @@ export namespace __qk__lsu {
     export const getListPair: ReloadGetListPair
     export const getReturnType: <T extends ArbitraryFunc>(fn: T) => ReturnType<T>
     export const getTypeDelayMarking: (slotName: string, attrName: string, value: any) => void
-    export const getPromiseResolve: <T extends Promise<any>>(value: T) => ExtractResolveType<T>
 
     export const validateString: <T extends string>(value: T) => void
     export const validateNumber: <T extends number>(value: T) => void

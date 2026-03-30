@@ -24,7 +24,6 @@
     },
     "description": "The language service for qingkuai",
     "dependencies": {
-        "qingkuai": "^1.0.48",
         "strip-ansi": "^7.2.0",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-uri": "^3.1.0"

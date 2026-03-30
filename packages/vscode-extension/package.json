@@ -241,9 +241,7 @@
         "vsce": "^2.15.0"
     },
     "dependencies": {
-        "prettier": "^3.5.2",
         "prettier-plugin-qingkuai": "^1.0.26",
-        "qingkuai": "^1.0.48",
         "typescript-plugin-qingkuai": "file:../typescript-plugin",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",

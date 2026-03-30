@@ -562,7 +562,7 @@ async function doCustomTagComplete(
         })
 
         // 上下文中以大写开头的标识符提示为组件标签
-        cr.getTemplateNodeContext(node).contextIdentifiers.forEach(identifier => {
+        Object.keys(cr.getTemplateNodeContext(node).contextIdentifiers).forEach(identifier => {
             if (!/^[A-Z]/.test(identifier)) {
                 return
             }
