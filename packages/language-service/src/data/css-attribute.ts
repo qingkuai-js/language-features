@@ -15,11 +15,11 @@ By default, the generated scoped CSS hash is appended to the **last simple selec
 </lang-css>
 \`\`\`
 
-When \`qk-hash\` is present, the hash will be injected at the position where the attribute is declared.
+When \`qk-scope\` is present, the component scope hash will be injected at the position where the attribute is declared.
 
 \`\`\`
 <lang-css>
-    .container[qk-hash] .item {
+    .container[qk-scope] .item {
         color: red;
     }
 

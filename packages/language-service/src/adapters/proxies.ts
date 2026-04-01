@@ -1,6 +1,5 @@
-import type TS from "typescript"
-
 import type { TypescriptAdapter } from "./adapter"
+import type { AdapterTsProject } from "../types/adapter"
 
 import {
     proxyGetCompletionEntryDetailsToConvert,
@@ -15,7 +14,7 @@ import { proxyFindReferencesToConvert } from "./convert/reference"
 import { proxyGetImplementationAtPositionToConvert } from "./convert/implementation"
 import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../../shared-util/assert"
 
-export function proxyProject(adapter: TypescriptAdapter, project: TS.server.Project) {
+export function proxyProject(adapter: TypescriptAdapter, project: AdapterTsProject) {
     const projectAny = project as any
     if (!projectAny[PROXIED_MARK]) {
         projectAny[PROXIED_MARK] = true
@@ -37,13 +36,10 @@ export function proxyProject(adapter: TypescriptAdapter, project: TS.server.Proj
     }
 }
 
-function proxyGetScriptSnapshot(
-    adapter: TypescriptAdapter,
-    languageServiceHost: TS.LanguageServiceHost
-) {
+function proxyGetScriptSnapshot(adapter: TypescriptAdapter, languageServiceHost: AdapterTsProject) {
     const getScriptSnapshot = languageServiceHost.getScriptSnapshot
     languageServiceHost.getScriptSnapshot = fileName => {
-        const originalRet = getScriptSnapshot.call(languageServiceHost, fileName)
+        const originalRet = getScriptSnapshot?.call(languageServiceHost, fileName)
         if (!isQingkuaiFileName(fileName)) {
             return originalRet
         }
@@ -53,23 +49,17 @@ function proxyGetScriptSnapshot(
     }
 }
 
-function proxyGetScriptVersion(
-    adapter: TypescriptAdapter,
-    languageServiceHost: TS.LanguageServiceHost
-) {
+function proxyGetScriptVersion(adapter: TypescriptAdapter, languageServiceHost: AdapterTsProject) {
     const getScriptVersion = languageServiceHost.getScriptVersion
     languageServiceHost.getScriptVersion = fileName => {
         if (!isQingkuaiFileName(fileName)) {
-            return getScriptVersion.call(languageServiceHost, fileName)
+            return getScriptVersion?.call(languageServiceHost, fileName) ?? ""
         }
         return adapter.service.ensureGetQingkuaiFileInfo(fileName).version.toString()
     }
 }
 
-function proxyGetScriptKind(
-    adapter: TypescriptAdapter,
-    languageServiceHost: TS.LanguageServiceHost
-) {
+function proxyGetScriptKind(adapter: TypescriptAdapter, languageServiceHost: AdapterTsProject) {
     const getScriptKind = languageServiceHost.getScriptKind
     if (getScriptKind) {
         languageServiceHost.getScriptKind = fileName => {
@@ -86,7 +76,7 @@ function proxyGetScriptKind(
 // 用于决定 qingkuai 文件中的导入语句所指向的文件
 function proxyResolveModuleNameLiterals(
     adapter: TypescriptAdapter,
-    languageServiceHost: TS.LanguageServiceHost
+    languageServiceHost: AdapterTsProject
 ) {
     const resolveModuleLiterals = languageServiceHost.resolveModuleNameLiterals
     if (isUndefined(resolveModuleLiterals)) {

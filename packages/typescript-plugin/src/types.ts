@@ -7,4 +7,5 @@ export type SetStateOptions = Partial<{
     ts: typeof TS
     server: IpcParticipant
     adapter: TypescriptAdapter
+    projectService: TS.server.ProjectService
 }>

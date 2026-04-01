@@ -1,4 +1,4 @@
-import type TS from "typescript"
+import type { AdapterTsProject } from "../../types/adapter"
 
 import type {
     FindReferenceResultItem,
@@ -44,7 +44,7 @@ export function findAndConvertImplementations(
 
 export function proxyGetImplementationAtPositionToConvert(
     adapter: TypescriptAdapter,
-    project: TS.server.Project
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getImplementationsAtPosition = languageService.getImplementationAtPosition

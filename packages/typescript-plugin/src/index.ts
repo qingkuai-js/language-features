@@ -1,6 +1,7 @@
 import type TS from "typescript"
 
 import type { ConfigPluginParms } from "../../../types/communication"
+import type { QingkuaiFileInfo } from "qingkuai-language-service/adapters"
 
 import nodeFs from "node:fs"
 import nodePath from "node:path"
@@ -23,6 +24,7 @@ export = function init(modules: { typescript: typeof TS }) {
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,
+                    projectService: info.project.projectService,
                     adapter: createAdapter(modules.typescript, projectService)
                 })
                 // info.project.projectService.setHostConfiguration({
@@ -103,6 +105,30 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
         read: path => nodeFs.readFileSync(path, "utf-8")
     }
 
+    const getUserPreferences = (fileName: string): TS.UserPreferences => {
+        const ret = excludeProperty(
+            projectService.getPreferences(adapter.getNormalizedPath(fileName)),
+            "lazyConfiguredProjectsFromExternalProject"
+        )
+        if (adapter.getQingkuaiConfig(fileName)?.resolveImportExtension) {
+            return {
+                ...ret,
+                importModuleSpecifierEnding: "js"
+            }
+        }
+        return ret
+    }
+
+    const updateContent = (fileInfo: QingkuaiFileInfo, content: string) => {
+        adapter.markProjectsAsDirty()
+        fileInfo.version++
+        fileInfo.code = content
+    }
+
+    const getFormattingOptions = (fileName: string) => {
+        return projectService.getFormatCodeOptions(adapter.getNormalizedPath(fileName))
+    }
+
     const adapterPath: AdapterPath = {
         ext(path: string) {
             return nodePath.extname(path)
@@ -128,25 +154,8 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
         typeDecFilePath,
         projectService,
         getQingkuaiConfig,
+        updateContent,
         getUserPreferences,
         getFormattingOptions
     )
-}
-
-function getUserPreferences(fileName: string): TS.UserPreferences {
-    const ret = excludeProperty(
-        adapter.projectService.getPreferences(adapter.getNormalizedPath(fileName)),
-        "lazyConfiguredProjectsFromExternalProject"
-    )
-    if (adapter.getQingkuaiConfig(fileName)?.resolveImportExtension) {
-        return {
-            ...ret,
-            importModuleSpecifierEnding: "js"
-        }
-    }
-    return ret
-}
-
-function getFormattingOptions(fileName: string) {
-    return adapter.projectService.getFormatCodeOptions(adapter.getNormalizedPath(fileName))
 }

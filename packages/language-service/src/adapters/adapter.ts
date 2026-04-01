@@ -3,7 +3,8 @@ import type TS from "typescript"
 import type {
     GetQingkuaiConfigFunc,
     GetUserPreferencesFunc,
-    GetFormattingOptionsFunc
+    GetFormattingOptionsFunc,
+    UpdateQingkuaiFileContentFunc
 } from "../types/service"
 import type {
     UpdateContentParams,
@@ -13,6 +14,7 @@ import type {
     TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { QingkuaiFileInfo } from "./file"
+import type { AdapterTsProject, AdapterTsProjectService } from "../types/adapter"
 import type { AdapterFS, AdapterPath, TsNormalizedPath } from "../../../../types/common"
 
 import { setState } from "./state"
@@ -46,12 +48,13 @@ export class TypescriptAdapter {
         public fs: AdapterFS,
         public path: AdapterPath,
         public typeDeclarationFilePath: string,
-        public projectService: TS.server.ProjectService,
+        public projectService: AdapterTsProjectService,
         public getQingkuaiConfig: GetQingkuaiConfigFunc,
+        public updateContent: UpdateQingkuaiFileContentFunc,
         public getUserPreferences: GetUserPreferencesFunc,
         public getFormattingOptions: GetFormattingOptionsFunc
     ) {
-        setState({ ts, projectService, typeDeclarationFilePath })
+        setState({ ts, typeDeclarationFilePath })
     }
 
     // 确定所有 qingkuai 文件的 Props、Refs 以及 Slots 类型定义
@@ -67,26 +70,23 @@ export class TypescriptAdapter {
         this.initialized = true
     }
 
-    forEachProject(callback: (project: TS.server.Project) => void) {
-        // @ts-expect-error: access private method
-        this.projectService.forEachProject(callback)
-    }
-
     markProjectsAsDirty() {
-        // @ts-expect-error: access private method
-        this.forEachProject(project => project.markAsDirty())
+        this.forEachProject(project => {
+            // @ts-expect-error: access private method
+            project.markAsDirty?.()
+        })
     }
 
-    proxyProject(project: TS.server.Project) {
+    forEachProject(callback: (project: TS.server.Project) => void) {
+        this.projectService.forEachProject?.(callback)
+    }
+
+    proxyProject(project: AdapterTsProject) {
         proxyProject(this, project)
     }
 
     getNormalizedPath(fileName: string) {
         return this.ts.server.toNormalizedPath(fileName)
-    }
-
-    getScriptInfo(fileName: string) {
-        return this.projectService.getScriptInfo(fileName)
     }
 
     getDefaultSourceFile(path: TsNormalizedPath) {

@@ -14,6 +14,10 @@ export async function resolveScriptBlockCompletion(
     getCompileRes: GetCompileResultFunc,
     getScriptCompletionDetail: GetScriptCompletionDetailFunc
 ): Promise<CompletionItem> {
+    if (!item.data) {
+        return item
+    }
+
     const data: CompletionData = item.data
     const cr = await getCompileRes(data.fileName)
     const completionDetail = await getScriptCompletionDetail(item)

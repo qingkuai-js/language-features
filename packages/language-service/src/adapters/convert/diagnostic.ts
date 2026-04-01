@@ -31,7 +31,7 @@ export function getAndConvertDiagnostics(
     const isSemanticProject =
         adapter.projectService.serverMode === adapter.ts.LanguageServiceMode.Semantic
 
-    // Semtic模式下进行全部诊断，PartialSemantic/Syntactic模式下只进行语法检查
+    // Semtic 模式下进行全部诊断，PartialSemantic/Syntactic 模式下只进行语法检查
     if (isSemanticProject) {
         diagnosticMethods.push("getSemanticDiagnostics", "getSuggestionDiagnostics")
     }

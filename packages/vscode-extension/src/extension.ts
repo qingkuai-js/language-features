@@ -4,6 +4,7 @@ import type { ConfigPluginParms, ConnectToTsServerParams } from "../../../types/
 import * as vscode from "vscode"
 
 import nodeFs from "node:fs"
+import nodeOs from "node:os"
 import nodePath from "node:path"
 
 import {
@@ -126,24 +127,22 @@ async function activeLanguageServer() {
 async function configTsServerPlugin(isReconnect: boolean) {
     const activeDocument = vscode.window.activeTextEditor?.document
     const tsExtension = vscode.extensions.getExtension("vscode.typescript-language-features")
-    const shouldToggleLanguageId = /\.(?:qk|qingkuairc)/.test(activeDocument?.uri.fsPath || "")
+    const shouldWarmupTsServer = /\.(?:qk|qingkuairc)/.test(activeDocument?.uri.fsPath || "")
     setState({ limitedScriptLanguageFeatures: !tsExtension })
 
     if (!tsExtension) {
         return (Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP)
     }
 
-    const setLanguageIdOfTriggerDocument = async (id: string) => {
-        await vscode.languages.setTextDocumentLanguage(activeDocument!, id)
-    }
-
-    if ((await tsExtension.activate(), shouldToggleLanguageId)) {
-        await setLanguageIdOfTriggerDocument("typescript")
-    }
+    await tsExtension.activate()
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
     // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
     const tsExtenstionAPI = tsExtension.exports.getAPI(0)
+
+    if (shouldWarmupTsServer) {
+        await warmupTsServer(tsExtenstionAPI)
+    }
 
     const sockPath = await getValidPathWithHash("qingkuai")
     tsExtenstionAPI.configurePlugin("typescript-plugin-qingkuai", {
@@ -151,10 +150,6 @@ async function configTsServerPlugin(isReconnect: boolean) {
         triggerFileName: activeDocument?.uri.fsPath || "",
         configurations: getInitQingkuaiConfigurations()
     } satisfies ConfigPluginParms)
-
-    if (shouldToggleLanguageId) {
-        await setLanguageIdOfTriggerDocument("qingkuai")
-    }
 
     // 通知 qingkuai 语言服务器与 tsserver 创建 ipc 链接
     return () => {
@@ -164,6 +159,28 @@ async function configTsServerPlugin(isReconnect: boolean) {
             projectKind
         } satisfies ConnectToTsServerParams)
     }
+}
+
+async function warmupTsServer(tsExtenstionAPI: any) {
+    const warmupFilePath = nodePath.join(nodeOs.tmpdir(), `qingkuai-warmup-${Date.now()}.ts`)
+    await nodeFs.promises.writeFile(warmupFilePath, "export {}\n", "utf-8")
+
+    try {
+        const warmupDoc = await vscode.workspace.openTextDocument(warmupFilePath)
+        await vscode.commands.executeCommand(
+            "vscode.executeCompletionItemProvider",
+            warmupDoc.uri,
+            new vscode.Position(0, 0)
+        )
+
+        if (typeof tsExtenstionAPI?.onReady === "function") {
+            await tsExtenstionAPI.onReady()
+        }
+    } finally {
+        void nodeFs.promises.unlink(warmupFilePath).catch(() => {})
+    }
+
+    Logger.info("TypeScript server warmup completed")
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项

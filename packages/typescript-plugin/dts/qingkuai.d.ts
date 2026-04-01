@@ -1,19 +1,14 @@
 /// <reference lib="dom" />
 
+import type { Sign, QingkuaiComponent as _QingkuaiComponent, HtmlBlockOptions } from "qingkuai"
+
 export namespace __qk__lsu {
     export interface EmptyObject {
-        [sign]?: never
+        [Sign]?: never
     }
-    export type QingkuaiComponent<P, R, S> = {
-        props: P
-        refs: R
-        slots: S
-        [sign]: never
-    }
+    export type QingkuaiComponent<P, R, S> = _QingkuaiComponent<P, R, S>
 
     export const anyValue: any
-    export const sign: unique symbol
-
     export const getListPair: ReloadGetListPair
     export const getReturnType: <T extends ArbitraryFunc>(fn: T) => ReturnType<T>
     export const getTypeDelayMarking: (slotName: string, attrName: string, value: any) => void
@@ -818,15 +813,6 @@ interface ReloadGetListPair {
     <K extends string | number | symbol, V>(value: Record<K, V>): [V, K]
 }
 
-// 待办：替换为从 qingkaui 导入
-type HtmlBlockOptions = Partial<{
-    escapeTags?: string[]
-    escapeStyle?: boolean
-    escapeScript?: boolean
-}>
-
-type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[K] : HTMLElement
-
 type Getter<T> = () => T
 type ArbitraryFunc = (...args: any) => any
 type WatcherCallback<T> = (oldValue: T, newValue: T) => void
@@ -834,3 +820,4 @@ type ExtractSetValueType<T> = T extends Set<infer U> ? U : never
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
 type WatcherHandlers = Record<"stop" | "pause" | "resume", () => void>
 type ExtractEventKind<K> = K extends keyof HTMLElementEventMap ? HTMLElementEventMap[K] : Event
+type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[K] : HTMLElement

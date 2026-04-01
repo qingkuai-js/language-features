@@ -1,4 +1,5 @@
 import type TS from "typescript"
+import type { AdapterTsProject } from "../../types/adapter"
 
 import type {
     GetCompletionsParms,
@@ -154,7 +155,7 @@ export function getAndConvertCompletionDetail(
 // 防止 qingkuai 语言服务内部类型/工具方法出现在补全提示中
 export function proxyGetCompletionsAtPositionToConvert(
     adapter: TypescriptAdapter,
-    project: TS.server.Project
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getCompletionsAtPosition = languageService.getCompletionsAtPosition
@@ -212,8 +213,8 @@ export function proxyGetCompletionsAtPositionToConvert(
 
 // 去除组件标识符的补全提示中的内部类型工具描述（__qk__lsu）
 export function proxyGetCompletionEntryDetailsToConvert(
-    adapter: TypescriptAdapter,
-    project: TS.server.Project
+    _: TypescriptAdapter,
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getCompletionEntryDetails = languageService.getCompletionEntryDetails

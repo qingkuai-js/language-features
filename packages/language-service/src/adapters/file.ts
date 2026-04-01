@@ -51,18 +51,16 @@ export class QingkuaiFileInfo {
         return this.positions[index]
     }
 
+    updateContent(newContent: string) {
+        this.adapter.updateContent(this, newContent)
+    }
+
     confirmTypes() {
         confirmTypesForCompileResult(this.adapter, this)
     }
 
     isPositionFlagSetAtIndex(key: keyof typeof PositionFlag, index: number) {
         return !!(this.positions[index].flag & PositionFlag[key])
-    }
-
-    updateContent(newContent: string) {
-        this.adapter.markProjectsAsDirty()
-        this.version++
-        this.code = newContent
     }
 
     adjustIndexMap(interRange: Pair<number>, sourceRange?: Pair<number>) {
