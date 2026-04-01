@@ -1,6 +1,14 @@
-# ---
+# 2026-04-02
 
-> packages version:
+> packages version: qingkuai@1.0.54, language-service@1.0.10
+
+major update:
+
+1. completed compatibility adaptation for the refactored qingkuai compiler
+2. synchronized language-service parsing/compile bridge behavior with new compiler outputs
+3. updated vscode-extension and typescript-plugin integration points to match the new compiler workflow
+
+> packages version: qingkuai@1.0.52
 
 fix some known issues:
 

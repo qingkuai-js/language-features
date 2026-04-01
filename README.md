@@ -1,44 +1,84 @@
 # Qingkuai Language Features
 
-Qingkuai Language Features is the official language support package for the [QingKuai](a front-end framework) component file. It provides rich language features.
+Qingkuai Language Features is the official language tooling workspace for QingKuai files (`.qk`).
+
+It contains the full toolchain used by the VS Code extension, including:
+
+- language grammar and syntax highlighting
+- language service (analysis, completion, formatting, diagnostics)
+- language server (LSP)
+- TypeScript plugin integration
 
 ## Features
 
-- Hover Tooltips with inline documentation
-- Syntax Highlighting for `.qk` files and embedded expressions
-- Code Completion for directives, component props, keywords, and built-ins
-- Directive Support like `#for`, `#if`, `#await`, `#html`, `#target` and more
-- Diagnostics with meaningful error/warning codes from both the compiler and runtime
-- Document Formatting, Find References, Go to Definition, Rename Symbol, Code Lens, etc.
+- Syntax Highlighting for `.qk` and embedded languages (`js/ts/css/sass/scss/less/stylus/postcss`)
+- Code Completion for directives, attributes, events, and framework keywords
+- Hover Tips and inline docs
+- Diagnostics powered by compiler + language service analysis
+- Go to Definition / References / Rename / Code Lens / Signature Help
+- Document Formatting via `prettier` + `prettier-plugin-qingkuai`
 
-## Packages
+## Workspace Packages
 
-This repo is organized into modular packages:
+| Package                      | Description                                           |
+| ---------------------------- | ----------------------------------------------------- |
+| `packages/language-service`  | Core language intelligence and compiler-adapter logic |
+| `packages/language-server`   | LSP server on top of language-service                 |
+| `packages/vscode-extension`  | VS Code extension client + grammar + commands         |
+| `packages/typescript-plugin` | TS server plugin for QingKuai-specific behavior       |
 
-| Package             | Description                                             |
-| ------------------- | ------------------------------------------------------- |
-| `language-server`   | Language Server Protocol (LSP) implementation           |
-| `language-service`  | Core logic for analyzing QingKuai component file        |
-| `vscode-extension`  | VS Code integration built on top of the language server |
-| `typescript-plugin` | TypeScript plugin for QingKuai-specific enhancements    |
+## Install Extension
 
-Note that each package is independently published and versioned.
+Install from VS Code Marketplace:
 
-## Usage
+- `qingkuai-tools.qingkuai-language-features`
+- https://marketplace.visualstudio.com/items?itemName=qingkuai-tools.qingkuai-language-features
 
-To use Qingkuai language features in your editor:
+After installation, open any `.qk` file to activate the extension.
 
-1. Install the [Qingkuai VSCode extension](https://marketplace.visualstudio.com/items?itemName=qingkuai-tools.qingkuai-language-features).
-2. Open a `.qk` file or create one.
-3. Start coding — autocomplete, linting, and highlights should work immediately.
+## Local Development
 
-## Development
+### Requirements
 
-To set up this monorepo for local development:
+- Node.js 18+
+- pnpm 8+
+
+### Setup
 
 ```bash
-git clone https://github.com/qingkuai-js/language-features.git qingkuai-language-features
-cd qingkuai-language-features
+git clone https://github.com/qingkuai-js/language-features.git
+cd language-features
 pnpm install
-pnpm run dev
 ```
+
+### Build
+
+```bash
+npm run build
+```
+
+This command builds all packages via Rollup and emits outputs into `dist` directories.
+
+### Watch Mode
+
+```bash
+npm run dev
+```
+
+### Grammar Build (extension package)
+
+```bash
+cd packages/vscode-extension
+npm run build:grammars
+```
+
+## Architecture Overview
+
+1. VS Code extension starts and launches the QingKuai language server.
+2. Extension configures the TypeScript plugin (`typescript-plugin-qingkuai`) for tsserver.
+3. Language server delegates core analysis/format/diagnostics to `qingkuai-language-service`.
+4. Language service integrates compiler output and framework-specific semantics.
+
+## License
+
+MIT
