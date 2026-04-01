@@ -342,52 +342,6 @@ export function derived<T>(getter: Getter<T>): T
 export function derivedExp<T>(expression: T): T
 
 /**
- * Watches reactive dependencies accessed inside a getter function and
- * invokes a callback whenever any of them change.
- *
- * The `callback` receives the previous value and the updated value each time
- * the reactive dependencies of the getter are updated. This allows
- * side-effects, logging, or other reactions to changes in reactive state.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Examples:
- * ```ts
- * const watcher = watch(
- *   () => state.count,
- *   (oldVal, newVal) => {
- *     console.log(`count changed from ${oldVal} to ${newVal}`)
- *   }
- * )
- *
- * state.count = 1 // console logs: "count changed from 0 to 1"
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // console logs: "count changed from 2 to 3"
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching multiple dependencies inside a getter
- * const watcher = watch(
- *   () => state.count + state.multiplier,
- *   (oldVal, newVal) => {
- *     console.log(`combined value changed from ${oldVal} to ${newVal}`)
- *   }
- * )
- * ```
- */
-export function watch<T>(getter: Getter<T>, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
  * Watches reactive dependencies inside an expression and invokes a callback
  * whenever any of them change.
  *
@@ -436,59 +390,6 @@ export function watch<T>(getter: Getter<T>, callback: WatcherCallback<T>): Watch
  * ```
  */
 export function watchExp<T>(expression: T, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
- * Creates a watcher that reacts to changes in reactive dependencies with
- * **pre-DOM-update priority**.
- *
- * This method works similarly to `watch`, but the callback is executed
- * **before DOM updates** and before other `watch` or `postWatch` watchers.
- * It is useful for scenarios where you need to react to state changes
- * immediately, ahead of UI updates.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Usage restrictions:
- * - This function **must be used as a function call**.
- *
- * Examples:
- * ```ts
- * const watcher = preWatch(
- *     () => state.count,
- *     (oldVal, newVal) => {
- *         console.log(`value changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1 // callback executes before DOM updates
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // callback executes before DOM updates
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching a combination of reactive values with pre-DOM-update priority
- * const watcher = preWatch(
- *     () => state.count + state.multiplier,
- *     (oldVal, newVal) => {
- *         console.log(`sum changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1
- * state.multiplier = 2 // callback executes before DOM updates
- * ```
- */
-export function preWatch<T>(getter: Getter<T>, callback: WatcherCallback<T>): WatcherHandlers
 
 /**
  * Creates a watcher from a reactive expression that reacts with
@@ -541,58 +442,6 @@ export function preWatch<T>(getter: Getter<T>, callback: WatcherCallback<T>): Wa
 export function preWatchExp<T>(expression: T, callback: WatcherCallback<T>): WatcherHandlers
 
 /**
- * Creates a watcher that reacts to changes in reactive dependencies with
- * **post-DOM-update priority**.
- *
- * This method works like `watch`, but the callback is executed **after DOM
- * updates** and after other `watch` or `preWatch` watchers. It is useful
- * for scenarios where side-effects should happen after the UI has been updated.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Usage restrictions:
- * - This function **must be used as a function call**.
- *
- * Examples:
- * ```ts
- * const watcher = postWatch(
- *     () => state.count,
- *     (oldVal, newVal) => {
- *         console.log(`value changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1 // callback executes after DOM updates
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // callback executes after DOM updates
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching a combination of reactive values with post-DOM-update priority
- * const watcher = postWatch(
- *     () => state.count + state.multiplier,
- *     (oldVal, newVal) => {
- *         console.log(`sum changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1
- * state.multiplier = 2 // callback executes after DOM updates
- * ```
- */
-export function postWatch<T>(getter: () => T, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
  * Creates a watcher from a reactive expression that reacts with
  * **post-DOM-update priority**.
  *
@@ -641,55 +490,6 @@ export function postWatch<T>(getter: () => T, callback: WatcherCallback<T>): Wat
  * ```
  */
 export function postWatchExp<T>(expression: T, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
- * Creates a **synchronous watcher** that reacts immediately when reactive
- * dependencies change.
- *
- * Unlike `watch`, whose callback may be scheduled with other effects,
- * `syncWatch` invokes the callback **synchronously at the moment the
- * dependency changes**. This ensures the reaction happens immediately
- * within the same update cycle.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Examples:
- * ```ts
- * const watcher = syncWatch(
- *     () => state.count, (oldVal, newVal) => {
- *     console.log(`value changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1 // callback executes immediately
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // callback executes immediately
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching a combination of reactive values synchronously
- * const watcher = syncWatch(
- *     () => state.count + state.multiplier,
- *     (oldVal, newVal) => {
- *         console.log(`sum changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1
- * state.multiplier = 2 // callback executes immediately
- * ```
- */
-export function syncWatch<T>(getter: () => T, callback: WatcherCallback<T>): WatcherHandlers
 
 /**
  * Creates a **synchronous watcher** from a reactive expression.

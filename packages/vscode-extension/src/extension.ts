@@ -180,7 +180,7 @@ async function warmupTsServer(tsExtenstionAPI: any) {
         void nodeFs.promises.unlink(warmupFilePath).catch(() => {})
     }
 
-    Logger.info("TypeScript server warmup completed")
+    Logger.info("TypeScript server warmup completed.")
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项
