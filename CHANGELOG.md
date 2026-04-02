@@ -1,5 +1,13 @@
 # 2026-04-02
 
+> packages version: vscode-extension@1.0.3
+
+fix some known issues:
+
+1. vscode extension: completed compatibility adaptation for the refactored qingkuai compiler workflow
+2. vscode extension: improved tsserver / typescript-plugin activation flow in qingkuai workspaces
+3. language server: fixed formatter runtime plugin resolution to ensure QingKuai files can be formatted correctly
+
 > packages version: qingkuai@1.0.54, language-service@1.0.10
 
 major update:

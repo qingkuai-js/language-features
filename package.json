@@ -1,9 +1,9 @@
 {
-    "name": "qingkuai-language-tools",
+    "name": "qingkuai-language-features",
     "packageManager": "pnpm@8.7.6",
     "version": "1.0.0",
     "author": "lgq",
-    "license": "MIT",
+    "private": true,
     "scripts": {
         "dev": "rollup -c -w",
         "build": "rimraf packages/language-service/dist && cd ./packages/language-service && tsc -p tsconfig.dts.json && cd ../../ && node ./scripts/export-raw.js && rollup -c && rimraf packages/language-service/dist/temp-types"
