@@ -8,6 +8,7 @@ import nodePath from "node:path"
 
 import { proxyTypescript } from "./proxy"
 import { ts, setState, adapter } from "./state"
+import { compileIntermediate } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
 import { AdapterFS, AdapterPath } from "../../../types/common"
@@ -15,6 +16,7 @@ import { createServer } from "../../../shared-util/ipc/participant"
 import { TypescriptAdapter } from "qingkuai-language-service/adapters"
 import { excludeProperty, traverseObject } from "../../../shared-util/sundry"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
+import { CompileIntermidiateFunc } from "../../language-service/src/types/service"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
@@ -129,6 +131,12 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
         return projectService.getFormatCodeOptions(adapter.getNormalizedPath(fileName))
     }
 
+    const compile: CompileIntermidiateFunc = path => {
+        return compileIntermediate(adapter.fs.read(path), {
+            typeDeclarationFilePath: adapter.typeDeclarationFilePath
+        })
+    }
+
     const adapterPath: AdapterPath = {
         ext(path: string) {
             return nodePath.extname(path)
@@ -152,6 +160,7 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
         adapterFs,
         adapterPath,
         typeDecFilePath,
+        compile,
         projectService,
         getQingkuaiConfig,
         updateContent,

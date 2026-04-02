@@ -3,8 +3,9 @@ import type TS from "typescript"
 import type {
     GetQingkuaiConfigFunc,
     GetUserPreferencesFunc,
+    CompileIntermidiateFunc,
     GetFormattingOptionsFunc,
-    UpdateQingkuaiFileContentFunc
+    UpdateQingkuaiFileContentFunc,
 } from "../types/service"
 import type {
     UpdateContentParams,
@@ -48,6 +49,7 @@ export class TypescriptAdapter {
         public fs: AdapterFS,
         public path: AdapterPath,
         public typeDeclarationFilePath: string,
+        public compile: CompileIntermidiateFunc,
         public projectService: AdapterTsProjectService,
         public getQingkuaiConfig: GetQingkuaiConfigFunc,
         public updateContent: UpdateQingkuaiFileContentFunc,

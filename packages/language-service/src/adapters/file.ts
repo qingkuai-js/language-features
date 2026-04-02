@@ -9,7 +9,6 @@ import {
     compressNumberArray
 } from "../../../../shared-util/qingkuai"
 import { PositionFlag } from "qingkuai/compiler"
-import { compileIntermediate } from "qingkuai/compiler"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
 import { confirmTypesForCompileResult } from "./convert/content"
 
@@ -144,11 +143,9 @@ function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
 }
 
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {
+    const compileRes = adapter.compile(path)
     const existing = adapter.qingkuaiFileInfos.get(path)
     const newVersion = existing ? existing.version + 1 : 0
-    const compileRes = compileIntermediate(adapter.fs.read(path), {
-        typeDeclarationFilePath: adapter.typeDeclarationFilePath
-    })
     const fileInfo = new QingkuaiFileInfo(
         compileRes.code,
         compileRes.scriptDescriptor.isTS,

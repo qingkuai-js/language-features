@@ -1,5 +1,6 @@
 import type TS from "typescript"
 import type Prettier from "prettier"
+import type { CompileIntermediateResult } from "qingkuai/compiler"
 
 import type {
     HoverTipResult,
@@ -145,6 +146,7 @@ export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
 export type ShowReferencesCommandParams = QingkuaiCommandTypes.ShowReferencesParams
+export type CompileIntermidiateFunc = (path: string) => CompileIntermediateResult
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentInfo[]>
 export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig | undefined
