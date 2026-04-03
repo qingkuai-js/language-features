@@ -10,9 +10,8 @@ export const refreshDiagnostics = debounce((byFileName?: string) => {
                 continue
             }
 
-            const isQingkuaiFile = isQingkuaiFileName(fileName)
             const filePath = adapter.getNormalizedPath(fileName)
-            if (isQingkuaiFile) {
+            if (isQingkuaiFileName(fileName)) {
                 if (adapter.service.isFileOpening(fileName)) {
                     tsPluginIpcServer.sendNotification(TP_HANDLERS.RefreshDiagnostic, filePath)
                 }
@@ -22,16 +21,13 @@ export const refreshDiagnostics = debounce((byFileName?: string) => {
 
             const scriptInfo = project.getScriptInfo(fileName)
             const snapshot = project.getScriptSnapshot(fileName)
-            if (!scriptInfo || !snapshot) {
+            if (!scriptInfo || !snapshot || (byFileName && !isQingkuaiFileName(byFileName))) {
                 continue
             }
 
             const textLength = snapshot.getLength()
-            if (snapshot.getText(textLength - 1, textLength) !== " ") {
-                scriptInfo.editContent(textLength, textLength, " ")
-            } else {
-                scriptInfo.editContent(textLength - 1, textLength, "")
-            }
+            scriptInfo.editContent(textLength, textLength, " ")
+            scriptInfo.editContent(textLength, textLength + 1, "")
         }
         project.refreshDiagnostics()
     })

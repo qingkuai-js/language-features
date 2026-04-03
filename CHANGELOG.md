@@ -1,3 +1,11 @@
+# 2026-04-04
+
+> packages versions: vscode-extension@1.0.4
+
+fix some known issues:
+
+1. typescript plugin: fixed incorrect ScriptInfo modification for js/ts files when refreshing diagnostics
+
 # 2026-04-02
 
 > packages version: vscode-extension@1.0.3
