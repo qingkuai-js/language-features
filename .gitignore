@@ -11,6 +11,7 @@ features.md
 **/package-lock.json
 packages/vscode-extension/*.zip
 packages/vscode-extension/*.vsix
-packages/vscode-extension/syntaxes/qk.tmLanguage.json
 packages/vscode-extension/qingkuai-language-features-*
-packages/vscode-extension/syntaxes/qk-emmet.tmLanguage.json
+packages/vscode-extension/syntaxes/qingkuai.tmLanguage.json
+packages/vscode-extension/syntaxes/qingkuai-emmet.tmLanguage.json
+packages/vscode-extension/syntaxes/qingkuai-markdown-injection.json
