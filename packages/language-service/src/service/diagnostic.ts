@@ -8,6 +8,7 @@ import { stringifyRange } from "../util/sundry"
 import { PositionFlag } from "qingkuai/compiler"
 import { badComponentAttrMessageRE } from "../regular"
 import { isNull } from "../../../../shared-util/assert"
+import { KeyframeWillNotBeScoped } from "../messages/warn"
 import { createStyleSheetAndDocument, walkStyleSheet } from "../util/css"
 import { GetDiagnosticResultItem } from "../../../../types/communication"
 import { DiagnosticSeverity, DiagnosticTag } from "vscode-languageserver-types"
@@ -130,15 +131,15 @@ function checkStyleBlock(document: TextDocument, styleSheet: any) {
     const ret: Diagnostic[] = []
     walkStyleSheet(styleSheet, node => {
         if (node.type === 52) {
+            const [code, message] = KeyframeWillNotBeScoped()
             ret.push({
                 range: {
                     start: document.positionAt(node.offset),
                     end: document.positionAt(node.offset + 10)
                 },
-                message:
-                    "@keyframes will not be scoped, so it's recommended to declare it in an external file and import it at the application's entry point.",
+                code,
+                message,
                 source: "qk",
-                code: "4001",
                 severity: DiagnosticSeverity.Warning
             })
         }
