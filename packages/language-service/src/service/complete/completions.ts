@@ -177,12 +177,9 @@ export async function doComplete(
             )
         }
 
-        return {
-            isIncomplete: true,
-            items: completions.concat(
-                doEmmetComplete(cr.document, cr.document.positionAt(offset))?.items ?? []
-            )
-        }
+        return completions.concat(
+            doEmmetComplete(cr.document, cr.document.positionAt(offset))?.items ?? []
+        )
     }
 
     // 下面的补全建议只能由这些自定义字符触发：!、@、#、&、>、=、|、-、'、"、{、0-9
@@ -436,10 +433,10 @@ function doStyleBlockComplete(cr: CompileResult, offset: number) {
                                       start: startPosition,
                                       end: endPosition
                                   },
-                                  "qk-hash"
+                                  "qk-scope"
                               )
-                            : TextEdit.insert(endPosition, "qk-hash"),
-                    label: "qk-hash"
+                            : TextEdit.insert(endPosition, "qk-scope"),
+                    label: "qk-scope"
                 } satisfies CompletionItem
             ]
         }
@@ -562,7 +559,7 @@ async function doCustomTagComplete(
         })
 
         // 上下文中以大写开头的标识符提示为组件标签
-        cr.getTemplateNodeContext(node).contextIdentifiers.forEach(identifier => {
+        Object.keys(cr.getTemplateNodeContext(node).contextIdentifiers).forEach(identifier => {
             if (!/^[A-Z]/.test(identifier)) {
                 return
             }

@@ -16,6 +16,7 @@ export type FixedArray<T, L extends number, R extends T[] = []> = R["length"] ex
     ? R
     : FixedArray<T, L, [...R, T]>
 
-export interface LoggerTarget {
+export interface createLoggerParams {
     write: (msg: string) => void
+    prefix?: string
 }

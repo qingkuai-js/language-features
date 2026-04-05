@@ -1,20 +1,18 @@
 import type TS from "typescript"
 
-import type {
-    GlobalTypes,
-    ExtractedSlotName,
-    ExtractedSlotContext,
-    GlobalTypeDeclarationNode
-} from "../../types/adapter"
 import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
+import type { GeneralFunc } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
+import type { ExtractedSlotName, ExtractedSlotContext, GlobalTypeItem } from "../../types/adapter"
 
 import { ts } from "../state"
-import { LSU_AND_DOT } from "../../constants"
-import { isInTopScope, walkTsNode } from "../ts-ast"
+import { GlobalTypeIsNonObjectJs } from "../../messages/warn"
+import { GLOBAL_TYPE_IDS, LSU_AND_DOT } from "../../constants"
 import { traverseObject } from "../../../../../shared-util/sundry"
-import { constants as qingkuaiConstants, util } from "qingkuai/compiler"
+import { isInComponentFunctionTopScope, isInTopScope, walkTsNode } from "../ts-ast"
+import { constants as qingkuaiConstants, util as qingkuaiUtil } from "qingkuai/compiler"
+import { ExternalGlobalTypeWithGenerics, GlobalTypeIsNonObjectTs } from "../../messages/error"
 
 export function confirmTypesForCompileResult(
     adapter: TypescriptAdapter,
@@ -22,78 +20,117 @@ export function confirmTypesForCompileResult(
 ) {
     let sourceFile!: TS.SourceFile
     let typeChecker!: TS.TypeChecker
+    let componentReturnsNode!: TS.ReturnStatement
+    let componentFuncNode!: TS.FunctionDeclaration
 
-    const updateSourceFile = (updateContent = true) => {
-        if (updateContent) {
-            fileInfo.updateContent(contentArr.join(""))
-        }
-
+    const updateSourceFile = () => {
         const program = adapter.getDefaultProgram(fileInfo.path)!
         sourceFile = program?.getSourceFile(fileInfo.path)!
         typeChecker = program?.getTypeChecker()!
         return sourceFile
     }
 
-    if (fileInfo.typesConfirmed || !updateSourceFile(false)) {
+    if (fileInfo.typesConfirmed || !updateSourceFile()) {
         return
     }
     fileInfo.typesConfirmed = true
 
-    const globalTypes: GlobalTypes = {}
-    const contentArr = fileInfo.code.split("")
+    const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
+    const edit = new FileEdit(fileInfo, updateSourceFile)
+    const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
+    const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
 
-    const eliminateNode = (node: TS.Node) => {
-        const end = node.getEnd()
-        for (let i = node.getStart(); i < end; i++) {
-            contentArr[i] = " "
-        }
-    }
-
-    const recordGlobalTypes = (node: GlobalTypeDeclarationNode) => {
-        if ((node.name?.text !== "Props" && node.name?.text !== "Refs") || !isInTopScope(node)) {
-            return
-        }
-
-        const name = node.name.text
-        const existing = globalTypes[name]
-        if (!existing) {
-            globalTypes[name] = { defaultDeclaration: node }
-        } else if (
-            !globalTypes[name]?.used &&
-            existing.defaultDeclaration.getEnd() !== node.getEnd() &&
-            existing.defaultDeclaration.getStart() !== node.getStart()
-        ) {
-            globalTypes[name]!.used = typeChecker.getTypeAtLocation(node)
-        }
-    }
-
-    const insertExportDefaultStatement = (prefix: string, suffix: string) => {
-        insertText(`${prefix}export `)
-        insertText("default", fileInfo.exportValueSourceRange)
-        insertText(` 0${suffix}`)
-    }
-
-    const insertText = (text: string, sourceRange?: Pair<number>) => {
-        contentArr.push(...text.split(""))
-        fileInfo.adjustIndexMap([contentArr.length - text.length, contentArr.length], sourceRange)
-    }
-
     walkTsNode(sourceFile, node => {
-        // 若存在已声明的 Props 或 Refs 类型，则忽略默认值（EmptyObject）
+        if (
+            ts.isFunctionDeclaration(node) &&
+            node.name?.text === qingkuaiConstants.LSC.COMPONENT &&
+            isInTopScope(node)
+        ) {
+            componentFuncNode = node
+        }
+
         if (!fileInfo.isTS) {
-            for (const jsDocTag of ts.getJSDocTags(node)) {
-                ts.isJSDocTypedefTag(jsDocTag) && recordGlobalTypes(jsDocTag)
+            const jsDocs = (node as any).jsDoc as TS.JSDoc[] | undefined
+            jsDocs?.forEach(jsDoc => {
+                for (const jsDocTag of jsDoc.tags ?? []) {
+                    if (
+                        ts.isJSDocTypedefTag(jsDocTag) &&
+                        jsDocTag.name?.text &&
+                        GLOBAL_TYPE_IDS.has(jsDocTag.name.text) &&
+                        !globalTypes[jsDocTag.name.text] &&
+                        isInComponentFunctionTopScope(jsDocTag)
+                    ) {
+                        const constraints: string[] = []
+                        const genericNames: string[] = []
+                        const globalType = typeChecker.getTypeAtLocation(jsDocTag)
+                        const templateTags = jsDocTag.parent.tags?.filter(ts.isJSDocTemplateTag)
+                        if (!(globalType.flags & ts.TypeFlags.Object)) {
+                            fileInfo.pushDiagnostic(
+                                jsDocTag.getStart(),
+                                jsDocTag.getEnd(),
+                                GlobalTypeIsNonObjectJs(jsDocTag.name.text)
+                            )
+                        }
+                        templateTags?.forEach(tag => {
+                            tag.typeParameters.forEach((param, index) => {
+                                const genericName =
+                                    param.name.getText() + jsDocTag.name!.text.slice(0, 1)
+                                const constraint =
+                                    param.constraint ?? (index === 0 ? tag.constraint : undefined)
+                                const constraintText = constraint?.getText() ?? ""
+                                if (constraintText) {
+                                    constraints.push(constraintText)
+                                }
+                                genericNames.push(genericName)
+                                componentGenerics.push(`@template${constraintText} ${genericName}`)
+                            })
+                        })
+                        globalTypes[jsDocTag.name.text] = {
+                            constraints,
+                            genericNames,
+                            type: globalType,
+                            isExternal: false
+                        }
+                    }
+                }
+            })
+        } else if (
+            (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) &&
+            GLOBAL_TYPE_IDS.has(node.name.text) &&
+            !globalTypes[node.name.text] &&
+            isInComponentFunctionTopScope(node)
+        ) {
+            const constraints: string[] = []
+            const genericNames: string[] = []
+            const globalType = typeChecker.getTypeAtLocation(node)
+            if (!(globalType.flags & ts.TypeFlags.Object)) {
+                fileInfo.pushDiagnostic(
+                    node.name.getStart(),
+                    node.name.getEnd(),
+                    GlobalTypeIsNonObjectTs(node.name.text)
+                )
             }
-        } else {
-            if (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) {
-                recordGlobalTypes(node)
+            node.typeParameters?.forEach(param => {
+                const genericName = param.name.getText() + node.name.text.slice(0, 1)
+                if (param.constraint) {
+                    constraints.push(param.constraint.getText())
+                }
+                componentGenerics.push(
+                    `${genericName}${param.constraint ? ` extends ${param.constraint.getText()}` : ""}`
+                )
+                genericNames.push(genericName)
+            })
+            globalTypes[node.name.text] = {
+                genericNames,
+                constraints,
+                isExternal: false,
+                type: typeChecker.getTypeAtLocation(node)
             }
         }
 
-        // 存在导入的 Props 或 Refs 类型时同样需要忽略默认值
         if (ts.isImportDeclaration(node)) {
             if (isInTopScope(node)) {
                 const identifiers: TS.Identifier[] = []
@@ -111,39 +148,50 @@ export function confirmTypesForCompileResult(
                     }
                 }
                 for (const id of identifiers) {
-                    if (
-                        (id.text === "Props" || id.text === "Refs") &&
-                        !globalTypes[id.text]?.used
-                    ) {
+                    if (!globalTypes[id.text] && GLOBAL_TYPE_IDS.has(id.text)) {
                         const symbol = typeChecker.getSymbolAtLocation(id)
                         const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
                         if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
-                            globalTypes[id.text]!.used = typeChecker.getTypeAtLocation(
+                            const globalType = typeChecker.getTypeAtLocation(
                                 aliasedSymbol.declarations![0]
                             )
+                            if (!(globalType.flags & ts.TypeFlags.Object)) {
+                                fileInfo.pushDiagnostic(
+                                    id.getStart(),
+                                    id.getEnd(),
+                                    GlobalTypeIsNonObjectTs(id.text)
+                                )
+                            } else if (
+                                (globalType as TS.ObjectType).objectFlags &
+                                    ts.ObjectFlags.Reference &&
+                                typeChecker.getTypeArguments(globalType as TS.TypeReference).length
+                            ) {
+                                fileInfo.pushDiagnostic(
+                                    id.getStart(),
+                                    id.getEnd(),
+                                    ExternalGlobalTypeWithGenerics()
+                                )
+                            }
+                            globalTypes[id.text] = {
+                                isExternal: true,
+                                constraints: [],
+                                genericNames: [],
+                                type: globalType
+                            }
                         }
                     }
                 }
             }
         }
-    })
 
-    // 移除默认的 Props 和 Refs 类型声明，并将采纳的 Props 和 Refs 类型中的键记录到组件属性信息
-    traverseObject(globalTypes, (_, info) => {
-        if (info?.used) {
-            eliminateNode(info.defaultDeclaration)
-        }
-    })
-
-    // 提取插槽类型信息
-    walkTsNode(updateSourceFile(), node => {
+        // 提取插槽类型信息
         if (
             ts.isCallExpression(node) &&
             ts.isPropertyAccessExpression(node.expression) &&
             ts.isIdentifier(node.expression.name) &&
             ts.isIdentifier(node.expression.expression) &&
             getTypeDelayIndexesSet.has(node.getStart()) &&
-            node.expression.getText() === qingkuaiConstants.GET_TYPE_DELAY_MARKING
+            node.expression.getText() === qingkuaiConstants.LSC.GET_TYPE_DELAY_MARKING
         ) {
             const slotNameNode = node.arguments[0] as TS.StringLiteral
             const contextPropertyNode = node.arguments[1] as TS.StringLiteral
@@ -170,12 +218,22 @@ export function confirmTypesForCompileResult(
                 )
             })
         }
+
+        if (ts.isReturnStatement(node) && node.getEnd() === componentFuncNode.getEnd() - 2) {
+            componentReturnsNode = node
+        }
     })
 
     // 提取组件的 Props 和 Refs 键值属性
-    traverseObject(globalTypes, (kind, info) => {
-        if (info?.used && info.used.flags & ts.TypeFlags.Object) {
-            for (const property of typeChecker.getPropertiesOfType(info.used)) {
+    // 待办：废除目前的 ComponentInfo["attributes"] 结构，改为只需要一个记录拥有 candidates 的属性列表
+    // 用于判断是否需要再次触发补全建议，其他情况则直接使用 Typescript 原生能力返回补全建议和悬停提示
+    traverseObject(globalTypes, (kind, globalType) => {
+        if (
+            globalType &&
+            (kind === "Props" || kind === "Refs") &&
+            globalType.type.flags & ts.TypeFlags.Object
+        ) {
+            for (const property of typeChecker.getPropertiesOfType(globalType.type)) {
                 const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
                 const attributeItem: ComponentAttributeItem = {
                     kind,
@@ -207,44 +265,162 @@ export function confirmTypesForCompileResult(
         }
     })
 
-    // 添加组件导出
-    if (!fileInfo.isTS) {
-        insertText(`/** @type `)
-    } else {
-        insertExportDefaultStatement("", " as any as ")
+    // 全局声明中如果没有 Props 和 Refs 类型，则为其添加一个空对象声明
+    ;["Props", "Refs"].forEach(kind => {
+        const globalType = globalTypes[kind]
+        if (!globalType) {
+            edit.setEditIndex(componentFuncNode.getStart())
+
+            if (fileInfo.isTS) {
+                edit.push(`type ${kind} = ${qingkuaiConstants.LSC.UTIL}.EmptyObject;\n`)
+            } else {
+                edit.push(`/** @typedef {${qingkuaiConstants.LSC.UTIL}.EmptyObject} ${kind} */\n`)
+            }
+        }
+    })
+    if (fileInfo.isTS && !edit.isEmpty) {
+        edit.flush()
     }
-    insertText(LSU_AND_DOT)
 
-    const defaultExportTypeStartIndex = contentArr.length
-    insertText(`QingkuaiComponent<Props, Refs, `)
+    // 为组件函数返回值标注类型
+    let contextRefsType = "Refs"
+    let declareRefsType = "Refs"
+    let contextPropsType = "Props"
+    let declarePropsType = "Props"
+    if (globalTypes.Refs?.constraints.length) {
+        declareRefsType = `Refs<${globalTypes.Refs.constraints.join(", ")}>`
+    }
+    if (globalTypes.Refs?.genericNames.length) {
+        contextRefsType = `Refs<${globalTypes.Refs.genericNames.join(", ")}>`
+    }
+    if (globalTypes.Props?.constraints.length) {
+        declarePropsType = `Props<${globalTypes.Props.constraints.join(", ")}>`
+    }
+    if (globalTypes.Props?.genericNames.length) {
+        contextPropsType = `Props<${globalTypes.Props.genericNames.join(", ")}>`
+    }
+    if (fileInfo.isTS) {
+        edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
+        edit.push(`    const props: ${declarePropsType} = ${anyValueStr};\n`)
+        edit.push(`    const refs: ${declareRefsType} = ${anyValueStr};\n`)
+        edit.flush()
 
-    if (slotNames.length) {
-        insertText("{\n")
+        if (componentGenerics.length) {
+            edit.setEditIndex(componentReturnsNode.getStart() + 7)
+            edit.push(`<${componentGenerics.join(", ")}>`)
+            edit.flush()
+        }
+        edit.setEditIndex(componentReturnsNode.getStart() + 9)
+        edit.push(`: { props: ${contextPropsType}; refs: ${contextRefsType}; slots: `)
+    } else {
+        edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
+        edit.push(`    /** @type {${declarePropsType}} */ const props = ${anyValueStr};\n`)
+        edit.push(`    /** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
+        edit.flush()
+        edit.push("/**\n")
+
+        for (const generic of componentGenerics) {
+            edit.push(`     * ${generic}\n`)
+        }
+        edit.setEditIndex(componentReturnsNode.getStart())
+        edit.push(
+            `     * @param {Object} context\n     * @param {${contextPropsType}} context.props\n`
+        )
+        edit.push(`     * @param {${contextRefsType}} context.refs\n     * @param {`)
+    }
+
+    if (!slotNames.length) {
+        edit.push(`${LSU_AND_DOT}EmptyObject`)
+    } else {
+        edit.push("{ ")
 
         for (let i = 0; i < slotNames.length; i++) {
-            insertText(util.toPropertyKey(slotNames[i].name), slotNames[i].sourceRange)
-            insertText(": (context: {\n")
+            edit.push(qingkuaiUtil.toPropertyKey(slotNames[i].name), slotNames[i].sourceRange)
+            edit.push(": (context: { ")
 
             for (const { property, valueType } of extractedSlotContexts[i]) {
-                insertText(util.toPropertyKey(property.name), property.sourceRange)
-                insertText(`: ${valueType};`)
+                edit.push(qingkuaiUtil.toPropertyKey(property.name), property.sourceRange)
+                edit.push(`: ${valueType};`)
             }
-            insertText("}) => void;")
+            edit.push("}) => void;")
         }
-        insertText("}")
+        edit.push(" }")
+    }
+    if (fileInfo.isTS) {
+        edit.push("}")
     } else {
-        insertText(LSU_AND_DOT + "EmptyObject")
+        edit.push("} context.slots\n     */\n    ")
     }
-    insertText(">")
+    edit.flush()
+    updateSourceFile()
 
-    // 记录组件文件的默认导出（export default）值类型
-    const fullDefaultExportTypeStr = contentArr.slice(defaultExportTypeStartIndex).join("")
-    fileInfo.defaultExportTypeStr = fullDefaultExportTypeStr.replace(LSU_AND_DOT, "")
+    const sourceFileSymbol = typeChecker.getSymbolAtLocation(sourceFile)!
+    const defaultExportSymbol = sourceFileSymbol.exports?.get(ts.InternalSymbolName.Default)!
+    const defaultExportType = typeChecker.getTypeOfSymbolAtLocation(defaultExportSymbol, sourceFile)
+    const defaultExportTypeStr = typeChecker.typeToString(defaultExportType).replaceAll("{", "{\n")
+    fileInfo.defaultExportTypeStr = defaultExportTypeStr
+}
 
-    if (!fileInfo.isTS) {
-        insertExportDefaultStatement(" */ ", "")
+export class FileEdit {
+    private index = -1
+    private insertInfo: Record<number, number> = {}
+
+    public items: {
+        content: string
+        sourceRange?: Pair<number>
+    }[] = []
+
+    constructor(
+        private fileInfo: QingkuaiFileInfo,
+        private updateSourceFile: GeneralFunc
+    ) {}
+
+    get isEmpty() {
+        return this.items.length === 0
     }
-    ;(insertText(";"), updateSourceFile())
+
+    get editStartIndex() {
+        return this.getEditedIndex(this.index)
+    }
+
+    setEditIndex(index: number) {
+        this.index = index
+    }
+
+    getEditedIndex(index: number) {
+        let ret = index
+        traverseObject(this.insertInfo, (key, value) => {
+            if (key < index) {
+                ret += value
+            }
+        })
+        return ret
+    }
+
+    push(content: string, sourceRange?: Pair<number>) {
+        this.items.push({ content, sourceRange })
+    }
+
+    flush() {
+        let newContent: string
+        const startIndex = this.editStartIndex
+        const originalContent = this.fileInfo.code
+        newContent = originalContent.slice(0, startIndex)
+
+        for (const item of this.items) {
+            newContent += item.content
+        }
+        newContent += this.fileInfo.code.slice(startIndex)
+        this.fileInfo.updateContent(newContent)
+        this.fileInfo.adjustIndexMap(this)
+
+        for (const item of this.items) {
+            this.insertInfo[this.index] ??= 0
+            this.insertInfo[this.index] += item.content.length
+        }
+        this.index = -1
+        this.items = []
+    }
 }
 
 function isMayBeEventType(type: TS.Type): boolean {

@@ -3,7 +3,7 @@ import type { ConfigureFileParams } from "../../../../../types/communication"
 import nodePath from "node:path"
 
 import { setQingkuaiConfig } from "./method"
-import { tsPluginIpcServer, ts, adapter } from "../../state"
+import { tsPluginIpcServer, ts, adapter, projectService } from "../../state"
 import { TP_HANDLERS } from "../../../../../shared-util/constant"
 
 export function attachChangeConfig() {
@@ -14,7 +14,7 @@ export function attachChangeConfig() {
             params.typescriptConfig.preference.autoImportFileExcludePatterns!,
             params.dirPath
         )
-        adapter.projectService.setHostConfiguration({
+        projectService.setHostConfiguration({
             file: filePath,
             preferences: params.typescriptConfig.preference,
             formatOptions: params.typescriptConfig.formatCodeSettings

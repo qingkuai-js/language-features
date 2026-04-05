@@ -1,6 +1,10 @@
+import type TS from "typescript"
+
+import type { FileEdit } from "./convert/content"
+import type { LSMessage } from "../types/service"
 import type { TypescriptAdapter } from "./adapter"
 import type { ASTPositionWithFlag } from "qingkuai/compiler"
-import type { ComponentAttributeItem, Pair, TsNormalizedPath } from "../../../../types/common"
+import type { ComponentAttributeItem, TsNormalizedPath } from "../../../../types/common"
 import type { UpdateContentParams, UpdateContentResult } from "../../../../types/communication"
 
 import {
@@ -9,9 +13,9 @@ import {
     compressNumberArray
 } from "../../../../shared-util/qingkuai"
 import { PositionFlag } from "qingkuai/compiler"
-import { compileIntermediate } from "qingkuai/compiler"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
 import { confirmTypesForCompileResult } from "./convert/content"
+import { LSDiagnostic } from "../types/adapter"
 
 export class QingkuaiFileInfo {
     private nextAdjustSourceIndex = -1
@@ -21,6 +25,7 @@ export class QingkuaiFileInfo {
     public typesConfirmed = false
     public slotNames: string[] = []
     public defaultExportTypeStr = ""
+    public lsDiagnostics: LSDiagnostic[] = []
     public attributes: ComponentAttributeItem[] = []
 
     constructor(
@@ -30,7 +35,6 @@ export class QingkuaiFileInfo {
         public path: TsNormalizedPath,
         public getTypeDelayIndexes: number[],
         public idStatusInfo: Record<string, string>,
-        public exportValueSourceRange: Pair<number> | undefined,
         private adapter: TypescriptAdapter,
         private itos: number[],
         private stoi: number[],
@@ -51,6 +55,10 @@ export class QingkuaiFileInfo {
         return this.positions[index]
     }
 
+    updateContent(newContent: string) {
+        this.adapter.updateContent(this, newContent)
+    }
+
     confirmTypes() {
         confirmTypesForCompileResult(this.adapter, this)
     }
@@ -59,33 +67,62 @@ export class QingkuaiFileInfo {
         return !!(this.positions[index].flag & PositionFlag[key])
     }
 
-    updateContent(newContent: string) {
-        this.adapter.markProjectsAsDirty()
-        this.version++
-        this.code = newContent
-    }
+    adjustIndexMap(edit: FileEdit) {
+        const newItos: number[] = []
+        const editStartIndex = edit.editStartIndex
+        newItos.push(...this.itos.slice(0, editStartIndex))
 
-    adjustIndexMap(interRange: Pair<number>, sourceRange?: Pair<number>) {
-        const [interStart, interEnd] = interRange
-        if (!sourceRange) {
-            this.itos.push(...Array(interEnd - interStart).fill(-1))
-
-            if (this.nextAdjustSourceIndex !== -1) {
-                this.itos[interStart] = this.nextAdjustSourceIndex
-                this.nextAdjustSourceIndex = -1
+        for (let i = 0, j = editStartIndex; i < edit.items.length; i++) {
+            const item = edit.items[i]
+            const contentLength = item.content.length
+            const [interStart, interEnd] = [j, (j += contentLength)]
+            for (let i = 0; i < this.stoi.length; i++) {
+                if (this.stoi[i] > interStart) {
+                    this.stoi[i] += contentLength
+                }
             }
-        } else {
-            const [sourceStart, sourceEnd] = sourceRange
+            if (!item.sourceRange) {
+                newItos.push(...Array(contentLength).fill(-1))
+
+                if (this.nextAdjustSourceIndex !== -1) {
+                    newItos[interStart] = this.nextAdjustSourceIndex
+                    this.stoi[this.nextAdjustSourceIndex] = interStart
+                    this.nextAdjustSourceIndex = -1
+                }
+                continue
+            }
+
+            const [sourceStart, sourceEnd] = item.sourceRange
             this.stoi[sourceEnd] = interEnd
             this.nextAdjustSourceIndex = sourceEnd
 
-            for (let i = 0; i < interEnd - interStart; i++) {
-                this.itos.push(Math.min(sourceStart + i, sourceEnd - 1))
+            for (let i = 0; i < contentLength; i++) {
+                newItos.push(Math.min(sourceStart + i, sourceEnd - 1))
             }
             for (let i = 0; i < sourceEnd - sourceStart; i++) {
                 this.stoi[sourceStart + i] = Math.min(interStart + i, interEnd - 1)
             }
         }
+        const left = this.itos.slice(editStartIndex)
+        this.itos.length = 0
+        this.itos.push(...newItos, ...left)
+    }
+
+    pushDiagnostic(start: number, end: number, [code, message, link]: LSMessage) {
+        const category =
+            code >= 3000 && code < 4000
+                ? this.adapter.ts.DiagnosticCategory.Error
+                : this.adapter.ts.DiagnosticCategory.Warning
+        this.lsDiagnostics.push({
+            code,
+            category,
+            url: link,
+            start: start,
+            source: "qk",
+            length: end - start,
+            messageText: message,
+            file: this.adapter.getDefaultSourceFile(this.path)!
+        })
     }
 }
 
@@ -109,7 +146,6 @@ export function updateQingkuaiFile(
         path,
         params.getTypeDelayIndexes,
         params.identifierStatusInfo,
-        params.exportValueSourceRange,
         adapter,
         itos,
         stoi,
@@ -146,11 +182,9 @@ function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
 }
 
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {
+    const compileRes = adapter.compile(path)
     const existing = adapter.qingkuaiFileInfos.get(path)
     const newVersion = existing ? existing.version + 1 : 0
-    const compileRes = compileIntermediate(adapter.fs.read(path), {
-        typeDeclarationFilePath: adapter.typeDeclarationFilePath
-    })
     const fileInfo = new QingkuaiFileInfo(
         compileRes.code,
         compileRes.scriptDescriptor.isTS,
@@ -158,7 +192,6 @@ function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath)
         path,
         compileRes.getTypeDelayInterIndexes,
         compileRes.identifierStatusInfo,
-        undefined,
         adapter,
         compileRes.indexMap.itos,
         compileRes.indexMap.stoi,

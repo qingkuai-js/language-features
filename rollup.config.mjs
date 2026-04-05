@@ -1,18 +1,17 @@
+import fsExtra from "fs-extra"
 import dts from "rollup-plugin-dts"
-import { defineConfig } from "rollup"
+import json from "@rollup/plugin-json"
 import esbuild from "rollup-plugin-esbuild"
 import commonjs from "@rollup/plugin-commonjs"
+
+import { defineConfig } from "rollup"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
-    const languageExternal = [
-        "vscode",
-        "prettier",
-        "qingkuai",
-        "qingkuai/compiler",
-        "qingkuai/internal"
-    ]
+    const languageExternal = ["vscode", "prettier", "qingkuai/compiler"]
+
+    copyGrammarFiles()
 
     if (isWatchMode) {
         languageExternal.push(
@@ -29,83 +28,65 @@ export default defineConfig(commandLineArgs => {
     }
 
     const languageOnWarnAndExternal = {
-        external: languageExternal,
-
-        // ignore known warnings that don't matter
-        onwarn: (log, warn) => {
-            if (
-                !(
-                    log.code === "CIRCULAR_DEPENDENCY" &&
-                    log.ids.every(id => {
-                        return /node_modules\/(?:\.pnpm\/)?semver/.test(id)
-                    })
-                ) &&
-                !(
-                    log.code === "THIS_IS_UNDEFINED" &&
-                    /emmetHelper\.js|vscode-uri\/lib\/esm\/index.js/.test(log.id)
-                )
-            ) {
-                warn(log)
-            }
-        },
-
         treeshake: {
             moduleSideEffects(id) {
                 return !id.startsWith("node:")
             }
-        }
+        },
+        onwarn,
+        external: languageExternal
     }
 
     const result = [
         // language service
         {
-            ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/index.ts",
             output: {
                 format: "es",
                 sourcemap: true,
                 entryFileNames: "index.js",
                 dir: "./packages/language-service/dist"
             },
-            plugins: [nodeResolve(), commonjs(), esbuild()]
-        },
-        {
             ...languageOnWarnAndExternal,
             input: "./packages/language-service/src/index.ts",
+            plugins: [nodeResolve(), commonjs(), json(), esbuild(), reloadAsRaw()]
+        },
+        {
             output: {
                 format: "cjs",
                 sourcemap: true,
                 entryFileNames: "index.cjs",
                 dir: "./packages/language-service/dist"
             },
-            plugins: [nodeResolve(), commonjs(), esbuild()]
+            reloadAsRaw,
+            ...languageOnWarnAndExternal,
+            input: "./packages/language-service/src/index.ts",
+            plugins: [nodeResolve(), commonjs(), json(), esbuild(), reloadAsRaw()]
         },
         {
-            ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/adapters/adapter.ts",
             output: {
                 format: "es",
                 sourcemap: true,
                 entryFileNames: "adapters.js",
                 dir: "./packages/language-service/dist"
             },
-            plugins: [nodeResolve(), commonjs(), esbuild()]
+            ...languageOnWarnAndExternal,
+            plugins: [nodeResolve(), commonjs(), esbuild()],
+            input: "./packages/language-service/src/adapters/index.ts"
         },
         {
-            ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/adapters/adapter.ts",
             output: {
                 format: "cjs",
                 sourcemap: true,
                 entryFileNames: "adapters.cjs",
                 dir: "./packages/language-service/dist"
             },
-            plugins: [nodeResolve(), commonjs(), esbuild()]
+            ...languageOnWarnAndExternal,
+            plugins: [nodeResolve(), commonjs(), esbuild()],
+            input: "./packages/language-service/src/adapters/index.ts"
         },
 
         // vscode extension and language server
         {
-            ...languageOnWarnAndExternal,
             input: {
                 server: "./packages/language-server/src/index.ts",
                 client: "./packages/vscode-extension/src/extension.ts"
@@ -116,19 +97,21 @@ export default defineConfig(commandLineArgs => {
                 chunkFileNames: "chunks/[name].js",
                 dir: "packages/vscode-extension/dist"
             },
+            ...languageOnWarnAndExternal,
             plugins: [nodeResolve(), commonjs(), esbuild()]
         },
 
         // typescript plugin
         {
-            external: ["qingkuai/compiler"],
-            input: "./packages/typescript-plugin/src/index.ts",
             output: {
                 format: "cjs",
                 sourcemap: true,
                 dir: "./packages/typescript-plugin/dist"
             },
-            plugins: [nodeResolve(), commonjs(), esbuild()]
+            onwarn,
+            external: ["qingkuai/compiler"],
+            plugins: [nodeResolve(), commonjs(), esbuild()],
+            input: "./packages/typescript-plugin/src/index.ts"
         }
     ]
 
@@ -147,7 +130,7 @@ export default defineConfig(commandLineArgs => {
             },
             {
                 external: languageExternal,
-                input: "./packages/language-service/dist/temp-types/packages/language-service/src/adapters/adapter.d.ts",
+                input: "./packages/language-service/dist/temp-types/packages/language-service/src/adapters/index.d.ts",
                 output: {
                     format: "es",
                     entryFileNames: "adapters.d.ts",
@@ -160,3 +143,38 @@ export default defineConfig(commandLineArgs => {
 
     return result
 })
+
+function onwarn(log, warn) {
+    if (log.id && !log.id?.includes("node_modules")) {
+        warn(log)
+    }
+}
+
+function copyGrammarFiles() {
+    const targetDir = "./packages/language-service/grammars"
+    const sources = [
+        "./packages/vscode-extension/syntaxes/qingkuai.tmLanguage.json",
+        "./packages/vscode-extension/syntaxes/qingkuai-emmet.tmLanguage.json"
+    ]
+
+    fsExtra.ensureDirSync(targetDir)
+
+    for (const source of sources) {
+        const fileName = source.split("/").pop()
+        fsExtra.copySync(source, `${targetDir}/${fileName}`, {
+            overwrite: true
+        })
+    }
+}
+
+function reloadAsRaw() {
+    return {
+        name: "reload-as-raw",
+        load(id) {
+            if (id.endsWith("?raw")) {
+                const content = fsExtra.readFileSync(id.slice(0, -4), "utf-8")
+                return `export default ${JSON.stringify(content)}`
+            }
+        }
+    }
+}

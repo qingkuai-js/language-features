@@ -1,48 +1,46 @@
-import type { LoggerTarget } from "../types/util"
+import type { createLoggerParams } from "../types/util"
 
-import util from "node:util"
+import nodeUtil from "node:util"
+
 import { formatDate } from "./time"
 
-enum LogKind {
-    None,
-    Info,
-    Warn,
-    Error
-}
+export class Logger {
+    private prefix: string
+    private target: createLoggerParams["write"]
 
-class Logger {
-    private kindOfLastLog = LogKind.None
-
-    constructor(private target: LoggerTarget) {}
+    constructor(private params: createLoggerParams) {
+        this.target = params.write
+        this.prefix = params.prefix ?? ""
+    }
 
     private get time() {
         return formatDate(new Date())
     }
 
-    info(msg: string, line = false) {
-        this.target.write(`${line ? "\n" : ""}${this.time} [Info] ${msg}`)
-        this.kindOfLastLog = LogKind.Info
+    write(msg: string) {
+        this.target(this.prefix + msg)
     }
 
-    warn(msg: string, line = false) {
-        this.target.write(`${line ? "\n" : ""}${this.time} [Warning] ${msg}`)
-        this.kindOfLastLog = LogKind.Warn
+    info(msg: string, wrapLine = false) {
+        this.target(`${wrapLine ? "\n" : ""}${this.time} [Info] ${this.prefix}${msg}`)
     }
 
-    error(msg: string, line = false) {
-        const pre = line || this.kindOfLastLog !== LogKind.Error ? "\n" : ""
-        this.target.write(`${pre}${this.time} [Error] ${msg}\n`)
-        this.kindOfLastLog = LogKind.Error
+    warn(msg: string, wrapLine = false) {
+        this.target(`${wrapLine ? "\n" : ""}${this.time} [Warning] ${this.prefix}${msg}`)
+    }
+
+    error(msg: string, wrapLine = false) {
+        this.target(`${wrapLine ? "\n" : ""}${this.time} [Error] ${this.prefix}${msg}`)
     }
 }
 
-export function createLogger(param: LoggerTarget) {
-    return new Logger(param)
+export function createLogger(params: createLoggerParams) {
+    return new Logger(params)
 }
 
 export function inspect(...datas: any[]) {
     const inspectValues = datas.map(value => {
-        return util.inspect(value, {
+        return nodeUtil.inspect(value, {
             depth: null
         })
     })
@@ -51,7 +49,7 @@ export function inspect(...datas: any[]) {
 
 export function inspectWithColor(...datas: any[]) {
     const inspectValues = datas.map(value => {
-        return util.inspect(value, {
+        return nodeUtil.inspect(value, {
             depth: null,
             colors: true
         })

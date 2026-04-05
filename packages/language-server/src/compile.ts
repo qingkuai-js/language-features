@@ -51,12 +51,6 @@ export async function getCompileResult(document: TextDocument) {
     const isTS = compileResult.scriptDescriptor.isTS
     const scriptLanguageId = isTS ? "typescript" : "javascript"
     const filePath = isTestingEnv ? document.uri : URI.parse(document.uri).fsPath
-    const embeddedScriptStartTagNameRange: Pair<number> | undefined = compileResult.scriptDescriptor
-        ? [
-              compileResult.scriptDescriptor.startTagOpenRange[0] + 1,
-              compileResult.scriptDescriptor.startTagOpenRange[1]
-          ]
-        : undefined
 
     const ret: CompileResult = Object.assign(compileResult, {
         filePath,
@@ -101,7 +95,6 @@ export async function getCompileResult(document: TextDocument) {
                     positions: compressPositions(ret.positions),
                     itos: compressNumberArray(ret.indexMap.itos),
                     stoi: compressNumberArray(ret.indexMap.stoi),
-                    exportValueSourceRange: embeddedScriptStartTagNameRange,
                     identifierStatusInfo: compileResult.identifierStatusInfo,
                     getTypeDelayIndexes: compileResult.getTypeDelayInterIndexes,
                     positionFlags: compressNumberArray(ret.positions.map(pos => pos.flag))

@@ -1,22 +1,23 @@
 {
-    "$schema": "https://json.schemastore.org/package.json",
-    "name": "qingkuai-language-tools",
+    "name": "qingkuai-language-features",
     "packageManager": "pnpm@8.7.6",
     "version": "1.0.0",
     "author": "lgq",
-    "license": "MIT",
+    "private": true,
     "scripts": {
         "dev": "rollup -c -w",
-        "build": "rimraf packages/language-service/dist && cd ./packages/language-service && tsc -p tsconfig.dts.json && cd ../../ && rollup -c && rimraf packages/language-service/dist/temp-types"
+        "build": "rimraf packages/language-service/dist && cd ./packages/language-service && tsc -p tsconfig.dts.json && cd ../../ && node ./scripts/export-raw.js && rollup -c && rimraf packages/language-service/dist/temp-types"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^26.0.3",
+        "@rollup/plugin-json": "^6.1.0",
         "@rollup/plugin-node-resolve": "^15.3.1",
         "@types/node": "^22.13.8",
         "@types/vscode": "^1.97.0",
         "@vscode/emmet-helper": "^2.11.0",
-        "prettier": "^3.5.2",
-        "qingkuai": "^1.0.48",
+        "fs-extra": "^11.3.4",
+        "prettier": "^3.8.1",
+        "qingkuai": "^1.0.52",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
         "rollup-plugin-dts": "^6.2.1",

@@ -115,7 +115,7 @@ repository:
   # tag start structure, likes <div>
   tag-structure-start:
     name: meta.tag.normal.$2.start.qk
-    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)((?![a-z][a-zA-Z\d_]*[-.])[a-z][a-zA-Z\d_]*|qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))
+    begin: (<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)((?![a-z][a-zA-Z\d_]*[-.])qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss)|[a-z][a-zA-Z\d_]*)
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
@@ -130,7 +130,7 @@ repository:
   # tag end structure, likes: </div>
   tag-structure-end:
     name: meta.tag.normal.$2.end.qk
-    begin: (</)((?![a-z][a-zA-Z\d_]*[-.])[a-z][a-zA-Z\d_]*|qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))
+    begin: (</)((?![a-z][a-zA-Z\d_]*[-.])qk:spread|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss)|[a-z][a-zA-Z\d_]*)
     end: ">"
     beginCaptures:
       1: { name: punctuation.definition.tag.begin.qk }
@@ -180,7 +180,7 @@ repository:
   # attribute and attribute-value
   attribute:
     name: meta.attribute.$1.html.qk
-    begin: (?<=^|[\s'"}])([^!@#&\s='"\{\}></]+)
+    begin: (?:^|(?<=[\s'"}]))([^!@#&\s='"\{\}></]+)
     end: (?<=['"])|(?=\s*(?:[^\s=]|[>/]))
     beginCaptures:
       1: { name: entity.other.attribute-name.html.qk }
@@ -222,7 +222,7 @@ repository:
   # embedded block must be wrapped by a pair of curly brackets.
   special-attribute:
     name: meta.attribute.$1.qk
-    begin: (?<=^|[\s'"}])([!#&][^\s='"\{\}>/]+|@[^\s='"\{\}\|>/]+)(\|[^\s=]*)?
+    begin: (?:^|(?<=[\s'"}]))([!#&][^\s='"\{\}>/]+|@[^\s='"\{\}\|>/]+)(\|[^\s=]*)?
     end: (?<=['"])|(?=\s*(?:[^\s=]|/?>))
     beginCaptures:
       1: # specify separate scope name for different special attribute
@@ -282,12 +282,11 @@ repository:
     endCaptures:
       1: { name: punctuation.section.embedded.end.qk }
     patterns:
-      - match: \s+(from)\s+
-        captures:
-          1: { name: keyword.control.qk }
+      - match: \bfrom\b
+        name: keyword.control.qk
 
       - name: meta.embeded.block.qk source.ts
-        begin: (?<=(?:{|\s+from\s+))
+        begin: (?=[^}\s])
         end: (?=(?:}|\s+from\s+))
         patterns: [include: source.ts#expression]
 

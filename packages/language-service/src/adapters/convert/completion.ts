@@ -1,4 +1,5 @@
 import type TS from "typescript"
+import type { AdapterTsProject } from "../../types/adapter"
 
 import type {
     GetCompletionsParms,
@@ -154,7 +155,7 @@ export function getAndConvertCompletionDetail(
 // 防止 qingkuai 语言服务内部类型/工具方法出现在补全提示中
 export function proxyGetCompletionsAtPositionToConvert(
     adapter: TypescriptAdapter,
-    project: TS.server.Project
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getCompletionsAtPosition = languageService.getCompletionsAtPosition
@@ -178,7 +179,7 @@ export function proxyGetCompletionsAtPositionToConvert(
                     entry.name =
                         adapter.service.ensureGetQingkuaiFileInfo(sourceFileName).componentName
                 }
-                if (entry.name === qingkuaiConstants.LANGUAGE_SERVICE_UTIL) {
+                if (entry.name.startsWith(qingkuaiConstants.PRESERVED_IDPREFIX)) {
                     return false
                 }
                 if (INVALID_COMPLETION_TEXT_LABELS.has(entry.name)) {
@@ -192,7 +193,7 @@ export function proxyGetCompletionsAtPositionToConvert(
                         entry.data
                     )
                     return !entryDetail?.displayParts.some(part => {
-                        return part.text === qingkuaiConstants.LANGUAGE_SERVICE_UTIL
+                        return part.text === qingkuaiConstants.LSC.UTIL
                     })
                 }
                 if (!entry.source) {
@@ -212,8 +213,8 @@ export function proxyGetCompletionsAtPositionToConvert(
 
 // 去除组件标识符的补全提示中的内部类型工具描述（__qk__lsu）
 export function proxyGetCompletionEntryDetailsToConvert(
-    adapter: TypescriptAdapter,
-    project: TS.server.Project
+    _: TypescriptAdapter,
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getCompletionEntryDetails = languageService.getCompletionEntryDetails
@@ -226,7 +227,7 @@ export function proxyGetCompletionEntryDetailsToConvert(
                 })
             })
             for (let i = 0; i < originalRet.displayParts.length; i++) {
-                if (originalRet.displayParts[i].text !== qingkuaiConstants.LANGUAGE_SERVICE_UTIL) {
+                if (originalRet.displayParts[i].text !== qingkuaiConstants.LSC.UTIL) {
                     continue
                 }
                 if (originalRet.displayParts[i + 1].text === ".") {

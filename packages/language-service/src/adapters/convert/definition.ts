@@ -1,4 +1,4 @@
-import type TS from "typescript"
+import type { AdapterTsProject } from "../../types/adapter"
 
 import type {
     FindDefinitionsResult,
@@ -106,7 +106,7 @@ export function getAndConvertTypeDefinitions(
 
 export function proxyGetDefinitionAndBoundSpanToConvert(
     adapter: TypescriptAdapter,
-    project: TS.server.Project
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getDefinitionAndBoundSpan = languageService.getDefinitionAndBoundSpan
@@ -134,7 +134,7 @@ export function proxyGetDefinitionAndBoundSpanToConvert(
 
 export function proxyGetTypeDefinitionAtPositionToConvert(
     adapter: TypescriptAdapter,
-    project: TS.server.Project
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getTypeDefinitionAtPosition = languageService.getTypeDefinitionAtPosition

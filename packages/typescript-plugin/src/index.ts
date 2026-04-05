@@ -1,12 +1,15 @@
 import type TS from "typescript"
 
 import type { ConfigPluginParms } from "../../../types/communication"
+import type { QingkuaiFileInfo } from "qingkuai-language-service/adapters"
+import type { CompileIntermidiateFunc } from "../../language-service/src/types/service"
 
 import nodeFs from "node:fs"
 import nodePath from "node:path"
 
 import { proxyTypescript } from "./proxy"
-import { ts, setState, adapter } from "./state"
+import { ts, setState, adapter, Logger } from "./state"
+import { compileIntermediate } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
 import { AdapterFS, AdapterPath } from "../../../types/common"
@@ -23,6 +26,7 @@ export = function init(modules: { typescript: typeof TS }) {
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,
+                    projectService: info.project.projectService,
                     adapter: createAdapter(modules.typescript, projectService)
                 })
                 // info.project.projectService.setHostConfiguration({
@@ -103,6 +107,36 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
         read: path => nodeFs.readFileSync(path, "utf-8")
     }
 
+    const getUserPreferences = (fileName: string): TS.UserPreferences => {
+        const ret = excludeProperty(
+            projectService.getPreferences(adapter.getNormalizedPath(fileName)),
+            "lazyConfiguredProjectsFromExternalProject"
+        )
+        if (adapter.getQingkuaiConfig(fileName)?.resolveImportExtension) {
+            return {
+                ...ret,
+                importModuleSpecifierEnding: "js"
+            }
+        }
+        return ret
+    }
+
+    const updateContent = (fileInfo: QingkuaiFileInfo, content: string) => {
+        adapter.markProjectsAsDirty()
+        fileInfo.version++
+        fileInfo.code = content
+    }
+
+    const getFormattingOptions = (fileName: string) => {
+        return projectService.getFormatCodeOptions(adapter.getNormalizedPath(fileName))
+    }
+
+    const compile: CompileIntermidiateFunc = path => {
+        return compileIntermediate(adapter.fs.read(path), {
+            typeDeclarationFilePath: adapter.typeDeclarationFilePath
+        })
+    }
+
     const adapterPath: AdapterPath = {
         ext(path: string) {
             return nodePath.extname(path)
@@ -123,30 +157,15 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
 
     return new TypescriptAdapter(
         ts,
+        Logger,
         adapterFs,
         adapterPath,
         typeDecFilePath,
+        compile,
         projectService,
         getQingkuaiConfig,
+        updateContent,
         getUserPreferences,
         getFormattingOptions
     )
-}
-
-function getUserPreferences(fileName: string): TS.UserPreferences {
-    const ret = excludeProperty(
-        adapter.projectService.getPreferences(adapter.getNormalizedPath(fileName)),
-        "lazyConfiguredProjectsFromExternalProject"
-    )
-    if (adapter.getQingkuaiConfig(fileName)?.resolveImportExtension) {
-        return {
-            ...ret,
-            importModuleSpecifierEnding: "js"
-        }
-    }
-    return ret
-}
-
-function getFormattingOptions(fileName: string) {
-    return adapter.projectService.getFormatCodeOptions(adapter.getNormalizedPath(fileName))
 }

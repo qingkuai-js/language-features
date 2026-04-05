@@ -1,4 +1,4 @@
-import type TS from "typescript"
+import type { AdapterTsProject } from "../../types/adapter"
 
 import type {
     FindReferenceResultItem,
@@ -44,7 +44,7 @@ export function findAndConvertImplementations(
 
 export function proxyGetImplementationAtPositionToConvert(
     adapter: TypescriptAdapter,
-    project: TS.server.Project
+    project: AdapterTsProject
 ) {
     const languageService = project.getLanguageService()
     const getImplementationsAtPosition = languageService.getImplementationAtPosition
@@ -67,10 +67,7 @@ export function proxyGetImplementationAtPositionToConvert(
             implementation.textSpan = implementationLocationConvertor.textSpan.toSourceTextSpan(
                 implementation.textSpan
             )
-            return (
-                implementation.textSpan !== implementationLocationConvertor.textSpan.defaultValue &&
-                implementationLocationConvertor.lineAndCharacter.fromInterIndex(interIndex).line > 2
-            )
+            return implementation.textSpan !== implementationLocationConvertor.textSpan.defaultValue
         })
     }
 }

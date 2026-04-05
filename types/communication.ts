@@ -79,7 +79,6 @@ export interface UpdateContentParams {
     getTypeDelayIndexes: number[]
     positions: CompressedPositions
     identifierStatusInfo: Record<string, string>
-    exportValueSourceRange: Pair<number> | undefined
 }
 
 export interface UpdateContentResult {
@@ -135,6 +134,7 @@ export interface TSDiagnosticRelatedInformation {
     filePath: string
 }
 export interface GetDiagnosticResultItem {
+    url?: string
     kind: number
     code: number
     range: Range

@@ -1,6 +1,45 @@
-# ---
+# 2026-04-05
 
-> packages version:
+> packages version: vscode-extension@1.0.5, language-service@1.0.12
+
+major update:
+
+1. optimized qk file export type definitions and generic inference behavior
+2. added two language-service diagnostics: `GlobalTypeIsNonObject` and `ExternalGlobalTypeWithGenerics`
+3. improved component global type analysis for both TypeScript and JSDoc declarations, including external global-type generic checks
+4. language-service diagnostics now support documentation URLs via `codeDescription`
+5. improved completion and hover filtering for preserved internal utility identifiers
+6. refactored qk content edit/index-map synchronization to remove legacy `exportValueSourceRange` coupling
+7. unified typescript-plugin log channel forwarding between typescript-plugin and language-server
+8. fixed implementation/reference result filtering to avoid dropping valid source locations
+
+# 2026-04-04
+
+> packages versions: vscode-extension@1.0.4
+
+fix some known issues:
+
+1. typescript plugin: fixed incorrect ScriptInfo modification for js/ts files when refreshing diagnostics
+
+# 2026-04-02
+
+> packages version: vscode-extension@1.0.3
+
+fix some known issues:
+
+1. vscode extension: completed compatibility adaptation for the refactored qingkuai compiler workflow
+2. vscode extension: improved tsserver / typescript-plugin activation flow in qingkuai workspaces
+3. language server: fixed formatter runtime plugin resolution to ensure QingKuai files can be formatted correctly
+
+> packages version: qingkuai@1.0.54, language-service@1.0.10
+
+major update:
+
+1. completed compatibility adaptation for the refactored qingkuai compiler
+2. synchronized language-service parsing/compile bridge behavior with new compiler outputs
+3. updated vscode-extension and typescript-plugin integration points to match the new compiler workflow
+
+> packages version: qingkuai@1.0.52
 
 fix some known issues:
 

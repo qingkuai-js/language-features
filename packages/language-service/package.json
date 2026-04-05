@@ -2,7 +2,7 @@
     "name": "qingkuai-language-service",
     "license": "MIT",
     "author": "mlgq",
-    "version": "1.0.8",
+    "version": "1.0.12",
     "keywords": [
         "qingkuai",
         "language-service"
@@ -17,14 +17,15 @@
             "import": "./dist/adapters.js",
             "require": "./dist/adapters.cjs",
             "types": "./dist/adapters.d.ts"
-        }
+        },
+        "./grammars/qingkuai": "./grammars/qingkuai.tmLanguage.json",
+        "./grammars/qingkuai-emmet": "./grammars/qingkuai-emmet.tmLanguage.json"
     },
     "scripts": {
         "postpublish": "curl -X PUT 'https://registry-direct.npmmirror.com/-/package/qingkuai-language-service/syncs'"
     },
     "description": "The language service for qingkuai",
     "dependencies": {
-        "qingkuai": "^1.0.48",
         "strip-ansi": "^7.2.0",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-uri": "^3.1.0"

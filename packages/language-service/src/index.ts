@@ -4,13 +4,16 @@ export type {
     AdapterFS,
     AdapterPath,
     CompileResult,
+    ComponentInfo,
     PromiseWithState,
     QingkuaiConfiguration,
-    ComponentAttributeItem,
-    ComponentInfo as ComponentIdentifierInfo
+    ComponentAttributeItem
 } from "../../../types/common"
 
+export type { ShowReferencesCommandParams } from "./types/service"
+export type { TsPluginQingkuaiConfig } from "../../../types/common"
 export type { InsertSnippetParams } from "../../../types/communication"
+export type { AdapterTsProject, AdapterTsProjectService } from "./types/adapter"
 export type { PrettierAndPlugins, ScriptCompletionDetail } from "./types/service"
 
 export { doHover } from "./service/hover"
@@ -21,11 +24,15 @@ export { getSignatureHelp } from "./service/signature"
 export { COMPLETION_TRIGGER_CHARS } from "./constants"
 export { findComponentTagRanges } from "./util/qingkuai"
 export { rename, prepareRename } from "./service/rename"
+export { ProjectKind } from "../../../shared-util/constant"
 export { doComplete } from "./service/complete/completions"
 export { findImplementations } from "./service/implementation"
 export { getCodeLens, resolveCodeLens } from "./service/code-lens"
 export { resolveScriptBlockCompletion } from "./service/complete/resolve"
 export { getDocumentColors, getColorPresentations } from "./service/color"
 export { findDefinitions, findTypeDefinitions } from "./service/definition"
+
+// @ts-ignore
+export { default as qingkuaiTypeDeclaration } from "../../typescript-plugin/dts/qingkuai.d.ts?raw"
 
 export const util = { debounce, generatePromiseAndResolver }

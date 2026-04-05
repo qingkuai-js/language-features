@@ -2,33 +2,25 @@
 
 export namespace __qk__lsu {
     export interface EmptyObject {
-        [sign]?: never
-    }
-    export type QingkuaiComponent<P, R, S> = {
-        props: P
-        refs: R
-        slots: S
-        [sign]: never
+        [Sign]?: never
     }
 
     export const anyValue: any
-    export const sign: unique symbol
-
     export const getListPair: ReloadGetListPair
     export const getReturnType: <T extends ArbitraryFunc>(fn: T) => ReturnType<T>
     export const getTypeDelayMarking: (slotName: string, attrName: string, value: any) => void
-    export const getPromiseResolve: <T extends Promise<any>>(value: T) => ExtractResolveType<T>
+
+    export type QingkuaiComponent<F extends ArbitraryFunc> = import("qingkuai").QingkuaiComponent<F>
+    export const confirmComponent: <T>(component: T) => T extends QingkuaiComponent<infer F> ? F : any
 
     export const validateString: <T extends string>(value: T) => void
     export const validateNumber: <T extends number>(value: T) => void
     export const validateBoolean: <T extends boolean>(value: T) => void
-    export const validateHtmlBlockOptions: <T extends HtmlBlockOptions>(value: T) => void
     export const validateReferenceGroup: <T extends Set<any> | Array<any>>(value: T) => void
     export const validateTargetDirectiveValue: <T extends HTMLElement | string>(value: T) => void
+    export const validateHtmlBlockOptions: <T extends import("qingkuai").HtmlBlockOptions>(value: T) => void
     export const validateDomReceiver: <T extends string, E extends ExtractElementKind<T> | null>(value: T, expected: E) => void
     export const validateEventHandler: <T extends string, H extends (ev: ExtractEventKind<T>) => any>(value: T, handler: H) => void
-
-    export const confirmComponent: <T>(component: T) => T extends QingkuaiComponent<infer P, infer R, infer S> ? (props: P, refs: R, slots: Partial<S>) => void : any
 }
 
 /**
@@ -348,52 +340,6 @@ export function derived<T>(getter: Getter<T>): T
 export function derivedExp<T>(expression: T): T
 
 /**
- * Watches reactive dependencies accessed inside a getter function and
- * invokes a callback whenever any of them change.
- *
- * The `callback` receives the previous value and the updated value each time
- * the reactive dependencies of the getter are updated. This allows
- * side-effects, logging, or other reactions to changes in reactive state.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Examples:
- * ```ts
- * const watcher = watch(
- *   () => state.count,
- *   (oldVal, newVal) => {
- *     console.log(`count changed from ${oldVal} to ${newVal}`)
- *   }
- * )
- *
- * state.count = 1 // console logs: "count changed from 0 to 1"
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // console logs: "count changed from 2 to 3"
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching multiple dependencies inside a getter
- * const watcher = watch(
- *   () => state.count + state.multiplier,
- *   (oldVal, newVal) => {
- *     console.log(`combined value changed from ${oldVal} to ${newVal}`)
- *   }
- * )
- * ```
- */
-export function watch<T>(getter: Getter<T>, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
  * Watches reactive dependencies inside an expression and invokes a callback
  * whenever any of them change.
  *
@@ -442,59 +388,6 @@ export function watch<T>(getter: Getter<T>, callback: WatcherCallback<T>): Watch
  * ```
  */
 export function watchExp<T>(expression: T, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
- * Creates a watcher that reacts to changes in reactive dependencies with
- * **pre-DOM-update priority**.
- *
- * This method works similarly to `watch`, but the callback is executed
- * **before DOM updates** and before other `watch` or `postWatch` watchers.
- * It is useful for scenarios where you need to react to state changes
- * immediately, ahead of UI updates.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Usage restrictions:
- * - This function **must be used as a function call**.
- *
- * Examples:
- * ```ts
- * const watcher = preWatch(
- *     () => state.count,
- *     (oldVal, newVal) => {
- *         console.log(`value changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1 // callback executes before DOM updates
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // callback executes before DOM updates
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching a combination of reactive values with pre-DOM-update priority
- * const watcher = preWatch(
- *     () => state.count + state.multiplier,
- *     (oldVal, newVal) => {
- *         console.log(`sum changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1
- * state.multiplier = 2 // callback executes before DOM updates
- * ```
- */
-export function preWatch<T>(getter: Getter<T>, callback: WatcherCallback<T>): WatcherHandlers
 
 /**
  * Creates a watcher from a reactive expression that reacts with
@@ -547,58 +440,6 @@ export function preWatch<T>(getter: Getter<T>, callback: WatcherCallback<T>): Wa
 export function preWatchExp<T>(expression: T, callback: WatcherCallback<T>): WatcherHandlers
 
 /**
- * Creates a watcher that reacts to changes in reactive dependencies with
- * **post-DOM-update priority**.
- *
- * This method works like `watch`, but the callback is executed **after DOM
- * updates** and after other `watch` or `preWatch` watchers. It is useful
- * for scenarios where side-effects should happen after the UI has been updated.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Usage restrictions:
- * - This function **must be used as a function call**.
- *
- * Examples:
- * ```ts
- * const watcher = postWatch(
- *     () => state.count,
- *     (oldVal, newVal) => {
- *         console.log(`value changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1 // callback executes after DOM updates
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // callback executes after DOM updates
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching a combination of reactive values with post-DOM-update priority
- * const watcher = postWatch(
- *     () => state.count + state.multiplier,
- *     (oldVal, newVal) => {
- *         console.log(`sum changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1
- * state.multiplier = 2 // callback executes after DOM updates
- * ```
- */
-export function postWatch<T>(getter: () => T, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
  * Creates a watcher from a reactive expression that reacts with
  * **post-DOM-update priority**.
  *
@@ -647,55 +488,6 @@ export function postWatch<T>(getter: () => T, callback: WatcherCallback<T>): Wat
  * ```
  */
 export function postWatchExp<T>(expression: T, callback: WatcherCallback<T>): WatcherHandlers
-
-/**
- * Creates a **synchronous watcher** that reacts immediately when reactive
- * dependencies change.
- *
- * Unlike `watch`, whose callback may be scheduled with other effects,
- * `syncWatch` invokes the callback **synchronously at the moment the
- * dependency changes**. This ensures the reaction happens immediately
- * within the same update cycle.
- *
- * The returned object provides controls for managing the watcher:
- * - `stop()` completely stops the watcher and releases resources.
- * - `pause()` temporarily suspends invoking the callback.
- * - `resume()` resumes a previously paused watcher.
- *
- * Examples:
- * ```ts
- * const watcher = syncWatch(
- *     () => state.count, (oldVal, newVal) => {
- *     console.log(`value changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1 // callback executes immediately
- *
- * watcher.pause()
- * state.count = 2 // callback not called
- *
- * watcher.resume()
- * state.count = 3 // callback executes immediately
- *
- * watcher.stop()
- * state.count = 4 // callback not called
- * ```
- *
- * ```ts
- * // Watching a combination of reactive values synchronously
- * const watcher = syncWatch(
- *     () => state.count + state.multiplier,
- *     (oldVal, newVal) => {
- *         console.log(`sum changed from ${oldVal} to ${newVal}`)
- *     }
- * )
- *
- * state.count = 1
- * state.multiplier = 2 // callback executes immediately
- * ```
- */
-export function syncWatch<T>(getter: () => T, callback: WatcherCallback<T>): WatcherHandlers
 
 /**
  * Creates a **synchronous watcher** from a reactive expression.
@@ -810,6 +602,8 @@ export function defaultRefs<T extends Record<string, any>>(value: T): void
  */
 export function defaultProps<T extends Record<string, any>>(value: T): void
 
+declare const Sign: unique symbol
+
 interface ReloadGetListPair {
     <T>(value: Set<T>): [T, T]
     <K, V>(value: Map<K, V>): [V, K]
@@ -819,15 +613,6 @@ interface ReloadGetListPair {
     <K extends string | number | symbol, V>(value: Record<K, V>): [V, K]
 }
 
-// 待办：替换为从 qingkaui 导入
-type HtmlBlockOptions = Partial<{
-    escapeTags?: string[]
-    escapeStyle?: boolean
-    escapeScript?: boolean
-}>
-
-type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[K] : HTMLElement
-
 type Getter<T> = () => T
 type ArbitraryFunc = (...args: any) => any
 type WatcherCallback<T> = (oldValue: T, newValue: T) => void
@@ -835,3 +620,4 @@ type ExtractSetValueType<T> = T extends Set<infer U> ? U : never
 type ExtractResolveType<T> = T extends Promise<infer R> ? R : unknown
 type WatcherHandlers = Record<"stop" | "pause" | "resume", () => void>
 type ExtractEventKind<K> = K extends keyof HTMLElementEventMap ? HTMLElementEventMap[K] : Event
+type ExtractElementKind<K> = K extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[K] : HTMLElement
