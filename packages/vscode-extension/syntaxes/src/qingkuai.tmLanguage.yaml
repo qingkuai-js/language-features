@@ -153,7 +153,7 @@ repository:
       - include: "#special-attribute"
       - include: "#invalid-attribute"
 
-  # component tags, likes: <Test> <Test /> <c-test>
+  # component tags, likes: <Test> <Test />, <c-test>
   component-tags:
     name: meta.tag.component.$2.qk
     begin: (</?)([a-zA-Z][a-zA-Z\d_\-.]*)
@@ -164,9 +164,22 @@ repository:
     endCaptures:
       0: { name: punctuation.definition.tag.end.qk }
     patterns:
+      - include: "#component-generic"
       - include: "#attribute"
       - include: "#special-attribute"
       - include: "#invalid-attribute"
+
+  # component generic parameters, likes: <Comp<string> />, <Comp<A | B> />
+  component-generic:
+    name: meta.type.parameters.qk
+    begin: (<)
+    end: (>)
+    beginCaptures:
+      1: { name: punctuation.definition.type-parameters.begin.qk }
+    endCaptures:
+      1: { name: punctuation.definition.type-parameters.end.qk }
+    patterns:
+      - include: source.ts#type-arguments-body
 
   comment-block:
     name: comment.block.qk

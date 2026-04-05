@@ -1,3 +1,12 @@
+# 2026-04-06
+
+> packages version: vscode-extension@1.0.6, language-service@1.0.13
+
+fix some known issues:
+
+1. the compiler intrinsics `raw`, `reactive` and `shallow` can accept no argument, modify the first argument types as optional
+2. the type declaration of `props` intrinsic identifier has not been wrapped with `Readonly`
+
 # 2026-04-05
 
 > packages version: vscode-extension@1.0.5, language-service@1.0.12
@@ -31,6 +40,8 @@ fix some known issues:
 2. vscode extension: improved tsserver / typescript-plugin activation flow in qingkuai workspaces
 3. language server: fixed formatter runtime plugin resolution to ensure QingKuai files can be formatted correctly
 
+# 2026-03-04
+
 > packages version: qingkuai@1.0.54, language-service@1.0.10
 
 major update:
@@ -38,6 +49,8 @@ major update:
 1. completed compatibility adaptation for the refactored qingkuai compiler
 2. synchronized language-service parsing/compile bridge behavior with new compiler outputs
 3. updated vscode-extension and typescript-plugin integration points to match the new compiler workflow
+
+# 2025-11-24
 
 > packages version: qingkuai@1.0.52
 

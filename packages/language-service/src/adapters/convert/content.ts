@@ -301,7 +301,7 @@ export function confirmTypesForCompileResult(
     }
     if (fileInfo.isTS) {
         edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
-        edit.push(`    const props: ${declarePropsType} = ${anyValueStr};\n`)
+        edit.push(`    const props: Readonly<${declarePropsType}> = ${anyValueStr};\n`)
         edit.push(`    const refs: ${declareRefsType} = ${anyValueStr};\n`)
         edit.flush()
 
@@ -314,7 +314,9 @@ export function confirmTypesForCompileResult(
         edit.push(`: { props: ${contextPropsType}; refs: ${contextRefsType}; slots: `)
     } else {
         edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
-        edit.push(`    /** @type {${declarePropsType}} */ const props = ${anyValueStr};\n`)
+        edit.push(
+            `    /** @type {Readonly<${declarePropsType}>} */ const props = ${anyValueStr};\n`
+        )
         edit.push(`    /** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
         edit.flush()
         edit.push("/**\n")

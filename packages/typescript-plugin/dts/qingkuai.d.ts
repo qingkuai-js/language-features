@@ -67,7 +67,7 @@ export namespace __qk__lsu {
  * const options = raw({ debug: true })
  * ```
  */
-export function raw<T>(value: T): T
+export function raw<T>(value?: T): T
 
 /**
  * Creates an alias binding for a property access expression.
@@ -184,7 +184,7 @@ export function alias<T>(value: T): T
  * height = 100 // reactive update
  * ```
  */
-export function shallow<T>(value: T): T
+export function shallow<T>(value?: T): T
 
 /**
  * Marks a variable declaration as **deep reactive**, recursively converting
@@ -245,7 +245,7 @@ export function shallow<T>(value: T): T
  * height = 100 // reactive update
  * ```
  */
-export function reactive<T>(value: T): T
+export function reactive<T>(value?: T): T
 
 /**
  * Creates a **derived reactive value** from a getter function.
