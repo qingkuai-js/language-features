@@ -69,10 +69,7 @@ export function proxyFindReferencesToConvert(
                 reference.contextSpan =
                     reference.contextSpan &&
                     referenceLocationConvertor.textSpan.toSourceTextSpan(reference.contextSpan)
-                return (
-                    reference.textSpan !== referenceLocationConvertor.textSpan.defaultValue &&
-                    referenceLocationConvertor.lineAndCharacter.fromInterIndex(interIndex).line > 2
-                )
+                return reference.textSpan !== referenceLocationConvertor.textSpan.defaultValue
             })
         })
         return originalRet

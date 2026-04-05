@@ -78,6 +78,11 @@ export async function getDiagnostic(
             ...item,
             tags,
             relatedInformation,
+            codeDescription: item.url
+                ? {
+                      href: item.url
+                  }
+                : undefined,
             severity: transTsDiagnosticSeverity(item.kind)
         })
     }

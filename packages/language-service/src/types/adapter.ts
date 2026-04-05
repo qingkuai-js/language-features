@@ -21,25 +21,21 @@ export interface ExtractedSlotContext {
     valueType: string
 }
 
+export interface GlobalTypeItem {
+    type: TS.Type
+    isExternal: boolean
+    constraints: string[]
+    genericNames: string[]
+}
+
 export interface SetStateOptions {
     ts: typeof TS
     typeDeclarationFilePath: string
 }
 
-export type GlobalTypes = Partial<
-    Record<
-        "Props" | "Refs",
-        {
-            defaultDeclaration: TS.Node
-            used?: TS.Type
-        }
-    >
->
-
-export type GlobalTypeDeclarationNode =
-    | TS.JSDocTypedefTag
-    | TS.TypeAliasDeclaration
-    | TS.InterfaceDeclaration
+export type LSDiagnostic = TS.Diagnostic & {
+    url?: string
+}
 
 export interface AdapterTsProjectService {
     readonly serverMode: TS.LanguageServiceMode

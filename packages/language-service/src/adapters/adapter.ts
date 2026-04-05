@@ -5,7 +5,7 @@ import type {
     GetUserPreferencesFunc,
     CompileIntermidiateFunc,
     GetFormattingOptionsFunc,
-    UpdateQingkuaiFileContentFunc,
+    UpdateQingkuaiFileContentFunc
 } from "../types/service"
 import type {
     UpdateContentParams,
@@ -34,6 +34,7 @@ import { findAndConvertImplementations } from "./convert/implementation"
 import { getAndConvertDefinitions, getAndConvertTypeDefinitions } from "./convert/definition"
 import { getAndConvertCompletionDetail, getAndConvertCompletionInfo } from "./convert/completion"
 import { getAndConvertPrepareRenameLocation, getAndConvertRenameLocations } from "./convert/rename"
+import { Logger } from "../../../../shared-util/log"
 
 export class TypescriptAdapter {
     private initialized = false
@@ -46,6 +47,7 @@ export class TypescriptAdapter {
 
     constructor(
         public ts: typeof TS,
+        public logger: Logger,
         public fs: AdapterFS,
         public path: AdapterPath,
         public typeDeclarationFilePath: string,

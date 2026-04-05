@@ -1,3 +1,18 @@
+# 2026-04-05
+
+> packages version: vscode-extension@1.0.5, language-service@1.0.12
+
+major update:
+
+1. optimized qk file export type definitions and generic inference behavior
+2. added two language-service diagnostics: `GlobalTypeIsNonObject` and `ExternalGlobalTypeWithGenerics`
+3. improved component global type analysis for both TypeScript and JSDoc declarations, including external global-type generic checks
+4. language-service diagnostics now support documentation URLs via `codeDescription`
+5. improved completion and hover filtering for preserved internal utility identifiers
+6. refactored qk content edit/index-map synchronization to remove legacy `exportValueSourceRange` coupling
+7. unified typescript-plugin log channel forwarding between typescript-plugin and language-server
+8. fixed implementation/reference result filtering to avoid dropping valid source locations
+
 # 2026-04-04
 
 > packages versions: vscode-extension@1.0.4

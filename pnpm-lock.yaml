@@ -39,7 +39,7 @@ importers:
         version: 3.8.1
       qingkuai:
         specifier: ^1.0.52
-        version: 1.0.52
+        version: link:../qingkuai
       rimraf:
         specifier: ^6.0.1
         version: 6.1.3

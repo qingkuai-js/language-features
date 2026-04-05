@@ -55,6 +55,7 @@ export const INVALID_COMPLETION_TEXT_LABELS = new Set([
     "validateEventHandler"
 ])
 
+export const GLOBAL_TYPE_IDS = new Set(["Props", "Refs"])
 export const COMPILER_FUNCS = new Set(["rea", "der", "stc", "wat", "Wat", "waT"])
 export const SCRIPT_EXTENSIONS = new Set([".d.ts", ".ts", ".tsx", ".js", ".jsx", ".json"])
 
@@ -63,7 +64,7 @@ export const RETRIGGER_SUGGEST_COMMAND: Command = {
     command: QingkuaiCommands.TriggerSuggest
 }
 
-export const LSU_AND_DOT = qingkuaiConstants.LANGUAGE_SERVICE_UTIL + "."
+export const LSU_AND_DOT = qingkuaiConstants.LSC.UTIL + "."
 
 export const SOURCE_SPAN_MARK: unique symbol = Symbol(
     "has been converted to source text span by qingkuai-language-service"

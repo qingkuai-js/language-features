@@ -179,7 +179,7 @@ export function proxyGetCompletionsAtPositionToConvert(
                     entry.name =
                         adapter.service.ensureGetQingkuaiFileInfo(sourceFileName).componentName
                 }
-                if (entry.name === qingkuaiConstants.LANGUAGE_SERVICE_UTIL) {
+                if (entry.name.startsWith(qingkuaiConstants.PRESERVED_IDPREFIX)) {
                     return false
                 }
                 if (INVALID_COMPLETION_TEXT_LABELS.has(entry.name)) {
@@ -193,7 +193,7 @@ export function proxyGetCompletionsAtPositionToConvert(
                         entry.data
                     )
                     return !entryDetail?.displayParts.some(part => {
-                        return part.text === qingkuaiConstants.LANGUAGE_SERVICE_UTIL
+                        return part.text === qingkuaiConstants.LSC.UTIL
                     })
                 }
                 if (!entry.source) {
@@ -227,7 +227,7 @@ export function proxyGetCompletionEntryDetailsToConvert(
                 })
             })
             for (let i = 0; i < originalRet.displayParts.length; i++) {
-                if (originalRet.displayParts[i].text !== qingkuaiConstants.LANGUAGE_SERVICE_UTIL) {
+                if (originalRet.displayParts[i].text !== qingkuaiConstants.LSC.UTIL) {
                     continue
                 }
                 if (originalRet.displayParts[i + 1].text === ".") {

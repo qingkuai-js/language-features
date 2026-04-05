@@ -2,6 +2,7 @@ import type TS from "typescript"
 
 import { ts } from "./state"
 import { isUndefined } from "../../../../shared-util/assert"
+import { constants as qingkuaiConstants } from "qingkuai/compiler"
 
 export function getKindName(node: TS.Node) {
     return ts.SyntaxKind[node.kind]
@@ -27,6 +28,18 @@ export function isInTopScope(node: TS.Node): boolean {
             return !ts.isParameter(node) && isInTopScope(node.parent)
         }
     }
+}
+
+// 判断某个节点是否处于组件函数顶部作用域
+export function isInComponentFunctionTopScope(node: TS.Node): boolean {
+    const blockNode = ts.findAncestor(node, ancestor => {
+        return ts.isBlock(ancestor)
+    })
+    return !!(
+        blockNode?.parent &&
+        ts.isFunctionDeclaration(blockNode.parent) &&
+        blockNode.parent.name?.text === qingkuaiConstants.LSC.COMPONENT
+    )
 }
 
 export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {

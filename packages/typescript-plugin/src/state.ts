@@ -4,7 +4,7 @@ import type { SetStateOptions } from "./types"
 import type { GeneralFunc } from "../../../types/util"
 import type { TypescriptAdapter } from "qingkuai-language-service/adapters"
 
-import { inspect } from "../../../shared-util/log"
+import { createLogger } from "../../../shared-util/log"
 import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 
 export let ts: typeof TS
@@ -31,8 +31,9 @@ export function setState(options: SetStateOptions) {
 }
 
 // 通过qingkuai语言服务器输出日志
-export const Logger = {
-    info: (v: any) => tsPluginIpcServer.sendNotification("log/info", inspect(v)),
-    warn: (v: any) => tsPluginIpcServer.sendNotification("log/info", inspect(v)),
-    error: (v: any) => tsPluginIpcServer.sendNotification("log/error", inspect(v))
-}
+export const Logger = createLogger({
+    write(msg: string) {
+        tsPluginIpcServer.sendNotification("log", msg)
+    },
+    prefix: "From typescript-plugin-qingkuai: "
+})

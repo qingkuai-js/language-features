@@ -137,6 +137,8 @@ export type FindScriptTypeDefinitionsFunc = (
     pos: number
 ) => MaybePromise<FindDefinitionsResultItem[] | null>
 
+export type LSMessage = [number, string, string?]
+
 export type CodeLensKind = "implementation" | "reference" | "assignment"
 
 export type PrettierAndPlugins = [typeof Prettier, ...Array<string | Prettier.Plugin>]

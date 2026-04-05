@@ -43,7 +43,7 @@ export function getAndConvertHoverTip(
             }
         }
 
-        if (node.text === qingkuaiConstants.LANGUAGE_SERVICE_UTIL) {
+        if (node.text.startsWith(qingkuaiConstants.PRESERVED_IDPREFIX)) {
             return {
                 content: "any",
                 range: nodeRange
@@ -54,7 +54,7 @@ export function getAndConvertHoverTip(
         if (
             node.parent &&
             ts.isPropertyAccessExpression(node.parent) &&
-            node.parent.expression.getText() === qingkuaiConstants.LANGUAGE_SERVICE_UTIL
+            node.parent.expression.getText() === qingkuaiConstants.LSC.UTIL
         ) {
             return {
                 content: "any",

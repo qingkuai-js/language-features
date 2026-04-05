@@ -1,5 +1,9 @@
 import type TS from "typescript"
 
+import type { QingkuaiFileInfo } from "../file"
+import type { TypescriptAdapter } from "../adapter"
+import type { Pair } from "../../../../../types/common"
+
 import type {
     GetDiagnosticResultItem,
     TSDiagnosticRelatedInformation
@@ -7,12 +11,9 @@ import type {
 import type { Range } from "vscode-languageserver-types"
 import type { TsGetDiagsMethod } from "../../types/service"
 
-import { TypescriptAdapter } from "../adapter"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 import { isString, debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
-import { QingkuaiFileInfo } from "../file"
-import { Pair } from "../../../../../types/common"
 
 export function getAndConvertDiagnostics(
     adapter: TypescriptAdapter,
@@ -20,13 +21,13 @@ export function getAndConvertDiagnostics(
 ): GetDiagnosticResultItem[] {
     const filePath = adapter.getNormalizedPath(fileName)
     const languageService = adapter.getDefaultLanguageService(filePath)!
+    const fileInfo = adapter.service.ensureGetQingkuaiFileInfo(filePath)
     if (!debugAssert(languageService)) {
         return []
     }
 
-    const diagnostics: TS.Diagnostic[] = []
+    const diagnostics = fileInfo.lsDiagnostics
     const result: GetDiagnosticResultItem[] = []
-    const fileInfo = adapter.service.ensureGetQingkuaiFileInfo(filePath)
     const diagnosticMethods: TsGetDiagsMethod[] = ["getSyntacticDiagnostics"]
     const isSemanticProject =
         adapter.projectService.serverMode === adapter.ts.LanguageServiceMode.Semantic
@@ -93,16 +94,14 @@ export function getAndConvertDiagnostics(
         const locationConvertor = adapter.service.createLocationConvertor(filePath)
         const formattedMsg = formatDiagnosticMessage(item.messageText)
         result.push({
-            message: formattedMsg.replaceAll(
-                ` Did you mean '${qingkuaiConstants.LANGUAGE_SERVICE_UTIL}'?`,
-                ""
-            ),
+            message: formattedMsg.replaceAll(` Did you mean '${qingkuaiConstants.LSC.UTIL}'?`, ""),
             range: locationConvertor.languageServerRange.fromSourceStartAndEnd(
                 sourceStart,
                 sourceEnd
             ),
-            relatedInformations,
+            url: item.url,
             code: item.code,
+            relatedInformations,
             kind: item.category,
             source: item.source || "ts",
             deprecated: Boolean(item.reportsDeprecated),

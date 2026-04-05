@@ -67,10 +67,7 @@ export function proxyGetImplementationAtPositionToConvert(
             implementation.textSpan = implementationLocationConvertor.textSpan.toSourceTextSpan(
                 implementation.textSpan
             )
-            return (
-                implementation.textSpan !== implementationLocationConvertor.textSpan.defaultValue &&
-                implementationLocationConvertor.lineAndCharacter.fromInterIndex(interIndex).line > 2
-            )
+            return implementation.textSpan !== implementationLocationConvertor.textSpan.defaultValue
         })
     }
 }

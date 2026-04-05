@@ -1,28 +1,26 @@
 /// <reference lib="dom" />
 
-import type { Sign, QingkuaiComponent as _QingkuaiComponent, HtmlBlockOptions } from "qingkuai"
-
 export namespace __qk__lsu {
     export interface EmptyObject {
         [Sign]?: never
     }
-    export type QingkuaiComponent<P, R, S> = _QingkuaiComponent<P, R, S>
 
     export const anyValue: any
     export const getListPair: ReloadGetListPair
     export const getReturnType: <T extends ArbitraryFunc>(fn: T) => ReturnType<T>
     export const getTypeDelayMarking: (slotName: string, attrName: string, value: any) => void
 
+    export type QingkuaiComponent<F extends ArbitraryFunc> = import("qingkuai").QingkuaiComponent<F>
+    export const confirmComponent: <T>(component: T) => T extends QingkuaiComponent<infer F> ? F : any
+
     export const validateString: <T extends string>(value: T) => void
     export const validateNumber: <T extends number>(value: T) => void
     export const validateBoolean: <T extends boolean>(value: T) => void
-    export const validateHtmlBlockOptions: <T extends HtmlBlockOptions>(value: T) => void
     export const validateReferenceGroup: <T extends Set<any> | Array<any>>(value: T) => void
     export const validateTargetDirectiveValue: <T extends HTMLElement | string>(value: T) => void
+    export const validateHtmlBlockOptions: <T extends import("qingkuai").HtmlBlockOptions>(value: T) => void
     export const validateDomReceiver: <T extends string, E extends ExtractElementKind<T> | null>(value: T, expected: E) => void
     export const validateEventHandler: <T extends string, H extends (ev: ExtractEventKind<T>) => any>(value: T, handler: H) => void
-
-    export const confirmComponent: <T>(component: T) => T extends QingkuaiComponent<infer P, infer R, infer S> ? (props: P, refs: R, slots: Partial<S>) => void : any
 }
 
 /**
@@ -603,6 +601,8 @@ export function defaultRefs<T extends Record<string, any>>(value: T): void
  * ```
  */
 export function defaultProps<T extends Record<string, any>>(value: T): void
+
+declare const Sign: unique symbol
 
 interface ReloadGetListPair {
     <T>(value: Set<T>): [T, T]

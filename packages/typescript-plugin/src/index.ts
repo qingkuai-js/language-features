@@ -2,12 +2,13 @@ import type TS from "typescript"
 
 import type { ConfigPluginParms } from "../../../types/communication"
 import type { QingkuaiFileInfo } from "qingkuai-language-service/adapters"
+import type { CompileIntermidiateFunc } from "../../language-service/src/types/service"
 
 import nodeFs from "node:fs"
 import nodePath from "node:path"
 
 import { proxyTypescript } from "./proxy"
-import { ts, setState, adapter } from "./state"
+import { ts, setState, adapter, Logger } from "./state"
 import { compileIntermediate } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
@@ -16,7 +17,6 @@ import { createServer } from "../../../shared-util/ipc/participant"
 import { TypescriptAdapter } from "qingkuai-language-service/adapters"
 import { excludeProperty, traverseObject } from "../../../shared-util/sundry"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
-import { CompileIntermidiateFunc } from "../../language-service/src/types/service"
 
 export = function init(modules: { typescript: typeof TS }) {
     return {
@@ -157,6 +157,7 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
 
     return new TypescriptAdapter(
         ts,
+        Logger,
         adapterFs,
         adapterPath,
         typeDecFilePath,

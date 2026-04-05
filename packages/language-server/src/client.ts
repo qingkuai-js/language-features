@@ -81,12 +81,9 @@ export async function getComponentInfos(fileName: string, typePrintWidth = 80) {
 }
 
 function attachClientHandlers() {
-    // ts服务器插件日志通道
-    const kinds = ["info", "warn", "error"] as const
-    kinds.forEach(kind => {
-        tpic.onNotification(`log/${kind}`, (msg: string) => {
-            Logger[kind]("From typescript-plugin-qingkuai: " + msg)
-        })
+    // typescript-plugin 日志通道
+    tpic.onNotification("log", (msg: string) => {
+        Logger.write(msg)
     })
 
     // ts插件主动推送的诊断通知
