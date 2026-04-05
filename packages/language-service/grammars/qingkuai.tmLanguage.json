@@ -316,6 +316,9 @@
             },
             "patterns": [
                 {
+                    "include": "#component-generic"
+                },
+                {
                     "include": "#attribute"
                 },
                 {
@@ -323,6 +326,26 @@
                 },
                 {
                     "include": "#invalid-attribute"
+                }
+            ]
+        },
+        "component-generic": {
+            "name": "meta.type.parameters.qk",
+            "begin": "(<)",
+            "end": "(>)",
+            "beginCaptures": {
+                "1": {
+                    "name": "punctuation.definition.type-parameters.begin.qk"
+                }
+            },
+            "endCaptures": {
+                "1": {
+                    "name": "punctuation.definition.type-parameters.end.qk"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "source.ts#type-arguments-body"
                 }
             ]
         },
