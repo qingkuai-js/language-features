@@ -13,6 +13,7 @@ import { PROXIED_MARK } from "../constants"
 import { proxyFindReferencesToConvert } from "./convert/reference"
 import { proxyGetImplementationAtPositionToConvert } from "./convert/implementation"
 import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../../shared-util/assert"
+import { proxyGetQuickInfoAtPosition } from "./convert/hover"
 
 export function proxyProject(adapter: TypescriptAdapter, project: AdapterTsProject) {
     const projectAny = project as any
@@ -23,6 +24,7 @@ export function proxyProject(adapter: TypescriptAdapter, project: AdapterTsProje
             proxyGetScriptVersion,
             proxyGetScriptKind,
             proxyGetScriptSnapshot,
+            proxyGetQuickInfoAtPosition,
             proxyFindReferencesToConvert,
             proxyResolveModuleNameLiterals,
             proxyGetCompletionsAtPositionToConvert,

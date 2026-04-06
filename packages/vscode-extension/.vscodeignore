@@ -23,4 +23,5 @@ node_modules/typescript-plugin-qingkuai/src
 node_modules/typescript-plugin-qingkuai/.npmignore
 node_modules/typescript-plugin-qingkuai/node_modules
 
+!node_modules/qingkuai/dist/types/runtime/index.d.ts
 !node_modules/typescript-plugin-qingkuai/dts/qingkuai.d.ts

@@ -1,5 +1,16 @@
 # 2026-04-06
 
+> packages version: vscode-extension@1.0.7, language-service@1.0.16, qingkuai@1.0.58
+
+fix some known issues:
+
+1. fixed a language-service crash caused by incorrect source locations reported by the qingkuai compiler for generic parameter errors
+2. fixed qingkuai package type declarations being mistakenly excluded by `.vscodeignore`
+3. filtered redundant internal type information from hover content
+4. updated `#slot` directive hover documentation to match the current syntax
+
+# 2026-04-06
+
 > packages version: vscode-extension@1.0.7, language-service@1.0.15
 
 major update:

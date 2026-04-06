@@ -6332,7 +6332,7 @@ export const htmlDirectives = [
     },
     {
         name: "slot",
-        useage: '<UserCard>\n\t<div\n\t\tslot="info"\n\t\t#slot={{age, name}}\n\t>\n\t\tReceived age: {age}\n\t\tReceived name: {name}\n\t</div>\n</UserCard>',
+        useage: '<UserCard>\n\t<div #slot={{age, name} from "info"}>\n\t\tReceived age: {age}\n\t\tReceived name: {name}\n\t</div>\n</UserCard>',
         description:
             "The slot directive is used to receive the object passed by the slot tag attribute inside the component, and it can also declare identifiers(destructible) for this object through attribute value, the identifiers is accessible under the scope of the current element."
     },

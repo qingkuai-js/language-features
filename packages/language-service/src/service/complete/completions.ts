@@ -54,7 +54,7 @@ import {
 } from "../../regular"
 import { QingkuaiCommands } from "../../enums"
 import { isPositionEqual } from "../../util/sundry"
-import { QK_HASH_DOC } from "../../data/css-attribute"
+import { QK_SCOPE_DOC } from "../../data/css-attribute"
 import { PositionFlag, util } from "qingkuai/compiler"
 import { eventModifiers } from "../../data/event-modifier"
 import { getAndProcessScriptBlockCompletions } from "./script"
@@ -424,7 +424,7 @@ function doStyleBlockComplete(cr: CompileResult, offset: number) {
                 {
                     documentation: {
                         kind: "markdown",
-                        value: QK_HASH_DOC
+                        value: QK_SCOPE_DOC
                     },
                     textEdit:
                         currentNode !== surroundingNode
