@@ -15,6 +15,7 @@ import type {
     TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { QingkuaiFileInfo } from "./file"
+import type { Logger } from "../../../../shared-util/log"
 import type { AdapterTsProject, AdapterTsProjectService } from "../types/adapter"
 import type { AdapterFS, AdapterPath, TsNormalizedPath } from "../../../../types/common"
 
@@ -34,7 +35,6 @@ import { findAndConvertImplementations } from "./convert/implementation"
 import { getAndConvertDefinitions, getAndConvertTypeDefinitions } from "./convert/definition"
 import { getAndConvertCompletionDetail, getAndConvertCompletionInfo } from "./convert/completion"
 import { getAndConvertPrepareRenameLocation, getAndConvertRenameLocations } from "./convert/rename"
-import { Logger } from "../../../../shared-util/log"
 
 export class TypescriptAdapter {
     private initialized = false

@@ -17,6 +17,9 @@ export const COMPLETION_TRIGGER_CHARS = [
     [".", "+", "*", "]", "^", "$", ")", "}", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
 ].flat()
 
+export const SIGNATURE_RETRIGGER_CHARS = [")"]
+export const SIGNATURE_TRIGGER_CHARS = ["(", "<", ","]
+
 export const SEMANTIC_LEGEND: SemanticTokensLegend = {
     tokenTypes: ["keyword"],
     tokenModifiers: []

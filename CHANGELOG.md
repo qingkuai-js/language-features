@@ -1,6 +1,15 @@
 # 2026-04-06
 
-> packages version: vscode-extension@1.0.6, language-service@1.0.13
+> packages version: vscode-extension@1.0.7, language-service@1.0.15
+
+major update:
+
+1. improved build workflow and packaging stability for local publishing and release output
+2. added formatter support for component tags with generic parameters to preserve type arguments during formatting
+
+# 2026-04-06
+
+> packages version: vscode-extension@1.0.6, language-service@1.0.14
 
 fix some known issues:
 

@@ -16,9 +16,6 @@ importers:
       '@rollup/plugin-commonjs':
         specifier: ^26.0.3
         version: 26.0.3(rollup@4.60.0)
-      '@rollup/plugin-json':
-        specifier: ^6.1.0
-        version: 6.1.0(rollup@4.60.0)
       '@rollup/plugin-node-resolve':
         specifier: ^15.3.1
         version: 15.3.1(rollup@4.60.0)
@@ -91,6 +88,9 @@ importers:
 
   packages/language-service:
     dependencies:
+      qingkuai:
+        specifier: ^1.0.55
+        version: 1.0.57
       strip-ansi:
         specifier: ^7.2.0
         version: 7.2.0
@@ -121,7 +121,7 @@ importers:
     dependencies:
       prettier-plugin-qingkuai:
         specifier: ^1.0.26
-        version: 1.0.26(prettier@3.8.1)(qingkuai@1.0.52)
+        version: link:../../../prettier-plugin
       qingkuai:
         specifier: ^1.0.52
         version: link:../../../qingkuai
@@ -506,15 +506,6 @@ packages:
     engines: {node: '>=16.0.0 || 14 >= 14.17'}
     peerDependencies:
       rollup: ^2.68.0||^3.0.0||^4.0.0
-    peerDependenciesMeta:
-      rollup:
-        optional: true
-
-  '@rollup/plugin-json@6.1.0':
-    resolution: {integrity: sha512-EGI2te5ENk1coGeADSIwZ7G2Q8CJS2sF120T7jLw4xFw9n7wIOXHo+kIYRAoVpJAN+kmqZSoO3Fp4JtoNF4ReA==}
-    engines: {node: '>=14.0.0'}
-    peerDependencies:
-      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1099,10 +1090,6 @@ packages:
     resolution: {integrity: sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==}
     engines: {node: '>=6'}
 
-  lines-and-columns@2.0.4:
-    resolution: {integrity: sha512-wM1+Z03eypVAVUCE7QdSqpVIvelbOakn1M0bPDoA4SGWPx3sNDVUiMo3L6To6WWGClB7VyXnhQ4Sn7gxiJbE6A==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
   linkify-it@3.0.3:
     resolution: {integrity: sha512-ynTsyrFSdE5oZ/O9GEf00kPngmOfVwazR5GKDq6EYfhlpFug3J2zybX56a2PRRpc9P+FuSoGNAwjlbDs9jJBPQ==}
 
@@ -1263,12 +1250,6 @@ packages:
     deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
     hasBin: true
 
-  prettier-plugin-qingkuai@1.0.26:
-    resolution: {integrity: sha512-yA4qjGWlJqYqvIC+OxOZO0PyaN59LJ2+1Ab0LXmaPvRS5On4DB6vufYKsxiKEP1fRHFF9SNCS0qe03Zy3AEy8w==}
-    peerDependencies:
-      prettier: ^3.5.3
-      qingkuai: ^1.0.46
-
   prettier@3.8.1:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
@@ -1277,8 +1258,8 @@ packages:
   pump@3.0.4:
     resolution: {integrity: sha512-VS7sjc6KR7e1ukRFhQSY5LM2uBWAUPiOPa/A3mkKmiMwSmRFUITt0xuj+/lesgnCv+dPIEYlkzrcyXgquIHMcA==}
 
-  qingkuai@1.0.52:
-    resolution: {integrity: sha512-65iEfZ3Q3/bo+F8HNtxMQJzFqj0zdKjMF36lK7NcFHikanKm+1MGRM6TwqjKRleQWpgTEcAyMPyZqfJGO4DoeA==}
+  qingkuai@1.0.57:
+    resolution: {integrity: sha512-1R0EQq7jElxI3HamZy/pwB9OqJSvzUM5fAY5hDbCNL4WBTXxTfznljJg2XDgf243kHO4TElu5w05XEfFo3e11Q==}
 
   qs@6.15.0:
     resolution: {integrity: sha512-mAZTtNCeetKMH+pSjrb76NAM8V9a05I9aBZOHztWy/UqcJdQYNsf59vrRKWnojAT9Y+GbIvoTBC++CPHqpDBhQ==}
@@ -1653,6 +1634,7 @@ snapshots:
       '@babel/helper-validator-identifier': 7.28.5
       js-tokens: 4.0.0
       picocolors: 1.1.1
+    optional: true
 
   '@babel/helper-string-parser@7.27.1': {}
 
@@ -1863,12 +1845,6 @@ snapshots:
       glob: 10.4.5
       is-reference: 1.2.1
       magic-string: 0.30.21
-    optionalDependencies:
-      rollup: 4.60.0
-
-  '@rollup/plugin-json@6.1.0(rollup@4.60.0)':
-    dependencies:
-      '@rollup/pluginutils': 5.3.0(rollup@4.60.0)
     optionalDependencies:
       rollup: 4.60.0
 
@@ -2446,7 +2422,8 @@ snapshots:
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
 
-  js-tokens@4.0.0: {}
+  js-tokens@4.0.0:
+    optional: true
 
   js-yaml@4.1.1:
     dependencies:
@@ -2466,8 +2443,6 @@ snapshots:
       prebuild-install: 7.1.3
 
   leven@3.1.0: {}
-
-  lines-and-columns@2.0.4: {}
 
   linkify-it@3.0.3:
     dependencies:
@@ -2617,13 +2592,6 @@ snapshots:
       tar-fs: 2.1.4
       tunnel-agent: 0.6.0
 
-  prettier-plugin-qingkuai@1.0.26(prettier@3.8.1)(qingkuai@1.0.52):
-    dependencies:
-      '@babel/code-frame': 7.29.0
-      lines-and-columns: 2.0.4
-      prettier: 3.8.1
-      qingkuai: 1.0.52
-
   prettier@3.8.1: {}
 
   pump@3.0.4:
@@ -2631,7 +2599,7 @@ snapshots:
       end-of-stream: 1.4.5
       once: 1.4.0
 
-  qingkuai@1.0.52:
+  qingkuai@1.0.57:
     dependencies:
       '@babel/parser': 7.29.2
       '@jridgewell/sourcemap-codec': 1.5.5

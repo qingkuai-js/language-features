@@ -10,18 +10,24 @@ export type {
     ComponentAttributeItem
 } from "../../../types/common"
 
+export type { Logger } from "../../../shared-util/log"
 export type { ShowReferencesCommandParams } from "./types/service"
 export type { TsPluginQingkuaiConfig } from "../../../types/common"
 export type { InsertSnippetParams } from "../../../types/communication"
 export type { AdapterTsProject, AdapterTsProjectService } from "./types/adapter"
 export type { PrettierAndPlugins, ScriptCompletionDetail } from "./types/service"
 
+export {
+    SIGNATURE_TRIGGER_CHARS,
+    COMPLETION_TRIGGER_CHARS,
+    SIGNATURE_RETRIGGER_CHARS
+} from "./constants"
 export { doHover } from "./service/hover"
 export { format } from "./service/format"
 export { getDiagnostic } from "./service/diagnostic"
 export { findReferences } from "./service/reference"
 export { getSignatureHelp } from "./service/signature"
-export { COMPLETION_TRIGGER_CHARS } from "./constants"
+export { createLogger } from "../../../shared-util/log"
 export { findComponentTagRanges } from "./util/qingkuai"
 export { rename, prepareRename } from "./service/rename"
 export { ProjectKind } from "../../../shared-util/constant"
