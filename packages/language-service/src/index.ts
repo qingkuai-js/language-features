@@ -11,6 +11,7 @@ export type {
 } from "../../../types/common"
 
 export type { Logger } from "../../../shared-util/log"
+export type { CompileIntermidiateFunc } from "./types/service"
 export type { ShowReferencesCommandParams } from "./types/service"
 export type { TsPluginQingkuaiConfig } from "../../../types/common"
 export type { InsertSnippetParams } from "../../../types/communication"
@@ -37,8 +38,5 @@ export { getCodeLens, resolveCodeLens } from "./service/code-lens"
 export { resolveScriptBlockCompletion } from "./service/complete/resolve"
 export { getDocumentColors, getColorPresentations } from "./service/color"
 export { findDefinitions, findTypeDefinitions } from "./service/definition"
-
-// @ts-ignore
-export { default as qingkuaiTypeDeclaration } from "../../typescript-plugin/dts/qingkuai.d.ts?raw"
 
 export const util = { debounce, generatePromiseAndResolver }

@@ -1,3 +1,14 @@
+# 2026-04-07
+
+> packages version: vscode-extension@1.0.8, language-service@1.0.17, qingkuai@1.0.59
+
+refactor and fixes:
+
+1. moved language-service type declarations into `qingkuai/language-service` instead of `typescript-plugin-qingkuai`
+2. fixed incorrect parameter names in generated export results for JavaScript projects
+3. fixed curly braces not being auto-inserted when a compile directive is followed by `=`
+4. trigger completion suggestions for available slot names when typing `=` to complete a `#slot` directive value
+
 # 2026-04-06
 
 > packages version: vscode-extension@1.0.7, language-service@1.0.16, qingkuai@1.0.58

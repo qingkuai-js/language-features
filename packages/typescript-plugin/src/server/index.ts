@@ -42,8 +42,4 @@ export function attachLanguageServerIPCHandlers() {
         attachGetComponentInfos,
         attachFindImplementation
     ])
-
-    tsPluginIpcServer.onRequest(TP_HANDLERS.getTypeDeclarationFilePath, () => {
-        return nodePath.resolve(__dirname, "../dts/qingkuai")
-    })
 }

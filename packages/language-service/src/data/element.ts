@@ -6,6 +6,7 @@
  */
 
 import type {
+    DirectiveData,
     HTMLElementData,
     HTMLElementDataTagItem,
     HTMLElementDataDescription,
@@ -6281,9 +6282,10 @@ export const htmlElements: HTMLElementData = {
 }
 
 // 指令名称数据
-export const htmlDirectives = [
+export const htmlDirectives: DirectiveData[] = [
     {
         name: "for",
+        valueSnippet: "${2:item}, ${3:index} of ${1:source}",
         useage: "<tag #for={{a,b}, index of arr}>\n\t{index}: {a}, {b})\n</tag>",
         description:
             "The for directive is used to create a list of elements that are rendered through a loop, it dependents on an iterable value or a number and can generate context identifiers(destructible) for keys and values under the current element scope."
@@ -6332,6 +6334,7 @@ export const htmlDirectives = [
     },
     {
         name: "slot",
+        valueSnippet: '${2:context} from "$1"',
         useage: '<UserCard>\n\t<div #slot={{age, name} from "info"}>\n\t\tReceived age: {age}\n\t\tReceived name: {name}\n\t</div>\n</UserCard>',
         description:
             "The slot directive is used to receive the object passed by the slot tag attribute inside the component, and it can also declare identifiers(destructible) for this object through attribute value, the identifiers is accessible under the scope of the current element."
@@ -6389,6 +6392,14 @@ export const embeddedLangTags = [
     }
     return ret
 })
+
+export const htmlDirectivesMap = htmlDirectives.reduce(
+    (map, directive) => {
+        map[directive.name] = directive
+        return map
+    },
+    {} as Record<string, DirectiveData>
+)
 
 export const builtInTags: HTMLElementDataTagItem[] = [
     {

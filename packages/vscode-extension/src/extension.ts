@@ -11,11 +11,11 @@ import {
     Logger,
     client,
     setState,
+    projectKind,
     outputChannel,
     serverModulePath,
     languageStatusItem,
     limitedScriptLanguageFeatures,
-    projectKind
 } from "./state"
 import {
     ServerOptions,
@@ -131,7 +131,7 @@ async function configTsServerPlugin(isReconnect: boolean) {
     setState({ limitedScriptLanguageFeatures: !tsExtension })
 
     if (!tsExtension) {
-        return (Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP)
+        return Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP
     }
 
     await tsExtension.activate()

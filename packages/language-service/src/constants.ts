@@ -58,6 +58,11 @@ export const INVALID_COMPLETION_TEXT_LABELS = new Set([
     "validateEventHandler"
 ])
 
+export const INVLALID_COMPLETION_PACKAGES = new Set([
+    "qingkuai/internal",
+    "qingkuai/language-service"
+])
+
 export const GLOBAL_TYPE_IDS = new Set(["Props", "Refs"])
 export const COMPILER_FUNCS = new Set(["rea", "der", "stc", "wat", "Wat", "waT"])
 export const SCRIPT_EXTENSIONS = new Set([".d.ts", ".ts", ".tsx", ".js", ".jsx", ".json"])

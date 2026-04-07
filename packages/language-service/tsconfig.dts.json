@@ -11,5 +11,5 @@
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true
     },
-    "include": ["src"]
+    "include": ["src/**/*"]
 }

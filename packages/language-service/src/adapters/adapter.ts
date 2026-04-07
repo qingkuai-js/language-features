@@ -50,7 +50,6 @@ export class TypescriptAdapter {
         public logger: Logger,
         public fs: AdapterFS,
         public path: AdapterPath,
-        public typeDeclarationFilePath: string,
         public compile: CompileIntermidiateFunc,
         public projectService: AdapterTsProjectService,
         public getQingkuaiConfig: GetQingkuaiConfigFunc,
@@ -58,7 +57,7 @@ export class TypescriptAdapter {
         public getUserPreferences: GetUserPreferencesFunc,
         public getFormattingOptions: GetFormattingOptionsFunc
     ) {
-        setState({ ts, typeDeclarationFilePath })
+        setState({ ts })
     }
 
     // 确定所有 qingkuai 文件的 Props、Refs 以及 Slots 类型定义

@@ -77,7 +77,7 @@ export default defineConfig(commandLineArgs => {
             output: {
                 format: "cjs",
                 sourcemap: true,
-                chunkFileNames: "chunks/shared.cjs",
+                chunkFileNames: "chunks/shared.js",
                 dir: "packages/vscode-extension/dist"
             },
             ...languageOnWarnAndExternal,

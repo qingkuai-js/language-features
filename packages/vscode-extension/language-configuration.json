@@ -31,12 +31,12 @@
         {
             "open": "/**",
             "close": " */",
-            "notIn": ["string", "comment"]
+            "notIn": ["string"]
         },
         {
             "open": "<!--",
             "close": "-->",
-            "notIn": ["string", "comment"]
+            "notIn": ["string"]
         }
     ],
     "autoCloseBefore": ";:.,=}])><`\n\t",

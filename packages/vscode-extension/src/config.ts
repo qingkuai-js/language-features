@@ -7,7 +7,6 @@ import type {
     PrettierConfiguration,
     ExtensionConfiguration
 } from "../../../types/common"
-import type { ScriptLanguageId } from "../../../types/communication"
 
 import * as vscode from "vscode"
 
@@ -65,11 +64,11 @@ export function getQingkuaiConfig(uri: vscode.Uri): QingkuaiConfiguration {
 }
 
 // 获取 typescript 配置项
-export function getTypescriptConfig(uri: vscode.Uri, scriptLanguageId: ScriptLanguageId) {
+export function getTypescriptConfig(uri: vscode.Uri) {
     const options = getFormattingOptions(uri)
     return {
-        preference: getTSPreferences(uri, scriptLanguageId),
-        formatCodeSettings: getTSFormatCodeSettings(uri, options, scriptLanguageId)
+        preference: getTSPreferences(uri),
+        formatCodeSettings: getTSFormatCodeSettings(uri, options)
     }
 }
 
@@ -155,9 +154,8 @@ function startConfigFileWatcher(globalPattern: string) {
 function getTSFormatCodeSettings(
         uri: vscode.Uri,
         options: TSFormattingOptions,
-        scriptLanguageId: ScriptLanguageId
     ): TSFormatCodeSettings {
-        const config = vscode.workspace.getConfiguration(`${scriptLanguageId}.format`, uri)
+        const config = vscode.workspace.getConfiguration(`js/ts.format`, uri)
         return {
             newLineCharacter: "\n",
             tabSize: options.tabSize,
@@ -187,10 +185,9 @@ function getTSFormatCodeSettings(
 // prettier-ignore
 function getTSPreferences(
         uri: vscode.Uri,
-        scriptLanguageId: ScriptLanguageId
     ): TS.UserPreferences {
-        const config = vscode.workspace.getConfiguration(scriptLanguageId, uri)
-        const preferencesConfig = vscode.workspace.getConfiguration(`${scriptLanguageId}.preferences`, uri)
+        const config = vscode.workspace.getConfiguration("js/ts", uri)
+        const preferencesConfig = vscode.workspace.getConfiguration("js/ts.preferences", uri)
 
         const preferences: TS.UserPreferences = {
             ...config.get("unstable"),

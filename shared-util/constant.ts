@@ -30,7 +30,6 @@ export enum TP_HANDLERS {
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",
     GetComponentInfos = "getCompnentIdentifierInfos",
-    getTypeDeclarationFilePath = "getTypeDeclarationFilePath",
     Retransmission = "retransmissionToQingkuaiLanguageServer",
     InfferedProjectAsTypescript = "InfferedLanguageServerProjectAsTypescript"
 }
