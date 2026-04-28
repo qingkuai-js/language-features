@@ -19,7 +19,7 @@ It contains the full toolchain used by the VS Code extension, including:
 | `packages/typescript-plugin` | TS server plugin for QingKuai-specific behavior            |
 | `packages/mcp-server`        | Model Context Protocol server for AI assistant integration |
 
-## Install Extension
+## Install Vscode Extension
 
 Install from VS Code Marketplace:
 
@@ -28,7 +28,7 @@ Install from VS Code Marketplace:
 
 After installation, open any `.qk` file to activate the extension.
 
-### Vscode Extension Features
+### Features
 
 - **Rich Syntax Highlighting** — Full support for `.qk` files and embedded languages (`js/ts/css/sass/scss/less/stylus/postcss`)
 - **Smart Completions** — Context-aware suggestions for directives, attributes, slots, and events
