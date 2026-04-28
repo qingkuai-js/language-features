@@ -1,3 +1,13 @@
+# 2026-04-28
+
+> packages version: vscode-extension@1.0.11, qingkuai@1.0.65, qingkuai-mcp-server@1.0.2
+
+features and fixes:
+
+1. added the MCP server package
+2. fixed incorrect component tag highlighting
+3. fixed incorrect highlighting for `source.qk` code blocks in Markdown caused by `Vue` extension grammar injection
+
 # 2026-04-07
 
 > packages version: vscode-extension@1.0.8, language-service@1.0.17, qingkuai@1.0.59

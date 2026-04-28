@@ -75,13 +75,16 @@ export async function getCompileResult(document: TextDocument) {
     } as const)
 
     // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
-    const pms = new Promise<CompileResult>(async resolve => {
+    const pms = (async () => {
         if (!ret.isSynchronized) {
             await synchronizeContentToTypescriptPlugin()
             await getConfigurationOfFile()
             ret.isSynchronized = true
-            resolve(ret)
         }
+        return ret
+    })().catch(err => {
+        compileCache.delete(document.uri)
+        throw err
     })
 
     // 将编译结果同步到typescript-plugin-qingkuai
@@ -124,6 +127,7 @@ export async function getCompileResult(document: TextDocument) {
         }
         return res
     }
+
     return (compileCache.set(document.uri, pms), await pms)
 }
 

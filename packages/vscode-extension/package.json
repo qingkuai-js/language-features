@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-language-features",
-    "version": "1.0.9",
+    "version": "1.0.11",
     "author": "lgq",
     "license": "MIT",
     "displayName": "QingKuai",
@@ -15,12 +15,19 @@
         "Programming Languages"
     ],
     "activationEvents": [
+        "onStartupFinished",
         "onLanguage:qingkuai",
         "onLanguage:javascript",
         "onLanguage:typescript",
         "workspaceContains:**/*.qk"
     ],
     "contributes": {
+        "mcpServerDefinitionProviders": [
+            {
+                "id": "qingkuai-tools.qingkuai-mcp-server",
+                "label": "QingKuai MCP Server"
+            }
+        ],
         "commands": [
             {
                 "command": "qingkuai.restartLanguageServer",
@@ -109,7 +116,7 @@
                     "text.html.markdown"
                 ],
                 "embeddedLanguages": {
-                    "meta.embedded.block.qingkuai": "qingkuai"
+                    "source.tsx.embedded.qingkuai": "qingkuai"
                 }
             }
         ],
@@ -234,15 +241,16 @@
         "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
         "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
         "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
-        "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install"
+        "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install && cd ../mcp-server && npm install"
     },
     "devDependencies": {
         "js-yaml": "^4.1.0",
         "vsce": "^2.15.0"
     },
     "dependencies": {
-        "prettier-plugin-qingkuai": "^1.0.26",
+        "prettier-plugin-qingkuai": "^1.0.31",
         "qingkuai": "^1.0.52",
+        "qingkuai-mcp-server": "file:../mcp-server",
         "typescript-plugin-qingkuai": "file:../typescript-plugin",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",

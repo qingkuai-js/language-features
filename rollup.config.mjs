@@ -8,6 +8,13 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
+    const mcpServerExternal = [
+        "qingkuai/compiler",
+        "@modelcontextprotocol/server",
+        "zod",
+        "prettier",
+        "prettier-plugin-qingkuai"
+    ]
     const languageExternal = ["vscode", "prettier", "qingkuai/compiler"]
 
     copyGrammarFiles()
@@ -60,7 +67,7 @@ export default defineConfig(commandLineArgs => {
             output: {
                 format: "cjs",
                 sourcemap: true,
-                entryFileNames:"[name].cjs",
+                entryFileNames: "[name].cjs",
                 chunkFileNames: "chunks/shared.cjs",
                 dir: "./packages/language-service/dist"
             },
@@ -95,6 +102,21 @@ export default defineConfig(commandLineArgs => {
             external: ["qingkuai/compiler"],
             plugins: [nodeResolve(), commonjs(), esbuild()],
             input: "./packages/typescript-plugin/src/index.ts"
+        },
+
+        // mcp server
+        {
+            input: "./packages/mcp-server/src/index.ts",
+            output: {
+                format: "es",
+                sourcemap: true,
+                banner: "#!/usr/bin/env node",
+                dir: "./packages/mcp-server/dist",
+                entryFileNames: "index.mjs"
+            },
+            onwarn,
+            external: mcpServerExternal,
+            plugins: [nodeResolve(), commonjs(), esbuild({ target: "esnext" })]
         }
     ]
 
