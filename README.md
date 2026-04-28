@@ -9,23 +9,15 @@ It contains the full toolchain used by the VS Code extension, including:
 - language server (LSP)
 - TypeScript plugin integration
 
-## Features
-
-- Syntax Highlighting for `.qk` and embedded languages (`js/ts/css/sass/scss/less/stylus/postcss`)
-- Code Completion for directives, attributes, events, and framework keywords
-- Hover Tips and inline docs
-- Diagnostics powered by compiler + language service analysis
-- Go to Definition / References / Rename / Code Lens / Signature Help
-- Document Formatting via `prettier` + `prettier-plugin-qingkuai`
-
 ## Workspace Packages
 
-| Package                      | Description                                           |
-| ---------------------------- | ----------------------------------------------------- |
-| `packages/language-service`  | Core language intelligence and compiler-adapter logic |
-| `packages/language-server`   | LSP server on top of language-service                 |
-| `packages/vscode-extension`  | VS Code extension client + grammar + commands         |
-| `packages/typescript-plugin` | TS server plugin for QingKuai-specific behavior       |
+| Package                      | Description                                                |
+| ---------------------------- | ---------------------------------------------------------- |
+| `packages/language-service`  | Core language intelligence and compiler-adapter logic      |
+| `packages/language-server`   | LSP server on top of language-service                      |
+| `packages/vscode-extension`  | VS Code extension client + grammar + commands              |
+| `packages/typescript-plugin` | TS server plugin for QingKuai-specific behavior            |
+| `packages/mcp-server`        | Model Context Protocol server for AI assistant integration |
 
 ## Install Extension
 
@@ -35,6 +27,16 @@ Install from VS Code Marketplace:
 - https://marketplace.visualstudio.com/items?itemName=qingkuai-tools.qingkuai-language-features
 
 After installation, open any `.qk` file to activate the extension.
+
+### Vscode Extension Features
+
+- **Rich Syntax Highlighting** — Full support for `.qk` files and embedded languages (`js/ts/css/sass/scss/less/stylus/postcss`)
+- **Smart Completions** — Context-aware suggestions for directives, attributes, slots, and events
+- **Hover Documentation** — Instant inline help with type information for directives and framework keywords
+- **Type Checking & Diagnostics** — Real-time analysis powered by compiler integration, including generic type validation
+- **Code Navigation** — Go to Definition / References / Rename / Code Lens / Signature Help support
+- **Document Formatting** — Prettier-based formatting with Qingkuai-specific rules and support for component tags with generic parameters
+- **AI Integration** — Optional Model Context Protocol (MCP) server support for AI assistant tools
 
 ## Local Development
 
@@ -78,6 +80,7 @@ npm run build:grammars
 2. Extension configures the TypeScript plugin (`typescript-plugin-qingkuai`) for tsserver.
 3. Language server delegates core analysis/format/diagnostics to `qingkuai-language-service`.
 4. Language service integrates compiler output and framework-specific semantics.
+5. Optional: MCP server provides QingKuai tools and analysis to compatible AI assistants (Claude, etc.)
 
 ## License
 
