@@ -2,7 +2,6 @@ import type {
     InsertSnippetParams,
     GetClientConfigParams,
     ApplyWorkspaceEditParams,
-    GetClientLanguageConfigParams,
     GetClientLanguageConfigResult
 } from "../../../types/communication"
 import type { ConfigTsServerPluginFunc } from "./types"
@@ -54,19 +53,16 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
     })
 
     // 获取语言配置项
-    client.onRequest(
-        LS_HANDLERS.GetLanguageConfig,
-        async ({ filePath, scriptLanguageId: scriptLanguageId }: GetClientLanguageConfigParams) => {
-            const fileUri = vscode.Uri.file(filePath)
-            return {
-                dirPath: nodePath.dirname(filePath),
-                qingkuaiConfig: getQingkuaiConfig(fileUri),
-                extensionConfig: getExtensionConfig(fileUri),
-                prettierConfig: await getPrettierConfig(fileUri),
-                typescriptConfig: getTypescriptConfig(fileUri, scriptLanguageId)
-            } satisfies GetClientLanguageConfigResult
-        }
-    )
+    client.onRequest(LS_HANDLERS.GetLanguageConfig, async (filePath: string) => {
+        const fileUri = vscode.Uri.file(filePath)
+        return {
+            dirPath: nodePath.dirname(filePath),
+            qingkuaiConfig: getQingkuaiConfig(fileUri),
+            extensionConfig: getExtensionConfig(fileUri),
+            typescriptConfig: getTypescriptConfig(fileUri),
+            prettierConfig: await getPrettierConfig(fileUri)
+        } satisfies GetClientLanguageConfigResult
+    })
 
     // 获取客户端配置
     client.onRequest(LS_HANDLERS.GetClientConfig, (params: GetClientConfigParams) => {

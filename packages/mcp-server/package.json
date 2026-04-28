@@ -1,0 +1,49 @@
+{
+    "name": "qingkuai-mcp-server",
+    "version": "1.0.2",
+    "type": "module",
+    "author": "mlgq",
+    "license": "MIT",
+    "main": "dist/index.mjs",
+    "homepage": "https://qingkuai.dev",
+    "mcpName": "io.github.qingkuai-js/qingkuai-mcp-server",
+    "bin": {
+        "qingkuai-mcp-server": "dist/index.mjs"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/qingkuai-js/language-features"
+    },
+    "exports": {
+        ".": "./dist/index.mjs"
+    },
+    "files": [
+        "assets",
+        "server.json",
+        "dist/index.mjs"
+    ],
+    "scripts": {
+        "inspect": "mcp-inspector"
+    },
+    "dependencies": {
+        "@cfworker/json-schema": "^4.1.1",
+        "@modelcontextprotocol/server": "2.0.0-alpha.2",
+        "prettier": "^3.8.1",
+        "prettier-plugin-qingkuai": "^1.0.31",
+        "qingkuai": "^1.0.65",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@modelcontextprotocol/inspector": "^0.21.2"
+    },
+    "keywords": [
+        "mcp",
+        "ai-tools",
+        "qingkuai",
+        "qk",
+        "compiler",
+        "formatter",
+        "model-context-protocol"
+    ],
+    "description": "MCP server for Qingkuai (.qk) — provides syntax docs search, syntax checking, compilation, and code formatting tools for AI agents."
+}

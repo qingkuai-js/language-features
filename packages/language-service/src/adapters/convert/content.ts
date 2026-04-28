@@ -20,8 +20,8 @@ export function confirmTypesForCompileResult(
 ) {
     let sourceFile!: TS.SourceFile
     let typeChecker!: TS.TypeChecker
-    let componentReturnsNode!: TS.ReturnStatement
     let componentFuncNode!: TS.FunctionDeclaration
+    let componentReturnsNode: TS.ReturnStatement | undefined
 
     const updateSourceFile = () => {
         const program = adapter.getDefaultProgram(fileInfo.path)!
@@ -299,36 +299,38 @@ export function confirmTypesForCompileResult(
     if (globalTypes.Props?.genericNames.length) {
         contextPropsType = `Props<${globalTypes.Props.genericNames.join(", ")}>`
     }
-    if (fileInfo.isTS) {
-        edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
-        edit.push(`    const props: Readonly<${declarePropsType}> = ${anyValueStr};\n`)
-        edit.push(`    const refs: ${declareRefsType} = ${anyValueStr};\n`)
-        edit.flush()
-
-        if (componentGenerics.length) {
-            edit.setEditIndex(componentReturnsNode.getStart() + 7)
-            edit.push(`<${componentGenerics.join(", ")}>`)
+    if (componentReturnsNode) {
+        if (fileInfo.isTS) {
+            edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
+            edit.push(`    const props: Readonly<${declarePropsType}> = ${anyValueStr};\n`)
+            edit.push(`    const refs: ${declareRefsType} = ${anyValueStr};\n`)
             edit.flush()
-        }
-        edit.setEditIndex(componentReturnsNode.getStart() + 9)
-        edit.push(`: { props: ${contextPropsType}; refs: ${contextRefsType}; slots: `)
-    } else {
-        edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
-        edit.push(
-            `    /** @type {Readonly<${declarePropsType}>} */ const props = ${anyValueStr};\n`
-        )
-        edit.push(`    /** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
-        edit.flush()
-        edit.push("/**\n")
 
-        for (const generic of componentGenerics) {
-            edit.push(`     * ${generic}\n`)
+            if (componentGenerics.length) {
+                edit.setEditIndex(componentReturnsNode.getStart() + 7)
+                edit.push(`<${componentGenerics.join(", ")}>`)
+                edit.flush()
+            }
+            edit.setEditIndex(componentReturnsNode.getStart() + 9)
+            edit.push(`: { props: ${contextPropsType}; refs: ${contextRefsType}; slots: `)
+        } else {
+            edit.setEditIndex(componentFuncNode.body!.getStart() + 2)
+            edit.push(
+                `    /** @type {Readonly<${declarePropsType}>} */ const props = ${anyValueStr};\n`
+            )
+            edit.push(`    /** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
+            edit.flush()
+            edit.push("/**\n")
+
+            for (const generic of componentGenerics) {
+                edit.push(`     * ${generic}\n`)
+            }
+            edit.setEditIndex(componentReturnsNode.getStart())
+            edit.push(
+                `     * @param {Object} _\n     * @param {${contextPropsType}} _.props\n`
+            )
+            edit.push(`     * @param {${contextRefsType}} _.refs\n     * @param {`)
         }
-        edit.setEditIndex(componentReturnsNode.getStart())
-        edit.push(
-            `     * @param {Object} context\n     * @param {${contextPropsType}} context.props\n`
-        )
-        edit.push(`     * @param {${contextRefsType}} context.refs\n     * @param {`)
     }
 
     if (!slotNames.length) {
@@ -351,16 +353,23 @@ export function confirmTypesForCompileResult(
     if (fileInfo.isTS) {
         edit.push("}")
     } else {
-        edit.push("} context.slots\n     */\n    ")
+        edit.push("} _.slots\n     */\n    ")
     }
     edit.flush()
     updateSourceFile()
 
     const sourceFileSymbol = typeChecker.getSymbolAtLocation(sourceFile)!
-    const defaultExportSymbol = sourceFileSymbol.exports?.get(ts.InternalSymbolName.Default)!
-    const defaultExportType = typeChecker.getTypeOfSymbolAtLocation(defaultExportSymbol, sourceFile)
-    const defaultExportTypeStr = typeChecker.typeToString(defaultExportType).replaceAll("{", "{\n")
-    fileInfo.defaultExportTypeStr = defaultExportTypeStr
+    const defaultExportSymbol = sourceFileSymbol.exports?.get(ts.InternalSymbolName.Default)
+    if (defaultExportSymbol) {
+        const defaultExportType = typeChecker.getTypeOfSymbolAtLocation(
+            defaultExportSymbol,
+            sourceFile
+        )
+        const defaultExportTypeStr = typeChecker
+            .typeToString(defaultExportType)
+            .replaceAll("{", "{\n")
+        fileInfo.defaultExportTypeStr = defaultExportTypeStr
+    }
 }
 
 export class FileEdit {

@@ -1,6 +1,5 @@
 import fsExtra from "fs-extra"
 import dts from "rollup-plugin-dts"
-import json from "@rollup/plugin-json"
 import esbuild from "rollup-plugin-esbuild"
 import commonjs from "@rollup/plugin-commonjs"
 
@@ -9,6 +8,13 @@ import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
+    const mcpServerExternal = [
+        "qingkuai/compiler",
+        "@modelcontextprotocol/server",
+        "zod",
+        "prettier",
+        "prettier-plugin-qingkuai"
+    ]
     const languageExternal = ["vscode", "prettier", "qingkuai/compiler"]
 
     copyGrammarFiles()
@@ -40,49 +46,33 @@ export default defineConfig(commandLineArgs => {
     const result = [
         // language service
         {
+            input: {
+                index: "./packages/language-service/src/index.ts",
+                adapters: "./packages/language-service/src/adapters/index.ts"
+            },
             output: {
                 format: "es",
                 sourcemap: true,
-                entryFileNames: "index.js",
+                chunkFileNames: "chunks/shared.js",
                 dir: "./packages/language-service/dist"
             },
             ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/index.ts",
-            plugins: [nodeResolve(), commonjs(), json(), esbuild(), reloadAsRaw()]
+            plugins: [nodeResolve(), commonjs(), esbuild(), reloadAsRaw()]
         },
         {
+            input: {
+                index: "./packages/language-service/src/index.ts",
+                adapters: "./packages/language-service/src/adapters/adapter.ts"
+            },
             output: {
                 format: "cjs",
                 sourcemap: true,
-                entryFileNames: "index.cjs",
-                dir: "./packages/language-service/dist"
-            },
-            reloadAsRaw,
-            ...languageOnWarnAndExternal,
-            input: "./packages/language-service/src/index.ts",
-            plugins: [nodeResolve(), commonjs(), json(), esbuild(), reloadAsRaw()]
-        },
-        {
-            output: {
-                format: "es",
-                sourcemap: true,
-                entryFileNames: "adapters.js",
+                entryFileNames: "[name].cjs",
+                chunkFileNames: "chunks/shared.cjs",
                 dir: "./packages/language-service/dist"
             },
             ...languageOnWarnAndExternal,
-            plugins: [nodeResolve(), commonjs(), esbuild()],
-            input: "./packages/language-service/src/adapters/index.ts"
-        },
-        {
-            output: {
-                format: "cjs",
-                sourcemap: true,
-                entryFileNames: "adapters.cjs",
-                dir: "./packages/language-service/dist"
-            },
-            ...languageOnWarnAndExternal,
-            plugins: [nodeResolve(), commonjs(), esbuild()],
-            input: "./packages/language-service/src/adapters/index.ts"
+            plugins: [nodeResolve(), commonjs(), esbuild(), reloadAsRaw()]
         },
 
         // vscode extension and language server
@@ -94,7 +84,7 @@ export default defineConfig(commandLineArgs => {
             output: {
                 format: "cjs",
                 sourcemap: true,
-                chunkFileNames: "chunks/[name].js",
+                chunkFileNames: "chunks/shared.js",
                 dir: "packages/vscode-extension/dist"
             },
             ...languageOnWarnAndExternal,
@@ -112,33 +102,42 @@ export default defineConfig(commandLineArgs => {
             external: ["qingkuai/compiler"],
             plugins: [nodeResolve(), commonjs(), esbuild()],
             input: "./packages/typescript-plugin/src/index.ts"
+        },
+
+        // mcp server
+        {
+            input: "./packages/mcp-server/src/index.ts",
+            output: {
+                format: "es",
+                sourcemap: true,
+                banner: "#!/usr/bin/env node",
+                dir: "./packages/mcp-server/dist",
+                entryFileNames: "index.mjs"
+            },
+            onwarn,
+            external: mcpServerExternal,
+            plugins: [nodeResolve(), commonjs(), esbuild({ target: "esnext" })]
         }
     ]
 
     // language service types
     if (!isWatchMode) {
-        result.push(
-            {
-                external: languageExternal,
-                input: "./packages/language-service/dist/temp-types/packages/language-service/src/index.d.ts",
-                output: {
-                    format: "es",
-                    entryFileNames: "index.d.ts",
-                    dir: "./packages/language-service/dist"
-                },
-                plugins: [dts()]
+        result.push({
+            input: {
+                index: "./packages/language-service/dist/temp-types/packages/language-service/src/index.d.ts",
+                adapters:
+                    "./packages/language-service/dist/temp-types/packages/language-service/src/adapters/index.d.ts"
             },
-            {
-                external: languageExternal,
-                input: "./packages/language-service/dist/temp-types/packages/language-service/src/adapters/index.d.ts",
-                output: {
-                    format: "es",
-                    entryFileNames: "adapters.d.ts",
-                    dir: "./packages/language-service/dist"
-                },
-                plugins: [dts()]
-            }
-        )
+            output: {
+                format: "es",
+                sourcemap: false,
+                entryFileNames: "[name].d.ts",
+                chunkFileNames: "chunks/shared.d.ts",
+                dir: "./packages/language-service/dist"
+            },
+            plugins: [dts()],
+            external: languageExternal
+        })
     }
 
     return result

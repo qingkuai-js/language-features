@@ -1,8 +1,8 @@
 import type TS from "typescript"
 
 import type { ConfigPluginParms } from "../../../types/communication"
+import type { CompileIntermidiateFunc } from "qingkuai-language-service"
 import type { QingkuaiFileInfo } from "qingkuai-language-service/adapters"
-import type { CompileIntermidiateFunc } from "../../language-service/src/types/service"
 
 import nodeFs from "node:fs"
 import nodePath from "node:path"
@@ -100,8 +100,6 @@ function createIpcServer(sockPath: string) {
 }
 
 function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) {
-    const typeDecFilePath = nodePath.resolve(__dirname, "../dts/qingkuai")
-
     const adapterFs: AdapterFS = {
         exist: nodeFs.existsSync,
         read: path => nodeFs.readFileSync(path, "utf-8")
@@ -132,9 +130,7 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
     }
 
     const compile: CompileIntermidiateFunc = path => {
-        return compileIntermediate(adapter.fs.read(path), {
-            typeDeclarationFilePath: adapter.typeDeclarationFilePath
-        })
+        return compileIntermediate(adapter.fs.read(path))
     }
 
     const adapterPath: AdapterPath = {
@@ -160,7 +156,6 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
         Logger,
         adapterFs,
         adapterPath,
-        typeDecFilePath,
         compile,
         projectService,
         getQingkuaiConfig,

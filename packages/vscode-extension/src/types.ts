@@ -9,4 +9,18 @@ export type SetStateOptions = Partial<{
     limitedScriptLanguageFeatures: boolean
 }>
 
+export type McpServerPackageInfo = {
+    entryCandidates: string[]
+    title: string
+    version: string
+}
+
+export type ModelServerLaunchInfo = {
+    command: string
+    args: string[]
+    cwd: string
+    title: string
+    version: string
+}
+
 export type ConfigTsServerPluginFunc = (isReconnect: boolean) => Promise<GeneralFunc>

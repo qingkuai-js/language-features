@@ -30,7 +30,6 @@ export interface GlobalTypeItem {
 
 export interface SetStateOptions {
     ts: typeof TS
-    typeDeclarationFilePath: string
 }
 
 export type LSDiagnostic = TS.Diagnostic & {

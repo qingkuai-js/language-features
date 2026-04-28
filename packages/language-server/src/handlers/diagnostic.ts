@@ -4,7 +4,14 @@ import { getCompileResult } from "../compile"
 import { debounce } from "../../../../shared-util/sundry"
 import { getDiagnostic } from "qingkuai-language-service"
 import { TP_HANDLERS } from "../../../../shared-util/constant"
-import { tpic, documents, connection, isTestingEnv, limitedScriptLanguageFeatures } from "../state"
+import {
+    tpic,
+    Logger,
+    documents,
+    connection,
+    isTestingEnv,
+    limitedScriptLanguageFeatures
+} from "../state"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -13,9 +20,14 @@ export const publishDiagnostics = debounce(
             return null
         }
 
-        const cr = await getCompileResult(document)
-        const diagnostics = await getDiagnostic(cr, getScriptDiagnostics)
-        connection.sendDiagnostics({ uri, diagnostics })
+        try {
+            const cr = await getCompileResult(document)
+            const diagnostics = await getDiagnostic(cr, getScriptDiagnostics)
+            connection.sendDiagnostics({ uri, diagnostics })
+        } catch (err) {
+            Logger.warn(`Publish diagnostics failed: ${err instanceof Error ? err.message : String(err)}`)
+            connection.sendDiagnostics({ uri, diagnostics: [] })
+        }
     },
     300,
     debounceIdGetter

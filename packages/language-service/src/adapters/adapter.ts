@@ -15,6 +15,7 @@ import type {
     TPICCommonRequestParams
 } from "../../../../types/communication"
 import type { QingkuaiFileInfo } from "./file"
+import type { Logger } from "../../../../shared-util/log"
 import type { AdapterTsProject, AdapterTsProjectService } from "../types/adapter"
 import type { AdapterFS, AdapterPath, TsNormalizedPath } from "../../../../types/common"
 
@@ -34,7 +35,6 @@ import { findAndConvertImplementations } from "./convert/implementation"
 import { getAndConvertDefinitions, getAndConvertTypeDefinitions } from "./convert/definition"
 import { getAndConvertCompletionDetail, getAndConvertCompletionInfo } from "./convert/completion"
 import { getAndConvertPrepareRenameLocation, getAndConvertRenameLocations } from "./convert/rename"
-import { Logger } from "../../../../shared-util/log"
 
 export class TypescriptAdapter {
     private initialized = false
@@ -50,7 +50,6 @@ export class TypescriptAdapter {
         public logger: Logger,
         public fs: AdapterFS,
         public path: AdapterPath,
-        public typeDeclarationFilePath: string,
         public compile: CompileIntermidiateFunc,
         public projectService: AdapterTsProjectService,
         public getQingkuaiConfig: GetQingkuaiConfigFunc,
@@ -58,7 +57,7 @@ export class TypescriptAdapter {
         public getUserPreferences: GetUserPreferencesFunc,
         public getFormattingOptions: GetFormattingOptionsFunc
     ) {
-        setState({ ts, typeDeclarationFilePath })
+        setState({ ts })
     }
 
     // 确定所有 qingkuai 文件的 Props、Refs 以及 Slots 类型定义

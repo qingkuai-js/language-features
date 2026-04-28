@@ -1,5 +1,8 @@
+import type TS from "typescript"
+
 import type { TypescriptAdapter } from "../adapter"
 import type { Pair } from "../../../../../types/common"
+import type { AdapterTsProject } from "../../types/adapter"
 import type { HoverTipResult, TPICCommonRequestParams } from "../../../../../types/communication"
 
 import { ts } from "../state"
@@ -78,4 +81,38 @@ export function getAndConvertHoverTip(
         range: [start, start + length] as Pair<number>,
         content: mdCodeBlockGen("ts", display + idStatusDisplay) + "\n" + documentation
     }
+}
+
+export function proxyGetQuickInfoAtPosition(_: TypescriptAdapter, project: AdapterTsProject) {
+    const languageService = project.getLanguageService()
+    const getQuickInfoAtPosition = languageService.getQuickInfoAtPosition
+    languageService.getQuickInfoAtPosition = (fileName, position) => {
+        const originalRet = getQuickInfoAtPosition.call(languageService, fileName, position)
+        if (originalRet?.displayParts) {
+            originalRet.displayParts = filterDisplayParts(originalRet.displayParts)
+        }
+        if (originalRet?.documentation) {
+            originalRet.documentation = filterDisplayParts(originalRet.documentation)
+        }
+        return originalRet
+    }
+}
+
+function filterDisplayParts(target: TS.SymbolDisplayPart[] | undefined) {
+    return target?.filter((item, index) => {
+        switch (item.text) {
+            case qingkuaiConstants.LSC.UTIL:
+            case qingkuaiConstants.LSC.COMPONENT:
+            case qingkuaiConstants.PRESERVED_IDPREFIX:
+            case qingkuaiConstants.LSC.GET_TYPE_DELAY_MARKING: {
+                return false
+            }
+            case ".": {
+                return target[index - 1].text !== qingkuaiConstants.LSC.UTIL
+            }
+            default: {
+                return true
+            }
+        }
+    })
 }

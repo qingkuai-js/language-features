@@ -5,11 +5,13 @@
         "lib": ["ESNext"],
         "target": "ESNext",
         "module": "Preserve",
+        "skipLibCheck": true,
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true,
         "paths": {
             "qingkuai-language-service": ["./packages/language-service/src"],
             "qingkuai-language-service/adapters": ["./packages/language-service/src/adapters"]
         }
-    }
+    },
+    "include": ["./packages/**/*"]
 }

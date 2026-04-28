@@ -37,7 +37,8 @@ import {
     getDocumentation,
     isBooleanAttribute,
     findTagAttributeData,
-    getDirectiveDocumentation
+    getDirectiveDocumentation,
+    htmlDirectivesMap
 } from "../../data/element"
 import {
     findEventModifier,
@@ -54,7 +55,7 @@ import {
 } from "../../regular"
 import { QingkuaiCommands } from "../../enums"
 import { isPositionEqual } from "../../util/sundry"
-import { QK_HASH_DOC } from "../../data/css-attribute"
+import { QK_SCOPE_DOC } from "../../data/css-attribute"
 import { PositionFlag, util } from "qingkuai/compiler"
 import { eventModifiers } from "../../data/event-modifier"
 import { getAndProcessScriptBlockCompletions } from "./script"
@@ -247,9 +248,17 @@ export async function doComplete(
         }
         if (source[offset - 1] === "=") {
             const quote = config.prettierConfig?.singleQuote ? "'" : '"'
-            snippetItem.text = isInterpolation ? "{$0}" : `${quote}$0${quote}`
+            if (!isInterpolation) {
+                snippetItem.text = `${quote}$1${quote}`
+            } else {
+                const directiveValueSnippet = htmlDirectivesMap[attrName.slice(1)]?.valueSnippet
+                if (directiveValueSnippet && attrName === "#slot") {
+                    snippetItem.command = QingkuaiCommands.TriggerSuggest
+                }
+                snippetItem.text = `{${directiveValueSnippet ?? "$1"}}`
+            }
         } else {
-            snippetItem.text = isInterpolation ? "$0}" : `$0${source[offset - 1]}`
+            snippetItem.text = isInterpolation ? "$1}" : `$1${source[offset - 1]}`
         }
         if (!isInterpolation) {
             let shouldRetriggerSuggest = false
@@ -424,7 +433,7 @@ function doStyleBlockComplete(cr: CompileResult, offset: number) {
                 {
                     documentation: {
                         kind: "markdown",
-                        value: QK_HASH_DOC
+                        value: QK_SCOPE_DOC
                     },
                     textEdit:
                         currentNode !== surroundingNode
@@ -986,18 +995,8 @@ function doAttributeNameComplete(
                 !unsetDirectives.includes(item.name) &&
                 (item.name !== "slot" || node.parent?.componentTag)
             ) {
-                let valueSnippet = "$1"
-                switch (item.name) {
-                    case "slot": {
-                        valueSnippet = '${2:context} from "$1"'
-                        break
-                    }
-                    case "for": {
-                        valueSnippet = "${2:item}, ${3:index} of ${1:source}"
-                        break
-                    }
-                }
                 const label = "#" + item.name
+                const valueSnippet = item.valueSnippet ?? "$1"
                 const noValue = hasValue || item.name === "else" || item.name === "html"
                 const completion: CompletionItem = {
                     label: label,

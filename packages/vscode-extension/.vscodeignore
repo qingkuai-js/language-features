@@ -1,6 +1,8 @@
+*.vsix
 **/*.map
 **/*.d.ts
 **/.DS_Store
+.vsce-temp/**
 
 src
 scripts
@@ -12,6 +14,7 @@ node_modules/.package-lock.json
 
 ../language-service/**
 ../typescript-plugin/src
+../mcp-server/node_modules
 ../typescript-plugin/.npmignore
 ../typescript-plugin/node_modules
 
@@ -20,7 +23,8 @@ node_modules/**/*.map
 node_modules/**/*.d.ts
 node_modules/**/LICENSE
 node_modules/typescript-plugin-qingkuai/src
+node_modules/qingkuai-mcp-server/node_modules
 node_modules/typescript-plugin-qingkuai/.npmignore
 node_modules/typescript-plugin-qingkuai/node_modules
 
-!node_modules/typescript-plugin-qingkuai/dts/qingkuai.d.ts
+!node_modules/qingkuai-mcp-server/assets/**

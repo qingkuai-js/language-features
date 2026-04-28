@@ -10,7 +10,6 @@ import { TextDocuments, ProposedFeatures, createConnection } from "vscode-langua
 
 export let isTestingEnv = true
 export let projectKind = ProjectKind.JS
-export let typeDeclarationFilePath = ""
 export let tpic = DEFAULT_PARTICIPANT // Typescript Plugin Icp Client
 export let limitedScriptLanguageFeatures = process.env.LIMITED_SCRIPT !== "0"
 
@@ -26,9 +25,6 @@ export function setState(options: SetStateOptions) {
     }
     if (!isUndefined(options.isTestingEnv)) {
         isTestingEnv = options.isTestingEnv
-    }
-    if (!isUndefined(options.typeDeclarationFilePath)) {
-        typeDeclarationFilePath = options.typeDeclarationFilePath
     }
     if (options.tpicConnectedPromise) {
         tpicConnectedPromise = options.tpicConnectedPromise

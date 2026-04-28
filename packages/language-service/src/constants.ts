@@ -17,6 +17,9 @@ export const COMPLETION_TRIGGER_CHARS = [
     [".", "+", "*", "]", "^", "$", ")", "}", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
 ].flat()
 
+export const SIGNATURE_RETRIGGER_CHARS = [")"]
+export const SIGNATURE_TRIGGER_CHARS = ["(", "<", ","]
+
 export const SEMANTIC_LEGEND: SemanticTokensLegend = {
     tokenTypes: ["keyword"],
     tokenModifiers: []
@@ -53,6 +56,11 @@ export const INVALID_COMPLETION_TEXT_LABELS = new Set([
     "validateTargetDirectiveValue",
     "validateDomReceiver",
     "validateEventHandler"
+])
+
+export const INVLALID_COMPLETION_PACKAGES = new Set([
+    "qingkuai/internal",
+    "qingkuai/language-service"
 ])
 
 export const GLOBAL_TYPE_IDS = new Set(["Props", "Refs"])

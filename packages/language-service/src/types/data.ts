@@ -1,3 +1,10 @@
+export interface DirectiveData {
+    name: string
+    useage: string
+    description: string
+    valueSnippet?: string
+}
+
 export interface HTMLElementData {
     tags: HTMLElementDataTagItem[]
     valueSets: {

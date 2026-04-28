@@ -5,7 +5,7 @@ import { debugAssert } from "../../../../../shared-util/assert"
 export function getNavigationTree(adapter: TypescriptAdapter, fileName: string) {
     const filePath = adapter.getNormalizedPath(fileName)
     const languageService = adapter.getDefaultLanguageService(filePath)!
-    if (!debugAssert(languageService)) {
+    if (!languageService) {
         return null
     }
 

@@ -10,13 +10,18 @@ import type {
 import type { TypescriptAdapter } from "../adapter"
 import type { ScriptCompletionDetail, TextEditWithPosRange } from "../../types/service"
 
+import {
+    LSU_AND_DOT,
+    SCRIPT_EXTENSIONS,
+    INVLALID_COMPLETION_PACKAGES,
+    INVALID_COMPLETION_TEXT_LABELS
+} from "../../constants"
 import { ts } from "../state"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { CompletionImportTextEditRE, qkExtInImportRE } from "../../regular"
 import { debugAssert, isQingkuaiFileName, isUndefined } from "../../../../../shared-util/assert"
-import { INVALID_COMPLETION_TEXT_LABELS, LSU_AND_DOT, SCRIPT_EXTENSIONS } from "../../constants"
 
 export function getAndConvertCompletionInfo(
     adapter: TypescriptAdapter,
@@ -196,15 +201,7 @@ export function proxyGetCompletionsAtPositionToConvert(
                         return part.text === qingkuaiConstants.LSC.UTIL
                     })
                 }
-                if (!entry.source) {
-                    return true
-                }
-                if (/\.\//.test(entry.source)) {
-                    const dirPath = adapter.path.dir(fileName)
-                    const sourcePath = adapter.path.resolve(dirPath, entry.source)
-                    return !sourcePath.startsWith(adapter.typeDeclarationFilePath)
-                }
-                return entry.source !== "qingkuai/internal"
+                return !entry.source || !INVLALID_COMPLETION_PACKAGES.has(entry.source)
             })
         }
         return originalResult

@@ -60,7 +60,11 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
 function insertSnippet(snippet: string | InsertSnippetParams) {
     connection.sendNotification(
         LS_HANDLERS.InsertSnippet,
-        isString(snippet) ? { text: snippet } : snippet
+        isString(snippet)
+            ? {
+                  text: snippet
+              }
+            : snippet
     )
 }
 

@@ -26,7 +26,6 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
         originalResolver = tpicConnectedResolver
         setState({
             tpic: DEFAULT_PARTICIPANT,
-            typeDeclarationFilePath: "",
             projectKind: params.projectKind,
             tpicConnectedPromise: promiseAndResolver[0],
             tpicConnectedResolver: promiseAndResolver[1]
@@ -44,14 +43,6 @@ export async function connectTsServer(params: ConnectToTsServerParams) {
             })
             attachClientHandlers()
             attachRetransmissionHandlers()
-
-            setState({
-                typeDeclarationFilePath: await client.sendRequest(
-                    TP_HANDLERS.getTypeDeclarationFilePath,
-                    ""
-                )
-            })
-
             originalResolver?.()
             tpicConnectedResolver()
             Logger.info(Messages.ConnectTsServerPluginSuccess)

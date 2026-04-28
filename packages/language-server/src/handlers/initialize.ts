@@ -1,3 +1,7 @@
+import {
+    SIGNATURE_TRIGGER_CHARS,
+    SIGNATURE_RETRIGGER_CHARS
+} from "../../../language-service/src/constants"
 import { Messages } from "../messages"
 import { Logger, setState } from "../state"
 import { InitializeHandler } from "../types/handlers"
@@ -14,7 +18,6 @@ export const initialize: InitializeHandler = () => {
 
     return {
         capabilities: {
-            textDocumentSync: TextDocumentSyncKind.Incremental,
             colorProvider: true,
             hoverProvider: true,
             referencesProvider: true,
@@ -28,17 +31,18 @@ export const initialize: InitializeHandler = () => {
             codeLensProvider: {
                 resolveProvider: true
             },
-            signatureHelpProvider: {
-                triggerCharacters: ["(", "<", ","],
-                retriggerCharacters: [")"]
-            },
             completionProvider: {
                 completionItem: {
                     labelDetailsSupport: true
                 },
                 resolveProvider: true,
                 triggerCharacters: COMPLETION_TRIGGER_CHARS
-            }
+            },
+            signatureHelpProvider: {
+                triggerCharacters: SIGNATURE_TRIGGER_CHARS,
+                retriggerCharacters: SIGNATURE_RETRIGGER_CHARS
+            },
+            textDocumentSync: TextDocumentSyncKind.Incremental
         }
     }
 }

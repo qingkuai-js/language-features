@@ -86,11 +86,6 @@ export interface UpdateContentResult {
     astoi: Pair<number>[]
 }
 
-export interface GetClientLanguageConfigParams {
-    filePath: string
-    scriptLanguageId: ScriptLanguageId
-}
-
 export interface GetClientLanguageConfigResult {
     dirPath: string
     prettierConfig: PrettierConfiguration
@@ -169,8 +164,6 @@ export type GetClientConfigParams<T = any> = {
           includes?: string[]
       }
 )
-
-export type ScriptLanguageId = "javascript" | "typescript"
 
 export type SignatureHelpParams = TPICCommonRequestParams & {
     isRetrigger: boolean
