@@ -1,13 +1,12 @@
 {
     "name": "qingkuai-language-features",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "author": "lgq",
     "license": "MIT",
     "displayName": "QingKuai",
+    "main": "./dist/client.js",
     "icon": "imgs/qingkuai.png",
     "publisher": "qingkuai-tools",
-    "description": "qingkuai language support for vscode",
-    "main": "./dist/client.js",
     "engines": {
         "vscode": "^1.93.0"
     },
@@ -257,5 +256,6 @@
         "vscode-languageserver": "^9.0.1",
         "vscode-languageserver-textdocument": "^1.0.12",
         "vscode-languageserver-types": "^3.17.5"
-    }
+    },
+    "description": "Language support for Qingkuai (.qk) files"
 }
