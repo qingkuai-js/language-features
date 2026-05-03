@@ -9,7 +9,6 @@ import {
     languageStatusItem
 } from "./state"
 import { QingkuaiCommands } from "./command"
-import { registerFormattingProvider } from "./format"
 import { activeLanguageServer } from "./language-server"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { registerMcpServerDefinitionProvider } from "./mcp-server"
@@ -22,7 +21,6 @@ export async function activate(context: ExtensionContext) {
     const commands = new QingkuaiCommands(outputChannel, activeLanguageServer)
     const activeDocument = vscode.window.activeTextEditor?.document
     registerMcpServerDefinitionProvider(context)
-    registerFormattingProvider(context)
     setState({
         serverModulePath: context.asAbsolutePath("./dist/server.js")
     })
