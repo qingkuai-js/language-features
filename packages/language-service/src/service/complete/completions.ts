@@ -764,7 +764,21 @@ function doReferenceAttributeComplete(
             break
         }
         case "input": {
-            extendRecommand("value", "checked", "group", "number")
+            switch (nodeContext.attributesMap.type?.name.raw) {
+                case "number": {
+                    extendRecommand("number")
+                    break
+                }
+                case "radio":
+                case "checkbox": {
+                    extendRecommand("checked", "group")
+                    break
+                }
+                default: {
+                    extendRecommand("value", "checked", "group", "number")
+                    break
+                }
+            }
             break
         }
         default: {

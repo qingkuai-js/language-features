@@ -421,6 +421,7 @@ describe("Html Attribute name completions:", () => {
             formatSourceCode(`
                 <input &>
                 <input type="text" &>
+                <input type="number" &>
                 <input type="radio" &>
                 <input type="checkbox" &>
                 <select &></select>
@@ -437,19 +438,23 @@ describe("Html Attribute name completions:", () => {
                 expect(completions?.length).toBe(1)
                 expect(completions![0].label).toBe("&value")
             }),
-            doComplete(4, 9).then(completions => {
+            doComplete(2, 22).then(completions => {
+                expect(completions?.length).toBe(2)
+                expect(completions!.map(item => item.label)).toEqual(["&number", "&value"])
+            }),
+            doComplete(5, 9).then(completions => {
                 expect(completions?.length).toBe(1)
                 expect(completions![0].label).toBe("&value")
             }),
-            doComplete(5, 18).then(completions => {
+            doComplete(6, 18).then(completions => {
                 expect(completions?.length).toBe(1)
                 expect(completions![0].label).toBe("&value")
             }),
-            doComplete(2, 21).then(completions => {
+            doComplete(3, 21).then(completions => {
                 expect(completions?.length).toBe(2)
                 expect(completions!.map(item => item.label)).toEqual(["&checked", "&group"])
             }),
-            doComplete(3, 24).then(completions => {
+            doComplete(4, 24).then(completions => {
                 expect(completions?.length).toBe(2)
                 expect(completions!.map(item => item.label)).toEqual(["&checked", "&group"])
             })

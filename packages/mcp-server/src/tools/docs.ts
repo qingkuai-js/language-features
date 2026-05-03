@@ -1,11 +1,69 @@
 import type { DocEntry } from "../types"
 import type { McpServer } from "@modelcontextprotocol/server"
 
+import {
+    QUERY_EXPANSION_MAP,
+    BOOTSTRAP_TOOL_DESCRIPTION,
+    SEARCH_DOCS_TOOL_DESCRIPTION
+} from "../constants"
 import { z } from "zod"
 
-import { SEARCH_DOCS_TOOL_DESCRIPTION } from "../constants"
-
 export function registerDocTools(server: McpServer, docs: DocEntry[]) {
+    server.registerTool(
+        "get_qingkuai_project_bootstrap_guide",
+        {
+            inputSchema: z.object({
+                limit: z
+                    .number()
+                    .int()
+                    .min(1)
+                    .max(8)
+                    .optional()
+                    .describe("Maximum number of results. Default is 4."),
+                query: z
+                    .string()
+                    .optional()
+                    .describe("Optional keywords. Default: getting started installation create.")
+            }),
+            description: BOOTSTRAP_TOOL_DESCRIPTION,
+            title: "Get Qingkuai Project Bootstrap Guide"
+        },
+        async ({ query, limit }) => {
+            const maxResults = limit ?? 4
+            const normalizedQuery = normalizeText(
+                query?.trim() || "getting started installation create scaffold"
+            )
+            const targets = rankDocs(docs, normalizedQuery, maxResults, doc => {
+                return /getting-started\/installation\.md$/.test(doc.uri) ? 50 : 0
+            })
+
+            if (!targets.length) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: "No Qingkuai bootstrap docs found."
+                        }
+                    ]
+                }
+            }
+
+            const structuredContent = {
+                task: "qingkuai-project-bootstrap",
+                results: mapRankedResults(targets, 260)
+            }
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(structuredContent, null, 2)
+                    }
+                ],
+                structuredContent
+            }
+        }
+    )
+
     server.registerTool(
         "search_qingkuai_docs",
         {
@@ -25,35 +83,8 @@ export function registerDocTools(server: McpServer, docs: DocEntry[]) {
         async ({ query, limit }) => {
             const maxResults = limit ?? 4
             const normalizedQuery = normalizeText(query)
-            const keywords = buildSearchKeywords(normalizedQuery)
-
-            const rankedWithScores = docs.map(doc => {
-                const score = scoreDoc(doc, normalizedQuery, keywords)
-                return { doc, score }
-            })
-
-            const matchedRanked = rankedWithScores.filter(item => {
-                return item.score > 0
-            })
-            const sortedRanked = matchedRanked.sort((a, b) => {
-                if (b.score !== a.score) {
-                    return b.score - a.score
-                }
-                return a.doc.name.localeCompare(b.doc.name)
-            })
-            const ranked = sortedRanked.slice(0, maxResults)
-
-            const results = ranked.map(item => {
-                const normalizedContent = item.doc.content.replace(/\s+/g, " ")
-                const preview = normalizedContent.slice(0, 220)
-                return {
-                    preview,
-                    score: item.score,
-                    uri: item.doc.uri,
-                    name: item.doc.name,
-                    description: item.doc.description
-                }
-            })
+            const ranked = rankDocs(docs, normalizedQuery, maxResults)
+            const results = mapRankedResults(ranked, 220)
 
             const structuredContent = {
                 query,
@@ -80,6 +111,48 @@ export function registerDocTools(server: McpServer, docs: DocEntry[]) {
             }
         }
     )
+}
+
+type RankedDoc = {
+    doc: DocEntry
+    score: number
+}
+
+function rankDocs(
+    docs: DocEntry[],
+    normalizedQuery: string,
+    maxResults: number,
+    scoreBoost?: (doc: DocEntry) => number
+) {
+    const keywords = buildSearchKeywords(normalizedQuery)
+
+    return docs
+        .map<RankedDoc>(doc => {
+            const baseBoost = scoreBoost ? scoreBoost(doc) : 0
+            const score = baseBoost + scoreDoc(doc, normalizedQuery, keywords)
+            return { doc, score }
+        })
+        .filter(item => item.score > 0)
+        .sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score
+            }
+            return a.doc.name.localeCompare(b.doc.name)
+        })
+        .slice(0, maxResults)
+}
+
+function mapRankedResults(items: RankedDoc[], previewLength: number) {
+    return items.map(item => {
+        const preview = item.doc.content.replace(/\s+/g, " ").slice(0, previewLength)
+        return {
+            preview,
+            score: item.score,
+            uri: item.doc.uri,
+            name: item.doc.name,
+            description: item.doc.description
+        }
+    })
 }
 
 function scoreDoc(doc: DocEntry, normalizedQuery: string, keywords: string[]) {
@@ -140,25 +213,4 @@ function buildSearchKeywords(query: string) {
     }
 
     return Array.from(tokens).filter(token => token.length > 1)
-}
-
-const QUERY_EXPANSION_MAP: Record<string, string[]> = {
-    安装: ["installation", "install", "getting-started"],
-    初始化: ["installation", "create", "project", "getting-started"],
-    创建项目: ["create", "project", "installation", "getting-started"],
-    脚手架: ["create", "project", "installation"],
-    语法: ["syntax", "grammar", "basic"],
-    指令: ["directive", "directives"],
-    引用属性: ["reference", "attributes", "forms"],
-    双向绑定: ["reference", "attributes", "forms", "value", "checked"],
-    表单: ["forms", "input", "checked", "value"],
-    响应式: ["reactivity", "derived", "reactive", "shallow", "raw"],
-    组件: ["components", "component"],
-    配置: ["config", "configuration", "qingkuairc", "prettierrc"],
-    格式化: ["format", "prettier", "config"],
-    编译: ["compile", "compiler", "reactivity"],
-    悬停: ["hover", "reactivity", "inferred"],
-    事件: ["event", "events"],
-    属性: ["attributes", "props"],
-    官网: ["getting-started", "installation"]
 }

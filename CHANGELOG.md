@@ -1,3 +1,12 @@
+# 2026-05-04
+
+> packages version: vscode-extension@1.0.13, qingkuai-mcp-server@1.0.3
+
+features and fixes:
+
+1. improved MCP server instruction-following behavior during project initialization
+2. fixed formatter not working on Windows and an extension initialization error when a default formatter is configured
+
 # 2026-04-28
 
 > packages version: vscode-extension@1.0.11, qingkuai@1.0.65, qingkuai-mcp-server@1.0.2

@@ -5,9 +5,10 @@ Follow this protocol when generating or modifying `.qk` code.
 ## Non-Negotiable Rules
 
 1. For installation/initialization/scaffolding tasks, stop using this prompt and switch to `qingkuai-install-init-create-qingkuai-first`.
-2. For syntax/API/rules, use MCP docs first (`search_qingkuai_docs` + `docs://...`).
-3. Use website https://qingkuai.dev only as fallback when MCP docs are missing or insufficient.
-4. Never invent syntax.
+2. For installation/initialization/scaffolding tasks, call `get_qingkuai_project_bootstrap_guide` first, then `search_qingkuai_docs`.
+3. For syntax/API/rules, use MCP docs first (`search_qingkuai_docs` + `docs://...`).
+4. Use website https://qingkuai.dev only as fallback when MCP docs are missing or insufficient.
+5. Never invent syntax.
 
 ---
 

@@ -2181,7 +2181,7 @@ packages:
     engines: {node: '>=6'}
 
   qingkuai-mcp-server@file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz:
-    resolution: {integrity: sha512-5+G5qZPSvXX7ZohADrvLoQpvpz5LpmkzDBYsldAuDbrciHklUDYT3CAZeJMWl4Qnkc5NWcK1j8g3tvYT+dxDMA==, tarball: file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz}
+    resolution: {integrity: sha512-8ViQA30bkOuaw3YIBajpw1FWBgNadPLdY0XtVXN7/Lha1UnLomM4w5X3VO+Nu3SJfkTfVOABfLRk1nElDKVs2Q==, tarball: file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz}
     version: 1.0.2
     hasBin: true
 
