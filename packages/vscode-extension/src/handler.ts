@@ -21,7 +21,7 @@ import {
 import { client } from "./state"
 import { LS_HANDLERS } from "../../../shared-util/constant"
 
-export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginFunc) {
+export function attachVscodeEventHandlers() {
     // 活跃文档切换且新活跃文档的语言 id 为 qingkuai 时刷新诊断信息
     vscode.window.onDidChangeActiveTextEditor(textEditor => {
         if (textEditor?.document.languageId === "qingkuai") {
@@ -40,7 +40,9 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
             notifyServerCleanConfigCache()
         }
     })
+}
 
+export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginFunc) {
     // ts server 服务器进程退出通知，尝试重连
     client.onNotification(LS_HANDLERS.TsServerIsKilled, async () => {
         client.isRunning() && configTsServerPlugin(true).then(c => c())

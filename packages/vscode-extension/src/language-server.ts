@@ -30,11 +30,11 @@ import {
     startQingkuaiConfigWatcher
 } from "./config"
 import { Messages } from "./messages"
-import { attachCustomHandlers } from "./handler"
 import { runAll } from "../../../shared-util/sundry"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
+import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
 import { LS_HANDLERS, NOOP, ProjectKind } from "../../../shared-util/constant"
 
 export async function activeLanguageServer() {
@@ -72,6 +72,7 @@ export async function activeLanguageServer() {
         languageClientOptions
     )
     setState({ client: languageClient })
+    attachCustomHandlers(configTsServerPlugin)
 
     const connectToTsServer = await configTsServerPlugin(false)
     languageServerOptions.options = {
@@ -85,9 +86,9 @@ export async function activeLanguageServer() {
 
     runAll([
         attachFileSystemHandlers,
+        attachVscodeEventHandlers,
         startQingkuaiConfigWatcher,
-        startPrettierConfigWatcher,
-        () => attachCustomHandlers(configTsServerPlugin)
+        startPrettierConfigWatcher
     ])
 
     languageStatusItem.busy = false
@@ -100,7 +101,7 @@ async function configTsServerPlugin(isReconnect: boolean) {
     setState({ limitedScriptLanguageFeatures: !tsExtension })
 
     if (!tsExtension) {
-        return (Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP)
+        return Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP
     }
 
     await tsExtension.activate()
