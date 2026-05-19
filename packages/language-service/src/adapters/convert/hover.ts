@@ -9,7 +9,7 @@ import { ts } from "../state"
 import { LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
-import { getNodeAtPositionAndWithin, isInTopScope } from "../ts-ast"
+import { getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
 
@@ -27,7 +27,7 @@ export function getAndConvertHoverTip(
     const typeChecker = program.getTypeChecker()
     const config = adapter.getQingkuaiConfig(fileInfo.path)
     const languageService = adapter.getDefaultLanguageService(fileInfo.path)!
-    const node = getNodeAtPositionAndWithin(program.getSourceFile(fileName)!, pos)
+    const node = getNodeAtPositionWithin(program.getSourceFile(fileName)!, pos)
 
     if (node && ts.isIdentifier(node)) {
         const nodeRange: Pair<number> = [node.getStart(), node.getEnd()]

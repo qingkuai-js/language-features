@@ -17,7 +17,7 @@ Reference attributes (`&` prefix) for establishing read/write references between
         console.log(div)  // HTMLDivElement instance
     })
 </lang-js>
-<div &dom={div}></div>
+<div &handle={div}></div>
 ```
 
 ## TypeScript Types
@@ -31,7 +31,7 @@ Automatically inferred:
 ## Shorthand
 
 ```qk
-<div &dom></div>    <!-- equivalent to: <div &dom={dom}></div> -->
+<div &handle></div>    <!-- equivalent to: <div &handle={handle}></div> -->
 ```
 
 Constraint: Not supported if attribute name is keyword.
@@ -126,16 +126,16 @@ Must be addressable (can appear on left side of assignment):
 ✓ Valid:
 
 ```qk
-<p &dom={identifier}></p>
-<p &dom={arr[index]}></p>
-<p &dom={obj.property}></p>
+<p &handle={identifier}></p>
+<p &handle={arr[index]}></p>
+<p &handle={obj.property}></p>
 ```
 
 ✗ Invalid:
 
 ```qk
-<p &dom={test()}></p>              <!-- function call -->
-<p &dom={arr?.[index]}></p>        <!-- optional chaining -->
-<p &dom={obj?.property}></p>       <!-- optional chaining -->
-<p &dom={condition ? v1 : v2}></p> <!-- ternary -->
+<p &handle={test()}></p>              <!-- function call -->
+<p &handle={arr?.[index]}></p>        <!-- optional chaining -->
+<p &handle={obj?.property}></p>       <!-- optional chaining -->
+<p &handle={condition ? v1 : v2}></p> <!-- ternary -->
 ```

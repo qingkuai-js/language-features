@@ -787,7 +787,7 @@ function doReferenceAttributeComplete(
                 node.tag !== "slot" &&
                 node.tag !== qingkuaiConstants.SPREAD_TAG
             ) {
-                extendRecommand("dom")
+                extendRecommand("handle")
             }
             break
         }

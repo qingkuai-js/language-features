@@ -148,11 +148,11 @@ importers:
         specifier: ^1.0.52
         version: link:../../../qingkuai
       qingkuai-mcp-server:
-        specifier: file:../.vsce-temp/qingkuai-mcp-server-1.0.2.tgz
-        version: file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz
+        specifier: file:../mcp-server
+        version: file:packages/mcp-server
       typescript-plugin-qingkuai:
-        specifier: file:../.vsce-temp/typescript-plugin-qingkuai-1.0.0.tgz
-        version: file:packages/.vsce-temp/typescript-plugin-qingkuai-1.0.0.tgz
+        specifier: file:../typescript-plugin
+        version: link:../typescript-plugin
       vscode-css-languageservice:
         specifier: ^6.3.10
         version: 6.3.10
@@ -2180,9 +2180,8 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  qingkuai-mcp-server@file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz:
-    resolution: {integrity: sha512-8ViQA30bkOuaw3YIBajpw1FWBgNadPLdY0XtVXN7/Lha1UnLomM4w5X3VO+Nu3SJfkTfVOABfLRk1nElDKVs2Q==, tarball: file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz}
-    version: 1.0.2
+  qingkuai-mcp-server@file:packages/mcp-server:
+    resolution: {directory: packages/mcp-server, type: directory}
     hasBin: true
 
   qingkuai@1.0.65:
@@ -2543,10 +2542,6 @@ packages:
 
   typed-rest-client@1.8.11:
     resolution: {integrity: sha512-5UvfMpd1oelmUPRbbaVnq+rHP7ng2cE4qoQkQeAqxRL6PklkxsM0g32/HL0yfvruK6ojQ5x8EE+HF4YV6DtuCA==}
-
-  typescript-plugin-qingkuai@file:packages/.vsce-temp/typescript-plugin-qingkuai-1.0.0.tgz:
-    resolution: {integrity: sha512-yqMjpG5V+b52tj/0C/PBHdeldZVfYa6brjPQwpzc2qrdmOUVkOeWiuNLFFzk1vMkTGGZI8PB77ZX0VO7YIRAGQ==, tarball: file:packages/.vsce-temp/typescript-plugin-qingkuai-1.0.0.tgz}
-    version: 1.0.0
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -4621,7 +4616,7 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  qingkuai-mcp-server@file:packages/.vsce-temp/qingkuai-mcp-server-1.0.2.tgz:
+  qingkuai-mcp-server@file:packages/mcp-server:
     dependencies:
       '@cfworker/json-schema': 4.1.1
       '@modelcontextprotocol/server': 2.0.0-alpha.2(@cfworker/json-schema@4.1.1)
@@ -5046,8 +5041,6 @@ snapshots:
       qs: 6.15.0
       tunnel: 0.0.6
       underscore: 1.13.8
-
-  typescript-plugin-qingkuai@file:packages/.vsce-temp/typescript-plugin-qingkuai-1.0.0.tgz: {}
 
   typescript@5.9.3: {}
 

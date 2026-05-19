@@ -1,3 +1,4 @@
+import type TS from "typescript"
 import type { AdapterTsProject } from "../../types/adapter"
 
 import type {
@@ -7,6 +8,7 @@ import type {
 import type { TypescriptAdapter } from "../adapter"
 
 import { debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { getNodeAtPositionWithin, isComponentReturns } from "../ts-ast"
 
 // 待办：优先使用 originFileName、originTextSpan 以及 originContextSpan 以支持 .d.ts.map 映射文件
 
@@ -52,14 +54,34 @@ export function proxyFindReferencesToConvert(
     const languageService = project.getLanguageService()
     const findReferences = languageService.findReferences
     languageService.findReferences = (fileName, position) => {
+        const result: TS.ReferencedSymbol[] = []
         const originalRet = findReferences.call(languageService, fileName, position)
+
+        // 当查找到的引用是组件导出时，再次查找引用并追加到结果中
+        originalRet?.forEach(item => {
+            item.references.forEach(reference => {
+                if (reference.fileName !== fileName) {
+                    return
+                }
+
+                const sourceFile = languageService.getProgram()?.getSourceFile(reference.fileName)
+                const node =
+                    sourceFile && getNodeAtPositionWithin(sourceFile, reference.textSpan.start)
+                if (!node || !adapter.ts.isIdentifier(node) || !isComponentReturns(node)) {
+                    return
+                }
+                originalRet.push(
+                    ...(findReferences.call(languageService, fileName, node.getStart()) ?? [])
+                )
+            })
+        })
+
         originalRet?.forEach(item => {
             item.references = item.references.filter(reference => {
                 if (!isQingkuaiFileName(reference.fileName)) {
                     return true
                 }
 
-                const interIndex = reference.textSpan.start
                 const referenceLocationConvertor = adapter.service.createLocationConvertor(
                     reference.fileName
                 )

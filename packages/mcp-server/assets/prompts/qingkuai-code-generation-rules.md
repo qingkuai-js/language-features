@@ -65,13 +65,13 @@ Exception:
 
 ---
 
-## Rule B: Prefer `&dom`
+## Rule B: Prefer `&handle`
 
 Reference doc:
 
 - docs://basic/reference-attributes.md
 
-Use `&dom={variable}` instead of `document.querySelector` / `getElementById`.
+Use `&handle={variable}` instead of `document.querySelector` / `getElementById`.
 
 ---
 

@@ -12,7 +12,7 @@ export function attachFindDefinitions() {
     )
 
     tsPluginIpcServer.onRequest<TPICCommonRequestParams, FindDefinitionsResultItem[] | null>(
-        TP_HANDLERS.findTypeDefinition,
+        TP_HANDLERS.FindTypeDefinition,
         params => adapter.service.getTypeDefinitions(params)
     )
 }

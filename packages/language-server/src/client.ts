@@ -63,10 +63,11 @@ export async function getComponentInfos(fileName: string, typePrintWidth = 80) {
         fileName
     )
     for (const info of componentInfos) {
-        info.type = await prettier.format(info.type, {
+        const formatedTypeStr = await prettier.format(`const _: ${info.type}`, {
             parser: "babel-ts",
             printWidth: typePrintWidth
         })
+        info.type = formatedTypeStr.replace(/^const _:\s/, "")
     }
     return componentInfos
 }

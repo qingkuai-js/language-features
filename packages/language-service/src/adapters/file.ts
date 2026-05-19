@@ -1,8 +1,7 @@
-import type TS from "typescript"
-
 import type { FileEdit } from "./convert/content"
 import type { LSMessage } from "../types/service"
 import type { TypescriptAdapter } from "./adapter"
+import type { LSDiagnostic } from "../types/adapter"
 import type { ASTPositionWithFlag } from "qingkuai/compiler"
 import type { ComponentAttributeItem, TsNormalizedPath } from "../../../../types/common"
 import type { UpdateContentParams, UpdateContentResult } from "../../../../types/communication"
@@ -15,11 +14,8 @@ import {
 import { PositionFlag } from "qingkuai/compiler"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
 import { confirmTypesForCompileResult } from "./convert/content"
-import { LSDiagnostic } from "../types/adapter"
 
 export class QingkuaiFileInfo {
-    private nextAdjustSourceIndex = -1
-
     public isOpen = false
     public componentName: string
     public typesConfirmed = false
@@ -27,6 +23,8 @@ export class QingkuaiFileInfo {
     public defaultExportTypeStr = ""
     public lsDiagnostics: LSDiagnostic[] = []
     public attributes: ComponentAttributeItem[] = []
+
+    private nextAdjustSourceIndex = -1
 
     constructor(
         public code: string,

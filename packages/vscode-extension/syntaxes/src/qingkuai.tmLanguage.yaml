@@ -288,6 +288,7 @@ repository:
 
   # interpolation block
   interpolation-block:
+    name: meta.template.expression.qk
     begin: ({)
     end: (})
     beginCaptures:
@@ -298,7 +299,7 @@ repository:
       - match: \bfrom\b
         name: keyword.control.qk
 
-      - name: meta.embeded.block.qk source.ts
+      - name: meta.embedded.block.qk source.ts
         begin: (?=[^}\s])
         end: (?=(?:}|\s+from\s+))
         patterns: [include: source.ts#expression]

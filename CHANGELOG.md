@@ -1,3 +1,12 @@
+# 2026-05-19
+
+> packages version: vscode-extension@1.0.14, qingkuai@1.0.67
+
+features:
+
+1. refactored `&dom` auto-completion to use `&handle` instead (supports completion on component tags)
+2. added language features for component exports to keep `find definition`/`find references` behavior consistent with `esm` modules in `js/ts`
+
 # 2026-05-04
 
 > packages version: vscode-extension@1.0.13, qingkuai-mcp-server@1.0.3

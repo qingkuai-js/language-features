@@ -2,7 +2,6 @@ import type TS from "typescript"
 
 import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
-import type { GeneralFunc } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
 import type { ExtractedSlotName, ExtractedSlotContext, GlobalTypeItem } from "../../types/adapter"
 
@@ -35,20 +34,16 @@ export function confirmTypesForCompileResult(
     }
     fileInfo.typesConfirmed = true
 
+    const edit = new FileEdit(fileInfo)
     const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
-    const edit = new FileEdit(fileInfo, updateSourceFile)
     const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
     const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
 
     walkTsNode(sourceFile, node => {
-        if (
-            ts.isFunctionDeclaration(node) &&
-            node.name?.text === qingkuaiConstants.LSC.COMPONENT &&
-            isInTopScope(node)
-        ) {
+        if (ts.isFunctionDeclaration(node) && isInTopScope(node)) {
             componentFuncNode = node
         }
 
@@ -272,9 +267,11 @@ export function confirmTypesForCompileResult(
             edit.setEditIndex(componentFuncNode.getStart())
 
             if (fileInfo.isTS) {
-                edit.push(`type ${kind} = ${qingkuaiConstants.LSC.UTIL}.EmptyObject;\n`)
+                edit.push(`\n    type ${kind} = ${qingkuaiConstants.LSC.UTIL}.EmptyObject;`)
             } else {
-                edit.push(`/** @typedef {${qingkuaiConstants.LSC.UTIL}.EmptyObject} ${kind} */\n`)
+                edit.push(
+                    `\n    /** @typedef {${qingkuaiConstants.LSC.UTIL}.EmptyObject} ${kind} */`
+                )
             }
         }
     })
@@ -326,9 +323,7 @@ export function confirmTypesForCompileResult(
                 edit.push(`     * ${generic}\n`)
             }
             edit.setEditIndex(componentReturnsNode.getStart())
-            edit.push(
-                `     * @param {Object} _\n     * @param {${contextPropsType}} _.props\n`
-            )
+            edit.push(`     * @param {Object} _\n     * @param {${contextPropsType}} _.props\n`)
             edit.push(`     * @param {${contextRefsType}} _.refs\n     * @param {`)
         }
     }
@@ -365,10 +360,7 @@ export function confirmTypesForCompileResult(
             defaultExportSymbol,
             sourceFile
         )
-        const defaultExportTypeStr = typeChecker
-            .typeToString(defaultExportType)
-            .replaceAll("{", "{\n")
-        fileInfo.defaultExportTypeStr = defaultExportTypeStr
+        fileInfo.defaultExportTypeStr = typeChecker.typeToString(defaultExportType)
     }
 }
 
@@ -381,10 +373,7 @@ export class FileEdit {
         sourceRange?: Pair<number>
     }[] = []
 
-    constructor(
-        private fileInfo: QingkuaiFileInfo,
-        private updateSourceFile: GeneralFunc
-    ) {}
+    constructor(private fileInfo: QingkuaiFileInfo) {}
 
     get isEmpty() {
         return this.items.length === 0
