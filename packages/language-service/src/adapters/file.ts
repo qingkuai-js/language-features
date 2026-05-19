@@ -106,7 +106,8 @@ export class QingkuaiFileInfo {
         this.itos.push(...newItos, ...left)
     }
 
-    pushDiagnostic(start: number, end: number, [code, message, link]: LSMessage) {
+    pushDiagnostic(start: number, end: number, value: LSMessage, isSourceLoc?: boolean) {
+        const [code, message, link] = value
         const category =
             code >= 3000 && code < 4000
                 ? this.adapter.ts.DiagnosticCategory.Error
@@ -114,6 +115,7 @@ export class QingkuaiFileInfo {
         this.lsDiagnostics.push({
             code,
             category,
+            isSourceLoc,
             url: link,
             start: start,
             source: "qk",

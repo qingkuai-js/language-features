@@ -5,25 +5,31 @@ import type { TypescriptAdapter } from "../adapter"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
 import type { ExtractedSlotName, ExtractedSlotContext, GlobalTypeItem } from "../../types/adapter"
 
+import {
+    QingkuaiNotFound,
+    GlobalTypeIsNonObjectTs,
+    ExternalGlobalTypeWithGenerics
+} from "../../messages/error"
 import { ts } from "../state"
 import { GlobalTypeIsNonObjectJs } from "../../messages/warn"
 import { GLOBAL_TYPE_IDS, LSU_AND_DOT } from "../../constants"
 import { traverseObject } from "../../../../../shared-util/sundry"
+import { isNodeEnvironment } from "../../../../../shared-util/assert"
 import { isInComponentFunctionTopScope, isInTopScope, walkTsNode } from "../ts-ast"
 import { constants as qingkuaiConstants, util as qingkuaiUtil } from "qingkuai/compiler"
-import { ExternalGlobalTypeWithGenerics, GlobalTypeIsNonObjectTs } from "../../messages/error"
 
 export function confirmTypesForCompileResult(
     adapter: TypescriptAdapter,
     fileInfo: QingkuaiFileInfo
 ) {
+    const program = adapter.getDefaultProgram(fileInfo.path)
+
     let sourceFile!: TS.SourceFile
     let typeChecker!: TS.TypeChecker
     let componentFuncNode!: TS.FunctionDeclaration
     let componentReturnsNode: TS.ReturnStatement | undefined
 
     const updateSourceFile = () => {
-        const program = adapter.getDefaultProgram(fileInfo.path)!
         sourceFile = program?.getSourceFile(fileInfo.path)!
         typeChecker = program?.getTypeChecker()!
         return sourceFile
@@ -35,6 +41,7 @@ export function confirmTypesForCompileResult(
     fileInfo.typesConfirmed = true
 
     const edit = new FileEdit(fileInfo)
+    const isNodeEnv = isNodeEnvironment()
     const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
     const globalTypes: Record<string, GlobalTypeItem> = {}
@@ -42,6 +49,15 @@ export function confirmTypesForCompileResult(
     const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
 
+    if (isNodeEnv && (fileInfo.isTS || program?.getCompilerOptions().checkJs)) {
+        try {
+            require.resolve("qingkuai", {
+                paths: [fileInfo.path]
+            })
+        } catch {
+            fileInfo.pushDiagnostic(0, 1, QingkuaiNotFound(), true)
+        }
+    }
     walkTsNode(sourceFile, node => {
         if (ts.isFunctionDeclaration(node) && isInTopScope(node)) {
             componentFuncNode = node

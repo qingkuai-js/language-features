@@ -2,6 +2,7 @@ import type { Pair } from "../types/common"
 import type { Position } from "vscode-languageserver/node"
 import type { ASTPosition, ASTPositionWithFlag } from "qingkuai/compiler"
 
+import { isUndefined } from "./assert"
 import { CompressedPositions } from "../types/communication"
 
 export function compressNumberArray(arr: number[]) {
@@ -68,6 +69,6 @@ export function toLSPosition(position: ASTPosition): Position {
 // 检查传入的索引（源码索引或中间代码索引）是否是无效的
 export function isIndexesInvalid(...items: (number | undefined)[]) {
     return items.some(item => {
-        return !item || item === -1
+        return isUndefined(item) || item === -1
     })
 }
