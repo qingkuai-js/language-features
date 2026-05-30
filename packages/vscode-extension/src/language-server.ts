@@ -30,6 +30,7 @@ import {
     startQingkuaiConfigWatcher
 } from "./config"
 import { Messages } from "./messages"
+import { inspect } from "../../../shared-util/log"
 import { runAll } from "../../../shared-util/sundry"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
@@ -115,11 +116,18 @@ async function configTsServerPlugin(isReconnect: boolean) {
     }
 
     const sockPath = await getValidPathWithHash("qingkuai")
-    tsExtenstionAPI.configurePlugin("typescript-plugin-qingkuai", {
+    const pluginConfig = {
         sockPath,
         triggerFileName: activeDocument?.uri.fsPath || "",
-        configurations: getInitQingkuaiConfigurations()
-    } satisfies ConfigPluginParms)
+        configurations: await getInitQingkuaiConfigurations()
+    } satisfies ConfigPluginParms
+
+    try {
+        tsExtenstionAPI.configurePlugin("typescript-plugin-qingkuai", pluginConfig)
+    } catch (error) {
+        Logger.error(`TypeScript extension configurePlugin failed.\n${inspect(error)}`)
+        throw error
+    }
 
     // 通知 qingkuai 语言服务器与 tsserver 创建 ipc 链接
     return () => {
@@ -154,28 +162,31 @@ async function warmupTsServer(tsExtenstionAPI: any) {
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项
-function getInitQingkuaiConfigurations() {
+async function getInitQingkuaiConfigurations() {
     const configurations: Record<string, TsPluginQingkuaiConfig> = {}
-    for (const folder of vscode.workspace.workspaceFolders ?? []) {
-        const folderPath = folder.uri.fsPath
-        for (let filePath of nodeFs.readdirSync(folderPath, { recursive: true })) {
-            const fileName = nodePath.basename((filePath = filePath.toString()))
-            if (
-                projectKind !== ProjectKind.TS &&
-                (fileName === "tscofig.json" || fileName.endsWith(".ts"))
-            ) {
-                setState({
-                    projectKind: ProjectKind.TS
-                })
-            }
-            if (isQingkuaiFileName(fileName)) {
-                const fileAbsUri = vscode.Uri.file(nodePath.join(folderPath, filePath))
-                const extensionConfig = getExtensionConfig(fileAbsUri)
-                const qingkuaiConfig = getQingkuaiConfig(fileAbsUri)
-                configurations[fileAbsUri.fsPath] = {
-                    resolveImportExtension: qingkuaiConfig.resolveImportExtension,
-                    hoverTipReactiveStatus: extensionConfig.hoverTipReactiveStatus
-                }
+    const excludePattern = "**/{node_modules,.git,dist}/**"
+    const [qingkuaiFiles, qingkuaiConfigFiles, tsProjectFiles] = await Promise.all([
+        vscode.workspace.findFiles("**/*.qk", excludePattern),
+        vscode.workspace.findFiles("**/.qingkuairc", excludePattern),
+        projectKind === ProjectKind.TS
+            ? Promise.resolve([])
+            : vscode.workspace.findFiles("**/{tsconfig.json,*.ts}", excludePattern, 1)
+    ])
+
+    if (tsProjectFiles.length) {
+        setState({
+            projectKind: ProjectKind.TS
+        })
+    }
+
+    for (const fileAbsUri of [...qingkuaiFiles, ...qingkuaiConfigFiles]) {
+        const fileName = nodePath.basename(fileAbsUri.fsPath)
+        if (isQingkuaiFileName(fileName)) {
+            const extensionConfig = getExtensionConfig(fileAbsUri)
+            const qingkuaiConfig = getQingkuaiConfig(fileAbsUri)
+            configurations[fileAbsUri.fsPath] = {
+                resolveImportExtension: qingkuaiConfig.resolveImportExtension,
+                hoverTipReactiveStatus: extensionConfig.hoverTipReactiveStatus
             }
         }
     }
