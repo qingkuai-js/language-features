@@ -1,7 +1,14 @@
+
+// Processes all .d.ts files in the target directory (including manually created ones),
+// strips ?raw imports/exports, and emits matching raw module declaration files.
 const fsextra = require("fs-extra")
 const nodePath = require("node:path")
 
 const dir = nodePath.resolve(__dirname, "../packages/language-service/dist/temp-types")
+
+if (!fsextra.existsSync(dir)) {
+    process.exit(0)
+}
 
 fsextra.readdirSync(dir, { recursive: true }).forEach(file => {
     const fullPath = nodePath.join(dir, file)
