@@ -137,7 +137,7 @@ importers:
     devDependencies:
       qingkuai-language-service:
         specifier: file:../language-service
-        version: link:../language-service
+        version: file:packages/language-service(qingkuai@1.0.65)
 
   packages/vscode-extension:
     dependencies:
@@ -2179,6 +2179,11 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
+
+  qingkuai-language-service@file:packages/language-service:
+    resolution: {directory: packages/language-service, type: directory}
+    peerDependencies:
+      qingkuai: ^1.0.55
 
   qingkuai-mcp-server@file:packages/mcp-server:
     resolution: {directory: packages/mcp-server, type: directory}
@@ -4615,6 +4620,13 @@ snapshots:
       once: 1.4.0
 
   punycode@2.3.1: {}
+
+  qingkuai-language-service@file:packages/language-service(qingkuai@1.0.65):
+    dependencies:
+      qingkuai: 1.0.65
+      strip-ansi: 7.2.0
+      vscode-css-languageservice: 6.3.10
+      vscode-uri: 3.1.0
 
   qingkuai-mcp-server@file:packages/mcp-server:
     dependencies:

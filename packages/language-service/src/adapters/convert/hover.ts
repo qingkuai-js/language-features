@@ -9,9 +9,9 @@ import { ts } from "../state"
 import { LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
-import { getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
+import { getNodeAtPositionWithin, isInComponentFunctionTopScope } from "../ts-ast"
 
 export function getAndConvertHoverTip(
     adapter: TypescriptAdapter,
@@ -39,7 +39,7 @@ export function getAndConvertHoverTip(
                 symbol &&
                 symbol.declarations &&
                 !(symbol.flags & ts.SymbolFlags.Alias) &&
-                symbol.declarations.some(decl => isInTopScope(decl))
+                symbol.declarations.some(decl => isInComponentFunctionTopScope(decl))
             ) {
                 const statusInfo = fileInfo.idStatusInfo[node.text]
                 idStatusDisplay = ` // - ${statusInfo} -`

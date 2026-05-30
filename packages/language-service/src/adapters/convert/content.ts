@@ -22,7 +22,7 @@ export function confirmTypesForCompileResult(
     adapter: TypescriptAdapter,
     fileInfo: QingkuaiFileInfo
 ) {
-    const program = adapter.getDefaultProgram(fileInfo.path)
+    let program: TS.Program | undefined
 
     let sourceFile!: TS.SourceFile
     let typeChecker!: TS.TypeChecker
@@ -30,6 +30,7 @@ export function confirmTypesForCompileResult(
     let componentReturnsNode: TS.ReturnStatement | undefined
 
     const updateSourceFile = () => {
+        program = adapter.getDefaultProgram(fileInfo.path)
         sourceFile = program?.getSourceFile(fileInfo.path)!
         typeChecker = program?.getTypeChecker()!
         return sourceFile
@@ -283,11 +284,9 @@ export function confirmTypesForCompileResult(
             edit.setEditIndex(componentFuncNode.getStart())
 
             if (fileInfo.isTS) {
-                edit.push(`\n    type ${kind} = ${qingkuaiConstants.LSC.UTIL}.EmptyObject;`)
+                edit.push(`type ${kind} = ${qingkuaiConstants.LSC.UTIL}.EmptyObject;\n`)
             } else {
-                edit.push(
-                    `\n    /** @typedef {${qingkuaiConstants.LSC.UTIL}.EmptyObject} ${kind} */`
-                )
+                edit.push(`/** @typedef {${qingkuaiConstants.LSC.UTIL}.EmptyObject} ${kind} */\n`)
             }
         }
     })
