@@ -1,37 +1,43 @@
 ---
-description: "On-demand component loading via dynamic import and async functions."
+description: ""
 ---
 
-# Scope
+# Async Components
 
-Async component rendering patterns based on `#await` / `#then` / `#catch`.
+In modern frontend applications, on-demand loading is an important way to improve loading experience and rendering performance. Async components are a mechanism designed for exactly this purpose: they allow a component to be loaded only when it is actually needed, rather than being bundled into the main application at the initial stage. This approach not only reduces the initial bundle size effectively, but also improves resource loading speed and first-screen rendering performance. It also works naturally with routing and conditional rendering for more efficient resource management. In Qingkuai, async components are implemented by combining directives related to [async processing](docs://basic/compilation-directives.md#async-processing), with no special configuration required.
 
-# Dynamic Import
+---
+
+## Dynamic Import
+
+Many build tools optimize modules loaded through [dynamic import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import) by splitting them into separate chunks. The same approach can be used for components:
 
 ```qk
 <qk:spread
     #await={import("./Component.qk")}
-    #then={{ default: Component }}
+    #then={{default: Component}}
 >
     <Component />
 </qk:spread>
 ```
 
-With loading and error states:
+You can also add a loading state and template content for the failure case:
 
 ```qk
 <div #await={import("./Component.qk")}>
     Loading...
 </div>
-<qk:spread #then={{ default: Component }}>
+<qk:spread #then={{default: Component}}>
     <Component />
 </qk:spread>
-<div #catch>
-    Failed to load Component.qk
-</div>
+<div #catch>Fail to load Component.qk</div>
 ```
 
-# Async Return
+---
+
+## Async Return
+
+You can also return a component from custom async logic:
 
 ```qk
 <lang-js>
@@ -43,27 +49,11 @@ With loading and error states:
     }
 </lang-js>
 
-<div #await={getComponent()} #then={CompModule}>
-    <CompModule.default />
+<div
+    class="comp-box"
+    #await={getComponent()}
+    #then={ObtainedComponentModule}
+>
+    <ObtainedComponentModule.default />
 </div>
 ```
-
-# Implementation
-
-Async components use docs://basic/compilation-directives.md#async-processing directives.
-`qk:spread` syntax reference: docs://misc/builtin-elements.md.
-
-Behavior: No extra compiler/runtime configuration is required.
-
-# Benefits
-
-- Enables code-splitting by deferring component module loading.
-- Reduces initial payload for routes/features not immediately rendered.
-- Makes loading/error states explicit and composable through directives.
-
-# Rules
-
-- `#await` branch handles pending state.
-- `#then` branch receives resolved module/value context.
-- `#catch` branch handles rejected state.
-- Dynamic import usage requires rendering through resolved component symbol (for example `Component` or `CompModule.default`).

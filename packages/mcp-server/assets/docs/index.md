@@ -48,6 +48,19 @@ Primary entry document for agent retrieval when user asks to modify `.qk` files 
     - `docs://misc/typescript.md`
 - Config-related behavior:
     - `docs://misc/config-files.md`
+- Installation / scaffold / init:
+    - `docs://getting-started/install.md`
+    - `docs://getting-started/introduction.md`
+- Component exports:
+    - `docs://components/exports.md`
+- Runtime API and terminology:
+    - `docs://references/api.md`
+    - `docs://references/terminology.md`
+- Error lookup:
+    - `docs://references/error-code.md`
+- Debugging and optimization:
+    - `docs://misc/debugging.md`
+    - `docs://misc/optimization.md`
 
 # Syntax Dependency Route
 

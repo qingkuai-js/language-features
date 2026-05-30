@@ -1,56 +1,76 @@
 ---
-description: "Style scoping mechanism for component encapsulation and conflict prevention."
+description: ""
 ---
 
-# Scope
+# Stylesheets
 
-Automatic CSS scoping for component styles.
+Stylesheets serve not only to beautify pages but also as vital complements to component functionality. A well-designed styling system enhances both user experience and component expressiveness/reusability. In component-based development, traditional global styles often cause conflicts and maintenance difficulties, while scoping mechanisms effectively solve these issues. By confining styles within components, developers can safely define class names and style rules without affecting other components or page elements. This approach preserves CSS flexibility while delivering stronger controllability and maintainability - essential for building modern frontend applications.
 
-# Style Scoping Mechanism
+---
 
-All elements and styles in component receive scoping attribute:
+## Style Scoping
+
+All content in component templates receives a scoping attribute during rendering, for example:
 
 ```html
-<!-- Template element gets scoping attribute -->
+<div>...</div>
+```
+
+Renders as HTML similar to:
+
+```html
 <div qk-dbb1016b>...</div>
 ```
 
-```css
-/* Original style -->
-div { color: red; }
+To prevent component styles from polluting global or other component styles, embedded styles also receive scoping attributes, for example:
 
-/* Becomes scoped -->
-div[qk-dbb1016b] { color: red; }
+```qk
+<lang-css>
+    div {
+        color: red;
+    }
+</lang-css>
 ```
 
-Effect: Prevents style pollution between components and global styles.
+Gets converted to:
 
-# Imported Stylesheets
+```css
+div[qk-dbb1016b] {
+    color: red;
+}
+```
 
-Stylesheets imported via `@import` in component styles are also scoped.
+<div class="custom-block tip">
+    Stylesheets imported via <a href="https://developer.mozilla.org/zh-CN/docs/Web/CSS/@import">@import</a> syntax in component style tags are also affected.
+</div>
+
+---
 
 # Scoping Attribute Position
 
-Default: Appended after last selector.
+Normally the scoping attribute gets appended after the last selector:
 
 ```css
-/* Default scoping -->
-div p[qk-dbb1016b] { }
-.container .box[qk-dbb1016b] { }
+div p[qk-dbb1016b] {
+}
+.container .box[qk-dbb1016b] {
+}
 ```
 
-## Custom Position
-
-Use `qk-scope` selector to manually position scoping attribute:
+But we can manually adjust its position using the `qk-scope` attribute selector, for example:
 
 ```css
-/* Original -->
-div[qk-scope] p { }
-[qk-scope] .container .box { }
-
-/* Becomes -->
-div[qk-dbb1016b] p { }
-[qk-dbb1016b] .container .box { }
+div[qk-scope] p {
+}
+[qk-scope] .container .box {
+}
 ```
 
-Constraint: Use `qk-scope` when default suffix injection breaks selector intent.
+Gets converted to:
+
+```css
+div[qk-dbb1016b] p {
+}
+[qk-dbb1016b] .container .box {
+}
+```
