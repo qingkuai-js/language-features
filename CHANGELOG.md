@@ -1,3 +1,14 @@
+# 2026-05-30
+
+> packages version: vscode-extension@1.0.15, qingkuai@1.0.70, qingkuai-mcp-server@1.0.4
+
+features and fixes:
+
+1. adapted language features to Qingkuai's JS/TS parser migration to TypeScript
+2. synchronized MCP server reference documentation content ([f596eae](https://github.com/qingkuai-js/language-tools/commit/f596eae))
+3. fixed incorrect hover type information on component tags ([bcaea79](https://github.com/qingkuai-js/language-tools/commit/bcaea79))
+4. improved extension initialization performance when reading workspace configuration ([1a88a26](https://github.com/qingkuai-js/language-tools/commit/1a88a26))
+
 # 2026-05-19
 
 > packages version: vscode-extension@1.0.14, qingkuai@1.0.67
