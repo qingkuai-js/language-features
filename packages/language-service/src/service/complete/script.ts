@@ -9,8 +9,8 @@ import {
     CompletionItemTag,
     CompletionItemKind
 } from "vscode-languageserver-types"
-import { parseDirectiveValue } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
+import { parseDirectiveValue, util as qingkuaiUtils } from "qingkuai/compiler"
 import { findTemplateAttribute, findTemplateNodeAt } from "../../util/qingkuai"
 
 export async function getAndProcessScriptBlockCompletions(
@@ -42,9 +42,10 @@ export async function getAndProcessScriptBlockCompletions(
             const offsetInDirectiveValue = offset - attribute.value.loc.start.index
             for (const pattern of parseDirectiveValue(attribute)!.patterns) {
                 if (
-                    pattern?.type === "Identifier" &&
-                    offsetInDirectiveValue >= pattern.start! &&
-                    offsetInDirectiveValue <= pattern.end!
+                    !qingkuaiUtils.ts.isOmittedExpression(pattern) &&
+                    qingkuaiUtils.ts.isIdentifier(pattern.name) &&
+                    offsetInDirectiveValue >= pattern.getStart() &&
+                    offsetInDirectiveValue <= pattern.getEnd()
                 ) {
                     unsetTriggerCharacters.add(",")
                 }

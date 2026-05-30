@@ -1,6 +1,6 @@
 # 2026-05-30
 
-> packages version: vscode-extension@1.0.15, qingkuai@1.0.70, qingkuai-mcp-server@1.0.4
+> packages version: vscode-extension@1.0.16, qingkuai@1.0.70, qingkuai-mcp-server@1.0.4
 
 features and fixes:
 
