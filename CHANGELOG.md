@@ -1,3 +1,13 @@
+# 2026-06-21
+
+> packages version: vscode-extension@1.0.17, qingkuai@1.0.82, qingkuai-mcp-server@1.0.5
+
+features and fixes:
+
+1. removed invalid `#for` directive completion suggestions
+2. added language feature implementation for the `#scope` directive
+3. updated MCP server documentation files
+
 # 2026-05-30
 
 > packages version: vscode-extension@1.0.16, qingkuai@1.0.70, qingkuai-mcp-server@1.0.4
