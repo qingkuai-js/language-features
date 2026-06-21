@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Watchers and Side Effects
 
 The watcher and side effect APIs are part of Qingkuai's reactivity system. They let you register callbacks at different phases of the update scheduler so that related logic can run when reactive values change. Based on when they are triggered, these APIs can be divided into the following groups:
@@ -175,7 +171,7 @@ The callbacks of `watch`, `preWatch`, and `postWatch` are all triggered asynchro
 
 ### Convenience Registration
 
-In standard watcher registration, the first argument must be a getter function that returns the value being observed. This is slightly verbose for simple expressions. To address that, the compiler provides a group of convenience registration methods similar in spirit to [derivedExp](docs://basic/reactivity.md#derived-reactive-state): `watchExp`, `preWatchExp`, `postWatchExp`, and `syncWatchExp`. The compiler automatically converts the first argument of these methods into a getter function, so you can pass an expression directly:
+In standard watcher registration, the first argument must be a getter function that returns the value being observed. This is slightly verbose for simple expressions. To address that, the compiler provides a group of convenience registration methods similar in spirit to [derivedExp](/basic/reactivity.html#derived-reactive-state): `watchExp`, `preWatchExp`, `postWatchExp`, and `syncWatchExp`. The compiler automatically converts the first argument of these methods into a getter function, so you can pass an expression directly:
 
 ```js
 // Normal watcher registration
@@ -260,6 +256,8 @@ syncEffect(() => {})
 
 ## Cleaning Up Watchers and Side Effects
 
+### Manual Cleanup
+
 Watcher and side effect registration methods all return a control handle object with the following type:
 
 ```ts
@@ -309,5 +307,81 @@ watchExp(identifier, (pre, cur) => {
     }, 1000)
 
     return () => clearTimeout(timer) // runs before the watcher triggers again
+})
+```
+
+### Automatic Cleanup
+
+Watchers and side effects registered synchronously inside a component are automatically linked to the component's destruction lifecycle. When the component is destroyed, these registrations are cleaned up by the framework automatically — no need to call `stop()` manually:
+
+```js
+import { effect, watch } from "qingkuai"
+
+// Registered synchronously in a component; auto-cleaned on destruction
+effect(() => {
+    // ...
+})
+
+watchExp(someValue, (pre, cur) => {
+    // ...
+})
+```
+
+If a watcher or effect is registered asynchronously, it is no longer managed by the component's destruction lifecycle and must be cleaned up manually by calling `stop()` on the returned handle inside `onBeforeDestroy` or `onAfterDestroy`:
+
+```js
+import { effect, onBeforeDestroy } from "qingkuai"
+
+let handle
+
+setTimeout(() => {
+    // Registered asynchronously, not tracked by component destruction
+    handle = effect(() => {
+        // ...
+    })
+}, 1000)
+
+// Manually stop before the component is destroyed
+onBeforeDestroy(() => {
+    handle?.stop()
+})
+```
+
+### Passive Cleanup
+
+If a watcher or side effect callback collects no reactive dependencies during execution, the runtime emits a warning and destroys that registration automatically. Once destroyed, all resources (including memory) held by the effect are released because it will never be triggered again:
+
+```js
+import { effect, watch } from "qingkuai"
+
+effect(() => {
+    // The callback does not read any reactive value
+    console.log("No dependencies, will be destroyed after this run")
+})
+
+watch(
+    () => "constant",
+    (pre, cur) => {
+        // The getter returns a constant, no reactive link is established
+        console.log("This watcher will also be destroyed")
+    }
+)
+```
+
+This usually means the callback did not read reactive values, or dependency reads were skipped by control flow:
+
+```js
+import { effect } from "qingkuai"
+
+let flag = true
+let value = reactive("hello")
+
+effect(() => {
+    // When flag is true, only returns a constant without reading any reactive value
+    if (flag) {
+        console.log("no reactive deps")
+        return
+    }
+    console.log(value) // This line is never reached
 })
 ```

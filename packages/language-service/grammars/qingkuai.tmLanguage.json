@@ -63,7 +63,7 @@
         },
         {
             "begin": "(?=<lang-css)",
-            "end": "(?=</lang-css)",
+            "end": "(?<=/>)|(?=</lang-css)",
             "patterns": [
                 {
                     "include": "#tag-structure-start"
@@ -101,7 +101,7 @@
         },
         {
             "begin": "(?=<lang-sass)",
-            "end": "(?=</lang-sass)",
+            "end": "(?<=/>)|(?=</lang-sass)",
             "patterns": [
                 {
                     "include": "#tag-structure-start"
@@ -120,7 +120,7 @@
         },
         {
             "begin": "(?=<lang-scss)",
-            "end": "(?=</lang-scss)",
+            "end": "(?<=/>)|(?=</lang-scss)",
             "patterns": [
                 {
                     "include": "#tag-structure-start"
@@ -139,7 +139,7 @@
         },
         {
             "begin": "(?=<lang-less)",
-            "end": "(?=</lang-less)",
+            "end": "(?<=/>)|(?=</lang-less)",
             "patterns": [
                 {
                     "include": "#tag-structure-start"
@@ -158,7 +158,7 @@
         },
         {
             "begin": "(?=<lang-stylus)",
-            "end": "(?=</lang-stylus)",
+            "end": "(?<=/>)|(?=</lang-stylus)",
             "patterns": [
                 {
                     "include": "#tag-structure-start"
@@ -177,7 +177,7 @@
         },
         {
             "begin": "(?=<lang-postcss)",
-            "end": "(?=</lang-postcss)",
+            "end": "(?<=/>)|(?=</lang-postcss)",
             "patterns": [
                 {
                     "include": "#tag-structure-start"
@@ -224,7 +224,7 @@
         "tag-structure-start": {
             "name": "meta.tag.normal.$2.start.qk",
             "begin": "(<)(?!/)(?!br|img|input|meta|link|hr|base|area|col|embed|param|source|track|wbr|isindex|basefont|frame)((?![a-z][a-zA-Z\\d_]*[-.])(?:qk:spread|[a-z][a-zA-Z\\d_]*)|lang-(?:[jt]s|css|s[ac]ss|less|stylus|postcss))",
-            "end": ">",
+            "end": "/?>",
             "beginCaptures": {
                 "1": {
                     "name": "punctuation.definition.tag.begin.qk"
@@ -576,7 +576,7 @@
         },
         "invalid-attribute": {
             "name": "invalid.illegal.character-not-allowed-here.qk",
-            "begin": "(?=[!@#&'\"\\{\\}=</])",
+            "begin": "(?=[!@#&'\"\\{\\}=<]|/(?!>))",
             "end": "(?=[>\\s])"
         },
         "character-entity": {

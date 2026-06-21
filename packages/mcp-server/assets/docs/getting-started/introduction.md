@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Introduction
 
 Qingkuai is the pinyin of the Chinese word "轻快", conveying the framework's focus on being `lightweight`, `fast` to respond, and offering a more `nimble` development experience. It is a framework for building web interfaces and interactive features. It provides a programming model based on reactive variables and componentized interfaces, and uses a compiler to transform `.qk` source files into minimal, efficient, and strictly optimized `JavaScript` code.
@@ -96,7 +92,7 @@ Compared with today's popular frontend frameworks, Qingkuai has the following co
 
 - TypeScript: the framework supports [TypeScript](https://www.typescriptlang.org/) out of the box with no extra configuration. This helps avoid many potential bugs during development. In addition, the language server handles many details of type hints and inference for component files, such as automatically inferring the types of component and slot context identifiers.
 
-- Debugging experience: the compiler does a significant amount of work to improve debugging. For example, in development mode it avoids noise from reactive declarations and adds matching declarations for context identifiers declared by directives such as [for](docs://basic/compilation-directives.md#list-rendering) and [slot](docs://components/slots.md#passing-context).
+- Debugging experience: the compiler does a significant amount of work to improve debugging. For example, in development mode it avoids noise from reactive declarations and adds matching declarations for context identifiers declared by directives such as [for](/basic/compilation-directives.html#list-rendering) and [slot](/components/slots.html#passing-context).
 
 - Update granularity: Qingkuai does not use a `Virtual DOM`. Changes to reactive variables are mapped directly to native `DOM API` calls. This removes the `diff` overhead of a virtual DOM. Consider the following example:
 

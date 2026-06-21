@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Language Features
 
 Qingkuai does not build complex syntax extensions into the compiler. Instead, it provides rich language features through an [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)-based language service. These features include type inference, intelligent completion, diagnostics, quick navigation, and semantic highlighting, covering framework capabilities such as component attributes, slots, style scoping, directives, and reference passing. With LSP, Qingkuai keeps syntax concise while significantly improving developer experience and type safety.

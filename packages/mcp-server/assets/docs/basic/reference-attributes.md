@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Reference Attributes
 
 In Qingkuai, reference attributes are a syntax for passing variable references by prefixing attribute names with `&` (such as `&value`). They let you establish a reference relationship between an attribute and an external variable in templates, so the attribute value can be read and written directly from outside, enabling flexible data linkage and state transfer.
@@ -72,7 +68,7 @@ When you need to get the DOM element corresponding to a regular tag in the templ
 ```
 
 <div class="custom-block tip">
-    <code>onAfterMount</code> is a Qingkuai callback that runs after a component has finished mounting and rendering. It is part of the <a href="docs://components/lifecycle.md">component lifecycle</a>.
+    <code>onAfterMount</code> is a Qingkuai callback that runs after a component has finished mounting and rendering. It is part of the <a href="docs://components/life-cycle.md">component lifecycle</a>.
 </div>
 
 <div class="custom-block tip">

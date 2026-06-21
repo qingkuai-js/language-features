@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Optimization
 
 When building modern web applications, performance is always one of the main concerns. Whether it is initial loading speed, the efficiency of reactive updates, or component rendering granularity, the right optimization techniques lead to a smoother user experience. By reducing unnecessary dependency collection, rendering on demand, delaying updates, and operating on raw values, you can lower overhead effectively and improve overall runtime efficiency, keeping the application responsive even when it has complex features.
@@ -32,6 +28,28 @@ import { debounce } from "lodash"
 <div class="custom-block tip">
     When choosing third-party libraries, do not focus only on whether the functionality meets your needs. Also consider their effect on bundle size. Large libraries can significantly increase first-load time, especially on mobile devices. Tools such as <a href="https://bundlejs.com">bundlejs</a> can help evaluate the actual size impact of importing a package or a specific export, making it easier to choose lighter alternatives or import only the modules you really need.
 </div>
+
+---
+
+## Style Reuse
+
+When the same shared stylesheet is imported into scoped embedded style blocks of multiple components through `src` or `@import`, compilation can produce multiple copies of equivalent CSS rules (each copy gets a different component scope marker). This increases CSS size and style parsing cost.
+
+```qk
+<!-- A.qk -->
+<lang-css src="./common.css" />
+
+<!-- B.qk -->
+<lang-css>
+    @import "./common.css";
+</lang-css>
+```
+
+In the example above, `common.css` is scoped independently in each component: the same original rule is rewritten multiple times with different component scope markers. As component count grows, these duplicate rules accumulate linearly, increasing CSS payload and browser style-matching cost. For shared cross-component styles, prefer the following practices:
+
+- Load stable shared styles once from a global style entry (for example, app entry CSS or layout-level global styles).
+- For styles declared near components but not requiring scope isolation, maintain them in a global file or a `global` style block.
+- Keep only structure-coupled, component-specific rules inside scoped component styles.
 
 ---
 

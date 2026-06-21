@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Async Components
 
 In modern frontend applications, on-demand loading is an important way to improve loading experience and rendering performance. Async components are a mechanism designed for exactly this purpose: they allow a component to be loaded only when it is actually needed, rather than being bundled into the main application at the initial stage. This approach not only reduces the initial bundle size effectively, but also improves resource loading speed and first-screen rendering performance. It also works naturally with routing and conditional rendering for more efficient resource management. In Qingkuai, async components are implemented by combining directives related to [async processing](docs://basic/compilation-directives.md#async-processing), with no special configuration required.

@@ -45,20 +45,20 @@ export function confirmTypesForCompileResult(
     const isNodeEnv = isNodeEnvironment()
     const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
+    const compilerOptions = program!.getCompilerOptions()
     const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
     const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
 
-    if (isNodeEnv && (fileInfo.isTS || program?.getCompilerOptions().checkJs)) {
-        try {
-            require.resolve("qingkuai", {
-                paths: [fileInfo.path]
-            })
-        } catch {
+    if (isNodeEnv && (fileInfo.isTS || compilerOptions.checkJs)) {
+        if (
+            !ts.resolveModuleName("qingkuai", fileInfo.path, compilerOptions, ts.sys).resolvedModule
+        ) {
             fileInfo.pushDiagnostic(0, 1, QingkuaiNotFound(), true)
         }
     }
+
     walkTsNode(sourceFile, node => {
         if (ts.isFunctionDeclaration(node) && isInTopScope(node)) {
             componentFuncNode = node

@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # TypeScript Support
 
 Qingkuai provides full [TypeScript](https://www.typescriptlang.org/) support. The framework itself is written in TypeScript, and compatibility with the type system is fully considered in its design. Whether you are working with component attributes, directives, lifecycle hooks, or global APIs, Qingkuai provides solid type hints and inference so that you get better auto-completion, error checking, and an overall better development experience. For projects that value type safety and maintainability, TypeScript and Qingkuai are a strong combination.

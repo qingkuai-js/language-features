@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Reactivity
 
 In frontend development, <b>Reactivity</b> is a mechanism that keeps data state and the interface automatically in sync. Its core idea is simple: when data changes, the interface updates automatically without manual DOM operations. In the past, developers had to manipulate page elements explicitly in business logic to reflect data changes. That approach was tedious and error-prone. A reactivity system improves development efficiency and maintainability by tracking dependencies and updating automatically.
@@ -10,7 +6,7 @@ In frontend development, <b>Reactivity</b> is a mechanism that keeps data state 
 
 ## Reactivity Declaration
 
-In Qingkuai, you do not need to declare reactive variables manually. The compiler attaches reactive capability to identifiers according to the [reactivity inference rules](docs://references/reactivity-infer-rules.md). In the following example, `progress` is changed from `"pending"` to `"completed"` inside the script, and the template updates automatically. This is a simple example of reactivity:
+In Qingkuai, you do not need to declare reactive variables manually. The compiler attaches reactive capability to identifiers according to the [reactivity inference rules](/references/reactivity-infer-rules.html). In the following example, `progress` is changed from `"pending"` to `"completed"` inside the script, and the template updates automatically. This is a simple example of reactivity:
 
 ```qk
 <lang-js>

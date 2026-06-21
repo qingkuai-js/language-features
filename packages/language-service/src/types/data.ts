@@ -2,6 +2,7 @@ export interface DirectiveData {
     name: string
     useage: string
     description: string
+    requiredValue: boolean
     valueSnippet?: string
 }
 

@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Configuration Files
 
 When building applications with Qingkuai, you usually do not need complicated setup to get an out-of-the-box development experience. In real projects, however, Qingkuai provides a flexible configuration system so that you can adapt its behavior to different development needs and customization requirements. A unified configuration mechanism improves project consistency, makes team collaboration smoother, and provides a solid foundation for maintainable applications.

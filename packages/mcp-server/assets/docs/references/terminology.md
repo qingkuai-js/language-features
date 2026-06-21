@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Terminology Reference
 
 To help you understand and use Qingkuai more efficiently, this section collects common terms used throughout the documentation and gives a short explanation for each one. Whether you are just getting started with the framework or already reading the source code, this reference can help you clarify terminology and reduce misunderstandings.
@@ -136,7 +132,7 @@ See: [Introduction](docs://getting-started/introduction.md), [Design Philosophy]
 
 ## Embedded Style Block
 
-An embedded style block is a region wrapped by `lang-css`, `lang-scss`, `lang-sass`, `lang-less`, `lang-stylus`, or `lang-postcss` tags inside a component file, used for writing style content that will be processed by the compiler.
+An embedded style block is a region wrapped by `lang-css`, `lang-scss`, `lang-sass`, `lang-less`, `lang-stylus`, or `lang-postcss` tags inside a component file, used for writing style content that will be processed by the compiler. These tags support a static `src` attribute for external style files and a boolean `global` attribute for global style blocks.
 
 See: [Introduction](docs://getting-started/introduction.md), [Stylesheets](docs://components/stylesheets.md)
 
@@ -144,7 +140,7 @@ See: [Introduction](docs://getting-started/introduction.md), [Stylesheets](docs:
 
 ## Embedded Language Tags
 
-Embedded language tags refer to the eight tags `lang-js`, `lang-ts`, `lang-css`, `lang-scss`, `lang-sass`, `lang-less`, `lang-stylus`, and `lang-postcss`, which are used to embed script and style content that needs compilation.
+Embedded language tags refer to the eight tags `lang-js`, `lang-ts`, `lang-css`, `lang-scss`, `lang-sass`, `lang-less`, `lang-stylus`, and `lang-postcss`, which are used to embed script and style content that needs compilation. Style tags support static attributes such as `src` and `global`.
 
 See: [Introduction](docs://getting-started/introduction.md), [Stylesheets](docs://components/stylesheets.md)
 

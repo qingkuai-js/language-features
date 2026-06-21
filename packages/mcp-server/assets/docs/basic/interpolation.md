@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Interpolation Blocks
 
 Qingkuai's template syntax is very similar to HTML syntax. In fact, you could almost say that it is HTML, but there are still some subtle differences:

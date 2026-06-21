@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Basics
 
 In Qingkuai, components are the basic units for building user interfaces. Each component represents an independent and reusable UI piece, from a simple button to a complex page. Components are inherently encapsulated and composable, making UI development clearer and more efficient.
@@ -45,3 +41,9 @@ By default, when formatting component files, all component names will be transfo
 ```
 
 <div class="custom-block tip">When using this configuration, the Qingkuai language server also prioritizes kebab-case component tags in auto-completion.</div>
+
+Component tags also support member access syntax, which is commonly seen when working with [async components](docs://components/async-components.md):
+
+```qk
+<Module.default />
+```

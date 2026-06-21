@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Form Handling
 
 In the earlier [Reference Attributes](docs://basic/reference-attributes.md) article, we already introduced the basic usage of obtaining variable references through the `&` syntax. In real development, the values of form elements often need to stay synchronized with state variables, so reference attributes are especially important in form handling scenarios. This section focuses on the usage details of reference attributes on form elements, explaining how this mechanism can be used to efficiently access and control form data and achieve reactive data binding and updates.

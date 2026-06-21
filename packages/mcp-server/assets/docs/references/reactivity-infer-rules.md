@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Reactivity Inference Rules
 
 In Qingkuai, the compiler uses a set of inference rules to determine the reactivity type of each identifier automatically. Understanding these rules helps developers manage state more precisely and override default behavior when necessary through explicit markers.

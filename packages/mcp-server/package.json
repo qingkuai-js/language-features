@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-mcp-server",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "type": "module",
     "author": "mlgq",
     "license": "MIT",
@@ -23,7 +23,8 @@
         "dist/index.mjs"
     ],
     "scripts": {
-        "inspect": "mcp-inspector"
+        "inspect": "mcp-inspector",
+        "copydocs": "tsx scripts/copy-docs.ts"
     },
     "dependencies": {
         "@cfworker/json-schema": "^4.1.1",

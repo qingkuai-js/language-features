@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Built-in Elements
 
 In Qingkuai, built-in elements extend template syntax and provide stronger expressive power than standard HTML. They usually take on framework-level responsibilities with specific semantics and behavior, and they play an important role when handling rendering logic or control structures. Built-in elements are typically prefixed with `qk:` to avoid conflicts with future built-in HTML tags or taking over component naming space.

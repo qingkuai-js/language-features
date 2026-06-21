@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Slots
 
 Component slots are used to pass structured UI content, that is, template fragments, into a component. Their biggest difference from attributes lies in the kind of content being passed: attributes pass data, while slots pass interface structure. Through slots, a parent component can insert custom DOM content into specific locations of a child component, enabling greater flexibility and reusability. This makes slots essential when building generic components such as layout containers, modals, and list renderers.

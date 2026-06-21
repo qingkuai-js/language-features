@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Attributes
 
 In Qingkuai, you can add attributes to component tags just as you do with normal HTML tags to pass parameters. This is called passing component attributes, and it is used to pass external data or configuration into a component. Through component attributes, a component can behave differently or present itself differently in different scenarios, which improves both reusability and flexibility.

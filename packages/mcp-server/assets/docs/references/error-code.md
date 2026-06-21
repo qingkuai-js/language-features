@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Error Code Reference
 
 The Qingkuai compiler and runtime can emit messages with error codes to help developers locate problems quickly. This section lists the built-in error codes in the current version and explains their meanings for easier lookup and troubleshooting. Error codes are grouped by category, using the following numbering scheme:
@@ -39,7 +35,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1016 | Invalid attribute format                                                                                                                   |
 | 1017 | Uses a framework-reserved identifier format, identifiers starting with `__qk__`                                                            |
 | 1018 | Unsupported top-level `await` expression                                                                                                   |
-| 1019 | Embedded script blocks do not support these export forms: `export =`, default export, re-export, namespace export, or type export         |
+| 1019 | Embedded script blocks do not support these export forms: `export =`, default export, re-export, namespace export, or type export          |
 | 1020 | Compiler intrinsic is redeclared in top-level scope                                                                                        |
 | 1021 | Compiler built-in method is used in an invalid position or call form                                                                       |
 | 1022 | Identifier cannot be redeclared because it conflicts with alias or derived value markers                                                   |
@@ -85,28 +81,33 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1062 | Reactivity modes conflict; the same tag declares both `reactive` and `shallow`                                                             |
 | 1063 | Generic parameters on a component tag are not closed                                                                                       |
 | 1064 | Generic parameters on a component tag can only be used when the embedded script language is `TypeScript`                                   |
-| 1065 | Hyphens are not allowed when using a member expression as a component tag                                                                   |
+| 1065 | Hyphens are not allowed when using a member expression as a component tag                                                                  |
+| 1066 | A self-closing embedded style tag must provide a `src` attribute                                                                           |
+| 1067 | An embedded style tag with a `src` attribute cannot contain inline style content                                                           |
+| 1068 | The `src` attribute on `<{tag}>` requires a non-empty value                                                                                |
 
 ---
 
 ## Compile Warnings
 
-| Code | Description                                                                                                             |
-| ---- | ----------------------------------------------------------------------------------------------------------------------- |
-| 9001 | Value never changes, so the reactive marker is redundant and the value will be treated as raw                           |
-| 9002 | A top-level scope identifier may be shadowed in a specific scope                                                        |
-| 9003 | Two declaration syntaxes for derived reactive values are mixed, which is discouraged                                    |
-| 9004 | Derived reactive values are read-only, so using a mutable declaration is redundant; `const` is recommended              |
-| 9005 | Applying `raw` to a literal `const` is redundant                                                                        |
-| 9006 | The directive does not need a value, so the provided value will be ignored                                              |
-| 9007 | A boolean attribute is given a redundant value, which will be ignored                                                   |
-| 9008 | `#html` has no practical effect when it has no value and the content is static                                          |
-| 9009 | Event flags on a component event listener are invalid and will be ignored                                               |
-| 9010 | Keyboard event flags are invalid on non-keyboard events and will be ignored                                             |
-| 9011 | Duplicate event flags will be ignored                                                                                   |
+| Code | Description                                                                                                                      |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 9001 | Value never changes, so the reactive marker is redundant and the value will be treated as raw                                    |
+| 9002 | A top-level scope identifier may be shadowed in a specific scope                                                                 |
+| 9003 | Two declaration syntaxes for derived reactive values are mixed, which is discouraged                                             |
+| 9004 | Derived reactive values are read-only, so using a mutable declaration is redundant; `const` is recommended                       |
+| 9005 | Applying `raw` to a literal `const` is redundant                                                                                 |
+| 9006 | The directive does not need a value, so the provided value will be ignored                                                       |
+| 9007 | A boolean attribute is given a redundant value, which will be ignored                                                            |
+| 9008 | `#html` has no practical effect when it has no value and the content is static                                                   |
+| 9009 | Event flags on a component event listener are invalid and will be ignored                                                        |
+| 9010 | Keyboard event flags are invalid on non-keyboard events and will be ignored                                                      |
+| 9011 | Duplicate event flags will be ignored                                                                                            |
 | 9012 | A `<qk:spread>` tag without required parts (such as dynamic attributes, reference attributes, or event listeners) is unnecessary |
-| 9013 | Duplicate default value definitions; the later one overrides the earlier one                                            |
-| 9016 | Built-in method received more arguments than expected; extra arguments will be ignored                                  |
+| 9013 | Duplicate default value definitions; the later one overrides the earlier one                                                     |
+| 9014 | Built-in method received more arguments than expected; extra arguments will be ignored                                           |
+| 9015 | The `#scope` directive has no effect because the current component has no scoped styles                                          |
+| 9016 | The `#scope` directive is unnecessary here because this component already has an actual ancestor element                         |
 
 ---
 
@@ -138,12 +139,13 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | ---- | -------------------------------------------------------------------------------------------------------------- |
 | 3001 | Imported external types that include generic parameters cannot be used as global types, such as Props and Refs |
 | 3002 | (TypeScript) A global type declaration is not an object type, such as a primitive or union type                |
+| 3003 | The dependency "qingkuai" cannot be found. Please make sure it is installed and can be resolved                |
 
 ---
 
 ## Language Service Warnings
 
-| Code | Description                                                                                                                                                   |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 7001 | (JavaScript) A global type declaration defined via `JSDoc` is not an object type, such as a primitive or union type                                           |
-| 7002 | `@keyframe` rules are not scoped with component attributes, so using them in a component stylesheet is unnecessary and should be moved to a global stylesheet |
+| Code | Description                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 7001 | (JavaScript) A global type declaration defined via `JSDoc` is not an object type, such as a primitive or union type                         |
+| 7002 | The `@keyframes` rule is not scoped. It is recommended to define it in an external stylesheet and import it from the application entry file |

@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Event Handling
 
 In frontend development, user interaction with the page is often driven by events. Qingkuai provides concise and intuitive event binding syntax, making it easy to add click, input, keyboard, and other event handling logic to elements so that you can build responsive interactive experiences.

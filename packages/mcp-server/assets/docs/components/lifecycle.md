@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Lifecycle
 
 In component-based development, lifecycle is key to understanding component behavior and choosing the right execution timing. Every component goes through a series of lifecycle phases, from creation to mounting, updating, and unmounting. To give you better control over these phases, Qingkuai provides several lifecycle hook functions. Through these hooks, you can insert logic at the right time for data initialization, event binding, cleanup, and more, making components more robust and easier to maintain:

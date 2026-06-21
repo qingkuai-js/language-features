@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Compilation Directives
 
 Directives are a core part of Qingkuai. They are special attributes prefixed with `#`, used to tell the compiler how to generate corresponding JavaScript code. Qingkuai provides a rich built-in directive system that covers flow control, rendering control, and asynchronous processing:
@@ -142,7 +138,7 @@ If you have used [Vue](https://cn.vuejs.org), you may wonder why Qingkuai uses `
 
 ---
 
-## key Directive
+## Key Directive
 
 When a list rendered by `for` changes, the framework updates the corresponding DOM nodes. By default, it matches old and new nodes by position (index). This works well when items are only appended to or removed from the end. But when items are inserted, removed, or reordered in the middle, node-local DOM state (such as form input values) may be associated with the wrong data item.
 
@@ -217,7 +213,7 @@ If you do not need intermediate UI during waiting, place `await` and `then`/`cat
 
 ---
 
-## html Directive
+## Html Directive
 
 Sometimes you need to render text as an HTML fragment. Regular interpolation only updates `textContent` and escapes HTML, so it cannot achieve that behavior. In this case, use the `html` directive:
 
@@ -262,7 +258,7 @@ For partially trusted content, this usage is recommended:
 
 ---
 
-## target Directive
+## Target Directive
 
 In some scenarios, you may need to manually control the parent element where a node is mounted, such as full-screen modals. The `target` directive supports this. Its value can be a CSS selector string or an [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement). The following examples both mount the `div` into `body`:
 
@@ -279,6 +275,72 @@ In some scenarios, you may need to manually control the parent element where a n
     #target={document.body}
 ></div>
 ```
+
+---
+
+## Scope Directive
+
+By default, a parent component's scope attribute is not passed down to any element in child components, preserving independent style isolation. However, there are cases where you want parent styles to override a child component's root element. The `#scope` directive does this — it can only be used on component tags, and it passes the parent's scope attribute to the child's root element:
+
+```qk
+<Child #scope />
+
+<lang-css>
+    /* Affect child root element */
+    .child-root {
+        border-color: blue;
+    }
+
+    /* Affect child inner elements */
+    [qk-scope] .child-box {
+        background-color: lightblue;
+    }
+</lang-css>
+
+<div class="custom-block tip">
+    The content inside <code>lang-css</code> is an <a href="docs://references/terminology.md#embedded-style-block">embedded style block</a> of a <a href="docs://components/basic.md">component</a>, used to define style rules for the component. If you are not yet familiar with component scoped styles, read <a href="docs://components/stylesheets.md">Stylesheets</a> first before continuing with this section.
+</div>
+
+Note that when the child's root node is a [qk:spread](docs://misc/builtin-elements.md#qkspread) or another component — tags that do not create actual DOM elements — Qingkuai walks in to the first real element and attaches the scope attribute to it:
+
+```qk
+<!-- Parent.qk -->
+<Middle #scope />
+
+<lang-css>
+    /* Affects the div inside Child.qk */
+    [qk-scope] {
+        color: blue;
+    }
+</lang-css>
+
+<!-- Middle.qk -->
+<Child />
+
+<!-- Child.qk -->
+<div>...</div>
+```
+
+<div class="custom-block tip">
+    <code>#scope</code> only attaches the scope attribute to the child's <b>root element</b> and does not pass it deeper — this is for runtime performance.
+</div>
+
+Furthermore, multiple `#scope` directives can be combined along the ancestor chain — each one attaches its component's scope attribute to the final root element, allowing styles from multiple ancestor layers to accumulate:
+
+```qk
+<!-- Parent.qk -->
+<Middle #scope />
+
+<!-- Middle.qk -->
+<Child #scope />
+
+<!-- Child.qk -->
+<div>...</div>
+```
+
+<div class="custom-block tip">
+    In the example above, the <code>div</code> element inside the <code>Child</code> component will have scope attributes from both <code>Parent</code> and <code>Middle</code>, so it will be affected by both of their style rules.
+</div>
 
 ---
 
@@ -316,5 +378,5 @@ The default directive priority in Qingkuai, from high to low, is:
 `slot` > `await/then/catch` > `if/elif/else` > `target` > `for/key` > `html`
 
 <div class="custom-block tip">
-    Any directives not listed above have the same priority as <code>html</code>, which is the lowest. When priorities are equal, processing order follows their appearance order in the tag.
+    Any directives not listed above have lower priority than <code>html</code>. When they appear together, processing order follows their appearance order in the tag (earlier ones are processed first).
 </div>

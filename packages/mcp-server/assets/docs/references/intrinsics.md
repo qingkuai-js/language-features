@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Compiler Intrinsics
 
 Compiler intrinsics are reserved identifiers that do not need to be declared inside component files and can be recognized and handled directly by the compiler. They are mainly used to access component attributes, reference attributes, and slot state, as well as to call built-in methods provided by the compiler.

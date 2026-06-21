@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Installation
 
 If you just want a quick try, you can start with the [online playground](https://try.qingkuai.dev).

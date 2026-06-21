@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Component Exports
 
 In component-based development, the export mechanism determines which capabilities a component exposes externally and how those capabilities should be consumed. A well-designed export interface improves reusability and maintainability, while also constraining internal implementation details to avoid unnecessary coupling. In this section, you will learn the export rules and common practices in Qingkuai component files, helping you strike a balance between encapsulation and external usability.

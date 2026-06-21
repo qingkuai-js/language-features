@@ -1,7 +1,3 @@
----
-description: ""
----
-
 # Debugging
 
 Debugging is an essential part of locating and fixing issues during development. Qingkuai component files are compiled into standard JavaScript modules, so you can use browser DevTools, the [VS Code](https://code.visualstudio.com/) debugger, and tools like [Vite](https://vitejs.dev/) to inspect component logic, reactive state, and rendering behavior. This article covers common debugging techniques for Qingkuai projects.

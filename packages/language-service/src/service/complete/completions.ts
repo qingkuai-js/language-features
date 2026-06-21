@@ -390,7 +390,7 @@ export async function doComplete(
             }
         }
 
-        if (!isTestingEnv && surroundingNode.componentTag) {
+        if (!isTestingEnv && surroundingNode.componentTag && nameFirstChar !== "#") {
             return doComponentAttributeNameComplete(
                 componentAttributes,
                 surroundingAttribute,
@@ -651,7 +651,7 @@ function doEmmetComplete(document: TextDocument, position: Position) {
                 />\$\{0\}<\/(?:track|wbr|isindex)>$/,
                 " />"
             )
-        } else if (util.isSelfClosingTag(item.label)) {
+        } else if (util.isVoidTag(item.label)) {
             item.textEdit.newText = item.textEdit.newText.slice(0, -1) + " />"
         }
     })
@@ -1007,20 +1007,23 @@ function doAttributeNameComplete(
             if (
                 !existingDirectives.has(item.name) &&
                 !unsetDirectives.includes(item.name) &&
+                (item.name !== "scope" || node.componentTag) &&
                 (item.name !== "slot" || node.parent?.componentTag)
             ) {
                 const label = "#" + item.name
-                const valueSnippet = item.valueSnippet ?? "$1"
-                const noValue = hasValue || item.name === "else" || item.name === "html"
+                const valueSnippet = item.requiredValue ? `={${item.valueSnippet ?? "$1"}}` : ""
                 const completion: CompletionItem = {
+                    textEdit: {
+                        range,
+                        newText: `${label}${valueSnippet}`
+                    },
                     label: label,
                     filterText: label,
                     kind: CompletionItemKind.Keyword,
                     insertTextFormat: InsertTextFormat.Snippet,
                     sortText: "" + (sortTextMap[item.name] || "9"),
                     documentation: getDirectiveDocumentation(item, true),
-                    command: item.name === "slot" ? RETRIGGER_SUGGEST_COMMAND : undefined,
-                    textEdit: { range, newText: `${label}${noValue ? "" : `={${valueSnippet}}`}` }
+                    command: item.name === "slot" ? RETRIGGER_SUGGEST_COMMAND : undefined
                 }
                 if (item.name !== "slot") {
                     ret.push({ ...completion, filterText: item.name })
