@@ -41,8 +41,8 @@ export function getAndConvertDiagnostics(
     for (const item of diagnostics) {
         const start = item.start ?? 0
         const end = start + (item.length ?? 0)
-        const sourceStart = fileInfo.getSourceIndex(start)
-        const sourceEnd = fileInfo.getSourceIndex(end)
+        const sourceStart = item.isSourceLoc ? start : fileInfo.getSourceIndex(start)
+        const sourceEnd = item.isSourceLoc ? end : fileInfo.getSourceIndex(end)
         if (
             isIndexesInvalid(sourceStart, sourceEnd) ||
             shouldDiagnosticBeIgnored(item, fileInfo, [sourceStart, sourceEnd])

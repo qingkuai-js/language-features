@@ -25,7 +25,7 @@ export enum TP_HANDLERS {
     FindImplemention = "findImplementation",
     GetNavigationTree = "getNavigationTree",
     RefreshDiagnostic = "refreshDiagnostic",
-    findTypeDefinition = "findTypeDefinition",
+    FindTypeDefinition = "findTypeDefinition",
     WaitForTSCommand = "waitForTypescriptCommand",
     FindComponentTagRange = "findComponentTagRange",
     ResolveCompletionItem = "resolveCompletionItem",

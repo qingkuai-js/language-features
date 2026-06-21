@@ -1,8 +1,11 @@
+import type TS from "typescript"
+
 import { TypescriptAdapter } from "../adapter"
 
-import { debugAssert } from "../../../../../shared-util/assert"
-
-export function getNavigationTree(adapter: TypescriptAdapter, fileName: string) {
+export function getNavigationTree(
+    adapter: TypescriptAdapter,
+    fileName: string
+): TS.NavigationTree | null {
     const filePath = adapter.getNormalizedPath(fileName)
     const languageService = adapter.getDefaultLanguageService(filePath)!
     if (!languageService) {

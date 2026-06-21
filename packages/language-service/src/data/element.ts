@@ -6285,6 +6285,7 @@ export const htmlElements: HTMLElementData = {
 export const htmlDirectives: DirectiveData[] = [
     {
         name: "for",
+        requiredValue: true,
         valueSnippet: "${2:item}, ${3:index} of ${1:source}",
         useage: "<tag #for={{a,b}, index of arr}>\n\t{index}: {a}, {b})\n</tag>",
         description:
@@ -6292,48 +6293,56 @@ export const htmlDirectives: DirectiveData[] = [
     },
     {
         name: "key",
+        requiredValue: true,
         useage: "<!-- value will not be lost -->\n<input\n\t#key={item}\n\t#for={item in arr.length}\n/>",
         description:
             "The key directive is used to ensure that the loop rendering(via #for directive) is correct, list without it may cause loss of internal state of elements, and the key directive avoids this such problems by reusing existing element as much as possible. Note: each key value should be unique in the list."
     },
     {
         name: "if",
+        requiredValue: true,
         useage: "<tag #if={count === 0}></tag>\n<tag #elif={count < 3}></tag>\n<tag #elif={count < 6}></tag>\n<tag #else>\n\t<!-- no condition passed -->\n</tag>",
         description:
             "The if directive is used to create conditional rendering elements, and it is also support two branch directives: [#elif](https://qingkuai.dev) and [#else](https://qingkuai.dev)."
     },
     {
         name: "elif",
+        requiredValue: true,
         useage: "<tag #if={count === 0}></tag>\n<tag #elif={count < 3}></tag>\n<tag #elif={count < 6}></tag>\n<tag #else>\n\t<!-- no condition passed -->\n</tag>",
         description:
             "The elif directive is used to create conditional rendering elements, and it can only appear on a rear sibling element of a element with [#if](https://qingkuai.dev) directive."
     },
     {
         name: "else",
+        requiredValue: false,
         useage: "<tag #if={count === 0}></tag>\n<tag #elif={count < 3}></tag>\n<tag #elif={count < 6}></tag>\n<tag #else>\n\t<!-- no condition passed -->\n</tag>",
         description:
             "The else directive is used to create conditional rendering elements, and it can only appear on a rear sibling element of a element with [#if](https://qingkuai.dev) or [#elif](https://qingkuai.dev) directive."
     },
     {
         name: "await",
+        requiredValue: true,
         useage: "<tag #await={pms}></tag>\n<tag #then={{code, message}}>\n\tCode: {code}\n\tMessage: {message}\n</tag>\n<tag #catch={err}>\n\tError: {err}\n</tag>\n\n\n<tag #await={pms} #then>\n\t<!-- pms is resolved -->\n</tag>\n\n\n<tag #await={pms} #catch>\n\t<!-- pms is rejected -->\n</tag>",
         description:
             "The await directive is used to create asynchronously rendered elements, it dependents on a [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) value, and it also supports two subsequent directives: [#then](https://qingkuai.dev) and [#catch](https://qingkuai.dev). When the dependent Promise has result, it will destroy itself and render the element in corresponding state(resolved -> #then, rejected -> #catch)."
     },
     {
         name: "then",
+        requiredValue: false,
         useage: "<tag #await={pms}></tag>\n<tag #then={{code, message}}>\n\tCode: {code}\n\tMessage: {message}\n</tag>\n<tag #catch={err}>\n\tError: {err}\n</tag>\n\n\n<tag #await={pms} #then>\n\t<!-- pms is resolved -->\n</tag>\n\n\n<tag #await={pms} #catch>\n\t<!-- pms is rejected -->\n</tag>",
         description:
             "The then directive is used to create asynchronously redered elements in conjunction with [#await](https://qingkuai.dev) and [#catch](https://qingkuai.dev) directives, and it can only appear on a rear sibling element of the element with await or catch directive. When the state of the [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) that await directive dependents on changes to resolved, the then directive bound element will be rendered.\n\nIn additional, the value of then directive can declare identifiers(destructible) for the value passed by [resolve](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve) method that are accessible under the scope of the current element."
     },
     {
         name: "catch",
+        requiredValue: false,
         useage: "<tag #await={pms}></tag>\n<tag #then={{code, message}}>\n\tCode: {code}\n\tMessage: {message}\n</tag>\n<tag #catch={err}>\n\tError: {err}\n</tag>\n\n\n<tag #await={pms} #then>\n\t<!-- pms is resolved -->\n</tag>\n\n\n<tag #await={pms} #catch>\n\t<!-- pms is rejected -->\n</tag>",
         description:
             "Tthe catch directive is used to create asynchronously rendered elements in conjunction with [#await](https://qingkuai.dev) and [#then](https://qingkuai.dev) directives, and it can only appear on a rear sibling element of the element with await or then directive. When the state of the [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) that await directive dependents on changes to rejected, the await directive bound element will be rendered.\n\nInadditional, the vlaue of catch directive can declare identifiers(destructible) for the value passed by [reject](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/reject) method that are accessible under the scope of the current element."
     },
     {
         name: "slot",
+        requiredValue: true,
         valueSnippet: '${2:context} from "$1"',
         useage: '<UserCard>\n\t<div #slot={{age, name} from "info"}>\n\t\tReceived age: {age}\n\t\tReceived name: {name}\n\t</div>\n</UserCard>',
         description:
@@ -6341,21 +6350,24 @@ export const htmlDirectives: DirectiveData[] = [
     },
     {
         name: "html",
+        requiredValue: false,
         useage: '<qk:spread\n\t#html={\n\t\t{\n\t\t\tescapeStyle: true,\n\t\t\tescapeScript: true,\n\t\t\tescapeTags: ["html", "body"]\n\t\t}\n\t}\n>\n\t{htmlContent}\n</qk:spread>',
         description:
             "The html directive is used to render string as html content, and you can control whether to escape script, style or specific tag names by passing a value to it."
     },
     {
-        name: "show",
-        useage: "<tag #show={showTag}>\n\t<!-- visibility when showTag is truthy -->\n</tag>",
-        description:
-            'The show direcive is used to control whether the element is visible. It only controls whether style.diaplsy="none" is added, not whether the element is rendered.'
-    },
-    {
         name: "target",
+        requiredValue: true,
         useage: '<tag #target={document.body}>\n\t<!-- transfor into body -->\n</tag>\n\n<tag #target={".container"}>\n\t<!-- transfor into document.querySelector(".container") -->\n</tag>',
         description:
             'The target directive is used to move an element into a target element as its child node.  Its value can be either the target element itself or a CSS selector that identifies the target element, such as "body", ".box", or "#uniqid". If pass a selector but the corresponding element is not exist, the node will remain in its original position.'
+    },
+    {
+        name: "scope",
+        requiredValue: false,
+        useage: '<Child #scope />\n\n<lang-css>\n    /* affect child root */\n    .child-root {\n        border-color: blue;\n    }\n\n    /* affect child internal */\n    [qk-scope] .child-box {\n        background-color: lightblue;\n    }\n</lang-css>',
+        description:
+            "The scope directive is used to pass the parent component's scope attribute to the root element of a child component, allowing parent styles to affect the child's root element. It can only be used on component tags. If the child's root node is a virtual element (such as qk:spread or another component), Qingkuai will traverse inward to find the first real DOM element and attach the scope attribute to it. Multiple #scope directives in the ancestor chain can be combined, each layer attaching its own scope to the final root element."
     }
 ]
 

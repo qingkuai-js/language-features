@@ -14,7 +14,7 @@ If request includes any of these intents, apply this prompt first:
 
 ## Primary References
 
-- docs://getting-started/installation.md
+- docs://getting-started/install.md
 
 Read docs first, then provide commands.
 

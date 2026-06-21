@@ -2,29 +2,35 @@ import type TS from "typescript"
 
 import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
-import type { GeneralFunc } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
 import type { ExtractedSlotName, ExtractedSlotContext, GlobalTypeItem } from "../../types/adapter"
 
+import {
+    QingkuaiNotFound,
+    GlobalTypeIsNonObjectTs,
+    ExternalGlobalTypeWithGenerics
+} from "../../messages/error"
 import { ts } from "../state"
 import { GlobalTypeIsNonObjectJs } from "../../messages/warn"
 import { GLOBAL_TYPE_IDS, LSU_AND_DOT } from "../../constants"
 import { traverseObject } from "../../../../../shared-util/sundry"
+import { isNodeEnvironment } from "../../../../../shared-util/assert"
 import { isInComponentFunctionTopScope, isInTopScope, walkTsNode } from "../ts-ast"
 import { constants as qingkuaiConstants, util as qingkuaiUtil } from "qingkuai/compiler"
-import { ExternalGlobalTypeWithGenerics, GlobalTypeIsNonObjectTs } from "../../messages/error"
 
 export function confirmTypesForCompileResult(
     adapter: TypescriptAdapter,
     fileInfo: QingkuaiFileInfo
 ) {
+    let program: TS.Program | undefined
+
     let sourceFile!: TS.SourceFile
     let typeChecker!: TS.TypeChecker
     let componentFuncNode!: TS.FunctionDeclaration
     let componentReturnsNode: TS.ReturnStatement | undefined
 
     const updateSourceFile = () => {
-        const program = adapter.getDefaultProgram(fileInfo.path)!
+        program = adapter.getDefaultProgram(fileInfo.path)
         sourceFile = program?.getSourceFile(fileInfo.path)!
         typeChecker = program?.getTypeChecker()!
         return sourceFile
@@ -35,20 +41,26 @@ export function confirmTypesForCompileResult(
     }
     fileInfo.typesConfirmed = true
 
+    const edit = new FileEdit(fileInfo)
+    const isNodeEnv = isNodeEnvironment()
     const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
-    const edit = new FileEdit(fileInfo, updateSourceFile)
+    const compilerOptions = program!.getCompilerOptions()
     const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
     const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
 
-    walkTsNode(sourceFile, node => {
+    if (isNodeEnv && (fileInfo.isTS || compilerOptions.checkJs)) {
         if (
-            ts.isFunctionDeclaration(node) &&
-            node.name?.text === qingkuaiConstants.LSC.COMPONENT &&
-            isInTopScope(node)
+            !ts.resolveModuleName("qingkuai", fileInfo.path, compilerOptions, ts.sys).resolvedModule
         ) {
+            fileInfo.pushDiagnostic(0, 1, QingkuaiNotFound(), true)
+        }
+    }
+
+    walkTsNode(sourceFile, node => {
+        if (ts.isFunctionDeclaration(node) && isInTopScope(node)) {
             componentFuncNode = node
         }
 
@@ -326,9 +338,7 @@ export function confirmTypesForCompileResult(
                 edit.push(`     * ${generic}\n`)
             }
             edit.setEditIndex(componentReturnsNode.getStart())
-            edit.push(
-                `     * @param {Object} _\n     * @param {${contextPropsType}} _.props\n`
-            )
+            edit.push(`     * @param {Object} _\n     * @param {${contextPropsType}} _.props\n`)
             edit.push(`     * @param {${contextRefsType}} _.refs\n     * @param {`)
         }
     }
@@ -365,10 +375,7 @@ export function confirmTypesForCompileResult(
             defaultExportSymbol,
             sourceFile
         )
-        const defaultExportTypeStr = typeChecker
-            .typeToString(defaultExportType)
-            .replaceAll("{", "{\n")
-        fileInfo.defaultExportTypeStr = defaultExportTypeStr
+        fileInfo.defaultExportTypeStr = typeChecker.typeToString(defaultExportType)
     }
 }
 
@@ -381,10 +388,7 @@ export class FileEdit {
         sourceRange?: Pair<number>
     }[] = []
 
-    constructor(
-        private fileInfo: QingkuaiFileInfo,
-        private updateSourceFile: GeneralFunc
-    ) {}
+    constructor(private fileInfo: QingkuaiFileInfo) {}
 
     get isEmpty() {
         return this.items.length === 0

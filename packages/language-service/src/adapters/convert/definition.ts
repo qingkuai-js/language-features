@@ -8,7 +8,9 @@ import type {
 import type { TypescriptAdapter } from "../adapter"
 import type { Range } from "vscode-languageserver-types"
 
+import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
+import { getNodeAtPositionWithin, getSymbolAtPositionWithin, isComponentReturns } from "../ts-ast"
 
 // 待办：优先使用 originFileName、originTextSpan 以及 originContextSpan 以支持 .d.ts.map 映射文件
 
@@ -111,10 +113,29 @@ export function proxyGetDefinitionAndBoundSpanToConvert(
     const languageService = project.getLanguageService()
     const getDefinitionAndBoundSpan = languageService.getDefinitionAndBoundSpan
     languageService.getDefinitionAndBoundSpan = (fileName, position) => {
-        const originalRet = getDefinitionAndBoundSpan.call(languageService, fileName, position)
+        let originalRet = getDefinitionAndBoundSpan.call(languageService, fileName, position)
         if (!originalRet?.definitions) {
             return
         }
+
+        // 当查找到的定义是组件导出时，再次查找定义作为结果
+        const firstDefinition = originalRet.definitions[0]
+        if (originalRet.definitions.length === 1 && isQingkuaiFileName(firstDefinition.fileName)) {
+            const sourceFile = languageService.getProgram()?.getSourceFile(firstDefinition.fileName)
+            const node =
+                sourceFile && getNodeAtPositionWithin(sourceFile, firstDefinition.textSpan.start)
+            if (node && isComponentReturns(node)) {
+                originalRet.definitions = getDefinitionAndBoundSpan.call(
+                    languageService,
+                    firstDefinition.fileName,
+                    node.getStart()
+                )?.definitions
+            }
+            if (!originalRet?.definitions) {
+                return
+            }
+        }
+
         originalRet.definitions.forEach(definition => {
             if (isQingkuaiFileName(definition.fileName)) {
                 const definitionLocationConvertor = adapter.service.createLocationConvertor(

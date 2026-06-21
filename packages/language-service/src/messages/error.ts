@@ -15,3 +15,10 @@ export const GlobalTypeIsNonObjectTs = (name: string): LSMessage => {
         "https://qingkuai.dev/misc/typescript.html#component-attribute-types"
     ]
 }
+
+export const QingkuaiNotFound = (): LSMessage => {
+    return [
+        3003,
+        `The dependency "qingkuai" cannot be found. Please make sure it is installed and can be resolved.`
+    ]
+}

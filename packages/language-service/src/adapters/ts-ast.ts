@@ -2,10 +2,18 @@ import type TS from "typescript"
 
 import { ts } from "./state"
 import { isUndefined } from "../../../../shared-util/assert"
-import { constants as qingkuaiConstants } from "qingkuai/compiler"
 
 export function getKindName(node: TS.Node) {
     return ts.SyntaxKind[node.kind]
+}
+
+export function getSymbolAtPositionWithin(
+    node: TS.Node,
+    pos: number,
+    typeChecker: TS.TypeChecker
+): TS.Symbol | undefined {
+    const foundNode = getNodeAtPositionWithin(node, pos)
+    return foundNode && typeChecker.getSymbolAtLocation(foundNode)
 }
 
 // 判断某个节点是否处于当前文件的顶部作用域
@@ -30,18 +38,6 @@ export function isInTopScope(node: TS.Node): boolean {
     }
 }
 
-// 判断某个节点是否处于组件函数顶部作用域
-export function isInComponentFunctionTopScope(node: TS.Node): boolean {
-    const blockNode = ts.findAncestor(node, ancestor => {
-        return ts.isBlock(ancestor)
-    })
-    return !!(
-        blockNode?.parent &&
-        ts.isFunctionDeclaration(blockNode.parent) &&
-        blockNode.parent.name?.text === qingkuaiConstants.LSC.COMPONENT
-    )
-}
-
 export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {
     while (node.kind !== kind) {
         node = node.parent
@@ -50,16 +46,6 @@ export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {
         }
     }
     return node
-}
-
-// 遍历所有后代节点
-export function walkTsNode(node: TS.Node | undefined, callback: (node: TS.Node) => void) {
-    if (!isUndefined(node)) {
-        callback(node)
-        ts.forEachChild(node, cn => {
-            walkTsNode(cn, callback)
-        })
-    }
 }
 
 // 查找指定位置的节点
@@ -81,12 +67,28 @@ export function getAliasedSymbol(typeChecker: TS.TypeChecker, node: TS.Node) {
     return symbol && typeChecker.getAliasedSymbol(symbol)
 }
 
+export function isComponentReturns(node: TS.Node): boolean {
+    const returnNode = findAncestorUntil(node, ts.SyntaxKind.ReturnStatement)
+    const funcNode = returnNode && findAncestorUntil(returnNode, ts.SyntaxKind.ArrowFunction)
+    return !!funcNode && isInComponentFunctionTopScope(funcNode)
+}
+
+// 遍历所有后代节点
+export function walkTsNode(node: TS.Node | undefined, callback: (node: TS.Node) => void) {
+    if (!isUndefined(node)) {
+        callback(node)
+        ts.forEachChild(node, cn => {
+            walkTsNode(cn, callback)
+        })
+    }
+}
+
 // 从指定节点中查找指定位置的节点（深度优先遍历）
-export function getNodeAtPositionAndWithin(node: TS.Node, pos: number): TS.Node | undefined {
+export function getNodeAtPositionWithin(node: TS.Node, pos: number): TS.Node | undefined {
     const [start, len] = [node.getStart(), node.getWidth()]
     if (pos >= start && pos <= start + len) {
         for (const child of node.getChildren()) {
-            const foundInChild = getNodeAtPositionAndWithin(child, pos)
+            const foundInChild = getNodeAtPositionWithin(child, pos)
             if (foundInChild) {
                 return foundInChild
             }
@@ -94,4 +96,11 @@ export function getNodeAtPositionAndWithin(node: TS.Node, pos: number): TS.Node 
         return node
     }
     return undefined
+}
+
+// 判断某个节点是否处于组件函数顶部作用域
+export function isInComponentFunctionTopScope(node: TS.Node): boolean {
+    return !!ts.findAncestor(node, ancestor => {
+        return node !== ancestor && ts.isFunctionDeclaration(ancestor) && isInTopScope(ancestor)
+    })
 }

@@ -1,8 +1,8 @@
 import type { UpdateContentParams } from "../../../../types/communication"
 
-import { tsPluginIpcServer, adapter, projectService } from "../state"
 import { refreshDiagnostics } from "./diagnostic/refresh"
 import { TP_HANDLERS } from "../../../../shared-util/constant"
+import { tsPluginIpcServer, adapter, projectService } from "../state"
 
 export function attachGetLanguageId() {
     tsPluginIpcServer.onRequest(TP_HANDLERS.GetLanguageId, (fileName: string) => {

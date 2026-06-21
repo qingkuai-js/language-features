@@ -34,6 +34,7 @@ export interface SetStateOptions {
 
 export type LSDiagnostic = TS.Diagnostic & {
     url?: string
+    isSourceLoc?: boolean
 }
 
 export interface AdapterTsProjectService {

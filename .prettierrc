@@ -12,7 +12,7 @@
             }
         },
         {
-            "files": ["regular.ts"],
+            "files": ["regular.ts", "**/*.d.ts"],
             "options": {
                 "printWidth": 200
             }

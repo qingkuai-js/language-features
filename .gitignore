@@ -2,6 +2,7 @@ dist
 test-space
 node_modules
 .github/skills
+packages/mcp-server/scripts
 packages/vscode-extension/scripts
 
 .history

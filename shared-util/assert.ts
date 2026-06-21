@@ -44,3 +44,15 @@ export function isBoolean(v: any): v is boolean {
 export function isQingkuaiFileName(fileName: string) {
     return fileName.endsWith(".qk")
 }
+
+export function isNodeEnvironment() {
+    const hasRequire = typeof require === "function"
+    const hasModule = typeof module === "object" && module?.exports
+    const hasProcess = typeof process === "object" && process?.versions?.node
+    const hasGlobal = typeof global === "object" && global?.global === global
+
+    // @ts-ignore
+    const isNotBrowser = typeof window === "undefined"
+
+    return hasRequire && hasModule && hasProcess && hasGlobal && isNotBrowser
+}

@@ -1,52 +1,68 @@
+# Form Handling
+
+In the earlier [Reference Attributes](docs://basic/reference-attributes.md) article, we already introduced the basic usage of obtaining variable references through the `&` syntax. In real development, the values of form elements often need to stay synchronized with state variables, so reference attributes are especially important in form handling scenarios. This section focuses on the usage details of reference attributes on form elements, explaining how this mechanism can be used to efficiently access and control form data and achieve reactive data binding and updates.
+
 ---
-description: "Form element handling using reference attributes for two-way data binding."
----
 
-# Scope
+## Text Input
 
-Reference attribute usage patterns for form elements (extends docs://basic/reference-attributes.md).
-`qk:spread` syntax reference: docs://misc/builtin-elements.md.
-
-# Text Input
+In the [Form Input Handling](docs://basic/reference-attributes.md#form-input-handling) section of the reference attributes article, we introduced how to use the `&value` reference attribute on an `input` tag to synchronize the input content with a variable in the embedded script. Similarly, `textarea` supports the same pattern:
 
 ```qk
 <lang-js>
     let inputValue = "Initial value"
 </lang-js>
-<input type="text" &value={inputValue} />
-<p>Value: {inputValue}</p>
+
+<p>The inputValue is: {inputValue}</p>
+<textarea &value={inputValue}></textarea>
 ```
 
-# Number Input
+In addition, the `input` tag can also accept a `&number` reference attribute, which synchronizes the input value to the target variable after converting it into a number:
 
 ```qk
+<lang-js>
+    let numericValue = 0
+</lang-js>
+
+<p>The numericValue is: {numericValue}</p>
 <input type="number" &number={numericValue} />
 ```
 
-Behavior: Converts input to number; sets to `NaN` if invalid.
+<div class="custom-block warning">
+    Note that the <code>&number</code> reference attribute sets the target variable to <code>NaN</code> when the input value cannot be converted into a valid number. For this reason, it is usually intended to be used together with <code>type="number"</code> on the <code>input</code> tag so that the input stays valid.
+</div>
 
-Constraint: Pair `&number` with `type="number"`.
+---
 
-# Textarea
+## Checkbox and Radio
 
-```qk
-<textarea &value={textValue}></textarea>
-```
-
-# Checkbox
+For radio buttons and checkboxes, you can add `&checked` to synchronize the checked state with a variable value:
 
 ```qk
-<input type="checkbox" &checked={isChecked} />
-<p>{isChecked ? "checked" : "not checked"}</p>
+<lang-js>
+    let radioChecked = false
+    let checkboxChecked = false
+</lang-js>
+
+<input
+    type="radio"
+    &checked={radioChecked}
+/>
+<input
+    type="checkbox"
+    &checked={checkboxChecked}
+/>
+<p>radio: {radioChecked ? "" : "not"} checked</p>
+<p>checkbox: {checkboxChecked ? "" : "not"} checked</p>
 ```
 
-# Radio Button
+---
 
-```qk
-<input type="radio" &checked={isSelected} />
-```
+## Checkbox and Radio Groups
 
-# Checkbox Group
+Sometimes you may need to synchronize the combined state of multiple radio buttons or checkboxes. In that case, you can use the `&group` attribute and pass in an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) or [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set):
+
+|js|ts|
 
 ```qk
 <lang-js>
@@ -54,13 +70,18 @@ Constraint: Pair `&number` with `type="number"`.
     const choices = ["Qingkuai", "JavaScript", "TypeScript"]
 </lang-js>
 
-<qk:spread #for={item of choices}>
+<qk:spread #for={item, index of choices}>
     <input
         type="checkbox"
         !id={"choice" + item}
         &group={checkedArr}
     />
-    <label !for={"choice" + item}>{item}</label>
+    <label
+        !for={"choice" + item}
+        style="margin-right: 20px;"
+    >
+        {item}
+    </label>
 </qk:spread>
 
 <qk:spread #for={item, index of choices}>
@@ -68,11 +89,36 @@ Constraint: Pair `&number` with `type="number"`.
 </qk:spread>
 ```
 
-# Radio Group
+```qk
+<lang-ts>
+    const checkedArr: boolean[] = []
+    const choices = ["Qingkuai", "JavaScript", "TypeScript"]
+</lang-ts>
 
-Use `&group` with Array/Set same as checkbox group.
+<qk:spread #for={item, index of choices}>
+    <input
+        type="checkbox"
+        !id={"choice" + item}
+        &group={checkedArr}
+    />
+    <label
+        !for={"choice" + item}
+        style="margin-right: 20px;"
+    >
+        {item}
+    </label>
+</qk:spread>
 
-# Select (Single)
+<qk:spread #for={item, index of choices}>
+    <p>{item}: {checkedArr[index] ? "" : "not"} checked</p>
+</qk:spread>
+```
+
+---
+
+## Select
+
+The `select` tag can use the `&value` reference attribute to synchronize the selected item:
 
 ```qk
 <lang-js>
@@ -81,12 +127,17 @@ Use `&group` with Array/Set same as checkbox group.
 </lang-js>
 
 <select &value={selected}>
-    <option !value={item} #for={item of choices}>{item}</option>
+    <option
+        !value={item}
+        #for={item of choices}
+    >
+        {item}
+    </option>
 </select>
-<p>Selected: {selected}</p>
+<p>Your selected: {selected}</p>
 ```
 
-# Select (Multi-Select with Array)
+For a multi-select `select`, you can pass an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) or [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) to `&value`. In that case, the target may be a constant because Qingkuai only calls its methods and does not modify the target itself:
 
 ```qk
 <lang-js>
@@ -94,15 +145,21 @@ Use `&group` with Array/Set same as checkbox group.
     const choices = ["Qingkuai", "JavaScript", "TypeScript"]
 </lang-js>
 
-<select multiple &value={selectedItems}>
-    <option !value={item} #for={item of choices}>{item}</option>
+<select
+    multiple
+    &value={selectedItems}
+>
+    <option
+        !value={item}
+        #for={item of choices}
+    >
+        {item}
+    </option>
 </select>
-<p>Selected: {selectedItems.join(", ")}</p>
+<p>Selected items: {selectedItems.join(", ")}</p>
 ```
 
-Behavior: In `Array`/`Set` mode, runtime mutates the collection instead of reassigning target reference.
-
-# Select (Multi-Select with Set)
+Using a `Set` is completely equivalent:
 
 ```qk
 <lang-js>
@@ -110,8 +167,16 @@ Behavior: In `Array`/`Set` mode, runtime mutates the collection instead of reass
     const choices = ["Qingkuai", "JavaScript", "TypeScript"]
 </lang-js>
 
-<select multiple &value={selectedItems}>
-    <option !value={item} #for={item of choices}>{item}</option>
+<select
+    multiple
+    &value={selectedItems}
+>
+    <option
+        !value={item}
+        #for={item of choices}
+    >
+        {item}
+    </option>
 </select>
-<p>Selected: {Array.from(selectedItems).join(", ")}</p>
+<p>Selected items: {Array.from(selectedItems).join(", ")}</p>
 ```

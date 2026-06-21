@@ -1,9 +1,5 @@
 import type { GetDiagnosticResultItem } from "../../../../types/communication"
 
-import { getCompileResult } from "../compile"
-import { debounce } from "../../../../shared-util/sundry"
-import { getDiagnostic } from "qingkuai-language-service"
-import { TP_HANDLERS } from "../../../../shared-util/constant"
 import {
     tpic,
     Logger,
@@ -12,6 +8,10 @@ import {
     isTestingEnv,
     limitedScriptLanguageFeatures
 } from "../state"
+import { getCompileResult } from "../compile"
+import { debounce } from "../../../../shared-util/sundry"
+import { getDiagnostic } from "qingkuai-language-service"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
 
 export const publishDiagnostics = debounce(
     async (uri: string) => {
@@ -25,7 +25,9 @@ export const publishDiagnostics = debounce(
             const diagnostics = await getDiagnostic(cr, getScriptDiagnostics)
             connection.sendDiagnostics({ uri, diagnostics })
         } catch (err) {
-            Logger.warn(`Publish diagnostics failed: ${err instanceof Error ? err.message : String(err)}`)
+            Logger.warn(
+                `Publish diagnostics failed: ${err instanceof Error ? err.message : String(err)}`
+            )
             connection.sendDiagnostics({ uri, diagnostics: [] })
         }
     },

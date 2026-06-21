@@ -1,129 +1,192 @@
+# Event Handling
+
+In frontend development, user interaction with the page is often driven by events. Qingkuai provides concise and intuitive event binding syntax, making it easy to add click, input, keyboard, and other event handling logic to elements so that you can build responsive interactive experiences.
+
+In Qingkuai, attributes starting with `@` are used to bind event handlers. For example, `@click` listens for click events. This syntax is similar to the `onclick` attribute in HTML, but more powerful: you can write arbitrary expressions inside interpolation blocks as event handling logic, which is both more concise and more expressive.
+
 ---
-description: "Event binding syntax, handlers, flags, and event delegation patterns."
----
 
-# Scope
+## Binding Events
 
-Event binding and handling with concise syntax, inline expressions, and functional/key flags.
-
-# Event Binding Syntax
-
-Prefix attribute with `@` followed by event name:
+The following code binds a click event to a `button`. When the button is clicked, the `handleAddCount` method is called:
 
 ```qk
-<button @click={handleClick}>Click</button>
-<input @input={handleInput} />
-<input @keydown={handleKeydown} />
+<lang-js>
+    let count = 0
+
+    function handleAddCount(){
+        count++ // modifying a reactive variable updates the p element automatically
+    }
+</lang-js>
+
+<p>current count: {count}</p>
+<button @click={handleAddCount}>Add Count</button>
 ```
 
-## Handler Types
+Functions such as `handleAddCount` are called event handlers. They can declare parameters to receive the event object, which is consistent with native `addEventListener` behavior:
 
-```qk
-<button @click={handleClick}></button>       <!-- function reference -->
-<button @click={()=>count++}></button>       <!-- arrow function -->
-<button @click={count++}></button>           <!-- inline expression -->
-```
-
-## Event Object Access
+|js|ts|
 
 ```js
 function handleAddCount(e) {
     count++
-    console.log(e.target === this) // true, both point to element
+    console.log(e.target === this) // true, both point to the clicked button element
 }
 ```
 
-## Native Event in Inline Handler
-
-```qk
-<button @click={$arg => console.log($arg.target)}>Click</button>
+```ts
+function handleAddCount(this: HTMLButtonElement, e: MouseEvent) {
+    count++
+    console.log(e.target === this) // true, both point to the clicked button element
+}
 ```
 
-Default parameter: `$arg` (represents either native event or component parameter).
-
-## Shorthand When Name Matches
+Just like [dynamic attributes](docs://basic/interpolation.md#dynamic-attributes), when the event name is the same as the variable name, the interpolation block can be omitted. The following two forms are equivalent:
 
 ```qk
-<button @click></button>        <!-- equivalent to: @click={click} -->
+<button @click></button>
+<button @click={click}></button>
 ```
 
-Constraint: Not supported if event name is keyword (e.g., `class`, `for`).
+<div class="custom-block warning">If the event name is a keyword or reserved word in the embedded script language, this syntax is not supported, such as <code>class</code> or <code>for</code>.</div>
 
-# Handler Type Detection
+---
 
-Compiler distinguishes inline vs normal handlers:
+## Inline Event Handlers
 
-**Normal handlers** (not wrapped again):
+In the example above, the handler contains only one line of code, so declaring a separate method may seem unnecessary. In this case, there are two ways to simplify the code:
 
-- Standalone identifiers: `identifier`
-- Property access: `handlers.click`
-- Function declarations: `function(){}`
-- Arrow functions: `() => {}`
+1. Use an arrow function as the event handler:
 
-**Inline handlers** (wrapped):
+    ```qk
+    <button @click={() => count++}>Add Count</button>
+    ```
 
-- Expressions: `count++`
-- Conditional calls: `handlers?.click()`
-- Ternary: `n > 10 ? yes() : no()`
+2. Use inline event handler syntax by writing a JS/TS expression directly in the interpolation block:
 
-Inline handlers auto-bind `this` when calling other methods.
+    ```qk
+    <button @click={count++}>Add Count</button>
+    ```
 
-# Event Handler Flags
-
-## Functional Flags
+An inline event handler in the second form is compiled into code similar to this:
 
 ```qk
+<button @click={$arg => count++}>Add Count</button>
+```
+
+So you can also access the native event object through `$arg` in an inline event handler:
+
+```qk
+<button @click={$arg => console.log($arg.target)}>Add Count</button>
+```
+
+<div class="custom-block tip">
+    From the perspective of native events, naming <code>$arg</code> as <code>$event</code> might feel more intuitive. However, to keep the semantics consistent, Qingkuai uses <code>$arg</code> as the default parameter name because it also covers arbitrary parameters passed into <a href="docs://components/basic.md">component</a> inline event handlers. In other words, <code>$arg</code> can represent either a native event object or any parameter passed from a component.
+</div>
+
+If you call other methods inside an inline event handler, Qingkuai automatically binds `this` in the called methods to the current element:
+
+|js|ts|
+
+```qk
+<lang-js>
+    let count = 0
+
+    function handleAddCount(e) {
+        count++
+        console.log(e.target === this) // true, both point to the clicked button element
+    }
+</lang-js>
+
+<p>current count: {count}</p>
+<button @click={handleAddCount($arg)}>Add Count</button>
+```
+
+```qk
+<lang-ts>
+    let count = 0
+
+    function handleAddCount(this: HTMLButtonElement, e: MouseEvent) {
+        count++
+        console.log(e.target === this) // true, both point to the clicked button element
+    }
+</lang-ts>
+
+<p>current count: {count}</p>
+<button @click={handleAddCount($arg)}>Add Count</button>
+```
+
+<div class="custom-block tip">
+    If your embedded script language is <a href="https://www.typescriptlang.org">TypeScript</a>, the type of <code>$arg</code> is strictly inferred. For example, for <code>@keydown</code> it is <a href="https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent">KeyboardEvent</a>; for <code>@click</code> it is <a href="https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent">MouseEvent</a>.
+</div>
+
+---
+
+## Handler Type Detection
+
+At this point you may wonder: when is a handler considered inline, and when is it treated as a normal event handler? From the Qingkuai compiler's point of view, inline event handlers are interpolation expressions that need to be compiled into a wrapped function. When the interpolation expression is a standalone identifier, a property access expression, a function declaration, or an arrow function, the compiler treats it as a complete function and does not wrap it again, so it is considered a normal event handler:
+
+```qk
+<!-- normal event handlers -->
+<tag @click={()=>{}}></tag>
+
+<tag @click={identifier}></tag>
+
+<tag @click={handlers.click}></tag>
+
+<tag @click={function(){}}></tag>
+
+<tag @click={function unnamed(){}}></tag>
+
+<!-- inline event handlers -->
+<tag @click={count++}></tag>
+
+<tag @click={handlers?.click()}></tag>
+
+<tag @click={n > 10 ? yes() : no()}></tag>
+```
+
+---
+
+## Event Handler Flags
+
+Qingkuai allows you to append flags after an event name to simplify common interaction logic. The currently supported flag types are as follows:
+
+1. Functional flags:
+   - `self`: execute the bound event handler only when `event.target` is the element itself, without preventing the event from firing.
+   - `stop`: call [stopPropagation](https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation) at the end of the handler to stop bubbling.
+   - `prevent`: call [preventDefault](https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault) at the end of the handler to prevent the default behavior.
+   - `once`: remove the event handler after it runs once, equivalent to [addEventListener options.once](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#options).
+   - `capture`: trigger the bound handler during the capture phase, equivalent to [addEventListener options.capture](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#options).
+   - `passive`: tell the browser that `event.preventDefault` will never be called in the handler, commonly used for mobile performance optimization, equivalent to [addEventListener options.passive](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#options).
+
+2. Key flags: the event handler runs only while the relevant keys are held down. These flags can be used only on keyboard-related events such as `keyup` and `keydown`:
+   - regular key flags: `enter`, `tab`, `del`, `esc`, `up`, `down`, `left`, `right`, `space`
+   - system key flags: `meta`, `alt`, `ctrl`, `shift`
+
+Here are some examples of passing flags to event handlers:
+
+```qk
+<!-- Only clicking the text area Click, not the span area, triggers the handler, and it runs only once -->
 <button @click|self|once={console.log("ok")}>
     Click <span>Me</span>
 </button>
+
+<!-- The handler is triggered only when alt and shift are both held down while clicking the button -->
+<button @click|alt|shift={console.log("ok")}> Click Me </button>
 ```
 
-| Flag      | Effect                                                 |
-| --------- | ------------------------------------------------------ |
-| `self`    | Execute only when `event.target` is the element itself |
-| `stop`    | Call `stopPropagation()` after handler                 |
-| `prevent` | Call `preventDefault()` after handler                  |
-| `once`    | Remove handler after first run                         |
-| `capture` | Trigger during capture phase                           |
-| `passive` | Browser optimization: `preventDefault` never called    |
+---
 
-## Key Flags
+## Event Delegation
 
-Regular keys (for `keyup`, `keydown`, etc.):
+Qingkuai uses the Event Delegation pattern. This is a common event handling technique that takes advantage of [event bubbling](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling) by binding listeners to parent elements instead of binding one listener for each child element. This can significantly reduce memory usage and improve performance, especially when handling a large number of dynamically created elements. The compiler automatically enables event delegation for the following event types:
 
-```qk
-<input @keydown|enter={handleEnter} />
-<input @keydown|tab={handleTab} />
-<input @keydown|del|esc={handleDelete} />
-```
-
-Supported: `enter`, `tab`, `del`, `esc`, `up`, `down`, `left`, `right`, `space`
-
-System keys:
-
-```qk
-<button @click|alt|shift={handleClick}>Click</button>
-```
-
-Supported: `meta`, `alt`, `ctrl`, `shift`
-
-# Event Delegation
-
-Qingkuai automatically enables event delegation for common event types (reduces memory usage for large dynamic lists):
-
-**Form/Input**: `beforeinput`, `input`, `change`
-**Keyboard**: `keydown`, `keypress`, `keyup`
-**Mouse/Menu**: `click`, `dblclick`, `mousedown`, `mousemove`, `mouseup`, `mouseover`, `mouseout`, `contextmenu`
-**Clipboard**: `copy`, `cut`, `paste`
-**Drag**: `drag`, `dragstart`, `dragenter`, `dragover`, `dragleave`, `drop`, `dragend`
-**Pointer**: `pointerdown`, `pointermove`, `pointerover`, `pointerout`, `pointerup`, `pointercancel`
-**Selection**: `select`, `selectionchange`, `selectstart`
-**Touch**: `touchstart`, `touchmove`, `touchend`, `touchcancel`
-
-# TypeScript Event Types
-
-When using TypeScript, `$arg` type is strictly inferred:
-
-- `@keydown`: `KeyboardEvent`
-- `@click`: `MouseEvent`
-- etc.
+- form and input events: `beforeinput`, `input`, `change`
+- keyboard events: `keydown`, `keypress`, `keyup`
+- mouse and menu events: `click`, `dblclick`, `mousedown`, `mousemove`, `mouseup`, `mouseover`, `mouseout`, `contextmenu`
+- clipboard events: `copy`, `cut`, `paste`
+- drag events: `drag`, `dragstart`, `dragenter`, `dragover`, `dragleave`, `drop`, `dragend`
+- pointer events: `pointerdown`, `pointermove`, `pointerover`, `pointerout`, `pointerup`, `pointercancel`
+- selection events: `select`, `selectionchange`, `selectstart`
+- touch events: `touchstart`, `touchmove`, `touchend`, `touchcancel`

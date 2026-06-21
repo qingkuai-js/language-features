@@ -1,77 +1,68 @@
----
-description: "TypeScript support in Qingkuai - type inference for attributes, generics, slots, and events."
----
-
 # TypeScript Support
 
-Type inference and checking rules for component attributes, directives, lifecycle hooks, and global APIs.
-`qk:spread` syntax reference: docs://misc/builtin-elements.md.
+Qingkuai provides full [TypeScript](https://www.typescriptlang.org/) support. The framework itself is written in TypeScript, and compatibility with the type system is fully considered in its design. Whether you are working with component attributes, directives, lifecycle hooks, or global APIs, Qingkuai provides solid type hints and inference so that you get better auto-completion, error checking, and an overall better development experience. For projects that value type safety and maintainability, TypeScript and Qingkuai are a strong combination.
+
+<div class="custom-block tip">
+    Qingkuai is zero-intrusive with respect to TypeScript configuration. You can configure tsconfig.json just as you would in a plain TypeScript project. Projects created with <a href="https://www.npmjs.com/package/create-qingkuai">create-qingkuai</a> already include the necessary TypeScript configuration.
+</div>
 
 ---
 
 ## Component Attribute Types
 
-### Declaring Props and Refs
-
-**Reserved type names:** `Props` and `Refs`
-
-**Syntax (interface):**
+In component files, `Refs` and `Props` are reserved type names. Declaring these two types lets you specify types for component reference attributes and other attributes:
 
 ```ts
-interface Props {
-    name: string
-    list: string[]
-}
-
 interface Refs {
-    input: HTMLInputElement
+    // ...
+}
+
+interface Props {
+    // ...
 }
 ```
 
-**Syntax (type):**
+You can also declare them with the `type` keyword:
 
 ```ts
-type Props = {
-    name: string
-    list: string[]
+type Refs = {
+    // ...
 }
-
-type Refs = Record<string, any>
+type Props = Record<string, any>
 ```
 
-**Syntax (imported):**
+Importing the types from external files is also supported:
 
 ```ts
 import type Refs from "./ref-types/Component"
 import type { ComponentProps as Props } from "./types"
 ```
 
-### Props Type Wrapping
-
-**Behavior:** Language service wraps `Props` type in `Readonly` because component props cannot be modified directly.
-
-**Example:**
+At the language-service level, the `Props` type is wrapped in `Readonly`, because component props cannot be modified directly:
 
 ```ts
 interface Props {
     name: string
+    list: string[]
 }
 
-// Error: Cannot assign to 'name' because it is read-only property. ts(2540)
+// Cannot assign to 'name' because it is a read-only property.ts(2540)
 props.name = "..."
 ```
 
-### JavaScript (JSDoc) Types
+<div class="custom-block tip">
+    If your embedded script language is TypeScript but you do not declare these two types, the corresponding built-in variables are typed as empty object types.
+</div>
 
-**JSDoc syntax for Props:**
+If your embedded script language is JavaScript, you can use [JSDoc](https://jsdoc.app) to add type declarations for component attributes:
 
 ```js
 /**
- * @typedef {{ name: string }} Props
+ * @typedef {{ name: string }} Refs
  */
 ```
 
-**JSDoc syntax with @property:**
+Or:
 
 ```js
 /**
@@ -80,32 +71,23 @@ props.name = "..."
  */
 ```
 
-### Default Type Behavior
-
-**When types not declared:**
-
-- **TypeScript script:** `Props` and `Refs` typed as empty object `{}`
-- **JavaScript script:** No type checking (JSDoc optional)
-
 ---
 
 ## Generic Parameters
 
-### Declaring Generics
-
-**Syntax (Props with generics):**
+Qingkuai components support generic type parameters. You can define the generics you need directly in the `Props` or `Refs` type declarations:
 
 ```ts
-type Props<T> = {
-    list: T[]
-}
-
 type Refs<T> = {
     value: T
 }
+
+interface Props<T> {
+    list: T[]
+}
 ```
 
-**JavaScript (JSDoc generics):**
+If your embedded script language is JavaScript, you can also declare generic types through JSDoc:
 
 ```js
 /**
@@ -115,50 +97,38 @@ type Refs<T> = {
  */
 ```
 
-### Generic Type Inference
-
-**Behavior:** Language service infers generic parameter types from component attributes.
-
-**Example:**
-
-```ts
-// Inner.qk
-interface Props<T> {
-    list: T[]
-}
-```
+Qingkuai language services infer generic parameter types from component attributes. For example, in the code below, the `list` attribute of `Inner` in `Outer.qk` is inferred as `string[]`, so `T` is inferred as `string`:
 
 ```qk
+<!-- Inner.qk -->
+<lang-ts>
+    interface Props<T> {
+        list: T[]
+    }
+</lang-ts>
+
 <!-- Outer.qk -->
 <Inner !list={["a", "b", "c"]} />
-<!-- T inferred as string -->
 ```
 
-### Manual Generic Arguments
-
-**Syntax:**
+You can also specify generic arguments manually to constrain attribute types:
 
 ```qk
-<!-- list must be array of numbers -->
+<!-- list must be an array of numbers -->
 <Inner<number> !list={[1, 2, 3]} />
 
-<!-- list must be array of strings -->
+<!-- list must be an array of strings -->
 <Inner<string> !list={["a", "b", "c"]} />
 ```
 
-### Generic External Type Import
-
-**Constraint:** External types with generic parameters cannot be imported directly as global types (generic arguments must be provided).
-
-**Solution (TypeScript redeclaration):**
+When an external type includes generic parameters, you cannot import it directly as a global type declaration, because generic arguments must be provided when using that type. This is consistent with standard TypeScript restrictions. In this case, redeclare the global type in the component file and pass the required generic arguments, for example:
 
 ```ts
 import type { ComponentProps } from "./types"
 
-// Option 1: Type alias
 type Props = ComponentProps<string>
 
-// Option 2: Interface extension
+// Or
 interface Props extends ComponentProps<string> {
     // ...
 }
@@ -168,18 +138,20 @@ interface Props extends ComponentProps<string> {
 
 ## Slot Context
 
-### Automatic Type Inference
-
-**Behavior:** Language service automatically infers slot context types from `slot` tag. Manual declaration not required.
-
-**Example (component definition):**
+In component files, you do not need to declare slot context types manually. Qingkuai language services infer slot context types automatically from the `slot` tag:
 
 ```qk
 <!-- DataList.qk -->
 <lang-ts>
     const rows = [
-        { id: 1, name: "Row 1" },
-        { id: 2, name: "Row 2" }
+        {
+            id: 1,
+            name: "Row 1"
+        },
+        {
+            id: 2,
+            name: "Row 2"
+        }
     ]
 </lang-ts>
 
@@ -190,9 +162,7 @@ interface Props extends ComponentProps<string> {
 </qk:spread>
 ```
 
-**Type inference result:** Type of `row` inferred as `{ id: number, name: string }`
-
-**Example (component usage):**
+When using the component above, the type of `row` is correctly inferred as `{ id: number, name: string }`:
 
 ```qk
 <DataList>
@@ -202,23 +172,11 @@ interface Props extends ComponentProps<string> {
 </DataList>
 ```
 
-**Behavior:** `row` type correctly inferred from slot definition.
-
 ---
 
 ## Event Type Inference
 
-### Event Declaration
-
-**Behavior:** Events accessed through built-in `props` object like other non-reference attributes. `@` and `!` prefixes interchangeable.
-
-**Semantic marker:** `@` prefix indicates attribute is callable (semantic marker only).
-
-### Event Typing
-
-**Rule:** Function-type properties in `Props` inferred as event candidates.
-
-**Syntax:**
+In Qingkuai components, events are accessed through the built-in `props` object just like other non-reference attributes. In other words, on component tags, the `@` and `!` prefixes before an attribute name can be used interchangeably. The `@` prefix mainly serves as a semantic marker to indicate that the attribute is callable. When you add an attribute to a component, typing `@` triggers attribute-name completion, and the suggested names are exactly the attributes inferred as events. As long as a property in the component's `Props` type has a function type, the Qingkuai language server treats it as an event candidate and offers it in attribute completion after `@` is typed. In the following code, both properties in `Props` are inferred as events:
 
 ```ts
 interface Props {
@@ -226,14 +184,3 @@ interface Props {
     event2?: (s: string) => boolean
 }
 ```
-
-**Behavior:**
-
-- `event1`: Required event handler, takes no parameters, returns void
-- `event2`: Optional event handler, takes string parameter, returns boolean
-
-**Language server behavior:**
-
-- Typing `@` triggers attribute-name completion
-- Suggested names are attributes inferred as events
-- Only function-type properties offered as event candidates

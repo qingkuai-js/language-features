@@ -1,41 +1,23 @@
----
-description: "Qingkuai built-in elements - virtual mounting points for directives."
----
-
 # Built-in Elements
 
-Built-in elements are compiler-reserved tags prefixed with `qk:`.
+In Qingkuai, built-in elements extend template syntax and provide stronger expressive power than standard HTML. They usually take on framework-level responsibilities with specific semantics and behavior, and they play an important role when handling rendering logic or control structures. Built-in elements are typically prefixed with `qk:` to avoid conflicts with future built-in HTML tags or taking over component naming space.
 
-## qk:spread
+---
 
-**Syntax:**
+## Spread
 
-```qk
-<qk:spread #directive={value}>
-    <!-- child elements -->
-</qk:spread>
-```
+In previous chapters, we have already used the `qk:spread` built-in element many times. Its main role is to act as a virtual mounting point for directives, so all of its child elements are affected together by the mounted directives. Most importantly, it is not rendered as an actual HTML element, so it does not interfere with the final page structure.
 
-Virtual mounting point for directives across sibling nodes without introducing a real wrapper element.
-
-**Key properties:**
-
-- Not rendered as actual HTML element
-- Does not interfere with final page structure
-- Directives on `qk:spread` apply to all children
-
-### Use Cases
-
-**1. Looping multiple sibling elements:**
+Suppose you want to create multiple `p + button` groups in a loop without introducing an extra meaningless parent element:
 
 ```qk
 <qk:spread #for={3}>
-    <p>Item content</p>
+    <p>...</p>
     <button>Click Me</button>
 </qk:spread>
 ```
 
-**2. Conditional rendering of multiple elements:**
+Another example is conditionally showing multiple `li` elements at once:
 
 ```qk
 <ul class="list">
@@ -48,7 +30,7 @@ Virtual mounting point for directives across sibling nodes without introducing a
 </ul>
 ```
 
-**3. Slot content with multiple siblings:**
+Or when slot content consists of multiple sibling elements:
 
 ```qk
 <Component>
@@ -59,23 +41,17 @@ Virtual mounting point for directives across sibling nodes without introducing a
 </Component>
 ```
 
-**4. Directive on text node:**
+You can also use it to attach a directive to a text node:
 
 ```qk
 <qk:spread
-    #await={promise}
+    #await={pms}
     #then={target}
 >
     {target} is loaded.
 </qk:spread>
 ```
 
-**Behavior:** `qk:spread` node is not emitted to DOM; directives apply to its child nodes.
-
----
-
-## Built-in Elements Reference
-
-**Supported elements:**
-
-- `qk:spread` - Virtual container for applying directives to multiple siblings
+<div class="custom-block tip">
+    These examples share one common pattern: <code>qk:spread</code> is usually used to apply directives uniformly to multiple sibling nodes that do not share a common parent. This is also what the word “spread” in its name conveys.
+</div>

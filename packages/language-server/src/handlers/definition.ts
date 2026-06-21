@@ -51,7 +51,7 @@ async function findScriptBlockTypeDefinitions(
     fileName: string,
     pos: number
 ): Promise<FindDefinitionsResultItem[] | null> {
-    return await tpic.sendRequest<TPICCommonRequestParams>(TP_HANDLERS.findTypeDefinition, {
+    return await tpic.sendRequest<TPICCommonRequestParams>(TP_HANDLERS.FindTypeDefinition, {
         fileName,
         pos
     })
