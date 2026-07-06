@@ -1,3 +1,11 @@
+# 2026-07-06
+
+> packages version: mcp-server@1.0.6, vscode-extension@1.0.18
+
+fixes:
+
+1. fixed MCP server crash when parsing docs without YAML front matter, and syntax check not returning error messages ([a70f12a](https://github.com/qingkuai-js/language-tools/commit/a70f12a))
+
 # 2026-06-21
 
 > packages version: vscode-extension@1.0.17, qingkuai@1.0.82, qingkuai-mcp-server@1.0.5
