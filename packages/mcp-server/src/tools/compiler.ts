@@ -32,7 +32,13 @@ export function registerCompilerTools(server: McpServer) {
                 const summary = {
                     errorCount,
                     warningCount,
-                    messages: result.messages,
+                    messages: result.messages.map(m => ({
+                        type: m.type,
+                        value: {
+                            ...m.value,
+                            message: m.value.message
+                        }
+                    })),
                     status: errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "success"
                 }
 
@@ -124,7 +130,13 @@ export function registerCompilerTools(server: McpServer) {
                     errorCount,
                     warningCount,
                     hashId: result.hashId,
-                    messages: result.messages,
+                    messages: result.messages.map(m => ({
+                        type: m.type,
+                        value: {
+                            ...m.value,
+                            message: m.value.message
+                        }
+                    })),
                     codeLength: result.code.length,
                     hasMappings: !!result.mappings,
                     status: errorCount > 0 ? "error" : warningCount > 0 ? "warning" : "success",

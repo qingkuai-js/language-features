@@ -66,26 +66,33 @@ export function loadDocResources(server: McpServer) {
 
 function parseDocContent(string: string, filepath: string) {
     const m = mdMetaDataRE.exec(string)
-    if (!m) {
-        throw new Error("Doc content should start with a YAML front matter: " + filepath)
+
+    let content: string
+    let description = ""
+
+    if (m) {
+        content = string.slice(m[0].length)
+
+        const properties = m[1].split("\n").reduce(
+            (acc, line) => {
+                const match = mdMetaDataLineRE.exec(line)
+                if (match) {
+                    acc[match[1].trim()] = JSON.parse(match[2].trim())
+                }
+                return acc
+            },
+            {} as Record<string, string>
+        )
+
+        description = properties.description || ""
+    } else {
+        // 无 YAML front matter 时，将整个文档内容作为 body，description 留空
+        content = string
     }
-
-    const content = m ? string.slice(m[0].length) : string
-
-    const properties = m[1].split("\n").reduce(
-        (acc, line) => {
-            const m = mdMetaDataLineRE.exec(line)
-            if (m) {
-                acc[m[1].trim()] = JSON.parse(m[2].trim())
-            }
-            return acc
-        },
-        {} as Record<string, string>
-    )
 
     return {
         content,
         size: Buffer.byteLength(content, "utf-8"),
-        description: properties.description || ""
+        description
     }
 }
