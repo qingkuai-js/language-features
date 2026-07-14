@@ -1,3 +1,11 @@
+# 2026-07-14
+
+> packages version: vscode-extension@1.0.19
+
+features:
+
+1. added inlay hint support for compiler-inferred reactivity status of identifiers ([09cbbc7](https://github.com/qingkuai-js/language-tools/commit/09cbbc7), [dc6f83c](https://github.com/qingkuai-js/language-tools/commit/dc6f83c))
+
 # 2026-07-06
 
 > packages version: mcp-server@1.0.6, vscode-extension@1.0.18
