@@ -12,17 +12,18 @@ export const inlayHint: InlayHintHandler = async ({ textDocument }, token) => {
 
     const result: InlayHint[] = []
     const cr = await getCompileResult(documents.get(textDocument.uri)!)
-    const fullText = cr.document.getText()
-    traverseObject(cr.identifierStatusInfo, (_, info) => {
-        for (const index of info.inlayIndxes) {
-            result.push({
-                paddingLeft: true,
-                tooltip: "...",
-                label: ":" + info.status,
-                position: cr.document.positionAt(index),
-                paddingRight: !!fullText.charAt(index)?.trim()
-            })
-        }
-    })
+    if (cr.config?.extensionConfig.inlayHintReactiveStatus) {
+        const fullText = cr.document.getText()
+        traverseObject(cr.identifierStatusInfo, (_, info) => {
+            for (const index of info.inlayIndxes) {
+                result.push({
+                    paddingLeft: true,
+                    label: ":" + info.status,
+                    position: cr.document.positionAt(index),
+                    paddingRight: !!fullText.charAt(index)?.trim()
+                })
+            }
+        })
+    }
     return result
 }

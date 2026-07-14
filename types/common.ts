@@ -61,6 +61,7 @@ export interface ComponentInfo {
 
 export interface ExtensionConfiguration {
     hoverTipReactiveStatus: boolean
+    inlayHintReactiveStatus: boolean
     typescriptDiagnosticsExplain: boolean
     insertSpaceAroundInterpolation: boolean
     additionalCodeLens: ("component" | "slot")[]

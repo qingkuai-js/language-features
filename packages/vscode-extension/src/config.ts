@@ -136,6 +136,7 @@ export function getExtensionConfig(uri: vscode.Uri): ExtensionConfiguration {
         htmlHoverTip: config.get("htmlHoverTip"),
         additionalCodeLens: config.get("additionalCodeLens"),
         hoverTipReactiveStatus: config.get("hoverTipReactiveStatus"),
+        inlayHintReactiveStatus: config.get("inlayHintReactiveStatus"),
         componentTagFormatPreference: config.get("componentTagFormatPreference"),
         insertSpaceAroundInterpolation: config.get("insertSpaceAroundInterpolation"),
         typescriptDiagnosticsExplain: config.get("typescriptDiagnosticsExplain"),

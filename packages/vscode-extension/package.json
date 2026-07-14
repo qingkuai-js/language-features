@@ -222,6 +222,12 @@
                     "default": true,
                     "description": "Enable hover tips showing the inferred reactivity state of variables.",
                     "markdownDescription": "Controls whether hovering over variables in `.qk` templates shows the **compiler-inferred reactivity status.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
+                },
+                "qingkuai.inlayHintReactiveStatus": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable inlay hints showing the compiler-inferred reactivity state of variables.",
+                    "markdownDescription": "Controls whether **inlay hints** are displayed in `.qk` templates showing the **compiler-inferred reactivity status** of variables.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
                 }
             }
         }
