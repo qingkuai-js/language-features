@@ -20,7 +20,7 @@
         "@vscode/emmet-helper": "^2.11.0",
         "fs-extra": "^11.3.4",
         "prettier": "^3.8.1",
-        "qingkuai": "^1.0.70",
+        "qingkuai": "^1.0.82",
         "rimraf": "^6.0.1",
         "rollup": "^4.34.9",
         "rollup-plugin-dts": "^6.2.1",
@@ -34,6 +34,9 @@
         "vscode-languageserver-types": "^3.17.5"
     },
     "pnpm": {
+        "overrides": {
+            "commander": "^13.1.0"
+        },
         "patchedDependencies": {
             "emmet": "patches/emmet.patch"
         }

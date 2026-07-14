@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-mcp-server",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "type": "module",
     "author": "mlgq",
     "license": "MIT",
@@ -30,12 +30,12 @@
         "@cfworker/json-schema": "^4.1.1",
         "@modelcontextprotocol/server": "2.0.0-alpha.2",
         "prettier": "^3.8.1",
-        "prettier-plugin-qingkuai": "^1.0.31",
-        "qingkuai": "^1.0.70",
+        "prettier-plugin-qingkuai": "^1.0.34",
+        "qingkuai": "^1.0.82",
         "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@modelcontextprotocol/inspector": "^0.21.2"
+        "@modelcontextprotocol/inspector": "^0.22.0"
     },
     "keywords": [
         "mcp",

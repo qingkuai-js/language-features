@@ -18,6 +18,7 @@ export const initialize: InitializeHandler = () => {
 
     return {
         capabilities: {
+            inlayHintProvider: {},
             colorProvider: true,
             hoverProvider: true,
             referencesProvider: true,

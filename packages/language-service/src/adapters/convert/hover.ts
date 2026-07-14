@@ -33,7 +33,7 @@ export function getAndConvertHoverTip(
         const nodeRange: Pair<number> = [node.getStart(), node.getEnd()]
 
         // 顶部作用域标识符显示响应式状态
-        if (config?.hoverTipReactiveStatus && fileInfo.idStatusInfo[node.text]) {
+        if (config?.hoverHintReactiveStatus && fileInfo.idDescriptions[node.text]) {
             const symbol = typeChecker.getSymbolAtLocation(node)
             if (
                 symbol &&
@@ -41,7 +41,7 @@ export function getAndConvertHoverTip(
                 !(symbol.flags & ts.SymbolFlags.Alias) &&
                 symbol.declarations.some(decl => isInComponentFunctionTopScope(decl))
             ) {
-                const statusInfo = fileInfo.idStatusInfo[node.text]
+                const statusInfo = fileInfo.idDescriptions[node.text]
                 idStatusDisplay = ` // - ${statusInfo} -`
             }
         }

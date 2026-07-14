@@ -25,6 +25,7 @@ import { compileIntermediate } from "qingkuai/compiler"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { isNumber, isUndefined } from "../../../shared-util/assert"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
+import { traverseObject } from "../../../shared-util/sundry"
 
 const compileCache = new Map<string, Promise<CompileResult>>()
 const configCache = new Map<string, GetClientLanguageConfigResult>()
@@ -90,15 +91,19 @@ export async function getCompileResult(document: TextDocument) {
     // 将编译结果同步到typescript-plugin-qingkuai
     async function synchronizeContentToTypescriptPlugin() {
         if (!isTestingEnv && !limitedScriptLanguageFeatures) {
+            const idDescriptions: Record<string, string> = {}
+            traverseObject(compileResult.identifierStatusInfo, (key, info) => {
+                idDescriptions[key] = info.description
+            })
             const adjustedIndexMap: UpdateContentResult =
                 await tpic.sendRequest<UpdateContentParams>(TP_HANDLERS.UpdateContent, {
                     isTS,
                     fileName: filePath,
                     content: compileResult.code,
+                    identifierDescriptions: idDescriptions,
                     positions: compressPositions(ret.positions),
                     itos: compressNumberArray(ret.indexMap.itos),
                     stoi: compressNumberArray(ret.indexMap.stoi),
-                    identifierStatusInfo: compileResult.identifierStatusInfo,
                     getTypeDelayIndexes: compileResult.getTypeDelayInterIndexes,
                     positionFlags: compressNumberArray(ret.positions.map(pos => pos.flag))
                 })

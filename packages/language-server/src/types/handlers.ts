@@ -1,4 +1,9 @@
-import type { Connection } from "vscode-languageserver"
+import type {
+    Connection,
+    InlayHintParams,
+    InlayHint,
+    ServerRequestHandler
+} from "vscode-languageserver"
 
 export type HoverHandler = ExtractHandler<"onHover">
 export type CodeLensHandler = ExtractHandler<"onCodeLens">
@@ -16,6 +21,14 @@ export type ImplementationHandler = ExtractHandler<"onImplementation">
 export type ResolveCodeLensHandler = ExtractHandler<"onCodeLensResolve">
 export type GetColorPresentations = ExtractHandler<"onColorPresentation">
 export type ResolveCompletionHandler = ExtractHandler<"onCompletionResolve">
+
+// InlayHintHandler 类型
+export type InlayHintHandler = ServerRequestHandler<
+    InlayHintParams,
+    InlayHint[] | undefined | null,
+    InlayHint[],
+    void
+>
 
 type ExtractHandler<T extends keyof Connection> = Connection[T] extends (...args: any) => any
     ? Parameters<Connection[T]>[0]

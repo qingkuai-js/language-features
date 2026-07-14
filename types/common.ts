@@ -60,7 +60,8 @@ export interface ComponentInfo {
 }
 
 export interface ExtensionConfiguration {
-    hoverTipReactiveStatus: boolean
+    hoverHintReactiveStatus: boolean
+    inlayHintReactiveStatus: boolean
     typescriptDiagnosticsExplain: boolean
     insertSpaceAroundInterpolation: boolean
     additionalCodeLens: ("component" | "slot")[]
@@ -108,7 +109,7 @@ export type CompileResult = CompileIntermediateResult & {
 }
 
 export type TsPluginQingkuaiConfig = Pick<QingkuaiConfiguration, "resolveImportExtension"> &
-    Pick<ExtensionConfiguration, "hoverTipReactiveStatus">
+    Pick<ExtensionConfiguration, "hoverHintReactiveStatus">
 
 export type TSUserPreferences = TS.server.protocol.UserPreferences
 export type TSFormatCodeSettings = TS.server.protocol.FormatCodeSettings
