@@ -78,7 +78,7 @@ importers:
     dependencies:
       qingkuai-language-service:
         specifier: file:../language-service
-        version: file:packages/language-service(qingkuai@1.0.82)
+        version: link:../language-service
       vscode-languageserver:
         specifier: ^9.0.1
         version: 9.0.1
@@ -140,7 +140,7 @@ importers:
     devDependencies:
       qingkuai-language-service:
         specifier: file:../language-service
-        version: file:packages/language-service(qingkuai@1.0.82)
+        version: link:../language-service
 
   packages/vscode-extension:
     dependencies:
@@ -2177,11 +2177,6 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  qingkuai-language-service@file:packages/language-service:
-    resolution: {directory: packages/language-service, type: directory}
-    peerDependencies:
-      qingkuai: ^1.0.55
-
   qingkuai-mcp-server@file:packages/mcp-server:
     resolution: {directory: packages/mcp-server, type: directory}
     hasBin: true
@@ -3042,7 +3037,7 @@ snapshots:
 
   '@mcp-ui/client@6.1.1(@cfworker/json-schema@4.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
-      '@modelcontextprotocol/ext-apps': 1.7.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
+      '@modelcontextprotocol/ext-apps': 1.7.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -3051,7 +3046,7 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
 
-  '@modelcontextprotocol/ext-apps@1.7.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)':
+  '@modelcontextprotocol/ext-apps@1.7.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       '@standard-schema/spec': 1.1.0
@@ -3074,7 +3069,7 @@ snapshots:
   '@modelcontextprotocol/inspector-client@0.22.0(@cfworker/json-schema@4.1.1)':
     dependencies:
       '@mcp-ui/client': 6.1.1(@cfworker/json-schema@4.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@modelcontextprotocol/ext-apps': 1.7.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
+      '@modelcontextprotocol/ext-apps': 1.7.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
       '@radix-ui/react-checkbox': 1.3.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-dialog': 1.1.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -4607,13 +4602,6 @@ snapshots:
       once: 1.4.0
 
   punycode@2.3.1: {}
-
-  qingkuai-language-service@file:packages/language-service(qingkuai@1.0.82):
-    dependencies:
-      qingkuai: 1.0.82
-      strip-ansi: 7.2.0
-      vscode-css-languageservice: 6.3.10
-      vscode-uri: 3.1.0
 
   qingkuai-mcp-server@file:packages/mcp-server:
     dependencies:
