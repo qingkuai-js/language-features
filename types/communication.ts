@@ -78,7 +78,7 @@ export interface UpdateContentParams {
     positionFlags: Pair<number>[]
     getTypeDelayIndexes: number[]
     positions: CompressedPositions
-    identifierStatusInfo: Record<string, string>
+    identifierDescriptions: Record<string, string>
 }
 
 export interface UpdateContentResult {

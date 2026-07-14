@@ -13,6 +13,7 @@ import {
 } from "../../../../shared-util/qingkuai"
 import { PositionFlag } from "qingkuai/compiler"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
+import { traverseObject } from "../../../../shared-util/sundry"
 import { confirmTypesForCompileResult } from "./convert/content"
 
 export class QingkuaiFileInfo {
@@ -32,7 +33,7 @@ export class QingkuaiFileInfo {
         public version: number,
         public path: TsNormalizedPath,
         public getTypeDelayIndexes: number[],
-        public idStatusInfo: Record<string, string>,
+        public idDescriptions: Record<string, string>,
         private adapter: TypescriptAdapter,
         private itos: number[],
         private stoi: number[],
@@ -145,7 +146,7 @@ export function updateQingkuaiFile(
         existing?.version ?? 0,
         path,
         params.getTypeDelayIndexes,
-        params.identifierStatusInfo,
+        params.identifierDescriptions,
         adapter,
         itos,
         stoi,
@@ -182,16 +183,20 @@ function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
 }
 
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {
+    const idDescriptions: Record<string, string> = {}
     const compileRes = adapter.compile(path)
     const existing = adapter.qingkuaiFileInfos.get(path)
     const newVersion = existing ? existing.version + 1 : 0
+    traverseObject(compileRes.identifierStatusInfo, (key, info) => {
+        idDescriptions[key] = info.description
+    })
     const fileInfo = new QingkuaiFileInfo(
         compileRes.code,
         compileRes.scriptDescriptor.isTS,
         newVersion,
         path,
         compileRes.getTypeDelayInterIndexes,
-        compileRes.identifierStatusInfo,
+        idDescriptions,
         adapter,
         compileRes.indexMap.itos,
         compileRes.indexMap.stoi,

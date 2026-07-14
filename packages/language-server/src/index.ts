@@ -4,6 +4,7 @@ import { hover } from "./handlers/hover"
 import { format } from "./handlers/format"
 import { connectTsServer } from "./client"
 import { cleanConfigCache } from "./compile"
+import { inlayHint } from "./handlers/inlay-hint"
 import { initialize } from "./handlers/initialize"
 import { renameFile } from "./handlers/rename-file"
 import { findReference } from "./handlers/reference"
@@ -38,6 +39,7 @@ connection.onDocumentColor(getDocumentColor)
 connection.onCodeLensResolve(resolveCodeLens)
 connection.onCompletionResolve(resolveCompletion)
 connection.onColorPresentation(getColorPresentations)
+connection.onRequest("textDocument/inlayHint", inlayHint)
 
 // // 自定义事件处理
 connection.onRequest("ping", _ => "pong")
