@@ -217,7 +217,7 @@
                     "description": "Additional code lenses to enable if [embeddedScriptLanguageId].referencesCodeLens is enabled.",
                     "markdownDescription": "Controls which **additional code lenses** are enabled in `.qk` files.\n\nThis only works if `javascript/typescript.referencesCodeLens.enabled` (or JavaScript equivalent) is true."
                 },
-                "qingkuai.hoverTipReactiveStatus": {
+                "qingkuai.hoverHintReactiveStatus": {
                     "type": "boolean",
                     "default": true,
                     "description": "Enable hover tips showing the inferred reactivity state of variables.",
@@ -257,8 +257,8 @@
         "@vscode/emmet-helper": "^2.11.0",
         "prettier-plugin-qingkuai": "^1.0.31",
         "qingkuai": "^1.0.70",
-        "qingkuai-mcp-server": "file:../mcp-server",
-        "typescript-plugin-qingkuai": "file:../typescript-plugin",
+        "qingkuai-mcp-server": "file:../.vsce-temp/qingkuai-mcp-server-1.0.6.tgz",
+        "typescript-plugin-qingkuai": "file:../.vsce-temp/typescript-plugin-qingkuai-1.0.0.tgz",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",
         "vscode-languageserver": "^9.0.1",
