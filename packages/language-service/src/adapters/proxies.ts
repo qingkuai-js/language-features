@@ -104,13 +104,27 @@ function proxyResolveModuleNameLiterals(
         adapter.resolvedQingkuaiModules.set(containingFilePath, importedQingkuaiModuleTexts)
 
         const ret = originalRet.map((item, index) => {
+            const failedQkFiles: string[] = []
             const moduleText = moduleLiterals[index].text
             const isDirectory = isEmptyString(adapter.path.ext(moduleText))
             const inferredAsQingkuaiFile =
                 importByQingkuaiFile && isDirectory && qingkuaiConfig?.resolveImportExtension
-            const modulePath = adapter.getNormalizedPath(
-                adapter.path.resolve(dirPath, moduleText + (inferredAsQingkuaiFile ? ".qk" : ""))
-            )
+
+            let modulePath = adapter.path.resolve(dirPath, moduleText)
+            if (inferredAsQingkuaiFile) {
+                for (const suffix of [".qk", "/index.qk"]) {
+                    const candidate = adapter.getNormalizedPath(
+                        adapter.path.resolve(dirPath, moduleText + suffix)
+                    )
+                    if (!adapter.fs.exist(candidate)) {
+                        failedQkFiles.push(candidate)
+                    } else {
+                        modulePath = candidate
+                        break
+                    }
+                }
+            }
+
             const moduleFileInfo =
                 isQingkuaiFileName(modulePath) && adapter.fs.exist(modulePath)
                     ? adapter.service.ensureGetQingkuaiFileInfo(modulePath)
@@ -128,7 +142,7 @@ function proxyResolveModuleNameLiterals(
                 // || (containingFileInfo.isTS && !moduleFileInfo.isTS && !compilationSettings.allowJs)
             ) {
                 if (inferredAsQingkuaiFile && !item.resolvedModule) {
-                    ;((item as any).failedLookupLocations ??= []).push(modulePath)
+                    ;((item as any).failedLookupLocations ??= []).push(...failedQkFiles)
                 }
                 return item
             }

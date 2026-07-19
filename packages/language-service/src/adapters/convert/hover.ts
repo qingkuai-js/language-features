@@ -8,10 +8,10 @@ import type { HoverTipResult, TPICCommonRequestParams } from "../../../../../typ
 import { ts } from "../state"
 import { LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
+import { getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
-import { getNodeAtPositionWithin, isInComponentFunctionTopScope } from "../ts-ast"
 
 export function getAndConvertHoverTip(
     adapter: TypescriptAdapter,
@@ -39,7 +39,7 @@ export function getAndConvertHoverTip(
                 symbol &&
                 symbol.declarations &&
                 !(symbol.flags & ts.SymbolFlags.Alias) &&
-                symbol.declarations.some(decl => isInComponentFunctionTopScope(decl))
+                symbol.declarations.some(decl => isInTopScope(decl))
             ) {
                 const statusInfo = fileInfo.idDescriptions[node.text]
                 idStatusDisplay = ` // - ${statusInfo} -`

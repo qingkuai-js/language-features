@@ -2,6 +2,7 @@
     "name": "qingkuai-language-service",
     "license": "MIT",
     "author": "mlgq",
+    "type": "module",
     "version": "1.0.17",
     "keywords": [
         "qingkuai",

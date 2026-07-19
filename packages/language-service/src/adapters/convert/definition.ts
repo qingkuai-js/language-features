@@ -10,7 +10,7 @@ import type { Range } from "vscode-languageserver-types"
 
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
-import { getNodeAtPositionWithin, getSymbolAtPositionWithin, isComponentReturns } from "../ts-ast"
+import { getNodeAtPositionWithin, getSymbolAtPositionWithin, isComponentFuncReturns } from "../ts-ast"
 
 // 待办：优先使用 originFileName、originTextSpan 以及 originContextSpan 以支持 .d.ts.map 映射文件
 
@@ -124,7 +124,7 @@ export function proxyGetDefinitionAndBoundSpanToConvert(
             const sourceFile = languageService.getProgram()?.getSourceFile(firstDefinition.fileName)
             const node =
                 sourceFile && getNodeAtPositionWithin(sourceFile, firstDefinition.textSpan.start)
-            if (node && isComponentReturns(node)) {
+            if (node && isComponentFuncReturns(node)) {
                 originalRet.definitions = getDefinitionAndBoundSpan.call(
                     languageService,
                     firstDefinition.fileName,

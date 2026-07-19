@@ -1,4 +1,4 @@
-import type { UpdateContentParams } from "../../../../types/communication"
+import { ResolveFilePathParams, type UpdateContentParams } from "../../../../types/communication"
 
 import { refreshDiagnostics } from "./diagnostic/refresh"
 import { TP_HANDLERS } from "../../../../shared-util/constant"
@@ -41,5 +41,11 @@ export function attachDocumentManager() {
             })
         }
         adapter.service.ensureGetQingkuaiFileInfo(fileName).isOpen = false
+    })
+}
+
+export function attachResolveFilePath() {
+    tsPluginIpcServer.onRequest<ResolveFilePathParams>(TP_HANDLERS.ResolveFilePath, params => {
+        return adapter.service.resolveFilePath(params)
     })
 }

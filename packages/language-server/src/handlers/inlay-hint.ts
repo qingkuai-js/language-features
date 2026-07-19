@@ -15,7 +15,7 @@ export const inlayHint: InlayHintHandler = async ({ textDocument }, token) => {
     if (cr.config?.extensionConfig.inlayHintReactiveStatus) {
         const fullText = cr.document.getText()
         traverseObject(cr.identifierStatusInfo, (_, info) => {
-            for (const index of info.inlayIndxes) {
+            for (const index of info.inlayIndexes) {
                 result.push({
                     paddingLeft: true,
                     label: ":" + info.status,

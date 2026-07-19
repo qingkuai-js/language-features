@@ -18,6 +18,7 @@ export enum TP_HANDLERS {
     GetCompletion = "getCompletion",
     UpdateContent = "updateContent",
     FindDefinition = "findDefinition",
+    ResolveFilePath = "resolveFilePath",
     DidOpen = "didOpenQingkuaiDocument",
     RenameFile = "getEditsForFileRename",
     DidClose = "didCloseQingkuaiDocument",

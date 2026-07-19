@@ -165,6 +165,11 @@ export type GetClientConfigParams<T = any> = {
       }
 )
 
+export interface ResolveFilePathParams {
+    from: string
+    to: string
+}
+
 export type SignatureHelpParams = TPICCommonRequestParams & {
     isRetrigger: boolean
     triggerCharacter?: "," | "(" | "<"

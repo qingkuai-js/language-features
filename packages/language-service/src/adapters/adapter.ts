@@ -12,7 +12,8 @@ import type {
     GetCompletionsParms,
     SignatureHelpParams,
     ResolveCompletionParams,
-    TPICCommonRequestParams
+    TPICCommonRequestParams,
+    ResolveFilePathParams
 } from "../../../../types/communication"
 import type { QingkuaiFileInfo } from "./file"
 import type { Logger } from "../../../../shared-util/log"
@@ -35,6 +36,7 @@ import { findAndConvertImplementations } from "./convert/implementation"
 import { getAndConvertDefinitions, getAndConvertTypeDefinitions } from "./convert/definition"
 import { getAndConvertCompletionDetail, getAndConvertCompletionInfo } from "./convert/completion"
 import { getAndConvertPrepareRenameLocation, getAndConvertRenameLocations } from "./convert/rename"
+import { resolveFilePath } from "./convert/file"
 
 export class TypescriptAdapter {
     private initialized = false
@@ -148,6 +150,10 @@ class AdapterService {
 
     createLocationConvertor(fileName: string) {
         return new LocationConvertor(this.adapter, fileName)
+    }
+
+    resolveFilePath(params: ResolveFilePathParams) {
+        return resolveFilePath(this.adapter, params)
     }
 
     getHoverTip(params: TPICCommonRequestParams) {

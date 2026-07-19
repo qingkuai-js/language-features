@@ -29,9 +29,7 @@ import type { QingkuaiCommandTypes } from "../../../../types/command"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
 export type TsGetDiagsMethod =
-    | "getSemanticDiagnostics"
-    | "getSyntacticDiagnostics"
-    | "getSuggestionDiagnostics"
+    "getSemanticDiagnostics" | "getSyntacticDiagnostics" | "getSuggestionDiagnostics"
 
 export interface CodeLensData {
     fileName: string
@@ -151,6 +149,7 @@ export type ShowReferencesCommandParams = QingkuaiCommandTypes.ShowReferencesPar
 export type CompileIntermidiateFunc = (path: string) => CompileIntermediateResult
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentInfo[]>
+export type ResolveFilePathFunc = (cr: CompileResult, path: string) => MaybePromise<string>
 export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig | undefined
 export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.NavigationTree | null>
 export type UpdateQingkuaiFileContentFunc = (fileInfo: QingkuaiFileInfo, newContent: string) => void
