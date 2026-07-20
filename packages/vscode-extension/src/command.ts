@@ -6,7 +6,7 @@ import * as vscode from "vscode"
 
 import nodeFs from "node:fs"
 
-import { client } from "./state"
+import { client, disposables } from "./state"
 import { runAll } from "../../../shared-util/sundry"
 
 export class QingkuaiCommands {
@@ -16,62 +16,68 @@ export class QingkuaiCommands {
     public restartLanguageServer = "qingkuai.restartLanguageServer"
 
     constructor(outputChannel: vscode.OutputChannel, activeLanguageServer: GeneralFunc) {
-        vscode.commands.registerCommand(this.viewServerLogs, () => {
-            outputChannel.show()
-        })
+        disposables.push(
+            // 查看 qingkuai 语言服务器日志
+            vscode.commands.registerCommand(this.viewServerLogs, () => {
+                outputChannel.show()
+            }),
 
-        vscode.commands.registerCommand(this.restartLanguageServer, async () => {
-            if (client.isRunning()) {
-                await client.stop()
-                runAll([restartTsServer, activeLanguageServer])
-            }
-        })
-
-        vscode.commands.registerCommand(
-            this.openFileByPath,
-            async ({ path, start, end }: OpenFileParams) => {
-                if (!nodeFs.existsSync(path)) {
-                    return vscode.window.showWarningMessage(
-                        `Can not open document: ${path}, as it does not exist.`
-                    )
+            // 重启qingkuai语言服务器
+            vscode.commands.registerCommand(this.restartLanguageServer, async () => {
+                if (client.isRunning()) {
+                    await client.stop()
+                    runAll([restartTsServer, activeLanguageServer])
                 }
+            }),
 
-                const doc = await vscode.workspace.openTextDocument(path)
-                vscode.commands.executeCommand("vscode.open", doc.uri, {
-                    selection: new vscode.Range(doc.positionAt(start), doc.positionAt(end))
-                })
-            }
-        )
+            // 打开文件并选中指定范围
+            vscode.commands.registerCommand(
+                this.openFileByPath,
+                async ({ path, start, end }: OpenFileParams) => {
+                    if (!nodeFs.existsSync(path)) {
+                        return vscode.window.showWarningMessage(
+                            `Can not open document: ${path}, as it does not exist.`
+                        )
+                    }
 
-        vscode.commands.registerCommand(
-            this.showReferences,
-            (params: QingkuaiCommandTypes.ShowReferencesParams) => {
-                const locations: vscode.Location[] = params.locations.map(location => {
-                    return new vscode.Location(
-                        vscode.Uri.parse(location.uri),
-                        new vscode.Range(
-                            new vscode.Position(
-                                location.range.start.line,
-                                location.range.start.character
-                            ),
-                            new vscode.Position(
-                                location.range.end.line,
-                                location.range.end.character
+                    const doc = await vscode.workspace.openTextDocument(path)
+                    vscode.commands.executeCommand("vscode.open", doc.uri, {
+                        selection: new vscode.Range(doc.positionAt(start), doc.positionAt(end))
+                    })
+                }
+            ),
+
+            // 显示引用位置
+            vscode.commands.registerCommand(
+                this.showReferences,
+                (params: QingkuaiCommandTypes.ShowReferencesParams) => {
+                    const locations: vscode.Location[] = params.locations.map(location => {
+                        return new vscode.Location(
+                            vscode.Uri.parse(location.uri),
+                            new vscode.Range(
+                                new vscode.Position(
+                                    location.range.start.line,
+                                    location.range.start.character
+                                ),
+                                new vscode.Position(
+                                    location.range.end.line,
+                                    location.range.end.character
+                                )
                             )
                         )
+                    })
+                    const position = new vscode.Position(
+                        params.position.line,
+                        params.position.character
                     )
-                })
-                const position = new vscode.Position(
-                    params.position.line,
-                    params.position.character
-                )
-                vscode.commands.executeCommand(
-                    "editor.action.showReferences",
-                    vscode.Uri.file(params.fileName),
-                    position,
-                    locations
-                )
-            }
+                    vscode.commands.executeCommand(
+                        "editor.action.showReferences",
+                        vscode.Uri.file(params.fileName),
+                        position,
+                        locations
+                    )
+                }
+            )
         )
     }
 }

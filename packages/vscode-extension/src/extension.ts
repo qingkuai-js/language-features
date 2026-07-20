@@ -2,18 +2,17 @@ import type { ExtensionContext } from "vscode"
 
 import * as vscode from "vscode"
 
-import {
-    client,
-    setState,
-    outputChannel,
-    languageStatusItem
-} from "./state"
+import { client, setState, disposables, outputChannel, languageStatusItem } from "./state"
 import { QingkuaiCommands } from "./command"
 import { activeLanguageServer } from "./language-server"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { registerMcpServerDefinitionProvider } from "./mcp-server"
 
 export function deactivate(): Thenable<void> | undefined {
+    disposables.forEach(d => {
+        d.dispose()
+    })
+    disposables.length = 0
     return client && client.stop()
 }
 
@@ -40,5 +39,7 @@ export async function activate(context: ExtensionContext) {
             disposable.dispose()
         }
     })
+
+    disposables.push(disposable)
     return () => client.stop()
 }

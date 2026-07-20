@@ -23,18 +23,14 @@ import {
     LanguageClient,
     LanguageClientOptions
 } from "vscode-languageclient/node"
-import {
-    getQingkuaiConfig,
-    getExtensionConfig,
-    startPrettierConfigWatcher,
-    startQingkuaiConfigWatcher
-} from "./config"
 import { Messages } from "./messages"
 import { inspect } from "../../../shared-util/log"
 import { runAll } from "../../../shared-util/sundry"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
+import { getQingkuaiConfig, getExtensionConfig } from "./config"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
+import { disposables } from "./state"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
 import { LS_HANDLERS, NOOP, ProjectKind } from "../../../shared-util/constant"
 
@@ -42,6 +38,7 @@ export async function activeLanguageServer() {
     languageStatusItem.busy = true
 
     const clientWatcher = vscode.workspace.createFileSystemWatcher("**/.clientrc")
+    disposables.push(clientWatcher)
     const languageServerOptions: ServerOptions = {
         args: ["--nolazy"],
         module: serverModulePath,
@@ -84,14 +81,8 @@ export async function activeLanguageServer() {
     }
     await languageClient.start()
     await connectToTsServer()
-
-    runAll([
-        attachFileSystemHandlers,
-        attachVscodeEventHandlers,
-        startQingkuaiConfigWatcher,
-        startPrettierConfigWatcher
-    ])
-
+    attachFileSystemHandlers()
+    attachVscodeEventHandlers()
     languageStatusItem.busy = false
 }
 
@@ -102,7 +93,7 @@ async function configTsServerPlugin(isReconnect: boolean) {
     setState({ limitedScriptLanguageFeatures: !tsExtension })
 
     if (!tsExtension) {
-        return Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP
+        return (Logger.warn(Messages.BuiltinTsExtensionDisabled), NOOP)
     }
 
     await tsExtension.activate()

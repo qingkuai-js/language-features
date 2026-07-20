@@ -21,6 +21,8 @@ export let serverModulePath: string
 export let projectKind = ProjectKind.JS
 export let limitedScriptLanguageFeatures = true
 
+export const disposables: vscode.Disposable[] = [outputChannel]
+
 export function setState(options: SetStateOptions) {
     if (!isUndefined(options.client)) {
         client = options.client
