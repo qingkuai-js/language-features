@@ -31,11 +31,12 @@
         "vscode-jsonrpc": "^8.2.1",
         "vscode-languageserver": "^9.0.1",
         "vscode-languageserver-textdocument": "^1.0.12",
-        "vscode-languageserver-types": "^3.17.5"
+        "vscode-languageserver-types": ">=3.17.5 <3.18.0"
     },
     "pnpm": {
         "overrides": {
-            "commander": "^13.1.0"
+            "commander": "^13.1.0",
+            "vscode-languageserver-types": ">=3.17.5 <3.18.0"
         },
         "patchedDependencies": {
             "emmet": "patches/emmet.patch"
