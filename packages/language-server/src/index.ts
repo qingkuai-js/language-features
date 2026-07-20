@@ -1,5 +1,5 @@
 import { URI } from "vscode-uri"
-import { connection } from "./state"
+import { connection, tpic } from "./state"
 import { hover } from "./handlers/hover"
 import { format } from "./handlers/format"
 import { connectTsServer } from "./client"
@@ -9,7 +9,7 @@ import { initialize } from "./handlers/initialize"
 import { renameFile } from "./handlers/rename-file"
 import { findReference } from "./handlers/reference"
 import { signatureHelp } from "./handlers/signature"
-import { LS_HANDLERS } from "../../../shared-util/constant"
+import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
 import { prepareRename, rename } from "./handlers/rename"
 import { publishDiagnostics } from "./handlers/diagnostic"
 import { attachDocumentHandlers } from "./handlers/document"
@@ -45,8 +45,8 @@ connection.onRequest("textDocument/inlayHint", inlayHint)
 connection.onRequest("ping", _ => "pong")
 connection.onRequest(LS_HANDLERS.ConnectToTsServer, connectTsServer)
 
-connection.onNotification(LS_HANDLERS.RefreshDiagnostic, (fileName: string) => {
-    publishDiagnostics(URI.file(fileName).toString())
+connection.onNotification(LS_HANDLERS.RefreshDiagnostic, (onlyQk: boolean) => {
+    tpic.sendNotification(TP_HANDLERS.RefreshDiagnostic, onlyQk)
 })
 connection.onNotification(LS_HANDLERS.RenameFile, renameFile)
 connection.onNotification(LS_HANDLERS.CleanLanguageConfigCache, cleanConfigCache)

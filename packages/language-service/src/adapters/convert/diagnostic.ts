@@ -13,7 +13,13 @@ import type { TsGetDiagsMethod } from "../../types/service"
 
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
-import { isString, debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
+import {
+    isString,
+    debugAssert,
+    isQingkuaiFileName,
+    isNodeEnvironment
+} from "../../../../../shared-util/assert"
+import { QingkuaiNotFound } from "../../messages/error"
 
 export function getAndConvertDiagnostics(
     adapter: TypescriptAdapter,
@@ -26,11 +32,37 @@ export function getAndConvertDiagnostics(
         return []
     }
 
-    const diagnostics = fileInfo.lsDiagnostics
+    const diagnostics = [...fileInfo.lsDiagnostics]
     const result: GetDiagnosticResultItem[] = []
     const diagnosticMethods: TsGetDiagsMethod[] = ["getSyntacticDiagnostics"]
     const isSemanticProject =
         adapter.projectService.serverMode === adapter.ts.LanguageServiceMode.Semantic
+
+    const isNodeEnv = isNodeEnvironment()
+    const program = adapter.getDefaultProgram(filePath)
+    const compilerOptions = program!.getCompilerOptions()
+    if (isNodeEnv && (fileInfo.isTS || compilerOptions.checkJs)) {
+        if (
+            !adapter.ts.resolveModuleName(
+                "qingkuai",
+                fileInfo.path,
+                compilerOptions,
+                adapter.ts.sys
+            ).resolvedModule
+        ) {
+            const [code, message] = QingkuaiNotFound()
+            diagnostics.push({
+                code,
+                start: 0,
+                length: 1,
+                source: "qk",
+                isSourceLoc: true,
+                messageText: message,
+                file: adapter.getDefaultSourceFile(filePath)!,
+                category: adapter.ts.DiagnosticCategory.Error
+            })
+        }
+    }
 
     // Semtic 模式下进行全部诊断，PartialSemantic/Syntactic 模式下只进行语法检查
     if (isSemanticProject) {

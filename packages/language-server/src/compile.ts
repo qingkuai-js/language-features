@@ -41,7 +41,7 @@ export async function getCompileResult(document: TextDocument) {
         if (tpicConnectedPromise.state === "pending") {
             await tpicConnectedPromise
         }
-        if (document.version === cached?.version) {
+        if (document.version === cached?.version && configCache.has(filePath)) {
             return cached
         }
     }
@@ -130,7 +130,7 @@ export async function getCompileResult(document: TextDocument) {
                 fileName: filePath
             })
         }
-        return res
+        return (configCache.set(filePath, res), res)
     }
 
     return (compileCache.set(document.uri, pms), await pms)
@@ -139,6 +139,7 @@ export async function getCompileResult(document: TextDocument) {
 // 清空已缓存的配置内容
 export function cleanConfigCache() {
     configCache.clear()
+    tpic.sendNotification(TP_HANDLERS.RefreshDiagnostic, void 0)
 }
 
 // 递归遍历qingkuai编译结果的Template Node AST

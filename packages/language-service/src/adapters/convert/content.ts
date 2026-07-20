@@ -41,23 +41,13 @@ export function confirmTypesForCompileResult(
     fileInfo.typesConfirmed = true
 
     const edit = new FileEdit(fileInfo)
-    const isNodeEnv = isNodeEnvironment()
     const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
-    const compilerOptions = program!.getCompilerOptions()
     const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
     const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
     const posOfSecondLineStart = ts.getPositionOfLineAndCharacter(sourceFile, 1, 0)
-
-    if (isNodeEnv && (fileInfo.isTS || compilerOptions.checkJs)) {
-        if (
-            !ts.resolveModuleName("qingkuai", fileInfo.path, compilerOptions, ts.sys).resolvedModule
-        ) {
-            fileInfo.pushDiagnostic(0, 1, QingkuaiNotFound(), true)
-        }
-    }
 
     walkTsNode(sourceFile, node => {
         if (

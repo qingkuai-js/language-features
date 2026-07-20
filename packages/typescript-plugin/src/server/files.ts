@@ -19,7 +19,7 @@ export function attachGetComponentInfos() {
 export function attachUpdateContent() {
     tsPluginIpcServer.onRequest<UpdateContentParams>(TP_HANDLERS.UpdateContent, params => {
         const ret = adapter.service.updateQingkuaiFile(params)
-        return (refreshDiagnostics(params.fileName), ret)
+        return (refreshDiagnostics(false), ret)
     })
 }
 

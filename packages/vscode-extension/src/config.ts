@@ -18,15 +18,6 @@ import { client } from "./state"
 import { LS_HANDLERS } from "../../../shared-util/constant"
 import { isBoolean, isNumber } from "../../../shared-util/assert"
 
-// 监听工作区范围内 .qingkuairc 配置文件的修改和删除事件
-export function startQingkuaiConfigWatcher() {
-    startConfigFileWatcher("**/.qingkuairc")
-}
-
-export function startPrettierConfigWatcher() {
-    startConfigFileWatcher("**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}")
-}
-
 // 向语言服务器发送清空配置缓存的通知
 export function notifyServerCleanConfigCache() {
     client.sendNotification(LS_HANDLERS.CleanLanguageConfigCache, null)
