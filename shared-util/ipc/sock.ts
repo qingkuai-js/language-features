@@ -34,8 +34,9 @@ export async function getValidPathWithHash(name: string) {
     if (process.platform !== "win32") {
         for (const fileName of fs.readdirSync("/tmp")) {
             if (fileName.startsWith(name) && fileName.endsWith(".sock")) {
-                if (await isSockInUse(fileName)) {
-                    existingSocks.add(fileName)
+                const sockFullPath = "/tmp/" + fileName
+                if (await isSockInUse(sockFullPath)) {
+                    existingSocks.add(sockFullPath)
                 } else {
                     fs.rmSync("/tmp/" + fileName)
                 }

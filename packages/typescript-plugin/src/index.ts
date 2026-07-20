@@ -29,15 +29,15 @@ export = function init(modules: { typescript: typeof TS }) {
                     projectService: info.project.projectService,
                     adapter: createAdapter(modules.typescript, projectService)
                 })
-                // info.project.projectService.setHostConfiguration({
-                //     extraFileExtensions: [
-                //         {
-                //             extension: ".qk",
-                //             isMixedContent: false,
-                //             scriptKind: modules.typescript.ScriptKind.Deferred
-                //         }
-                //     ]
-                // })
+                info.project.projectService.setHostConfiguration({
+                    extraFileExtensions: [
+                        {
+                            extension: ".qk",
+                            isMixedContent: false,
+                            scriptKind: modules.typescript.ScriptKind.Deferred
+                        }
+                    ]
+                })
             }
             proxyTypescript(info)
             return info.languageService
@@ -95,6 +95,8 @@ function createIpcServer(sockPath: string) {
                 server
             })
             attachLanguageServerIPCHandlers()
+        }, err => {
+            Logger.error(createIpcServer.name, err)
         })
     }
 }

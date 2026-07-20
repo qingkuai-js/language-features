@@ -26,7 +26,7 @@
         "postpublish": "curl -X PUT 'https://registry-direct.npmmirror.com/-/package/qingkuai-language-service/syncs'"
     },
     "peerDependencies": {
-        "qingkuai": "^1.0.55"
+        "qingkuai": "^1.0.83"
     },
     "dependencies": {
         "strip-ansi": "^7.2.0",
