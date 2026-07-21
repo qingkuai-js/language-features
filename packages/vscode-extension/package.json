@@ -264,19 +264,20 @@
         "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install && cd ../mcp-server && npm install"
     },
     "devDependencies": {
+        "@types/vscode": "catalog:",
         "js-yaml": "^4.1.0",
         "vsce": "^2.15.0"
     },
     "dependencies": {
         "@vscode/emmet-helper": "^2.11.0",
         "prettier-plugin-qingkuai": "^1.0.31",
-        "qingkuai": "^1.0.70",
-        "qingkuai-mcp-server": "file:../mcp-server",
-        "typescript-plugin-qingkuai": "file:../typescript-plugin",
+        "qingkuai": "catalog:",
+        "qingkuai-mcp-server": "workspace:*",
+        "typescript-plugin-qingkuai": "workspace:*",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",
-        "vscode-languageserver": "^9.0.1",
-        "vscode-languageserver-textdocument": "^1.0.12",
-        "vscode-languageserver-types": "^3.18.0"
+        "vscode-languageserver": "catalog:",
+        "vscode-languageserver-textdocument": "catalog:",
+        "vscode-languageserver-types": "catalog:"
     }
 }

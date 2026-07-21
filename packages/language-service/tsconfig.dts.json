@@ -10,7 +10,8 @@
         "emitDeclarationOnly": true,
         "skipDefaultLibCheck": true,
         "moduleResolution": "Bundler",
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "types": ["node"]
     },
     "include": ["src/**/*"]
 }
