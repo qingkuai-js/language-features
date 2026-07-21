@@ -38,7 +38,8 @@ export function attachVscodeEventHandlers() {
                 affectsConfiguration("qingkuai") ||
                 affectsConfiguration("prettier") ||
                 affectsConfiguration("typescript") ||
-                affectsConfiguration("javascript")
+                affectsConfiguration("javascript") ||
+                affectsConfiguration("js/ts")
             ) {
                 notifyServerCleanConfigCache()
             }
