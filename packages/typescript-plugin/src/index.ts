@@ -23,6 +23,8 @@ export = function init(modules: { typescript: typeof TS }) {
         create(info: TS.server.PluginCreateInfo) {
             const project = info.project
             const projectService = project.projectService
+            proxyTypescript(info)
+
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,
@@ -39,7 +41,6 @@ export = function init(modules: { typescript: typeof TS }) {
                     ]
                 })
             }
-            proxyTypescript(info)
             return info.languageService
         },
 
@@ -90,14 +91,17 @@ export = function init(modules: { typescript: typeof TS }) {
 // 创建ipc通道，并监听来自 qingkuai 语言服务器的请求
 function createIpcServer(sockPath: string) {
     if (!nodeFs.existsSync(sockPath)) {
-        createServer(sockPath).then(server => {
-            setState({
-                server
-            })
-            attachLanguageServerIPCHandlers()
-        }, err => {
-            Logger.error(createIpcServer.name, err)
-        })
+        createServer(sockPath).then(
+            server => {
+                setState({
+                    server
+                })
+                attachLanguageServerIPCHandlers()
+            },
+            err => {
+                Logger.error(createIpcServer.name, err)
+            }
+        )
     }
 }
 
