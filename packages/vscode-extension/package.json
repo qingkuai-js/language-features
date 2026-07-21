@@ -217,7 +217,7 @@
                     "description": "Additional code lenses to enable if [embeddedScriptLanguageId].referencesCodeLens is enabled.",
                     "markdownDescription": "Controls which **additional code lenses** are enabled in `.qk` files.\n\nThis only works if `javascript/typescript.referencesCodeLens.enabled` (or JavaScript equivalent) is true."
                 },
-                "qingkuai.hoverHintReactiveStatus": {
+                "qingkuai.hoverTipReactiveStatus": {
                     "type": "boolean",
                     "default": true,
                     "description": "Enable hover tips showing the inferred reactivity state of variables.",

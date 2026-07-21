@@ -177,7 +177,7 @@ async function getInitQingkuaiConfigurations() {
             const qingkuaiConfig = getQingkuaiConfig(fileAbsUri)
             configurations[fileAbsUri.fsPath] = {
                 resolveImportExtension: qingkuaiConfig.resolveImportExtension,
-                hoverHintReactiveStatus: extensionConfig.hoverHintReactiveStatus
+                hoverTipReactiveStatus: extensionConfig.hoverTipReactiveStatus
             }
         }
     }

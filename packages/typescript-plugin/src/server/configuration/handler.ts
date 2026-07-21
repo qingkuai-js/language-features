@@ -21,7 +21,7 @@ export function attachChangeConfig() {
         })
         setQingkuaiConfig(filePath, {
             resolveImportExtension: params.qingkuaiConfig.resolveImportExtension,
-            hoverHintReactiveStatus: params.extensionConfig.hoverHintReactiveStatus
+            hoverTipReactiveStatus: params.extensionConfig.hoverTipReactiveStatus
         })
     })
 }

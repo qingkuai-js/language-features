@@ -33,7 +33,7 @@ export function getAndConvertHoverTip(
         const nodeRange: Pair<number> = [node.getStart(), node.getEnd()]
 
         // 顶部作用域标识符显示响应式状态
-        if (config?.hoverHintReactiveStatus && fileInfo.idDescriptions[node.text]) {
+        if (config?.hoverTipReactiveStatus && fileInfo.idDescriptions[node.text]) {
             const symbol = typeChecker.getSymbolAtLocation(node)
             if (
                 symbol &&

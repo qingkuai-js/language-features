@@ -9,7 +9,7 @@ export function getQingkuaiConfig(fileName: string): TsPluginQingkuaiConfig {
     if (!found) {
         return {
             resolveImportExtension: true,
-            hoverHintReactiveStatus: true
+            hoverTipReactiveStatus: true
         }
     }
     return found
