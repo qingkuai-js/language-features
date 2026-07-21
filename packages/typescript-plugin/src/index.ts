@@ -24,7 +24,7 @@ export = function init(modules: { typescript: typeof TS }) {
             const project = info.project
             const projectService = project.projectService
             proxyTypescript(info)
-            
+
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,
@@ -48,7 +48,7 @@ export = function init(modules: { typescript: typeof TS }) {
             traverseObject(params.configurations, (fileName, config) => {
                 setQingkuaiConfig(fileName, config)
             })
-            createIpcServer(params.sockPath)
+            createIpcServer(params.sockPath, params.warmupFilePath)
         },
 
         getExternalFiles(project: TS.server.Project, updateLevel: TS.ProgramUpdateLevel) {
@@ -89,7 +89,7 @@ export = function init(modules: { typescript: typeof TS }) {
 }
 
 // 创建ipc通道，并监听来自 qingkuai 语言服务器的请求
-function createIpcServer(sockPath: string) {
+function createIpcServer(sockPath: string, warmupFilePath?: string) {
     if (!nodeFs.existsSync(sockPath)) {
         createServer(sockPath).then(
             server => {
@@ -97,11 +97,43 @@ function createIpcServer(sockPath: string) {
                     server
                 })
                 attachLanguageServerIPCHandlers()
+
+                if (warmupFilePath) {
+                    cleanupWarmupFile(warmupFilePath)
+                }
             },
             err => {
                 Logger.error(createIpcServer.name, err)
             }
         )
+    }
+}
+
+function cleanupWarmupFile(warmupFilePath: string) {
+    try {
+        const ps = adapter.projectService as any
+        const rootSet = ps.rootOfInferredProjects
+        const canonicalPath = ps.toPath(warmupFilePath)
+        if (rootSet) {
+            for (const info of rootSet) {
+                if (info.fileName === warmupFilePath || info.path === canonicalPath) {
+                    rootSet.delete(info)
+                    break
+                }
+            }
+        }
+
+        // 清理缓存中的 watcher：使用规范化路径匹配
+        ps.configFileExistenceInfoCache?.forEach?.((info: any, key: string) => {
+            const hasFile = info.openFilesImpactedByConfigFile?.has?.(canonicalPath)
+            if (hasFile) info.openFilesImpactedByConfigFile.delete(canonicalPath)
+            if (info.watcher && !info.openFilesImpactedByConfigFile?.size && !info.config) {
+                info.watcher.close()
+                ps.configFileExistenceInfoCache.delete(key)
+            }
+        })
+    } catch {
+        // do nothing
     }
 }
 

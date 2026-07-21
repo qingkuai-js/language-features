@@ -61,3 +61,5 @@ export function proxyUpdateRootAndOptions(projectService: TS.server.ProjectServi
         !isBug && oriMethod.call(projectService, project, ...rest)
     }
 }
+
+

@@ -11,6 +11,7 @@ import {
     Logger,
     client,
     setState,
+    disposables,
     projectKind,
     outputChannel,
     serverModulePath,
@@ -25,12 +26,10 @@ import {
 } from "vscode-languageclient/node"
 import { Messages } from "./messages"
 import { inspect } from "../../../shared-util/log"
-import { runAll } from "../../../shared-util/sundry"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { getQingkuaiConfig, getExtensionConfig } from "./config"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
-import { disposables } from "./state"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
 import { LS_HANDLERS, NOOP, ProjectKind } from "../../../shared-util/constant"
 
@@ -100,18 +99,22 @@ async function configTsServerPlugin(isReconnect: boolean) {
 
     // 将本项目中qingkuai语言服务器与ts服务器插件间建立ipc通信的套接字/命名管道
     // 文件名配置到插件，getValidPathWithHash在非windows平台会清理过期sock文件
-    const tsExtenstionAPI = tsExtension.exports.getAPI(0)
-
-    if (shouldWarmupTsServer) {
-        await warmupTsServer(tsExtenstionAPI)
-    }
+    const tsExtenstionAPI = tsExtension.exports.getAPI(1) || tsExtension.exports.getAPI(0)
 
     const sockPath = await getValidPathWithHash("qingkuai")
-    const pluginConfig = {
+    const configurations = await getInitQingkuaiConfigurations()
+    const pluginConfig: ConfigPluginParms = {
         sockPath,
         triggerFileName: activeDocument?.uri.fsPath || "",
-        configurations: await getInitQingkuaiConfigurations()
-    } satisfies ConfigPluginParms
+        configurations
+    }
+
+    if (shouldWarmupTsServer) {
+        const warmupPath = await warmupTsServer(tsExtenstionAPI)
+        if (warmupPath) {
+            pluginConfig.warmupFilePath = warmupPath
+        }
+    }
 
     try {
         tsExtenstionAPI.configurePlugin("typescript-plugin-qingkuai", pluginConfig)
@@ -135,6 +138,7 @@ async function warmupTsServer(tsExtenstionAPI: any) {
     await nodeFs.promises.writeFile(warmupFilePath, "export {}\n", "utf-8")
 
     try {
+        // 创建并打开文档，触发 TS server 启动并加载插件
         const warmupDoc = await vscode.workspace.openTextDocument(warmupFilePath)
         await vscode.commands.executeCommand(
             "vscode.executeCompletionItemProvider",
@@ -145,11 +149,12 @@ async function warmupTsServer(tsExtenstionAPI: any) {
         if (typeof tsExtenstionAPI?.onReady === "function") {
             await tsExtenstionAPI.onReady()
         }
-    } finally {
-        void nodeFs.promises.unlink(warmupFilePath).catch(() => {})
+    } catch {
+        nodeFs.promises.unlink(warmupFilePath).catch(NOOP)
+        return
     }
-
     Logger.info("TypeScript server warmup completed.")
+    return warmupFilePath
 }
 
 // 获取初始化时由.qingkuairc配置文件定义的配置项

@@ -18,6 +18,7 @@ export interface CompressedPositions {
 export interface ConfigPluginParms {
     sockPath: string
     triggerFileName: string
+    warmupFilePath?: string
     configurations: Record<string, TsPluginQingkuaiConfig>
 }
 

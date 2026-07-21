@@ -20,9 +20,8 @@ export async function getDiagnostic(
     for (const node of cr.templateNodes) {
         if (
             node.tag !== "!" ||
-            !node.content ||
-            node.content[0].isInterpolated ||
-            !node.content[0].value.trimStart().startsWith("@qk-nocheck")
+            !node.children[0]?.content.length ||
+            !node.children[0].content[0].value.trimStart().startsWith("@qk-nocheck")
         ) {
             continue
         }
