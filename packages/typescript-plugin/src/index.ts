@@ -24,7 +24,7 @@ export = function init(modules: { typescript: typeof TS }) {
             const project = info.project
             const projectService = project.projectService
             proxyTypescript(info)
-
+            
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,

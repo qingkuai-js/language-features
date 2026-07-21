@@ -175,6 +175,18 @@ export type SignatureHelpParams = TPICCommonRequestParams & {
     triggerCharacter?: "," | "(" | "<"
 }
 
+export interface GetInlayHintParams {
+    fileName: string
+}
+
+export interface GetInlayHintResultItem {
+    pos: number
+    label: string
+    kind: "Type" | "Parameter" | "Enum"
+    paddingLeft?: boolean
+    paddingRight?: boolean
+}
+
 export type GetCompletionsResultEntry = TS.CompletionEntry & {
     label: string
     isColor: boolean

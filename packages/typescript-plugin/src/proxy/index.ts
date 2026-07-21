@@ -12,7 +12,9 @@ import { proxyUpdateRootAndOptions } from "./project-service"
 import { proxyExecuteCommand, proxyToFileToSpan } from "./session"
 
 export function proxyTypescript(info: TS.server.PluginCreateInfo) {
-    adapter.proxyProject(info.project)
+    if (adapter) {
+        adapter.proxyProject(info.project)
+    }
 
     // proxy session
     const sessionAny = info.session as any

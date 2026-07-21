@@ -28,6 +28,7 @@ import { getAndConvertHoverTip } from "./convert/hover"
 import { LocationConvertor } from "./convert/localtions"
 import { getAndConvertReferences } from "./convert/reference"
 import { getAndConvertDiagnostics } from "./convert/diagnostic"
+import { getAndConvertInlayHints } from "./convert/inlay-hint"
 import { confirmTypesForCompileResult } from "./convert/content"
 import { getAndConvertSignatureHelp } from "./convert/signature"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
@@ -162,6 +163,10 @@ class AdapterService {
 
     getDiagnostics(fileName: string) {
         return getAndConvertDiagnostics(this.adapter, fileName)
+    }
+
+    getInlayHints(fileName: string) {
+        return getAndConvertInlayHints(this.adapter, fileName)
     }
 
     getNavigationTree(fileName: string) {

@@ -12,6 +12,7 @@ import type {
     FindReferenceResultItem,
     ResolveCompletionParams,
     GetDiagnosticResultItem,
+    GetInlayHintResultItem,
     FindDefinitionsResultItem
 } from "../../../../types/communication"
 import type {
@@ -29,7 +30,9 @@ import type { QingkuaiCommandTypes } from "../../../../types/command"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
 export type TsGetDiagsMethod =
-    "getSemanticDiagnostics" | "getSyntacticDiagnostics" | "getSuggestionDiagnostics"
+    | "getSemanticDiagnostics"
+    | "getSyntacticDiagnostics"
+    | "getSuggestionDiagnostics"
 
 export interface CodeLensData {
     fileName: string
@@ -154,3 +157,4 @@ export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig
 export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.NavigationTree | null>
 export type UpdateQingkuaiFileContentFunc = (fileInfo: QingkuaiFileInfo, newContent: string) => void
 export type GetScriptDiagnosticsFunc = (fileName: string) => MaybePromise<GetDiagnosticResultItem[]>
+export type GetScriptInlayHintsFunc = (fileName: string) => MaybePromise<GetInlayHintResultItem[]>

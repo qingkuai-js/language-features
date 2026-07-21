@@ -10,6 +10,7 @@ export enum ProjectKind {
 export enum TP_HANDLERS {
     HoverTip = "hoverTip",
     Rename = "getRenameInfo",
+    GetInlayHint = "getInlayHint",
     GetLanguageId = "getLanguageId",
     ConfigureFile = "configureFile",
     PrepareRename = "prepareRename",

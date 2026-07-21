@@ -8,6 +8,7 @@ import {
 import { attachHoverTip } from "./hover"
 import { attachWaitCommand } from "./command"
 import { attachGetCompletion } from "./complete"
+import { attachGetInlayHint } from "./inlay-hint"
 import { attachFindReference } from "./reference"
 import { attachGetNavigationTree } from "./navtree"
 import { attachFindDefinitions } from "./definition"
@@ -23,6 +24,7 @@ export function attachLanguageServerIPCHandlers() {
         attachRename,
         attachHoverTip,
         attachRenameFile,
+        attachGetInlayHint,
         attachWaitCommand,
         attachChangeConfig,
         attachGetLanguageId,

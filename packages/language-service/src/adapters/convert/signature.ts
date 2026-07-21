@@ -25,7 +25,6 @@ export function getAndConvertSignatureHelp(
     }
 
     // 待办：内部工具类不应触发签名帮助，和 hover 一样，查找一种能很好识别内部工具调用的方案
-
     if (params.isRetrigger) {
         reason = {
             kind: "retrigger",

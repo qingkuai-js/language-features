@@ -43,7 +43,7 @@ export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()
 export const connection = createConnection(ProposedFeatures.all)
 
-// 若script语言功能受限，需连接ts server
+// 若script语言功能受限，无需连接ts server
 if (limitedScriptLanguageFeatures) {
     tpicConnectedResolver()
 }

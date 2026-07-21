@@ -25,6 +25,7 @@ export {
 } from "./constants"
 export { doHover } from "./service/hover"
 export { format } from "./service/format"
+export { getInlayHint } from "./service/inlay-hint"
 export { getDiagnostic } from "./service/diagnostic"
 export { findReferences } from "./service/reference"
 export { getSignatureHelp } from "./service/signature"

@@ -1,29 +1,21 @@
 import type { InlayHintHandler } from "../types/handlers"
-import type { InlayHint } from "vscode-languageserver-types"
+import type { GetInlayHintResultItem } from "../../../../types/communication"
 
-import { documents } from "../state"
+import { documents, tpic } from "../state"
 import { getCompileResult } from "../compile"
-import { traverseObject } from "../../../../shared-util/sundry"
+import { getInlayHint } from "qingkuai-language-service"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
 
 export const inlayHint: InlayHintHandler = async ({ textDocument }, token) => {
-    if (token.isCancellationRequested) {
+    const document = documents.get(textDocument.uri)
+    if (!document || token.isCancellationRequested) {
         return null
     }
 
-    const result: InlayHint[] = []
-    const cr = await getCompileResult(documents.get(textDocument.uri)!)
-    if (cr.config?.extensionConfig.inlayHintReactiveStatus) {
-        const fullText = cr.document.getText()
-        traverseObject(cr.identifierStatusInfo, (_, info) => {
-            for (const index of info.inlayIndexes) {
-                result.push({
-                    paddingLeft: true,
-                    label: ":" + info.status,
-                    position: cr.document.positionAt(index),
-                    paddingRight: !!fullText.charAt(index)?.trim()
-                })
-            }
-        })
-    }
-    return result
+    const cr = await getCompileResult(document)
+    return getInlayHint(cr, getScriptInlayHints)
+}
+
+function getScriptInlayHints(fileName: string) {
+    return tpic.sendRequest<string, GetInlayHintResultItem[]>(TP_HANDLERS.GetInlayHint, fileName)
 }

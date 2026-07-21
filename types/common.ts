@@ -61,13 +61,13 @@ export interface ComponentInfo {
 
 export interface ExtensionConfiguration {
     hoverTipReactiveStatus: boolean
-    inlayHintReactiveStatus: boolean
     typescriptDiagnosticsExplain: boolean
     insertSpaceAroundInterpolation: boolean
     additionalCodeLens: ("component" | "slot")[]
     componentTagFormatPreference: "camel" | "kebab"
     htmlHoverTip: ("tag" | "entity" | "attribute")[]
     componentAttributeFormatPreference: "camel" | "kebab"
+    inlayHintReactiveStatus: ("variable" | "function" | "class" | "enum")[]
 }
 
 export interface TSFormattingOptions {
