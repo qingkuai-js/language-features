@@ -296,6 +296,7 @@ By default, a parent component's scope attribute is not passed down to any eleme
         background-color: lightblue;
     }
 </lang-css>
+```
 
 <div class="custom-block tip">
     The content inside <code>lang-css</code> is an <a href="docs://references/terminology.md#embedded-style-block">embedded style block</a> of a <a href="docs://components/basic.md">component</a>, used to define style rules for the component. If you are not yet familiar with component scoped styles, read <a href="docs://components/stylesheets.md">Stylesheets</a> first before continuing with this section.

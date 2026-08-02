@@ -126,10 +126,22 @@ For non-variable declarations such as `class` declarations, `function` declarati
 
 ## Inference Hints
 
-If the Qingkuai [VS Code extension](docs://misc/language-features.md#ide-extensions) is installed, hovering over an identifier in top-level scope shows the reactivity type inferred by the compiler in the language server tooltip:
+If the Qingkuai [VS Code extension](docs://misc/language-features.md#ide-extensions) is installed, identifiers in the top-level scope of embedded scripts display inline hints showing the reactivity status inferred by the compiler:
 
-<img src="/static/medias/inferred-raw-never-mutated.png" alt="inferred-raw-never-mutated.png" style="width:60%; margin-left:20%;"  />
+<img src="/static/medias/inferred-inlay-hint.png" alt="inferred-inlay-hint.png" style="width:60%; margin-left:20%;"  />
+
+<div class="custom-block tip">
+    You can enable or disable this hint by modifying the <code>inlayHintReactiveStatus</code> setting in the VS Code extension.
+</div>
+
+When hovering over an identifier in the top-level scope, the language server also shows the reactivity type inferred by the compiler in the tooltip:
+
 <img src="/static/medias/inferred-reactive.png" alt="inferred-reactive.png" style="width:60%; margin-left:20%;" />
+<img src="/static/medias/inferred-raw-never-mutated.png" alt="inferred-raw-never-mutated.png" style="width:60%; margin-left:20%;"  />
 <img src="/static/medias/inferred-alias.png" alt="inferred-alias.png" style="width:60%; margin-left:20%;" />
 <img src="/static/medias/inferred-derived.png" alt="inferred-derived.png" style="width:60%; margin-left:20%;" />
 <img src="/static/medias/inferred-downgraded.png" alt="inferred-downgraded.png" style="width:60%; margin-left:20%;" />
+
+<div class="custom-block tip">
+    You can enable or disable this hint by modifying the <code>hoverHintReactiveStatus</code> setting in the VS Code extension.
+</div>

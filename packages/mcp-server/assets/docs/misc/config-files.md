@@ -84,6 +84,14 @@ This property configures whether spaces are inserted at the beginning and end of
 <div #for={ item, index of 3 }>{ index }: { item }</div>
 ```
 
+### selfCloseEmptySlot
+
+This property configures whether empty `slot` tags are converted to a self-closing format. It is a boolean value and defaults to `true`. When set to `true`, an empty `slot` tag is converted to the self-closing format, while setting it to `false` keeps the original format and leaves it unmodified:
+
+```qk
+<slot />
+```
+
 ### componentTagFormatPreference
 
 This property configures the preferred style of component tags. It is a string whose allowed values are `camel` and `kebab`, and its default value is `camel`. Changing it affects the format of component tag completion suggestions provided by the Qingkuai language server.
