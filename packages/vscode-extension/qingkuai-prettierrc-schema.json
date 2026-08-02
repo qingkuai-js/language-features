@@ -14,6 +14,13 @@
                     "markdownDescription": "Controls whether spaces are inserted **inside interpolation blocks** in qingkuai component(.qk) files.\n\nInterpolation blocks use **single curly braces**.\n\nExample:\n\nWithout spaces:\n\n```qingkuai\n{count}\n```\n\nWith spaces:\n\n```qingkuai\n{ count }\n```"
                 },
 
+                "selfCloseEmptySlot": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Convert empty slot tags to self-closing format.",
+                    "markdownDescription": "Controls whether **empty slot tags** are converted to **self-closing** format.\n\nExample:\n\nBefore:\n\n```qingkuai\n<slot></slot>\n```\n\nAfter:\n\n```qingkuai\n<slot />\n```"
+                },
+
                 "componentTagFormatPreference": {
                     "type": "string",
                     "default": "camel",
