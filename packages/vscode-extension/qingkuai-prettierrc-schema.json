@@ -11,13 +11,13 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Controls whether spaces are inserted inside interpolation blocks.",
-                    "markdownDescription": "Controls whether spaces are inserted **inside interpolation blocks** in QingKuai templates.\n\nInterpolation blocks use **single curly braces**.\n\nExample:\n\nWithout spaces:\n\n```qingkuai\n{count}\n```\n\nWith spaces:\n\n```qingkuai\n{ count }\n```"
+                    "markdownDescription": "Controls whether spaces are inserted **inside interpolation blocks** in qingkuai component(.qk) files.\n\nInterpolation blocks use **single curly braces**.\n\nExample:\n\nWithout spaces:\n\n```qingkuai\n{count}\n```\n\nWith spaces:\n\n```qingkuai\n{ count }\n```"
                 },
 
                 "componentTagFormatPreference": {
                     "type": "string",
                     "default": "camel",
-                    "description": "Controls the preferred naming style for component tags in QingKuai templates.",
+                    "description": "Controls the preferred naming style for component tags in qingkuai component(.qk) files.",
                     "oneOf": [
                         {
                             "const": "camel",
@@ -33,7 +33,7 @@
                 "componentAttributeFormatPreference": {
                     "type": "string",
                     "default": "camel",
-                    "description": "Controls the preferred naming style for component attributes in QingKuai templates.",
+                    "description": "Controls the preferred naming style for component attributes in qingkuai component(.qk) files.",
                     "oneOf": [
                         {
                             "const": "camel",

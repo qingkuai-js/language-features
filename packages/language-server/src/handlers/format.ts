@@ -1,13 +1,12 @@
 import type { FormatHandler } from "../types/handlers"
 
 import prettier from "prettier"
-import nodeModule from "node:module"
+
+import * as qingkuaiPrettierPlugin from "prettier-plugin-qingkuai"
 
 import { documents, Logger } from "../state"
 import { getCompileResult } from "../compile"
 import { format as _format } from "qingkuai-language-service"
-
-const require = nodeModule.createRequire(import.meta.url)
 
 export const format: FormatHandler = async ({ textDocument }, token) => {
     const document = documents.get(textDocument.uri)
@@ -15,10 +14,8 @@ export const format: FormatHandler = async ({ textDocument }, token) => {
         return null
     }
 
-    const pluginPath = require.resolve("prettier-plugin-qingkuai")
-
     return _format(
-        [prettier, pluginPath],
+        [prettier, qingkuaiPrettierPlugin],
         await getCompileResult(document),
         Logger.error.bind(Logger)
     )

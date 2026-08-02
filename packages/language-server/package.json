@@ -7,6 +7,7 @@
     "license": "MIT",
     "dependencies": {
         "qingkuai-language-service": "workspace:*",
+        "prettier": "catalog:",
         "vscode-languageserver": "catalog:",
         "vscode-languageserver-textdocument": "catalog:",
         "vscode-uri": "catalog:"

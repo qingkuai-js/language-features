@@ -15,8 +15,8 @@ import { Messages, communicationWayInfo } from "./messages"
 import { findComponentTagRanges } from "qingkuai-language-service"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
 import { generatePromiseAndResolver, sleep } from "../../../shared-util/sundry"
-import { tpic, Logger, documents, tpicConnectedResolver, setState, connection } from "./state"
 import { connectTo, DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
+import { tpic, Logger, documents, tpicConnectedResolver, setState, connection } from "./state"
 
 // 连接到typescript-plugin-qingkuai创建的ipc服务器，并将客户端句柄记录到tpic，后续qingkuai语言服务器将通过tpic与ts服务器进行通信
 export async function connectTsServer(params: ConnectToTsServerParams) {
@@ -71,11 +71,11 @@ export async function getComponentInfos(fileName: string, typePrintWidth = 80) {
         fileName
     )
     for (const info of componentInfos) {
-        const formatedTypeStr = await prettier.format(`const _: ${info.type}`, {
+        const formatedTypeStr = await prettier.format(info.type, {
             parser: "babel-ts",
             printWidth: typePrintWidth
         })
-        info.type = formatedTypeStr.replace(/^const _:\s/, "")
+        info.type = formatedTypeStr.trim()
     }
     return componentInfos
 }
