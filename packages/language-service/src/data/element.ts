@@ -6395,10 +6395,16 @@ export const embeddedLangTags = [
             }
         )
     } else {
-        attributes.push({
-            name: "src",
-            description: `This attribute specifies the source file path for the ${id || tagEnd} code to be embedded. The compiler will load and process the code from the specified file.`
-        })
+        attributes.push(
+            {
+                name: "src",
+                description: `This attribute specifies the source file path for the ${tagEnd} code to be embedded. The compiler will load and process the code from the specified file.`
+            },
+            {
+                name: "global",
+                description: `This Boolean attribute indicates that the ${tagEnd} code block is global. When present, the styles defined in this block — whether written inline or loaded from an external file via the src attribute — will be applied globally, affecting all components and elements in the application.`
+            }
+        )
     }
 
     const ret: HTMLElementDataTagItem = {
