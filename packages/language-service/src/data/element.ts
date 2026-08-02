@@ -6365,7 +6365,7 @@ export const htmlDirectives: DirectiveData[] = [
     {
         name: "scope",
         requiredValue: false,
-        useage: '<Child #scope />\n\n<lang-css>\n    /* affect child root */\n    .child-root {\n        border-color: blue;\n    }\n\n    /* affect child internal */\n    [qk-scope] .child-box {\n        background-color: lightblue;\n    }\n</lang-css>',
+        useage: "<Child #scope />\n\n<lang-css>\n    /* affect child root */\n    .child-root {\n        border-color: blue;\n    }\n\n    /* affect child internal */\n    [qk-scope] .child-box {\n        background-color: lightblue;\n    }\n</lang-css>",
         description:
             "The scope directive is used to pass the parent component's scope attribute to the root element of a child component, allowing parent styles to affect the child's root element. It can only be used on component tags. If the child's root node is a virtual element (such as qk:spread or another component), Qingkuai will traverse inward to find the first real DOM element and attach the scope attribute to it. Multiple #scope directives in the ancestor chain can be combined, each layer attaching its own scope to the final root element."
     }
@@ -6394,6 +6394,11 @@ export const embeddedLangTags = [
                 description: `This Boolean attribute enables shallow reactivity inference for the current script block. When present, only the top-level value is treated as reactive, and nested objects or arrays are not automatically tracked.`
             }
         )
+    } else {
+        attributes.push({
+            name: "src",
+            description: `This attribute specifies the source file path for the ${id || tagEnd} code to be embedded. The compiler will load and process the code from the specified file.`
+        })
     }
 
     const ret: HTMLElementDataTagItem = {
