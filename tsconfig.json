@@ -14,5 +14,6 @@
             "qingkuai-language-service/adapters": ["./packages/language-service/src/adapters"]
         }
     },
+    "exclude": ["**/dist/**/*"],
     "include": ["./packages/**/*", "./scripts/**/*"]
 }

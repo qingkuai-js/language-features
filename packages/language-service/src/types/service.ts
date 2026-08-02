@@ -146,6 +146,7 @@ export type PrettierAndPlugins = [typeof Prettier, ...Array<string | Prettier.Pl
 
 export type InsertSnippetFunc = (item: string | InsertSnippetParams) => void
 export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
+export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
 export type ShowReferencesCommandParams = QingkuaiCommandTypes.ShowReferencesParams
@@ -153,7 +154,6 @@ export type CompileIntermidiateFunc = (path: string) => CompileIntermediateResul
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentInfo[]>
 export type ResolveFilePathFunc = (cr: CompileResult, path: string) => MaybePromise<string>
-export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig | undefined
 export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.NavigationTree | null>
 export type UpdateQingkuaiFileContentFunc = (fileInfo: QingkuaiFileInfo, newContent: string) => void
 export type GetScriptDiagnosticsFunc = (fileName: string) => MaybePromise<GetDiagnosticResultItem[]>

@@ -37,6 +37,11 @@ export type LSDiagnostic = TS.Diagnostic & {
     isSourceLoc?: boolean
 }
 
+export type ResolveModuleNameLiteralsFunc = Exclude<
+    TS.CompilerHost["resolveModuleNameLiterals"],
+    undefined
+>
+
 export interface AdapterTsProjectService {
     readonly serverMode: TS.LanguageServiceMode
     openFiles: Map<TS.Path, TsNormalizedPath | undefined>

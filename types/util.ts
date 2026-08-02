@@ -1,4 +1,5 @@
-export type Getter = () => any
+export type Getter<T = any> = () => T
+export type Setter<T = any> = (value: T) => void
 export type GeneralFunc = (...args: any[]) => any
 export type ObjectKeys = string | number | symbol
 export type AnyObject<V = any> = Record<ObjectKeys, V>

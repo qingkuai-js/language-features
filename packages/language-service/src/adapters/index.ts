@@ -1,2 +1,5 @@
 export { QingkuaiFileInfo } from "./file"
 export { TypescriptAdapter } from "./adapter"
+export { correctDiagnosticLoc } from "./convert/diagnostic"
+export { getOverrideResolveModuleLiterals } from "./proxies"
+export { confirmTypesForCompileResult } from "./convert/content"

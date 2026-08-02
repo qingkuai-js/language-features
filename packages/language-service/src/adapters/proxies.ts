@@ -1,5 +1,8 @@
+import type TS from "typescript"
+import type { QingkuaiFileInfo } from "./file"
 import type { TypescriptAdapter } from "./adapter"
-import type { AdapterTsProject } from "../types/adapter"
+import type { AdapterPath, TsPluginQingkuaiConfig } from "../../../../types/common"
+import type { AdapterTsProject, ResolveModuleNameLiteralsFunc } from "../types/adapter"
 
 import {
     proxyGetCompletionEntryDetailsToConvert,
@@ -10,10 +13,10 @@ import {
     proxyGetTypeDefinitionAtPositionToConvert
 } from "./convert/definition"
 import { PROXIED_MARK } from "../constants"
+import { proxyGetQuickInfoAtPosition } from "./convert/hover"
 import { proxyFindReferencesToConvert } from "./convert/reference"
 import { proxyGetImplementationAtPositionToConvert } from "./convert/implementation"
 import { isEmptyString, isQingkuaiFileName, isUndefined } from "../../../../shared-util/assert"
-import { proxyGetQuickInfoAtPosition } from "./convert/hover"
 
 export function proxyProject(adapter: TypescriptAdapter, project: AdapterTsProject) {
     const projectAny = project as any
@@ -35,6 +38,147 @@ export function proxyProject(adapter: TypescriptAdapter, project: AdapterTsProje
         ]) {
             proxyFn(adapter, project)
         }
+    }
+}
+
+export function getOverrideResolveModuleLiterals(
+    ts: typeof TS,
+    path: AdapterPath,
+    original: ResolveModuleNameLiteralsFunc,
+    getQingkuaiFileInfo: (path: string) => QingkuaiFileInfo,
+    getQingkuaiConfig: (path: string) => TsPluginQingkuaiConfig
+): ResolveModuleNameLiteralsFunc {
+    const isQingkuaiFileAndExit = (path: string) => {
+        return isQingkuaiFileName(path) && ts.sys.fileExists(path)
+    }
+
+    // 解析导入路径时如果去除扩展名后的文件名称是 qk 文件且其存在则视为路径存在有效文件
+    const qkAwareHost: TS.ModuleResolutionHost = {
+        ...ts.sys,
+        fileExists: fileName => {
+            if (ts.sys.fileExists(fileName)) {
+                return true
+            }
+
+            const ext = path.ext(fileName)
+            const withoutExt = fileName.slice(0, -ext.length)
+            switch (ext) {
+                case ".ts":
+                case ".tsx":
+                case ".js":
+                case ".jsx":
+                case ".mts":
+                case ".mjs":
+                case ".cts":
+                case ".cjs":
+                case ".d.ts": {
+                    return isQingkuaiFileAndExit(withoutExt)
+                }
+                default: {
+                    return false
+                }
+            }
+        }
+    }
+
+    return (moduleLiterals, containingFile, ...rest) => {
+        const [redirectedReference, compilerOptions] = rest
+
+        // 通过 ts.resolveModuleName 获取 paths 映射后的 .qk 文件路径
+        const resolveQingkuaiFileWithPaths = (specifier: string) => {
+            const result = ts.resolveModuleName(
+                specifier,
+                containingFile,
+                compilerOptions,
+                qkAwareHost,
+                undefined,
+                redirectedReference
+            )
+            if (!result.resolvedModule) {
+                return
+            }
+
+            const resolvedPath = result.resolvedModule.resolvedFileName
+            const ext = path.ext(resolvedPath)
+            if (!ext) {
+                return
+            }
+
+            const qkPath = resolvedPath.slice(0, -ext.length)
+            const normalized = ts.server.toNormalizedPath(qkPath)
+            return isQingkuaiFileAndExit(normalized) ? normalized : undefined
+        }
+
+        const containingFileInfo = isQingkuaiFileName(containingFile)
+            ? getQingkuaiFileInfo(containingFile)
+            : undefined
+        const originalRet = original(moduleLiterals, containingFile, ...rest)
+        const containingFilePath = ts.server.toNormalizedPath(containingFile)
+        const qingkuaiConfiguration = getQingkuaiConfig(containingFilePath)
+        const dirPath = ts.server.toNormalizedPath(path.dir(containingFilePath))
+
+        const ret = originalRet.map((item, index) => {
+            let modulePath = ""
+            const moduleText = moduleLiterals[index].text
+
+            // 显式 .qk 导入：任何文件类型都支持
+            if (isQingkuaiFileName(moduleText)) {
+                const resolvedQkPath =
+                    resolveQingkuaiFileWithPaths(moduleText) || path.resolve(dirPath, moduleText)
+                const normalized = ts.server.toNormalizedPath(resolvedQkPath)
+                if (isQingkuaiFileName(normalized) && ts.sys.fileExists(normalized)) {
+                    modulePath = normalized
+                }
+            }
+
+            // qk 文件的无扩展名导入且配置了 resolveImportExtension
+            const failedQkFiles: string[] = []
+            const inferredAsQingkuaiFile =
+                !modulePath &&
+                isQingkuaiFileName(containingFile) &&
+                isEmptyString(path.ext(moduleText)) &&
+                qingkuaiConfiguration?.resolveImportExtension
+
+            if (inferredAsQingkuaiFile) {
+                for (const suffix of [".qk", "/index.qk"]) {
+                    const candidateSpecifier = moduleText + suffix
+                    const candidatePath = path.resolve(dirPath, candidateSpecifier)
+                    const resolvedQingkuaiFilePath =
+                        resolveQingkuaiFileWithPaths(candidateSpecifier)
+                    if (!resolvedQingkuaiFilePath) {
+                        failedQkFiles.push(candidatePath)
+                    } else {
+                        modulePath = resolvedQingkuaiFilePath
+                        break
+                    }
+                }
+            }
+
+            const moduleFileInfo =
+                isQingkuaiFileName(modulePath) && ts.sys.fileExists(modulePath)
+                    ? getQingkuaiFileInfo(modulePath)
+                    : undefined
+
+            if (!moduleFileInfo || modulePath === containingFileInfo?.path) {
+                if (inferredAsQingkuaiFile && !item.resolvedModule) {
+                    ;((item as any).failedLookupLocations ??= []).push(...failedQkFiles)
+                }
+                return item
+            }
+
+            return {
+                ...item,
+                resolvedModule: {
+                    isExternalLibraryImport: false,
+                    resolvedUsingTsExtension: false,
+                    extension: moduleFileInfo.isTS ? ".ts" : ".js",
+                    resolvedFileName: ts.server.toNormalizedPath(modulePath)
+                },
+                failedLookupLocations: undefined
+            }
+        })
+
+        return ret
     }
 }
 
@@ -80,86 +224,16 @@ function proxyResolveModuleNameLiterals(
     adapter: TypescriptAdapter,
     languageServiceHost: AdapterTsProject
 ) {
-    const resolveModuleLiterals = languageServiceHost.resolveModuleNameLiterals
-    if (isUndefined(resolveModuleLiterals)) {
+    const resolveModuleNameLiterals = languageServiceHost.resolveModuleNameLiterals
+    if (isUndefined(resolveModuleNameLiterals)) {
         return
     }
 
-    languageServiceHost.resolveModuleNameLiterals = (moduleLiterals, containingFile, ...rest) => {
-        const originalRet = resolveModuleLiterals.call(
-            languageServiceHost,
-            moduleLiterals,
-            containingFile,
-            ...rest
-        )
-        const containingFileInfo = isQingkuaiFileName(containingFile)
-            ? adapter.service.ensureGetQingkuaiFileInfo(containingFile)
-            : undefined
-        const importByQingkuaiFile = isQingkuaiFileName(containingFile)
-        const containingFilePath = adapter.getNormalizedPath(containingFile)
-        const qingkuaiConfig = adapter.getQingkuaiConfig(containingFilePath)
-        const dirPath = adapter.getNormalizedPath(adapter.path.dir(containingFilePath))
-
-        const importedQingkuaiModuleTexts = new Set<string>()
-        adapter.resolvedQingkuaiModules.set(containingFilePath, importedQingkuaiModuleTexts)
-
-        const ret = originalRet.map((item, index) => {
-            const failedQkFiles: string[] = []
-            const moduleText = moduleLiterals[index].text
-            const isDirectory = isEmptyString(adapter.path.ext(moduleText))
-            const inferredAsQingkuaiFile =
-                importByQingkuaiFile && isDirectory && qingkuaiConfig?.resolveImportExtension
-
-            let modulePath = adapter.path.resolve(dirPath, moduleText)
-            if (inferredAsQingkuaiFile) {
-                for (const suffix of [".qk", "/index.qk"]) {
-                    const candidate = adapter.getNormalizedPath(
-                        adapter.path.resolve(dirPath, moduleText + suffix)
-                    )
-                    if (!adapter.fs.exist(candidate)) {
-                        failedQkFiles.push(candidate)
-                    } else {
-                        modulePath = candidate
-                        break
-                    }
-                }
-            }
-
-            const moduleFileInfo =
-                isQingkuaiFileName(modulePath) && adapter.fs.exist(modulePath)
-                    ? adapter.service.ensureGetQingkuaiFileInfo(modulePath)
-                    : undefined
-
-            // 以下情况匹配时返回原始结果
-            // 1. 被导入目标未被解析为 qingkuai 文件
-            // 2. 被导入目标被解析为 qingkuai 文件，但其在文件系统中不存在或与导入侧文件路径相同
-            // 3. 导入侧文件的脚本类型为 TS，被导入目标被解析为 qingkuai 文件但其脚本类型为 JS，且编译选项未开启 allowJs
-            //    第三种情况放行：保持与 typescript 文件的一致行为，若要支持则取消 if 中的最后一个条件
-            // 注意：当被导入目标被解析为 qingkuai 文件时，需要将解析出的文件路径添加到 item.failedLookupLocations 数组
-            if (
-                !moduleFileInfo ||
-                modulePath === containingFileInfo?.path
-                // || (containingFileInfo.isTS && !moduleFileInfo.isTS && !compilationSettings.allowJs)
-            ) {
-                if (inferredAsQingkuaiFile && !item.resolvedModule) {
-                    ;((item as any).failedLookupLocations ??= []).push(...failedQkFiles)
-                }
-                return item
-            }
-            importedQingkuaiModuleTexts!.add(moduleText)
-
-            return {
-                ...item,
-                resolvedModule: {
-                    isExternalLibraryImport: false,
-                    resolvedUsingTsExtension: false,
-                    extension: moduleFileInfo.isTS ? ".ts" : ".js",
-                    resolvedFileName: adapter.getNormalizedPath(modulePath)
-                },
-                failedLookupLocations: undefined
-            }
-        })
-
-        return ret
-    }
+    languageServiceHost.resolveModuleNameLiterals = getOverrideResolveModuleLiterals(
+        adapter.ts,
+        adapter.path,
+        resolveModuleNameLiterals.bind(languageServiceHost),
+        path => adapter.service.ensureGetQingkuaiFileInfo(path),
+        path => adapter.getQingkuaiConfig(path)
+    )
 }

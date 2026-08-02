@@ -1,6 +1,8 @@
+import type TS from "typescript"
 import type { FileEdit } from "./convert/content"
 import type { LSMessage } from "../types/service"
 import type { TypescriptAdapter } from "./adapter"
+import type { Getter } from "../../../../types/util"
 import type { LSDiagnostic } from "../types/adapter"
 import type { ASTPositionWithFlag } from "qingkuai/compiler"
 import type { ComponentAttributeItem, TsNormalizedPath } from "../../../../types/common"
@@ -12,13 +14,12 @@ import {
     compressNumberArray
 } from "../../../../shared-util/qingkuai"
 import { PositionFlag } from "qingkuai/compiler"
+import { ignoredComponentNameChars } from "../regular"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
-import { traverseObject } from "../../../../shared-util/sundry"
-import { confirmTypesForCompileResult } from "./convert/content"
+import { getIdentifierDescriptionsMap } from "../util/qingkuai"
 
 export class QingkuaiFileInfo {
     public isOpen = false
-    public componentName: string
     public typesConfirmed = false
     public slotNames: string[] = []
     public defaultExportTypeStr = ""
@@ -31,16 +32,16 @@ export class QingkuaiFileInfo {
         public code: string,
         public isTS: boolean,
         public version: number,
+        public componentName: string,
         public path: TsNormalizedPath,
         public getTypeDelayIndexes: number[],
         public idDescriptions: Record<string, string>,
-        private adapter: TypescriptAdapter,
+        private ts: typeof TS,
         private itos: number[],
         private stoi: number[],
-        private positions: ASTPositionWithFlag[]
-    ) {
-        this.componentName = filePathToComponentName(adapter, path)
-    }
+        private positions: ASTPositionWithFlag[],
+        private getSourceFile: Getter<TS.SourceFile>
+    ) {}
 
     getSourceIndex(interIndex: number) {
         return this.itos[interIndex]
@@ -52,14 +53,6 @@ export class QingkuaiFileInfo {
 
     getPositionByIndex(index: number) {
         return this.positions[index]
-    }
-
-    updateContent(newContent: string) {
-        this.adapter.updateContent(this, newContent)
-    }
-
-    confirmTypes() {
-        confirmTypesForCompileResult(this.adapter, this)
     }
 
     isPositionFlagSetAtIndex(key: keyof typeof PositionFlag, index: number) {
@@ -111,8 +104,8 @@ export class QingkuaiFileInfo {
         const [code, message, link] = value
         const category =
             code >= 3000 && code < 4000
-                ? this.adapter.ts.DiagnosticCategory.Error
-                : this.adapter.ts.DiagnosticCategory.Warning
+                ? this.ts.DiagnosticCategory.Error
+                : this.ts.DiagnosticCategory.Warning
         this.lsDiagnostics.push({
             code,
             category,
@@ -122,7 +115,7 @@ export class QingkuaiFileInfo {
             source: "qk",
             length: end - start,
             messageText: message,
-            file: this.adapter.getDefaultSourceFile(this.path)!
+            file: this.getSourceFile()
         })
     }
 }
@@ -144,18 +137,20 @@ export function updateQingkuaiFile(
         params.content,
         params.isTS,
         existing?.version ?? 0,
+        filePathToComponentName(adapter, path),
         path,
         params.getTypeDelayIndexes,
         params.identifierDescriptions,
-        adapter,
+        adapter.ts,
         itos,
         stoi,
-        positions
+        positions,
+        () => adapter.getDefaultSourceFile(path)!
     )
     newFileInfo.isOpen = !!existing?.isOpen
-    newFileInfo.updateContent(params.content)
+    adapter.updateContent(newFileInfo, params.content)
     adapter.qingkuaiFileInfos.set(path, newFileInfo)
-    newFileInfo.confirmTypes()
+    adapter.service.confirmTypes(newFileInfo)
     return {
         aitos: compressNumberArray(itos),
         astoi: compressNumberArray(stoi)
@@ -169,13 +164,11 @@ export function ensureGetQingkuaiFileInfo(adapter: TypescriptAdapter, path: TsNo
     }
 
     const newFileInfo = compileQingkuaiFile(adapter, path)
-    return (newFileInfo.confirmTypes(), newFileInfo)
+    return (adapter.service.confirmTypes(newFileInfo), newFileInfo)
 }
 
 function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
-    let base = adapter.path.base(filePath)
-    base = base.replace(/[^a-zA-Z]*/, "")
-    base = base.replace(/[^a-zA-Z\d]/g, "")
+    const base = adapter.path.base(filePath).replace(ignoredComponentNameChars, "")
     if (!base) {
         return "Anonymous"
     }
@@ -183,24 +176,22 @@ function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
 }
 
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {
-    const idDescriptions: Record<string, string> = {}
     const compileRes = adapter.compile(path)
     const existing = adapter.qingkuaiFileInfos.get(path)
     const newVersion = existing ? existing.version + 1 : 0
-    traverseObject(compileRes.identifierStatusInfo, (key, info) => {
-        idDescriptions[key] = info.description
-    })
     const fileInfo = new QingkuaiFileInfo(
         compileRes.code,
         compileRes.scriptDescriptor.isTS,
         newVersion,
+        filePathToComponentName(adapter, path),
         path,
         compileRes.getTypeDelayInterIndexes,
-        idDescriptions,
-        adapter,
+        getIdentifierDescriptionsMap(compileRes),
+        adapter.ts,
         compileRes.indexMap.itos,
         compileRes.indexMap.stoi,
-        compileRes.positions
+        compileRes.positions,
+        () => adapter.getDefaultSourceFile(path)!
     )
     return (adapter.qingkuaiFileInfos.set(path, fileInfo), fileInfo)
 }

@@ -27,8 +27,8 @@ export function attachDocumentManager() {
     tsPluginIpcServer.onRequest(TP_HANDLERS.DidOpen, (fileName: string) => {
         const fileInfo = adapter.service.ensureGetQingkuaiFileInfo(fileName)
         projectService.openClientFile(fileName)
+        adapter.service.confirmTypes(fileInfo)
         fileInfo.isOpen = true
-        fileInfo.confirmTypes()
     })
 
     tsPluginIpcServer.onRequest(TP_HANDLERS.DidClose, (fileName: string) => {

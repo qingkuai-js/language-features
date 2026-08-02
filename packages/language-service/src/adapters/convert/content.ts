@@ -2,25 +2,40 @@ import type TS from "typescript"
 
 import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
+import type { Getter, Setter } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
 import type { ExtractedSlotName, ExtractedSlotContext, GlobalTypeItem } from "../../types/adapter"
 
-import {
-    QingkuaiNotFound,
-    GlobalTypeIsNonObjectTs,
-    ExternalGlobalTypeWithGenerics
-} from "../../messages/error"
-import { ts } from "../state"
+import { setState, ts as stateTs } from "../state"
 import { isInTopScope, walkTsNode } from "../ts-ast"
 import { GlobalTypeIsNonObjectJs } from "../../messages/warn"
 import { GLOBAL_TYPE_IDS, LSU_AND_DOT } from "../../constants"
+import { isUndefined } from "../../../../../shared-util/assert"
 import { traverseObject } from "../../../../../shared-util/sundry"
-import { isNodeEnvironment } from "../../../../../shared-util/assert"
 import { constants as qingkuaiConstants, util as qingkuaiUtil } from "qingkuai/compiler"
+import { GlobalTypeIsNonObjectTs, ExternalGlobalTypeWithGenerics } from "../../messages/error"
 
-export function confirmTypesForCompileResult(
+export function confirmTypesForCompileResultWithAdapter(
     adapter: TypescriptAdapter,
     fileInfo: QingkuaiFileInfo
+) {
+    return confirmTypesForCompileResult(
+        adapter.ts,
+        fileInfo,
+        newContent => {
+            adapter.updateContent(fileInfo, newContent)
+        },
+        () => {
+            return adapter.getDefaultProgram(fileInfo.path)
+        }
+    )
+}
+
+export function confirmTypesForCompileResult(
+    ts: typeof TS,
+    fileInfo: QingkuaiFileInfo,
+    updateContent: Setter<string>,
+    getTsProgram: Getter<TS.Program | undefined>
 ) {
     let program: TS.Program | undefined
 
@@ -29,10 +44,14 @@ export function confirmTypesForCompileResult(
     let componentFuncNode!: TS.VariableDeclaration
 
     const updateSourceFile = () => {
-        program = adapter.getDefaultProgram(fileInfo.path)
+        program = getTsProgram()
         sourceFile = program?.getSourceFile(fileInfo.path)!
         typeChecker = program?.getTypeChecker()!
         return sourceFile
+    }
+
+    if (isUndefined(stateTs)) {
+        setState({ ts })
     }
 
     if (fileInfo.typesConfirmed || !updateSourceFile()) {
@@ -40,11 +59,12 @@ export function confirmTypesForCompileResult(
     }
     fileInfo.typesConfirmed = true
 
-    const edit = new FileEdit(fileInfo)
     const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
     const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
+
+    const edit = new FileEdit(fileInfo, updateContent)
     const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
     const posOfSecondLineStart = ts.getPositionOfLineAndCharacter(sourceFile, 1, 0)
@@ -84,8 +104,7 @@ export function confirmTypesForCompileResult(
                         }
                         templateTags?.forEach(tag => {
                             tag.typeParameters.forEach((param, index) => {
-                                const genericName =
-                                    param.name.getText() + jsDocTag.name!.text.slice(0, 1)
+                                const genericName = jsDocTag.name!.text[0] + param.name.text
                                 const constraint =
                                     param.constraint ?? (index === 0 ? tag.constraint : undefined)
                                 const constraintText = constraint?.getText() ?? ""
@@ -93,7 +112,7 @@ export function confirmTypesForCompileResult(
                                     constraints.push(constraintText)
                                 }
                                 genericNames.push(genericName)
-                                componentGenerics.push(`@template${constraintText} ${genericName}`)
+                                componentGenerics.push(`@template ${constraintText} ${genericName}`)
                             })
                         })
                         globalTypes[jsDocTag.name.text] = {
@@ -122,7 +141,7 @@ export function confirmTypesForCompileResult(
                 )
             }
             node.typeParameters?.forEach(param => {
-                const genericName = param.name.getText() + node.name.text.slice(0, 1)
+                const genericName = node.name.text[0] + param.name.text
                 if (param.constraint) {
                     constraints.push(param.constraint.getText())
                 }
@@ -262,7 +281,7 @@ export function confirmTypesForCompileResult(
                         JSON.parse(typeChecker.typeToString(propertyType))
                     )
                 }
-                if (isEnumerablePropertyOfGlobalTypes(property)) {
+                if (isEnumerablePropertyOfGlobalTypes(ts, property)) {
                     fileInfo.attributes.push(attributeItem)
                 }
             }
@@ -318,19 +337,17 @@ export function confirmTypesForCompileResult(
         edit.push(`: { props: ${contextPropsType}; refs: ${contextRefsType}; slots: `)
     } else {
         edit.setEditIndex(0)
-        edit.push(
-            `    /** @type {Readonly<${declarePropsType}>} */ const props = ${anyValueStr};\n`
-        )
-        edit.push(`    /** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
+        edit.push(`/** @type {Readonly<${declarePropsType}>} */ const props = ${anyValueStr};\n`)
+        edit.push(`/** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
         edit.flush()
         edit.push("/**\n")
 
         for (const generic of componentGenerics) {
-            edit.push(`     * ${generic}\n`)
+            edit.push(` * ${generic}\n`)
         }
-        edit.setEditIndex(componentFuncNode.getStart())
-        edit.push(`     * @param {Object} _\n     * @param {${contextPropsType}} _.props\n`)
-        edit.push(`     * @param {${contextRefsType}} _.refs\n     * @param {`)
+        edit.setEditIndex(componentFuncNode.parent.getStart())
+        edit.push(` * @param {Object} _\n * @param {${contextPropsType}} _.props\n`)
+        edit.push(` * @param {${contextRefsType}} _.refs\n * @param {`)
     }
 
     if (!slotNames.length) {
@@ -353,7 +370,7 @@ export function confirmTypesForCompileResult(
     if (fileInfo.isTS) {
         edit.push("}")
     } else {
-        edit.push("} _.slots\n     */\n    ")
+        edit.push("} _.slots\n */\n")
     }
     edit.flush()
     updateSourceFile()
@@ -378,7 +395,10 @@ export class FileEdit {
         sourceRange?: Pair<number>
     }[] = []
 
-    constructor(private fileInfo: QingkuaiFileInfo) {}
+    constructor(
+        private fileInfo: QingkuaiFileInfo,
+        private updateContent: Setter<string>
+    ) {}
 
     get isEmpty() {
         return this.items.length === 0
@@ -416,7 +436,7 @@ export class FileEdit {
             newContent += item.content
         }
         newContent += this.fileInfo.code.slice(startIndex)
-        this.fileInfo.updateContent(newContent)
+        this.updateContent(newContent)
         this.fileInfo.adjustIndexMap(this)
 
         for (const item of this.items) {
@@ -438,7 +458,7 @@ function isMayBeEventType(type: TS.Type): boolean {
     return !!(type.getCallSignatures().length || type.symbol?.name === "Function")
 }
 
-function isEnumerablePropertyOfGlobalTypes(symbol: TS.Symbol) {
+function isEnumerablePropertyOfGlobalTypes(ts: typeof TS, symbol: TS.Symbol) {
     if (symbol.declarations?.length !== 1) {
         return false
     }
