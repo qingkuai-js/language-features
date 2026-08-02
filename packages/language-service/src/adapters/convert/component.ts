@@ -10,37 +10,49 @@ export function getComponentInfos(adapter: TypescriptAdapter, filePath: TsNormal
         return []
     }
 
+    const project = adapter.getDefaultProject(filePath)
+    const program = project?.getLanguageService().getProgram()
+    const compilerOptions = program?.getCompilerOptions()
     const dirPath = adapter.path.dir(filePath)
     const config = adapter.getQingkuaiConfig(filePath)
     const importedQingkuaiFileNames = new Set<string>()
+    const usedNames = new Set<string>()
     const componentInfos: ComponentInfo[] = []
-    const qingkuaiModules = adapter.resolvedQingkuaiModules.get(filePath)
 
     walkTsNode(sourceFile, node => {
         if (adapter.ts.isImportDeclaration(node) && isInTopScope(node)) {
             if (!isUndefined(node.importClause?.name)) {
                 const identifierName = node.importClause.name.text
-                if (
-                    adapter.ts.isStringLiteral(node.moduleSpecifier) &&
-                    qingkuaiModules?.has(node.moduleSpecifier.text)
-                ) {
-                    let relative = adapter.getNormalizedPath(node.moduleSpecifier.text)
-                    let absolute = adapter.path.resolve(dirPath, node.moduleSpecifier.text)
-
-                    const extension = !isQingkuaiFileName(relative) ? ".qk" : ""
-                    const targetFileInfo = adapter.service.ensureGetQingkuaiFileInfo(
-                        absolute + extension
+                if (adapter.ts.isStringLiteral(node.moduleSpecifier) && compilerOptions) {
+                    const resolvedModules = project?.resolveModuleNameLiterals?.(
+                        [node.moduleSpecifier],
+                        filePath,
+                        undefined,
+                        compilerOptions,
+                        sourceFile,
+                        undefined
                     )
-                    componentInfos.push({
-                        imported: true,
-                        name: identifierName,
-                        absolutePath: targetFileInfo.path,
-                        relativePath: relative + extension,
-                        slotNames: targetFileInfo.slotNames,
-                        attributes: targetFileInfo.attributes,
-                        type: targetFileInfo.defaultExportTypeStr
-                    })
-                    importedQingkuaiFileNames.add(absolute + extension)
+                    const resolvedModule = resolvedModules?.[0]?.resolvedModule
+                    if (resolvedModule && isQingkuaiFileName(resolvedModule.resolvedFileName)) {
+                        const absolute = adapter.getNormalizedPath(resolvedModule.resolvedFileName)
+                        const relative = getRelativePathWithStartDot(
+                            adapter.path,
+                            dirPath,
+                            absolute
+                        )
+                        const targetFileInfo = adapter.service.ensureGetQingkuaiFileInfo(absolute)
+                        componentInfos.push({
+                            imported: true,
+                            name: identifierName,
+                            absolutePath: targetFileInfo.path,
+                            relativePath: relative,
+                            slotNames: targetFileInfo.slotNames,
+                            attributes: targetFileInfo.attributes,
+                            type: targetFileInfo.defaultExportTypeStr
+                        })
+                        importedQingkuaiFileNames.add(absolute)
+                        usedNames.add(identifierName)
+                    }
                 }
             }
         }
@@ -55,6 +67,16 @@ export function getComponentInfos(adapter: TypescriptAdapter, filePath: TsNormal
         ) {
             let relativePath = getRelativePathWithStartDot(adapter.path, dirPath, targetFilePath)
             const targetFileInfo = adapter.service.ensureGetQingkuaiFileInfo(targetFilePath)
+
+            let name = targetFileInfo.componentName
+            if (usedNames.has(name)) {
+                let counter = 1
+                while (usedNames.has((name = `${name}_${counter}`))) {
+                    counter++
+                }
+            }
+            usedNames.add(name)
+
             if (config?.resolveImportExtension) {
                 relativePath = relativePath.slice(0, -adapter.path.ext(relativePath).length)
             }
@@ -62,7 +84,7 @@ export function getComponentInfos(adapter: TypescriptAdapter, filePath: TsNormal
                 imported: false,
                 relativePath: relativePath,
                 absolutePath: targetFilePath,
-                name: targetFileInfo.componentName,
+                name,
                 slotNames: targetFileInfo.slotNames,
                 attributes: targetFileInfo.attributes,
                 type: targetFileInfo.defaultExportTypeStr
