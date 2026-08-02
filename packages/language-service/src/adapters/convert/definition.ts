@@ -8,9 +8,8 @@ import type {
 import type { TypescriptAdapter } from "../adapter"
 import type { Range } from "vscode-languageserver-types"
 
-import { constants as qingkuaiConstants } from "qingkuai/compiler"
+import { getNodeAtPositionWithin, isComponentFuncReturns } from "../ts-ast"
 import { debugAssert, isQingkuaiFileName } from "../../../../../shared-util/assert"
-import { getNodeAtPositionWithin, getSymbolAtPositionWithin, isComponentFuncReturns } from "../ts-ast"
 
 // 待办：优先使用 originFileName、originTextSpan 以及 originContextSpan 以支持 .d.ts.map 映射文件
 
@@ -120,7 +119,11 @@ export function proxyGetDefinitionAndBoundSpanToConvert(
 
         // 当查找到的定义是组件导出时，再次查找定义作为结果
         const firstDefinition = originalRet.definitions[0]
-        if (originalRet.definitions.length === 1 && isQingkuaiFileName(firstDefinition.fileName)) {
+        if (
+            firstDefinition.textSpan.start &&
+            originalRet.definitions.length === 1 &&
+            isQingkuaiFileName(firstDefinition.fileName)
+        ) {
             const sourceFile = languageService.getProgram()?.getSourceFile(firstDefinition.fileName)
             const node =
                 sourceFile && getNodeAtPositionWithin(sourceFile, firstDefinition.textSpan.start)
