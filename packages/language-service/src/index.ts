@@ -1,3 +1,4 @@
+import { getIdentifierDescriptionsMap } from "./util/qingkuai"
 import { debounce, generatePromiseAndResolver } from "../../../shared-util/sundry"
 
 export type {
@@ -14,6 +15,7 @@ export type { Logger } from "../../../shared-util/log"
 export type { CompileIntermidiateFunc } from "./types/service"
 export type { ShowReferencesCommandParams } from "./types/service"
 export type { TsPluginQingkuaiConfig } from "../../../types/common"
+export type { ResolveModuleNameLiteralsFunc } from "./types/adapter"
 export type { InsertSnippetParams } from "../../../types/communication"
 export type { AdapterTsProject, AdapterTsProjectService } from "./types/adapter"
 export type { PrettierAndPlugins, ScriptCompletionDetail } from "./types/service"
@@ -40,4 +42,4 @@ export { resolveScriptBlockCompletion } from "./service/complete/resolve"
 export { getDocumentColors, getColorPresentations } from "./service/color"
 export { findDefinitions, findTypeDefinitions } from "./service/definition"
 
-export const util = { debounce, generatePromiseAndResolver }
+export const util = { debounce, generatePromiseAndResolver, getIdentifierDescriptionsMap }

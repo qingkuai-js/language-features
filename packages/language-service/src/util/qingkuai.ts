@@ -1,10 +1,11 @@
-import type { TemplateNode } from "qingkuai/compiler"
 import type { Range } from "vscode-languageserver-types"
 import type { GetCompileResultFunc } from "../types/service"
 import type { ProjectKind } from "../../../../shared-util/constant"
 import type { Pair, PrettierConfiguration } from "../../../../types/common"
+import type { CompileIntermediateResult, TemplateNode } from "qingkuai/compiler"
 
 import { isEmptyString } from "../../../../shared-util/assert"
+import { traverseObject } from "../../../../shared-util/sundry"
 
 // 整理自动添加的import语句的格式
 export function formatImportStatement(
@@ -105,6 +106,14 @@ export function findTagNameRanges(
     }
 
     return findRes
+}
+
+export function getIdentifierDescriptionsMap(compileRes: CompileIntermediateResult) {
+    const idDescriptions: Record<string, string> = {}
+    traverseObject(compileRes.identifierStatusInfo, (key, info) => {
+        idDescriptions[key] = info.description
+    })
+    return idDescriptions
 }
 
 // 找到指定 offset 所处的事件修饰符的名称及范围，不存在时返回 undefined
