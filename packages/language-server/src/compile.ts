@@ -48,6 +48,7 @@ export async function getCompileResult(document: TextDocument) {
 
     const clientConfig = await getConfigurationOfFile()
     const compileResult = compileIntermediate(document.getText(), {
+        allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive,
         shorthandDerivedDeclaration: clientConfig.qingkuaiConfig.shorthandDerivedDeclaration
     })
     const isTS = compileResult.scriptDescriptor.isTS
@@ -130,10 +131,10 @@ export async function getCompileResult(document: TextDocument) {
                 fileName: filePath
             })
         }
-        return (configCache.set(filePath, res), res)
+        return configCache.set(filePath, res), res
     }
 
-    return (compileCache.set(document.uri, pms), await pms)
+    return compileCache.set(document.uri, pms), await pms
 }
 
 // 清空已缓存的配置内容

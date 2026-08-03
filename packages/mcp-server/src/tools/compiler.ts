@@ -15,15 +15,22 @@ export function registerCompilerTools(server: McpServer) {
                     .optional()
                     .describe(
                         "Enable shorthand derived declaration syntax (e.g., $var instead of derived()). Default: false"
+                    ),
+                allowConstReactive: z
+                    .boolean()
+                    .optional()
+                    .describe(
+                        "Allow constant declarations to be marked as reactive. Default: true"
                     )
             }),
             title: "Check Qingkuai Syntax",
             description: SYNTAX_CHECK_TOOL_DESCRIPTION
         },
-        async ({ source, shorthandDerivedDeclaration }) => {
+        async ({ source, shorthandDerivedDeclaration, allowConstReactive }) => {
             try {
                 const result = compileIntermediate(source, {
-                    shorthandDerivedDeclaration
+                    shorthandDerivedDeclaration,
+                    allowConstReactive
                 })
 
                 const errorCount = result.messages.filter(m => m.type === "error").length
@@ -88,6 +95,10 @@ export function registerCompilerTools(server: McpServer) {
                     .boolean()
                     .optional()
                     .describe("Enable shorthand derived declaration syntax. Default: false"),
+                allowConstReactive: z
+                    .boolean()
+                    .optional()
+                    .describe("Allow constant declarations to be marked as reactive. Default: true"),
                 reactivityMode: z
                     .enum(["reactive", "shallow"])
                     .optional()
@@ -108,6 +119,7 @@ export function registerCompilerTools(server: McpServer) {
             interpretiveComments,
             preserveHtmlComments,
             shorthandDerivedDeclaration,
+            allowConstReactive,
             reactivityMode,
             whitespace
         }) => {
@@ -119,6 +131,7 @@ export function registerCompilerTools(server: McpServer) {
                     interpretiveComments,
                     preserveHtmlComments,
                     shorthandDerivedDeclaration,
+                    allowConstReactive,
                     reactivityMode,
                     whitespace
                 })

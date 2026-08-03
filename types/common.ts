@@ -76,6 +76,7 @@ export interface TSFormattingOptions {
 }
 
 export type QingkuaiConfiguration = {
+    allowConstReactive: boolean
     interpretiveComments: boolean
     resolveImportExtension: boolean
     shorthandDerivedDeclaration: boolean

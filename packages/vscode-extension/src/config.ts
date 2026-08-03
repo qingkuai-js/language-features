@@ -45,6 +45,7 @@ export function getQingkuaiConfig(uri: vscode.Uri): QingkuaiConfiguration {
         dirPath = nodePath.resolve(dirPath, "../")
     }
     return {
+        allowConstReactive: true,
         interpretiveComments: false,
         reactivityMode: "reactive",
         whitespace: "trim-collapse",
@@ -95,6 +96,7 @@ function loadQingkuaiConfig(path: string) {
         whitespace: "trim-collapse",
         reactivityMode: "reactive",
         preserveHtmlComments: "never",
+        allowConstReactive: true,
         interpretiveComments: true,
         resolveImportExtension: true,
         shorthandDerivedDeclaration: true
