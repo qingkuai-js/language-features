@@ -55,5 +55,5 @@ export enum LS_HANDLERS {
     Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer"
 }
 
-export const adapterFs = createAdapterFsWithNodeFs(nodeFs)
-export const adapterPath = createAdapterPathWithNodePath(nodePath)
+export const ADAPTER_FS = createAdapterFsWithNodeFs(nodeFs)
+export const ADAPTER_PATH = createAdapterPathWithNodePath(nodePath)

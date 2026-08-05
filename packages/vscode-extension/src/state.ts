@@ -7,11 +7,11 @@ import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { ProjectKind } from "../../../shared-util/constant"
 import { createConfigResolver } from "qingkuai-language-service"
-import { adapterFs, adapterPath } from "../../../shared-util/constant"
+import { ADAPTER_FS, ADAPTER_PATH } from "../../../shared-util/constant"
 
 export const outputChannel = vscode.window.createOutputChannel("QingKuai", "log")
 export const Logger = createLogger({ write: outputChannel.appendLine })
-export const qingkuaiConfigResolver = createConfigResolver(adapterFs, adapterPath)
+export const qingkuaiConfigResolver = createConfigResolver(ADAPTER_FS, ADAPTER_PATH)
 
 export const languageStatusItem = vscode.languages.createLanguageStatusItem(
     "Qingkuai.LanguageServerStatus",

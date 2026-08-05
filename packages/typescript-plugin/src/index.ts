@@ -15,7 +15,7 @@ import { excludeProperty } from "../../../shared-util/sundry"
 import { createConfigResolver } from "qingkuai-language-service"
 import { createServer } from "../../../shared-util/ipc/participant"
 import { TypescriptAdapter } from "qingkuai-language-service/adapters"
-import { adapterFs, adapterPath } from "../../../shared-util/constant"
+import { ADAPTER_FS, ADAPTER_PATH } from "../../../shared-util/constant"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
 
 export = function init(modules: { typescript: typeof TS }) {
@@ -80,7 +80,7 @@ export = function init(modules: { typescript: typeof TS }) {
                 parseHost,
                 project.getCurrentDirectory()
             )
-            const qingkuaiConfigResolver = createConfigResolver(adapterFs, adapterPath)
+            const qingkuaiConfigResolver = createConfigResolver(ADAPTER_FS, ADAPTER_PATH)
             for (const fileName of parsed.fileNames) {
                 setQingkuaiConfig(fileName, {
                     hoverTipReactiveStatus: true,
@@ -173,8 +173,8 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
     return new TypescriptAdapter(
         ts,
         Logger,
-        adapterFs,
-        adapterPath,
+        ADAPTER_FS,
+        ADAPTER_PATH,
         compile,
         projectService,
         getQingkuaiConfig,
