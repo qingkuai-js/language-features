@@ -11,6 +11,33 @@ export type {
     ComponentAttributeItem
 } from "../../../types/common"
 
+export type {
+    PrettierAndPlugins,
+    ScriptCompletionDetail,
+    DoResolveCodeLensFunc,
+    FindScriptDefinitionsFunc,
+    FindScriptReferencesFunc,
+    FindScriptTypeDefinitionsFunc,
+    GetCodeLensConfigFunc,
+    GetCompileResultFunc,
+    GetComponentInfosFunc,
+    GetCssConfigFunc,
+    GetScriptBlockSignatureFunc,
+    GetScriptCompletionDetailFunc,
+    GetScriptCompletionsFunc,
+    GetScriptDiagnosticsFunc,
+    GetScriptHoverFunc,
+    GetScriptImplementationsFunc,
+    GetScriptInlayHintsFunc,
+    GetScriptNavTreeFunc,
+    HandleConfigParsingMessage,
+    InsertSnippetFunc,
+    PrepareRenameInScriptBlockFunc,
+    RenameInScriptBlockFunc,
+    ResolveFilePathFunc
+} from "./types/service"
+
+export type { GeneralFunc } from "../../../types/util"
 export type { Logger } from "../../../shared-util/log"
 export type { CompileIntermidiateFunc } from "./types/service"
 export type { ShowReferencesCommandParams } from "./types/service"
@@ -18,7 +45,6 @@ export type { TsPluginQingkuaiConfig } from "../../../types/common"
 export type { ResolveModuleNameLiteralsFunc } from "./types/adapter"
 export type { InsertSnippetParams } from "../../../types/communication"
 export type { AdapterTsProject, AdapterTsProjectService } from "./types/adapter"
-export type { PrettierAndPlugins, ScriptCompletionDetail } from "./types/service"
 
 export {
     SIGNATURE_TRIGGER_CHARS,
