@@ -136,7 +136,7 @@ export default defineConfig(commandLineArgs => {
                 dir: "./packages/language-service/dist"
             },
             plugins: [dts()],
-            external: languageExternal
+            external: [...languageExternal, "node:fs", "node:path"]
         })
     }
 

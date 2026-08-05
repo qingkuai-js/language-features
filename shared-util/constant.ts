@@ -1,5 +1,9 @@
 import type { GeneralFunc } from "../types/util"
 
+import nodeFs from "node:fs"
+import nodePath from "node:path"
+import { createAdapterFsWithNodeFs, createAdapterPathWithNodePath } from "./adapter"
+
 export const NOOP: GeneralFunc = () => {}
 export const IDENTIFY = <T>(value: T) => value
 
@@ -50,3 +54,6 @@ export enum LS_HANDLERS {
     CleanLanguageConfigCache = "qingkuai/cleanConfigurationCache",
     Retransmission = "qingkuai/retransmissionToTypescriptPluginIPCServer"
 }
+
+export const adapterFs = createAdapterFsWithNodeFs(nodeFs)
+export const adapterPath = createAdapterPathWithNodePath(nodePath)

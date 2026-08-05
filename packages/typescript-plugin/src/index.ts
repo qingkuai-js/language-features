@@ -14,8 +14,8 @@ import { attachLanguageServerIPCHandlers } from "./server"
 import { excludeProperty } from "../../../shared-util/sundry"
 import { createConfigResolver } from "qingkuai-language-service"
 import { createServer } from "../../../shared-util/ipc/participant"
-import { adapterFs, adapterPath } from "../../../shared-util/adapter"
 import { TypescriptAdapter } from "qingkuai-language-service/adapters"
+import { adapterFs, adapterPath } from "../../../shared-util/constant"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
 
 export = function init(modules: { typescript: typeof TS }) {

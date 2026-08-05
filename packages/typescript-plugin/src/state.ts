@@ -6,7 +6,7 @@ import type { TypescriptAdapter } from "qingkuai-language-service/adapters"
 
 import { createLogger } from "../../../shared-util/log"
 import { createConfigResolver } from "qingkuai-language-service"
-import { adapterFs, adapterPath } from "../../../shared-util/adapter"
+import { adapterFs, adapterPath } from "../../../shared-util/constant"
 import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 
 export let ts: typeof TS
