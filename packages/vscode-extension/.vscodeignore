@@ -43,6 +43,8 @@ node_modules/typescript-plugin-qingkuai/node_modules
 node_modules/qingkuai-mcp-server/src
 node_modules/qingkuai-mcp-server/scripts
 node_modules/qingkuai-mcp-server/README.md
+node_modules/qingkuai-language-service/src
+node_modules/qingkuai-language-service/tsconfig.dts.json
 
 # package: qingkuai
 node_modules/qingkuai/dist/types/**
