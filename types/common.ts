@@ -110,7 +110,7 @@ export type CompileResult = CompileIntermediateResult & {
     config: GetClientLanguageConfigResult | null
 }
 
-export type TsPluginQingkuaiConfig = Pick<QingkuaiConfiguration, "resolveImportExtension"> &
+export type TsPluginQingkuaiConfig = QingkuaiConfiguration &
     Pick<ExtensionConfiguration, "hoverTipReactiveStatus">
 
 export type TSUserPreferences = TS.server.protocol.UserPreferences

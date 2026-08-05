@@ -5,17 +5,17 @@ import type { CompileIntermidiateFunc } from "qingkuai-language-service"
 import type { QingkuaiFileInfo } from "qingkuai-language-service/adapters"
 
 import nodeFs from "node:fs"
-import nodePath from "node:path"
 
 import { proxyTypescript } from "./proxy"
 import { ts, setState, adapter, Logger } from "./state"
 import { compileIntermediate } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
-import { AdapterFS, AdapterPath } from "../../../types/common"
+import { excludeProperty } from "../../../shared-util/sundry"
+import { createConfigResolver } from "qingkuai-language-service"
 import { createServer } from "../../../shared-util/ipc/participant"
+import { adapterFs, adapterPath } from "../../../shared-util/adapter"
 import { TypescriptAdapter } from "qingkuai-language-service/adapters"
-import { excludeProperty, traverseObject } from "../../../shared-util/sundry"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
 
 export = function init(modules: { typescript: typeof TS }) {
@@ -45,9 +45,6 @@ export = function init(modules: { typescript: typeof TS }) {
         },
 
         onConfigurationChanged(params: ConfigPluginParms) {
-            traverseObject(params.configurations, (fileName, config) => {
-                setQingkuaiConfig(fileName, config)
-            })
             createIpcServer(params.sockPath, params.warmupFilePath)
         },
 
@@ -83,6 +80,13 @@ export = function init(modules: { typescript: typeof TS }) {
                 parseHost,
                 project.getCurrentDirectory()
             )
+            const qingkuaiConfigResolver = createConfigResolver(adapterFs, adapterPath)
+            for (const fileName of parsed.fileNames) {
+                setQingkuaiConfig(fileName, {
+                    hoverTipReactiveStatus: true,
+                    ...qingkuaiConfigResolver.resolve(fileName)
+                })
+            }
             return parsed.fileNames
         }
     }
@@ -138,11 +142,6 @@ function cleanupWarmupFile(warmupFilePath: string) {
 }
 
 function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) {
-    const adapterFs: AdapterFS = {
-        exist: nodeFs.existsSync,
-        read: path => nodeFs.readFileSync(path, "utf-8")
-    }
-
     const getUserPreferences = (fileName: string): TS.UserPreferences => {
         const ret = excludeProperty(
             projectService.getPreferences(adapter.getNormalizedPath(fileName)),
@@ -169,24 +168,6 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
 
     const compile: CompileIntermidiateFunc = path => {
         return compileIntermediate(adapter.fs.read(path))
-    }
-
-    const adapterPath: AdapterPath = {
-        ext(path: string) {
-            return nodePath.extname(path)
-        },
-        dir(path: string) {
-            return nodePath.dirname(path)
-        },
-        resolve(...paths: string[]) {
-            return nodePath.resolve(...paths)
-        },
-        relative(from: string, to: string) {
-            return nodePath.relative(from, to)
-        },
-        base(path: string) {
-            return nodePath.basename(path, nodePath.extname(path))
-        }
     }
 
     return new TypescriptAdapter(

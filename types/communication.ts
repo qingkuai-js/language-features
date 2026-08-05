@@ -19,7 +19,6 @@ export interface ConfigPluginParms {
     sockPath: string
     triggerFileName: string
     warmupFilePath?: string
-    configurations: Record<string, TsPluginQingkuaiConfig>
 }
 
 export interface ConnectToTsServerParams {

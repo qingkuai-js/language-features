@@ -15,8 +15,7 @@ import {
     getQingkuaiConfig,
     getPrettierConfig,
     getExtensionConfig,
-    getTypescriptConfig,
-    notifyServerCleanConfigCache
+    getTypescriptConfig
 } from "./config"
 import { client, disposables } from "./state"
 import { LS_HANDLERS } from "../../../shared-util/constant"
@@ -27,21 +26,6 @@ export function attachVscodeEventHandlers() {
         vscode.window.onDidChangeActiveTextEditor(textEditor => {
             if (textEditor?.document.languageId === "qingkuai") {
                 client.sendNotification(LS_HANDLERS.RefreshDiagnostic, false)
-            }
-        })
-    )
-
-    // 监听扩展配置项变化，并通知qingkuai语言服务器
-    disposables.push(
-        vscode.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
-            if (
-                affectsConfiguration("qingkuai") ||
-                affectsConfiguration("prettier") ||
-                affectsConfiguration("typescript") ||
-                affectsConfiguration("javascript") ||
-                affectsConfiguration("js/ts")
-            ) {
-                notifyServerCleanConfigCache()
             }
         })
     )

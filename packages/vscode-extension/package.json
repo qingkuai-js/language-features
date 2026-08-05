@@ -267,6 +267,7 @@
         "prettier-plugin-qingkuai": "catalog:",
         "qingkuai": "catalog:",
         "qingkuai-mcp-server": "workspace:*",
+        "qingkuai-language-service": "workspace:*",
         "typescript-plugin-qingkuai": "workspace:*",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",

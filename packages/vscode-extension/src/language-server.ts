@@ -28,10 +28,9 @@ import { Messages } from "./messages"
 import { inspect } from "../../../shared-util/log"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
-import { getQingkuaiConfig, getExtensionConfig } from "./config"
+import { LS_HANDLERS, NOOP } from "../../../shared-util/constant"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
-import { LS_HANDLERS, NOOP, ProjectKind } from "../../../shared-util/constant"
 
 export async function activeLanguageServer() {
     languageStatusItem.busy = true
@@ -87,8 +86,9 @@ export async function activeLanguageServer() {
 
 async function configTsServerPlugin(isReconnect: boolean) {
     const activeDocument = vscode.window.activeTextEditor?.document
+    const activeBase = nodePath.basename(activeDocument?.uri.fsPath ?? "")
     const tsExtension = vscode.extensions.getExtension("vscode.typescript-language-features")
-    const shouldWarmupTsServer = /\.(?:qk|qingkuairc)/.test(activeDocument?.uri.fsPath || "")
+    const shouldWarmupTsServer = isQingkuaiFileName(activeBase) || activeBase === ".qingkuairc"
     setState({ limitedScriptLanguageFeatures: !tsExtension })
 
     if (!tsExtension) {
@@ -102,11 +102,9 @@ async function configTsServerPlugin(isReconnect: boolean) {
     const tsExtenstionAPI = tsExtension.exports.getAPI(1) || tsExtension.exports.getAPI(0)
 
     const sockPath = await getValidPathWithHash("qingkuai")
-    const configurations = await getInitQingkuaiConfigurations()
     const pluginConfig: ConfigPluginParms = {
         sockPath,
-        triggerFileName: activeDocument?.uri.fsPath || "",
-        configurations
+        triggerFileName: activeDocument?.uri.fsPath || ""
     }
 
     if (shouldWarmupTsServer) {
@@ -155,36 +153,4 @@ async function warmupTsServer(tsExtenstionAPI: any) {
     }
     Logger.info("TypeScript server warmup completed.")
     return warmupFilePath
-}
-
-// 获取初始化时由.qingkuairc配置文件定义的配置项
-async function getInitQingkuaiConfigurations() {
-    const configurations: Record<string, TsPluginQingkuaiConfig> = {}
-    const excludePattern = "**/{node_modules,.git,dist}/**"
-    const [qingkuaiFiles, qingkuaiConfigFiles, tsProjectFiles] = await Promise.all([
-        vscode.workspace.findFiles("**/*.qk", excludePattern),
-        vscode.workspace.findFiles("**/.qingkuairc", excludePattern),
-        projectKind === ProjectKind.TS
-            ? Promise.resolve([])
-            : vscode.workspace.findFiles("**/{tsconfig.json,*.ts}", excludePattern, 1)
-    ])
-
-    if (tsProjectFiles.length) {
-        setState({
-            projectKind: ProjectKind.TS
-        })
-    }
-
-    for (const fileAbsUri of [...qingkuaiFiles, ...qingkuaiConfigFiles]) {
-        const fileName = nodePath.basename(fileAbsUri.fsPath)
-        if (isQingkuaiFileName(fileName)) {
-            const extensionConfig = getExtensionConfig(fileAbsUri)
-            const qingkuaiConfig = getQingkuaiConfig(fileAbsUri)
-            configurations[fileAbsUri.fsPath] = {
-                resolveImportExtension: qingkuaiConfig.resolveImportExtension,
-                hoverTipReactiveStatus: extensionConfig.hoverTipReactiveStatus
-            }
-        }
-    }
-    return configurations
 }

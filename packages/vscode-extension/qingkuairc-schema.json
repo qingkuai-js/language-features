@@ -3,6 +3,12 @@
     "title": "json schema for qingkuai configuration",
     "type": "object",
     "properties": {
+        "extends": {
+            "type": "string",
+            "description": "Specifies the relative path of a configuration file to integrate.",
+            "markdownDescription": "Specifies the **relative path** of a configuration file to integrate.\n\nWhen set, the current `.qingkuairc` file extends the configuration defined in the referenced file. Options defined in the current file take precedence over the extended file, and the relative path is resolved from the directory of the current configuration file.\n\nFor example:\n\n```json\n{\n    \"extends\": \"./base.qingkuairc\"\n}\n```"
+        },
+
         "preserveHtmlComments": {
             "type": "string",
             "default": "development",

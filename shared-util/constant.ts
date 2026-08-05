@@ -1,6 +1,7 @@
 import type { GeneralFunc } from "../types/util"
 
 export const NOOP: GeneralFunc = () => {}
+export const IDENTIFY = <T>(value: T) => value
 
 export enum ProjectKind {
     TS = "ts",

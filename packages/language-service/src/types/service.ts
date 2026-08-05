@@ -23,6 +23,7 @@ import type {
     TsPluginQingkuaiConfig
 } from "../../../../types/common"
 import type { QingkuaiFileInfo } from "../adapters/file"
+import type { ConfigParsingMessageKind } from "../enums"
 import type { HoverSettings } from "vscode-css-languageservice"
 import type { CompletionTriggerKind } from "vscode-languageserver"
 import type { ProjectKind } from "../../../../shared-util/constant"
@@ -30,9 +31,7 @@ import type { QingkuaiCommandTypes } from "../../../../types/command"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
 export type TsGetDiagsMethod =
-    | "getSemanticDiagnostics"
-    | "getSyntacticDiagnostics"
-    | "getSuggestionDiagnostics"
+    "getSemanticDiagnostics" | "getSyntacticDiagnostics" | "getSuggestionDiagnostics"
 
 export interface CodeLensData {
     fileName: string
@@ -55,6 +54,11 @@ export interface CodeLensConfig {
 export interface TextEditWithPosRange {
     range: Pair<number>
     newText: string
+}
+
+export interface ConfigParsingMessage {
+    value: string
+    kind: ConfigParsingMessageKind
 }
 
 export type CompletionData = ResolveCompletionParams & {
@@ -158,3 +162,5 @@ export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.Navigat
 export type UpdateQingkuaiFileContentFunc = (fileInfo: QingkuaiFileInfo, newContent: string) => void
 export type GetScriptDiagnosticsFunc = (fileName: string) => MaybePromise<GetDiagnosticResultItem[]>
 export type GetScriptInlayHintsFunc = (fileName: string) => MaybePromise<GetInlayHintResultItem[]>
+
+export type HandleConfigParsingMessage = (filePath: string, message: ConfigParsingMessage) => void
