@@ -3,8 +3,12 @@ import type { AdapterFS, AdapterPath, QingkuaiConfiguration } from "../../../../
 import { ConfigParsingMessageKind } from "../enums"
 import { HandleConfigParsingMessage } from "../types/service"
 
-export function createConfigResolver(fs: AdapterFS, path: AdapterPath) {
-    return new ConfigResolver(fs, path)
+export function createConfigResolver(
+    fs: AdapterFS,
+    path: AdapterPath,
+    defaultConfig?: QingkuaiConfiguration
+) {
+    return new ConfigResolver(fs, path, defaultConfig)
 }
 
 class ConfigResolver {
@@ -13,9 +17,10 @@ class ConfigResolver {
 
     constructor(
         private fs: AdapterFS,
-        private path: AdapterPath
+        private path: AdapterPath,
+        defaultConfig?: QingkuaiConfiguration
     ) {
-        this.setDefault({})
+        this.setDefault(defaultConfig ?? {})
     }
 
     clearCache() {
