@@ -1,3 +1,45 @@
+# 2026-08-05
+
+> packages version: vscode-extension@1.0.30
+
+features:
+
+1. added inlay hint support for reactivity status and TypeScript script blocks ([3baaf44](https://github.com/qingkuai-js/language-tools/commit/3baaf44))
+2. implemented `resolveFilePath` import path resolution ([5164c75](https://github.com/qingkuai-js/language-tools/commit/5164c75))
+3. added `getIdentifierDescriptionsMap` function to extract identifier descriptions ([f9e8f7d](https://github.com/qingkuai-js/language-tools/commit/f9e8f7d))
+4. added `selfCloseEmptySlot` prettier configuration option ([0607b6b](https://github.com/qingkuai-js/language-tools/commit/0607b6b))
+5. added global attribute descriptions for embedded language tags ([b4c4b90](https://github.com/qingkuai-js/language-tools/commit/b4c4b90))
+6. added `allowConstReactive` configuration option and updated related components and documentation ([a404d9f](https://github.com/qingkuai-js/language-tools/commit/a404d9f), [8c7b9d0](https://github.com/qingkuai-js/language-tools/commit/8c7b9d0))
+
+fixes:
+
+1. fixed `.qk` files not being recognized by the ts server and connection timeout on restart ([f4f50bf](https://github.com/qingkuai-js/language-tools/commit/f4f50bf))
+2. fixed file count confusion caused by proxy applied before state initialization ([0e01b29](https://github.com/qingkuai-js/language-tools/commit/0e01b29))
+3. forced close of warmup files and stopped related configuration file watchers ([489b86d](https://github.com/qingkuai-js/language-tools/commit/489b86d))
+4. included `js/ts` configuration changes in config cache cleaning triggers ([cbd764b](https://github.com/qingkuai-js/language-tools/commit/cbd764b))
+5. downgraded `prettier` to 3.5.3 ([d823cd2](https://github.com/qingkuai-js/language-tools/commit/d823cd2))
+6. fixed `usage` string formatting and added `src` attribute description ([ee277d1](https://github.com/qingkuai-js/language-tools/commit/ee277d1))
+
+refactor:
+
+1. unified `qingkuai` config resolution with `extends` support ([4be2ca7](https://github.com/qingkuai-js/language-tools/commit/4be2ca7))
+2. consolidated type re-exports into entry files ([291630e](https://github.com/qingkuai-js/language-tools/commit/291630e))
+3. consolidated config cache cleaning and diagnostic refresh logic ([4087e70](https://github.com/qingkuai-js/language-tools/commit/4087e70))
+4. consolidated disposable management and removed config watchers ([3df4746](https://github.com/qingkuai-js/language-tools/commit/3df4746))
+5. migrated to `pnpm catalogs` for centralized dependency management ([aa068ec](https://github.com/qingkuai-js/language-tools/commit/aa068ec))
+6. enhanced type confirmation and module resolution ([d7706af](https://github.com/qingkuai-js/language-tools/commit/d7706af))
+7. improved component info extraction and module resolution ([64fb367](https://github.com/qingkuai-js/language-tools/commit/64fb367))
+8. optimized definition retrieval logic and condition checks ([c56f50b](https://github.com/qingkuai-js/language-tools/commit/c56f50b))
+9. renamed `hoverHintReactiveStatus` / `hoverTipReactiveStatus` config options for consistency ([a8adfd1](https://github.com/qingkuai-js/language-tools/commit/a8adfd1), [aa5946e](https://github.com/qingkuai-js/language-tools/commit/aa5946e))
+
+others:
+
+1. updated dependency versions and constrained `vscode-languageserver-types` < 3.18.0 ([e5e482b](https://github.com/qingkuai-js/language-tools/commit/e5e482b), [aa4de09](https://github.com/qingkuai-js/language-tools/commit/aa4de09))
+2. added `.npmrc` to exclude links from lockfile and restored workspace links ([b4535fc](https://github.com/qingkuai-js/language-tools/commit/b4535fc), [6791a6a](https://github.com/qingkuai-js/language-tools/commit/6791a6a))
+3. excluded `qingkuai-language-service` source files from the vscode package via `.vscodeignore` ([ddf5679](https://github.com/qingkuai-js/language-tools/commit/ddf5679))
+4. renamed schema options to match implementation ([248d740](https://github.com/qingkuai-js/language-tools/commit/248d740))
+5. updated `reactivity` and dynamic component documentation ([694bd76](https://github.com/qingkuai-js/language-tools/commit/694bd76))
+
 # 2026-07-14
 
 > packages version: vscode-extension@1.0.19

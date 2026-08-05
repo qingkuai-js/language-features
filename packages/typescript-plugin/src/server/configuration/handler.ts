@@ -3,8 +3,8 @@ import type { ConfigureFileParams } from "../../../../../types/communication"
 import nodePath from "node:path"
 
 import { setQingkuaiConfig } from "./method"
-import { tsPluginIpcServer, ts, adapter, projectService } from "../../state"
 import { TP_HANDLERS } from "../../../../../shared-util/constant"
+import { tsPluginIpcServer, ts, adapter, projectService } from "../../state"
 
 export function attachChangeConfig() {
     // 添加 typescript 的客户端配置选项到 qingkuai 文件的 ScriptInfo
@@ -20,8 +20,8 @@ export function attachChangeConfig() {
             formatOptions: params.typescriptConfig.formatCodeSettings
         })
         setQingkuaiConfig(filePath, {
-            resolveImportExtension: params.qingkuaiConfig.resolveImportExtension,
-            hoverHintReactiveStatus: params.extensionConfig.hoverHintReactiveStatus
+            ...params.qingkuaiConfig,
+            hoverTipReactiveStatus: params.extensionConfig.hoverTipReactiveStatus
         })
     })
 }

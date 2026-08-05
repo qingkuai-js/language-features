@@ -1,28 +1,69 @@
 import type { RenameFileParams, RetransmissionParams } from "../../../types/communication"
 
 import * as vscode from "vscode"
-import { basename } from "node:path"
+import nodePath from "node:path"
+
 import { getVscodeConfigTarget } from "./config"
-import { client, limitedScriptLanguageFeatures } from "./state"
+import { debounce } from "../../../shared-util/sundry"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
+import { client, limitedScriptLanguageFeatures, disposables } from "./state"
 
-export async function attachFileSystemHandlers() {
-    if (!limitedScriptLanguageFeatures) {
-        vscode.workspace.onDidRenameFiles(async ({ files }) => {
-            for (const { oldUri, newUri } of files) {
-                const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
-                if (isQingkuaiFileName(oldPath) && isQingkuaiFileName(newPath)) {
-                    if (await shouldUpdateImports(newUri)) {
-                        client.sendNotification(LS_HANDLERS.RenameFile, {
-                            oldPath,
-                            newPath
-                        } satisfies RenameFileParams)
+export function attachFileSystemHandlers() {
+    if (limitedScriptLanguageFeatures) {
+        disposables.push(
+            vscode.workspace.onDidRenameFiles(async ({ files }) => {
+                for (const { oldUri, newUri } of files) {
+                    const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
+                    if (isQingkuaiFileName(oldPath) && isQingkuaiFileName(newPath)) {
+                        if (await shouldUpdateImports(newUri)) {
+                            client.sendNotification(LS_HANDLERS.RenameFile, {
+                                oldPath,
+                                newPath
+                            } satisfies RenameFileParams)
+                        }
                     }
                 }
-            }
-        })
+            })
+        )
     }
+
+    const watcher = vscode.workspace.createFileSystemWatcher("**/*")
+
+    const debouncedRefresh = debounce((uri: vscode.Uri) => {
+        if (!isQingkuaiFileName(uri.fsPath)) {
+            client.sendNotification(LS_HANDLERS.RefreshDiagnostic, true)
+        }
+    }, 300)
+
+    const debouncedCleanCache = debounce(() => {
+        client.sendNotification(LS_HANDLERS.CleanLanguageConfigCache)
+    }, 300)
+
+    const fileWatcherHandler = (uri: vscode.Uri) => {
+        const base = nodePath.basename(uri.fsPath)
+        switch (base) {
+            case ".qingkuairc":
+            case "tsconfig.json":
+            case "jsconfig.json":
+            case ".prettierrc":
+            case ".prettierrc.json":
+            case ".prettierrc.js":
+            case ".prettierrc.cjs":
+            case ".prettierrc.yaml":
+            case ".prettierrc.yml":
+            case ".prettierrc.toml":
+            case "prettier.config.js":
+            case "prettier.config.cjs": {
+                return debouncedCleanCache()
+            }
+        }
+        debouncedRefresh(uri)
+    }
+    watcher.onDidChange(fileWatcherHandler)
+    watcher.onDidCreate(fileWatcherHandler)
+    watcher.onDidDelete(fileWatcherHandler)
+    disposables.push(watcher)
 }
 
 async function shouldUpdateImports(uri: vscode.Uri) {
@@ -58,7 +99,7 @@ async function shouldUpdateImports(uri: vscode.Uri) {
     const neverItem: vscode.MessageItem = {
         title: vscode.l10n.t("Never")
     }
-    const message = `Update imports for ${basename(uri.fsPath)}`
+    const message = `Update imports for ${nodePath.basename(uri.fsPath)}`
     const buttons = [rejectItem, acceptItem, alwaysItem, neverItem]
     const choice = await vscode.window.showInformationMessage(message, { modal: true }, ...buttons)
 

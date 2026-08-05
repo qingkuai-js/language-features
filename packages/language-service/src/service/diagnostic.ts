@@ -17,6 +17,17 @@ export async function getDiagnostic(
     cr: CompileResult,
     getScriptDiagnostics: GetScriptDiagnosticsFunc
 ): Promise<Diagnostic[]> {
+    for (const node of cr.templateNodes) {
+        if (
+            node.tag !== "!" ||
+            !node.children[0]?.content.length ||
+            !node.children[0].content[0].value.trimStart().startsWith("@qk-nocheck")
+        ) {
+            continue
+        }
+        return []
+    }
+
     // 用于避免在相同的位置放至信息及代码均相同的ts诊断结果
     const existingTsDiagnostics = new Set<string>()
 

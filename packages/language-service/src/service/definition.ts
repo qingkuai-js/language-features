@@ -1,16 +1,22 @@
+import type {
+    ResolveFilePathFunc,
+    FindScriptDefinitionsFunc,
+    FindScriptTypeDefinitionsFunc
+} from "../types/service"
 import type { CompileResult } from "../../../../types/common"
 import type { LocationLink, Range } from "vscode-languageserver-types"
-import type { FindScriptDefinitionsFunc, FindScriptTypeDefinitionsFunc } from "../types/service"
 
 import { URI } from "vscode-uri"
-import { PositionFlag } from "qingkuai/compiler"
+import { SRC_IS_LINK_TAGS } from "../constants"
 import { excuteCssCommonHandler } from "../util/css"
 import { isIndexesInvalid } from "../../../../shared-util/qingkuai"
+import { PositionFlag, util as qingkuaiUtils } from "qingkuai/compiler"
 import { findTemplateAttribute, findTemplateNodeAt, findTagNameRanges } from "../util/qingkuai"
 
 export async function findDefinitions(
     cr: CompileResult,
     offset: number,
+    resolveFilePath: ResolveFilePathFunc,
     findScriptDefinitions: FindScriptDefinitionsFunc
 ) {
     if (cr.isPositionFlagSetAtIndex(PositionFlag.InStyle, offset)) {
@@ -18,6 +24,7 @@ export async function findDefinitions(
         return cssRet && [cssRet]
     }
 
+    let shouldResolveFilePath = false
     let originSelectionRange: Range | undefined = undefined
 
     const breakToFindReferencesDirectly = () => {
@@ -52,6 +59,29 @@ export async function findDefinitions(
             } else {
                 originSelectionRange = cr.getVscodeRange(surroundingAttribute.name.loc)
             }
+        }
+
+        // 根据标签和属性判断是否需要解析文件路径
+        if (surroundingAttribute?.name.raw === "src") {
+            shouldResolveFilePath =
+                SRC_IS_LINK_TAGS.has(surroundingNode.tag) ||
+                qingkuaiUtils.isEmbeddedStyleTag(surroundingNode.tag)
+        } else if (surroundingNode.tag === "link") {
+            shouldResolveFilePath = surroundingAttribute?.name.raw === "href"
+        } else if (surroundingNode.tag === "object") {
+            shouldResolveFilePath = surroundingAttribute?.name.raw === "data"
+        }
+        if (shouldResolveFilePath && surroundingAttribute?.value) {
+            return [
+                {
+                    targetUri: URI.file(
+                        await resolveFilePath(cr, surroundingAttribute.value.raw)
+                    ).toString(),
+                    targetRange: cr.getVscodeRange(0, 0),
+                    targetSelectionRange: cr.getVscodeRange(0, 0),
+                    originSelectionRange: cr.getVscodeRange(surroundingAttribute.value.loc)
+                }
+            ] satisfies LocationLink[]
         }
 
         // 嵌入脚本标签或没有 name 属性的 slot 标签处直接查找引用

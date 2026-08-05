@@ -84,7 +84,9 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1065 | Hyphens are not allowed when using a member expression as a component tag                                                                  |
 | 1066 | A self-closing embedded style tag must provide a `src` attribute                                                                           |
 | 1067 | An embedded style tag with a `src` attribute cannot contain inline style content                                                           |
-| 1068 | The `src` attribute on `<{tag}>` requires a non-empty value                                                                                |
+| 1068 | The `src` attribute on the embedded style tag requires a non-empty value                                                                   |
+| 1069 | The `#scope` directive can only be used on components                                                                                      |
+| 1070 | Marking a `const` declaration with `reactive` or `shallow` is disallowed when the `allowConstReactive` compile option is disabled          |
 
 ---
 

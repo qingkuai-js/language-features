@@ -20,7 +20,7 @@ qingkuai-app
 
 ### reactivityMode
 
-This property configures which reactivity constructor Qingkuai uses by default. It is a string whose allowed values are `reactive` and `shallow`, and its default value is `reactive`:
+This property configures the reactivity mode that Qingkuai infers by default. It is a string whose allowed values are `reactive` and `shallow`, and its default value is `reactive`:
 
 - `reactive`: uses deep reactivity, so nested objects and arrays are also tracked automatically.
 - `shallow`: uses shallow reactivity, so only top-level value changes are tracked automatically.
@@ -56,6 +56,10 @@ This property configures whether shorthand declarations for derived reactive sta
 const $double = number * 2
 ```
 
+### allowConstReactive
+
+This property configures whether constant declarations may be marked as reactive. It is a boolean value and defaults to `true`. When set to `false`, constant declarations are not [inferred](docs://references/reactivity-infer-rules.md) as reactive, and explicitly marking a constant declaration with `reactive` or `shallow` causes a compile error.
+
 ### interpretiveComments
 
 This property configures whether interpretive comments are inserted into compilation output. It is a boolean value and defaults to `true`.
@@ -82,6 +86,14 @@ This property configures whether spaces are inserted at the beginning and end of
 
 ```qk
 <div #for={ item, index of 3 }>{ index }: { item }</div>
+```
+
+### selfCloseEmptySlotTags
+
+This property configures whether empty `slot` tags are converted to a self-closing format. It is a boolean value and defaults to `true`. When set to `true`, an empty `slot` tag is converted to the self-closing format, while setting it to `false` keeps the original format and leaves it unmodified:
+
+```qk
+<slot />
 ```
 
 ### componentTagFormatPreference

@@ -41,7 +41,7 @@ let progress = reactive("pending") // reactive
 ```
 
 <div class="custom-block warning">
-    In general, we do not recommend doing this, because in most cases you probably only want reactive capability inside script logic. Qingkuai is designed around the idea that reactivity is mainly for scenarios where the page needs to update automatically. In scripts, it is usually better to organize logic with function composition and similar patterns instead of relying too heavily on reactivity. In addition, operating on reactive data introduces some overhead. Overusing it often makes change flows less intuitive, harder to express clearly in code, and less convenient to inspect through IDE navigation or code review.
+    If you simply want to use reactivity capability on its own in scripts, we do not recommend doing so. Qingkuai's design philosophy is that the reactivity system is primarily intended for scenarios where the page needs to update automatically. In scripts, you should try to organize logic using function composition and similar approaches, rather than overly relying on reactivity mechanisms. On the other hand, operating on reactive data itself incurs some overhead. When overused, change flows are often unintuitive, making it difficult to clearly express execution logic and inconvenient for code review through code navigation and other means.
 </div>
 
 ---

@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-language-features",
-    "version": "1.0.20",
+    "version": "1.0.30",
     "author": "lgq",
     "license": "MIT",
     "displayName": "QingKuai",
@@ -217,17 +217,31 @@
                     "description": "Additional code lenses to enable if [embeddedScriptLanguageId].referencesCodeLens is enabled.",
                     "markdownDescription": "Controls which **additional code lenses** are enabled in `.qk` files.\n\nThis only works if `javascript/typescript.referencesCodeLens.enabled` (or JavaScript equivalent) is true."
                 },
-                "qingkuai.hoverHintReactiveStatus": {
+                "qingkuai.hoverTipReactiveStatus": {
                     "type": "boolean",
                     "default": true,
                     "description": "Enable hover tips showing the inferred reactivity state of variables.",
-                    "markdownDescription": "Controls whether hovering over variables in `.qk` templates shows the **compiler-inferred reactivity status.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
+                    "markdownDescription": "Controls whether hovering over variables in component files shows the **compiler-inferred reactivity status**.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
                 },
                 "qingkuai.inlayHintReactiveStatus": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enable inlay hints showing the compiler-inferred reactivity state of variables.",
-                    "markdownDescription": "Controls whether **inlay hints** are displayed in `.qk` templates showing the **compiler-inferred reactivity status** of variables.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "variable",
+                            "function",
+                            "enum",
+                            "class"
+                        ]
+                    },
+                    "default": [
+                        "variable",
+                        "function",
+                        "enum",
+                        "class"
+                    ],
+                    "description": "Show compiler-inferred reactivity status as inlay hints for the specified declaration types.",
+                    "markdownDescription": "Controls which **declaration types** display inlay hints showing the **compiler-inferred reactivity status** in component files.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
                 }
             }
         }
@@ -240,29 +254,25 @@
     "scripts": {
         "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
         "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
-        "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json",
-        "vsce:local-package": "tsx ./scripts/build-with-local.ts package",
-        "vsce:local-publish": "tsx ./scripts/build-with-local.ts publish",
-        "vsce:post": "cd ../../ && rimraf --glob '**/package-lock.json' && rimraf --glob '**/node_modules' && pnpm install",
-        "vsce:ls": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce ls && vsce:post",
-        "vsce:publish": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce publish && npm run vsce:post",
-        "vsce:package": "npm run vsce:pre && cd ../../ && npm run build && cd ./packages/vscode-extension && vsce package && npm run vsce:post",
-        "vsce:pre": "cd ../../ && rimraf --glob 'packages/*/node_modules' && cd ./packages/vscode-extension && npm install && cd ../typescript-plugin && npm install && cd ../language-service && npm install && cd ../language-server && npm install && cd ../mcp-server && npm install"
+        "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json"
     },
     "devDependencies": {
+        "@types/vscode": "catalog:",
         "js-yaml": "^4.1.0",
         "vsce": "^2.15.0"
     },
     "dependencies": {
+        "prettier": "catalog:",
         "@vscode/emmet-helper": "^2.11.0",
-        "prettier-plugin-qingkuai": "^1.0.31",
-        "qingkuai": "^1.0.70",
-        "qingkuai-mcp-server": "file:../mcp-server",
-        "typescript-plugin-qingkuai": "file:../typescript-plugin",
+        "prettier-plugin-qingkuai": "catalog:",
+        "qingkuai": "catalog:",
+        "qingkuai-mcp-server": "workspace:*",
+        "qingkuai-language-service": "workspace:*",
+        "typescript-plugin-qingkuai": "workspace:*",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",
-        "vscode-languageserver": "^9.0.1",
-        "vscode-languageserver-textdocument": "^1.0.12",
-        "vscode-languageserver-types": "^3.17.5"
+        "vscode-languageserver": "catalog:",
+        "vscode-languageserver-textdocument": "catalog:",
+        "vscode-languageserver-types": "catalog:"
     }
 }

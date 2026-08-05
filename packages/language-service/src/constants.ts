@@ -25,6 +25,18 @@ export const SEMANTIC_LEGEND: SemanticTokensLegend = {
     tokenModifiers: []
 }
 
+export const SRC_IS_LINK_TAGS = new Set([
+    "img",
+    "script",
+    "audio",
+    "video",
+    "source",
+    "track",
+    "iframe",
+    "embed",
+    "input"
+])
+
 export const KEY_RELATED_EVENT_MODIFIERS = new Set([
     "enter",
     "tab",

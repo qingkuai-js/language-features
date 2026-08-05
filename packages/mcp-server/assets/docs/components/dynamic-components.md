@@ -52,9 +52,9 @@ Dynamic components can receive attributes and reference attributes normally. Whe
 <lang-js>
     import CounterView from "./views/CounterView"
     import BadgeView from "./views/BadgeView"
+    import { nextTick, onAfterMount } from "qingkuai"
 
-    import { nextTick } from "qingkuai"
-
+    let handle = null
     let CurrentView = CounterView
 
     setTimeout(async () => {
@@ -64,21 +64,29 @@ Dynamic components can receive attributes and reference attributes normally. Whe
         await nextTick()
 
         // BadgeView instance
-        console.log(handle.value)
+        console.log(handle)
     }, 1000)
+
+    onAfterMount(() => {
+        console.log(handle) // CounterView instance
+    })
 </lang-js>
 
 <CurrentView &handle />
 ```
 
 ```qk
-<lang-js>
+<lang-ts>
+    import type { ComponentInstance } from "qingkuai"
+
     import CounterView from "./views/CounterView"
     import BadgeView from "./views/BadgeView"
+    import { nextTick, onAfterMount } from "qingkuai"
 
-    import { nextTick } from "qingkuai"
+    type DynamicView = typeof CounterView | typeof BadgeView
 
-    let CurrentView: typeof CounterView | typeof BadgeView = CounterView
+    let CurrentView: DynamicView = CounterView
+    let handle: ComponentInstance<DynamicView> | null = null
 
     setTimeout(async () => {
         CurrentView = BadgeView
@@ -87,9 +95,13 @@ Dynamic components can receive attributes and reference attributes normally. Whe
         await nextTick()
 
         // BadgeView instance
-        console.log(handle.value)
+        console.log(handle)
     }, 1000)
-</lang-js>
+
+    onAfterMount(() => {
+        console.log(handle) // CounterView instance
+    })
+</lang-ts>
 
 <CurrentView &handle />
 ```

@@ -22,10 +22,10 @@ import {
 import { URI } from "vscode-uri"
 import { ensureGetTextDocument } from "./util"
 import { compileIntermediate } from "qingkuai/compiler"
+import { traverseObject } from "../../../shared-util/sundry"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { isNumber, isUndefined } from "../../../shared-util/assert"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
-import { traverseObject } from "../../../shared-util/sundry"
 
 const compileCache = new Map<string, Promise<CompileResult>>()
 const configCache = new Map<string, GetClientLanguageConfigResult>()
@@ -41,13 +41,14 @@ export async function getCompileResult(document: TextDocument) {
         if (tpicConnectedPromise.state === "pending") {
             await tpicConnectedPromise
         }
-        if (document.version === cached?.version) {
+        if (document.version === cached?.version && configCache.has(filePath)) {
             return cached
         }
     }
 
     const clientConfig = await getConfigurationOfFile()
     const compileResult = compileIntermediate(document.getText(), {
+        allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive,
         shorthandDerivedDeclaration: clientConfig.qingkuaiConfig.shorthandDerivedDeclaration
     })
     const isTS = compileResult.scriptDescriptor.isTS
@@ -130,15 +131,24 @@ export async function getCompileResult(document: TextDocument) {
                 fileName: filePath
             })
         }
-        return res
+        return (configCache.set(filePath, res), res)
     }
 
     return (compileCache.set(document.uri, pms), await pms)
 }
 
 // 清空已缓存的配置内容
-export function cleanConfigCache() {
-    configCache.clear()
+export function cleanConfigCache(dir?: string) {
+    if (isUndefined(dir)) {
+        configCache.clear()
+    } else {
+        for (const key of configCache.keys()) {
+            if (key.startsWith(dir)) {
+                configCache.delete(key)
+            }
+        }
+    }
+    tpic.sendNotification(TP_HANDLERS.RefreshDiagnostic, void 0)
 }
 
 // 递归遍历qingkuai编译结果的Template Node AST

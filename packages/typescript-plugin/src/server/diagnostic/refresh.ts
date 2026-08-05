@@ -3,13 +3,9 @@ import { debounce } from "../../../../../shared-util/sundry"
 import { TP_HANDLERS } from "../../../../../shared-util/constant"
 import { isQingkuaiFileName } from "../../../../../shared-util/assert"
 
-export const refreshDiagnostics = debounce((byFileName?: string) => {
+export const refreshDiagnostics = debounce((onlyQk: boolean) => {
     adapter.forEachProject(project => {
         for (const fileName of project.getScriptFileNames()) {
-            if (fileName === byFileName) {
-                continue
-            }
-
             const filePath = adapter.getNormalizedPath(fileName)
             if (isQingkuaiFileName(fileName)) {
                 if (adapter.service.isFileOpening(fileName)) {
@@ -19,9 +15,13 @@ export const refreshDiagnostics = debounce((byFileName?: string) => {
                 continue
             }
 
+            if (onlyQk) {
+                continue
+            }
+
             const scriptInfo = project.getScriptInfo(fileName)
             const snapshot = project.getScriptSnapshot(fileName)
-            if (!scriptInfo || !snapshot || (byFileName && !isQingkuaiFileName(byFileName))) {
+            if (!scriptInfo || !snapshot) {
                 continue
             }
 

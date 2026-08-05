@@ -3,7 +3,6 @@ test-space
 node_modules
 .github/skills
 packages/mcp-server/scripts
-packages/vscode-extension/scripts
 
 .history
 .DS_Store
@@ -11,6 +10,7 @@ packages/vscode-extension/scripts
 features.md
 .vscode/launch.json
 **/package-lock.json
+/scripts/build-vsce.ts
 packages/vscode-extension/*.zip
 packages/vscode-extension/*.vsix
 packages/vscode-extension/qingkuai-language-features-*

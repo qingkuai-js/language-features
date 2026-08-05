@@ -1,6 +1,6 @@
 import type { TsNormalizedPath, TsPluginQingkuaiConfig } from "../../../../../types/common"
 
-import { adapter, ts } from "../../state"
+import { adapter, qingkuaiConfigResolver, ts } from "../../state"
 
 const configurations = new Map<TsNormalizedPath, TsPluginQingkuaiConfig>()
 
@@ -8,8 +8,8 @@ export function getQingkuaiConfig(fileName: string): TsPluginQingkuaiConfig {
     const found = configurations.get(adapter.getNormalizedPath(fileName))
     if (!found) {
         return {
-            resolveImportExtension: true,
-            hoverHintReactiveStatus: true
+            hoverTipReactiveStatus: true,
+            ...qingkuaiConfigResolver.getDefaultConfig()
         }
     }
     return found

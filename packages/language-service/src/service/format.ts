@@ -1,8 +1,7 @@
+import type { PrettierAndPlugins } from "../types/service"
 import type { CompileResult } from "../../../../types/common"
 
 import stripAnsi from "strip-ansi"
-
-import { PrettierAndPlugins } from "../types/service"
 
 export async function format(
     formater: PrettierAndPlugins,

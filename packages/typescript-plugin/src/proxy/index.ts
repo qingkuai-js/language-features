@@ -8,11 +8,13 @@ import {
 import { adapter } from "../state"
 import { PROXIED_MARK } from "../constant"
 import { isUndefined } from "../../../../shared-util/assert"
+import { proxyUpdateRootAndOptions } from "./project-service"
 import { proxyExecuteCommand, proxyToFileToSpan } from "./session"
-import { proxyEditContent, proxyOnConfigFileChanged } from "./project-service"
 
 export function proxyTypescript(info: TS.server.PluginCreateInfo) {
-    adapter.proxyProject(info.project)
+    if (adapter) {
+        adapter.proxyProject(info.project)
+    }
 
     // proxy session
     const sessionAny = info.session as any
@@ -25,9 +27,8 @@ export function proxyTypescript(info: TS.server.PluginCreateInfo) {
     // proxy project service
     const projectServiceAny = info.project.projectService as any
     if (!projectServiceAny[PROXIED_MARK]) {
+        proxyUpdateRootAndOptions(info.project.projectService)
         projectServiceAny[PROXIED_MARK] = true
-        proxyEditContent(info.project.projectService)
-        proxyOnConfigFileChanged(info.project.projectService)
     }
 
     // proxy language service

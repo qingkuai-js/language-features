@@ -10,27 +10,23 @@ import type {
 
 import * as vscode from "vscode"
 
-import nodeFs from "node:fs"
 import prettier from "prettier"
 import nodePath from "node:path"
 
-import { client } from "./state"
-import { LS_HANDLERS } from "../../../shared-util/constant"
+import { debounce } from "../../../shared-util/sundry"
 import { isBoolean, isNumber } from "../../../shared-util/assert"
-
-// 监听工作区范围内 .qingkuairc 配置文件的修改和删除事件
-export function startQingkuaiConfigWatcher() {
-    startConfigFileWatcher("**/.qingkuairc")
-}
-
-export function startPrettierConfigWatcher() {
-    startConfigFileWatcher("**/.prettier{rc,.json,.yaml,.yml,.toml,.js,.config.js}")
-}
+import { IDENTIFY, LS_HANDLERS } from "../../../shared-util/constant"
+import { client, disposables, qingkuaiConfigResolver } from "./state"
+import { ConfigParsingMessageKind } from "qingkuai-language-service"
 
 // 向语言服务器发送清空配置缓存的通知
-export function notifyServerCleanConfigCache() {
-    client.sendNotification(LS_HANDLERS.CleanLanguageConfigCache, null)
-}
+const notifyServerCleanConfigCache = debounce(
+    (scope?: string) => {
+        client.sendNotification(LS_HANDLERS.CleanLanguageConfigCache, scope ?? null)
+    },
+    300,
+    IDENTIFY
+)
 
 export function getVscodeConfigTarget(config: vscode.WorkspaceConfiguration, section: string) {
     const inspected = config.inspect(section)
@@ -44,23 +40,18 @@ export function getVscodeConfigTarget(config: vscode.WorkspaceConfiguration, sec
 }
 
 export function getQingkuaiConfig(uri: vscode.Uri): QingkuaiConfiguration {
-    let dirPath = nodePath.dirname(uri.fsPath)
-    const root = nodePath.parse(uri.fsPath).root
-    while (dirPath !== root) {
-        const configFilePath = nodePath.resolve(dirPath, ".qingkuairc")
-        if (nodeFs.existsSync(configFilePath)) {
-            return loadQingkuaiConfig(configFilePath)
-        }
-        dirPath = nodePath.resolve(dirPath, "../")
-    }
-    return {
-        interpretiveComments: false,
-        reactivityMode: "reactive",
-        whitespace: "trim-collapse",
-        resolveImportExtension: true,
-        shorthandDerivedDeclaration: true,
-        preserveHtmlComments: "development"
-    }
+    return qingkuaiConfigResolver.resolve(uri.fsPath, (filePath, message) => {
+        const showMessage =
+            message.kind === ConfigParsingMessageKind.Error
+                ? vscode.window.showErrorMessage
+                : vscode.window.showWarningMessage
+        showMessage(message.value, "Open The Config File").then(async value => {
+            if (value === "Open The Config File") {
+                const document = await vscode.workspace.openTextDocument(filePath)
+                vscode.window.showTextDocument(document)
+            }
+        })
+    })
 }
 
 // 获取 typescript 配置项
@@ -99,43 +90,13 @@ export function getClientConfig(uri: vscode.Uri, section: string, key: string) {
     return vscode.workspace.getConfiguration(section, uri).get(key)
 }
 
-function loadQingkuaiConfig(path: string) {
-    const defaultConfig: QingkuaiConfiguration = {
-        whitespace: "trim-collapse",
-        reactivityMode: "reactive",
-        preserveHtmlComments: "never",
-        interpretiveComments: true,
-        resolveImportExtension: true,
-        shorthandDerivedDeclaration: true
-    }
-    try {
-        return Object.assign(
-            defaultConfig,
-            JSON.parse(nodeFs.readFileSync(path, "utf-8") || "{}")
-        ) as QingkuaiConfiguration
-    } catch {
-        vscode.window
-            .showWarningMessage(
-                `Load configuration from "${path}" is failed, please check its contents.`,
-                "Open Config File"
-            )
-            .then(async value => {
-                if (value === "Open Config File") {
-                    const document = await vscode.workspace.openTextDocument(path)
-                    vscode.window.showTextDocument(document)
-                }
-            })
-        return defaultConfig
-    }
-}
-
 // 获取扩展配置项
 export function getExtensionConfig(uri: vscode.Uri): ExtensionConfiguration {
     const config = vscode.workspace.getConfiguration("qingkuai", uri)
     return {
         htmlHoverTip: config.get("htmlHoverTip"),
         additionalCodeLens: config.get("additionalCodeLens"),
-        hoverHintReactiveStatus: config.get("hoverHintReactiveStatus"),
+        hoverTipReactiveStatus: config.get("hoverTipReactiveStatus"),
         inlayHintReactiveStatus: config.get("inlayHintReactiveStatus"),
         componentTagFormatPreference: config.get("componentTagFormatPreference"),
         insertSpaceAroundInterpolation: config.get("insertSpaceAroundInterpolation"),
@@ -144,11 +105,34 @@ export function getExtensionConfig(uri: vscode.Uri): ExtensionConfiguration {
     } as any
 }
 
-function startConfigFileWatcher(globalPattern: string) {
-    const watcher = vscode.workspace.createFileSystemWatcher(globalPattern)
-    watcher.onDidCreate(notifyServerCleanConfigCache)
-    watcher.onDidChange(notifyServerCleanConfigCache)
-    watcher.onDidDelete(notifyServerCleanConfigCache)
+function startConfigWatcher() {
+    // 监听扩展配置项变化，并通知 qingkuai 语言服务器清空配置项缓存
+    disposables.push(
+        vscode.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
+            if (
+                affectsConfiguration("qingkuai") ||
+                affectsConfiguration("prettier") ||
+                affectsConfiguration("typescript") ||
+                affectsConfiguration("javascript") ||
+                affectsConfiguration("js/ts")
+            ) {
+                notifyServerCleanConfigCache()
+            }
+        })
+    )
+
+    // 监听 qingkuai、prettier 配置文件变更，并通知 qingkuai 语言服务器清空指定前缀的缓存
+    const watcher = vscode.workspace.createFileSystemWatcher(
+        "**/{.qingkuairc,.prettierrc*,prettier.config*,package.json}"
+    )
+    const configFileChangeCallback = (uri: vscode.Uri) => {
+        notifyServerCleanConfigCache(nodePath.dirname(uri.fsPath))
+    }
+    disposables.push(
+        watcher.onDidCreate(configFileChangeCallback),
+        watcher.onDidChange(configFileChangeCallback),
+        watcher.onDidDelete(configFileChangeCallback)
+    )
 }
 
 // prettier-ignore

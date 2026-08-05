@@ -18,7 +18,7 @@ export interface CompressedPositions {
 export interface ConfigPluginParms {
     sockPath: string
     triggerFileName: string
-    configurations: Record<string, TsPluginQingkuaiConfig>
+    warmupFilePath?: string
 }
 
 export interface ConnectToTsServerParams {
@@ -165,9 +165,26 @@ export type GetClientConfigParams<T = any> = {
       }
 )
 
+export interface ResolveFilePathParams {
+    from: string
+    to: string
+}
+
 export type SignatureHelpParams = TPICCommonRequestParams & {
     isRetrigger: boolean
     triggerCharacter?: "," | "(" | "<"
+}
+
+export interface GetInlayHintParams {
+    fileName: string
+}
+
+export interface GetInlayHintResultItem {
+    pos: number
+    label: string
+    kind: "Type" | "Parameter" | "Enum"
+    paddingLeft?: boolean
+    paddingRight?: boolean
 }
 
 export type GetCompletionsResultEntry = TS.CompletionEntry & {

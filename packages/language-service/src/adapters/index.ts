@@ -1,2 +1,32 @@
+export type {
+    GetFormattingOptionsFunc,
+    GetQingkuaiConfigFunc,
+    GetUserPreferencesFunc,
+    UpdateQingkuaiFileContentFunc
+} from "../types/service"
+export type {
+    FindDefinitionsResult,
+    FindDefinitionsResultItem,
+    FindReferenceResultItem,
+    GetCompletionsParms,
+    GetCompletionsResult,
+    GetDiagnosticResultItem,
+    GetInlayHintResultItem,
+    HoverTipResult,
+    RenameLocationItem,
+    ResolveCompletionParams,
+    ResolveFilePathParams,
+    SignatureHelpParams,
+    TPICCommonRequestParams,
+    UpdateContentParams,
+    UpdateContentResult
+} from "../../../../types/communication"
+export type { LSDiagnostic } from "../types/adapter"
+export type { Getter } from "../../../../types/util"
+export type { TsNormalizedPath } from "../../../../types/common"
+
 export { QingkuaiFileInfo } from "./file"
 export { TypescriptAdapter } from "./adapter"
+export { correctDiagnosticLoc } from "./convert/diagnostic"
+export { getOverrideResolveModuleLiterals } from "./proxies"
+export { confirmTypesForCompileResult } from "./convert/content"

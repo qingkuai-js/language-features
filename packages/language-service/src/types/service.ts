@@ -12,6 +12,7 @@ import type {
     FindReferenceResultItem,
     ResolveCompletionParams,
     GetDiagnosticResultItem,
+    GetInlayHintResultItem,
     FindDefinitionsResultItem
 } from "../../../../types/communication"
 import type {
@@ -22,6 +23,7 @@ import type {
     TsPluginQingkuaiConfig
 } from "../../../../types/common"
 import type { QingkuaiFileInfo } from "../adapters/file"
+import type { ConfigParsingMessageKind } from "../enums"
 import type { HoverSettings } from "vscode-css-languageservice"
 import type { CompletionTriggerKind } from "vscode-languageserver"
 import type { ProjectKind } from "../../../../shared-util/constant"
@@ -29,9 +31,7 @@ import type { QingkuaiCommandTypes } from "../../../../types/command"
 import type { CompletionItem, Position, SignatureHelp } from "vscode-languageserver-types"
 
 export type TsGetDiagsMethod =
-    | "getSemanticDiagnostics"
-    | "getSyntacticDiagnostics"
-    | "getSuggestionDiagnostics"
+    "getSemanticDiagnostics" | "getSyntacticDiagnostics" | "getSuggestionDiagnostics"
 
 export interface CodeLensData {
     fileName: string
@@ -54,6 +54,11 @@ export interface CodeLensConfig {
 export interface TextEditWithPosRange {
     range: Pair<number>
     newText: string
+}
+
+export interface ConfigParsingMessage {
+    value: string
+    kind: ConfigParsingMessageKind
 }
 
 export type CompletionData = ResolveCompletionParams & {
@@ -145,13 +150,17 @@ export type PrettierAndPlugins = [typeof Prettier, ...Array<string | Prettier.Pl
 
 export type InsertSnippetFunc = (item: string | InsertSnippetParams) => void
 export type GetUserPreferencesFunc = (fileName: string) => TS.UserPreferences
+export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig
 export type GetCompileResultFunc = (path: string) => MaybePromise<CompileResult>
 export type GetFormattingOptionsFunc = (fileName: string) => TS.FormatCodeSettings
 export type ShowReferencesCommandParams = QingkuaiCommandTypes.ShowReferencesParams
 export type CompileIntermidiateFunc = (path: string) => CompileIntermediateResult
 export type GetCssConfigFunc = (uri: string) => MaybePromise<HoverSettings | undefined>
 export type GetComponentInfosFunc = (fileName: string) => MaybePromise<ComponentInfo[]>
-export type GetQingkuaiConfigFunc = (fileName: string) => TsPluginQingkuaiConfig | undefined
+export type ResolveFilePathFunc = (cr: CompileResult, path: string) => MaybePromise<string>
 export type GetScriptNavTreeFunc = (fileName: string) => MaybePromise<TS.NavigationTree | null>
 export type UpdateQingkuaiFileContentFunc = (fileInfo: QingkuaiFileInfo, newContent: string) => void
 export type GetScriptDiagnosticsFunc = (fileName: string) => MaybePromise<GetDiagnosticResultItem[]>
+export type GetScriptInlayHintsFunc = (fileName: string) => MaybePromise<GetInlayHintResultItem[]>
+
+export type HandleConfigParsingMessage = (filePath: string, message: ConfigParsingMessage) => void

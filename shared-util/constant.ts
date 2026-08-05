@@ -1,6 +1,7 @@
 import type { GeneralFunc } from "../types/util"
 
 export const NOOP: GeneralFunc = () => {}
+export const IDENTIFY = <T>(value: T) => value
 
 export enum ProjectKind {
     TS = "ts",
@@ -10,6 +11,7 @@ export enum ProjectKind {
 export enum TP_HANDLERS {
     HoverTip = "hoverTip",
     Rename = "getRenameInfo",
+    GetInlayHint = "getInlayHint",
     GetLanguageId = "getLanguageId",
     ConfigureFile = "configureFile",
     PrepareRename = "prepareRename",
@@ -18,6 +20,7 @@ export enum TP_HANDLERS {
     GetCompletion = "getCompletion",
     UpdateContent = "updateContent",
     FindDefinition = "findDefinition",
+    ResolveFilePath = "resolveFilePath",
     DidOpen = "didOpenQingkuaiDocument",
     RenameFile = "getEditsForFileRename",
     DidClose = "didCloseQingkuaiDocument",

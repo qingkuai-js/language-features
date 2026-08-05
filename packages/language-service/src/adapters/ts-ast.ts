@@ -2,6 +2,20 @@ import type TS from "typescript"
 
 import { ts } from "./state"
 import { isUndefined } from "../../../../shared-util/assert"
+import { constants as qingkuaiConstants } from "qingkuai/compiler"
+
+export function findAncestorUntil(
+    node: TS.Node,
+    callback: (node: TS.Node) => boolean
+): TS.Node | undefined {
+    while (callback(node)) {
+        node = node.parent
+        if (!node) {
+            return undefined
+        }
+    }
+    return node
+}
 
 export function getKindName(node: TS.Node) {
     return ts.SyntaxKind[node.kind]
@@ -38,16 +52,6 @@ export function isInTopScope(node: TS.Node): boolean {
     }
 }
 
-export function findAncestorUntil(node: TS.Node, kind: TS.SyntaxKind) {
-    while (node.kind !== kind) {
-        node = node.parent
-        if (!node) {
-            return undefined
-        }
-    }
-    return node
-}
-
 // 查找指定位置的节点
 export function findNodeAtPosition(
     sourceFile: TS.SourceFile,
@@ -67,10 +71,18 @@ export function getAliasedSymbol(typeChecker: TS.TypeChecker, node: TS.Node) {
     return symbol && typeChecker.getAliasedSymbol(symbol)
 }
 
-export function isComponentReturns(node: TS.Node): boolean {
-    const returnNode = findAncestorUntil(node, ts.SyntaxKind.ReturnStatement)
-    const funcNode = returnNode && findAncestorUntil(returnNode, ts.SyntaxKind.ArrowFunction)
-    return !!funcNode && isInComponentFunctionTopScope(funcNode)
+export function isComponentFuncReturns(node: TS.Node): boolean {
+    return !!findAncestorUntil(node, node => {
+        return (
+            ts.isReturnStatement(node) &&
+            node.parent &&
+            ts.isArrowFunction(node.parent) &&
+            node.parent.parent &&
+            ts.isVariableDeclaration(node.parent.parent) &&
+            ts.isIdentifier(node.parent.parent.name) &&
+            node.parent.parent.name.text === qingkuaiConstants.LSC.COMPONENT
+        )
+    })
 }
 
 // 遍历所有后代节点

@@ -6,6 +6,7 @@ import type {
 import type { CompileResult } from "../../../../types/common"
 import type { DefinitionHandler, TypeDefinitionHandler } from "../types/handlers"
 
+import { resolveFilePath } from "./file"
 import { getCompileResult } from "../compile"
 import { TP_HANDLERS } from "../../../../shared-util/constant"
 import { tpic, documents, limitedScriptLanguageFeatures } from "../state"
@@ -20,7 +21,7 @@ export const findDefinitions: DefinitionHandler = async ({ textDocument, positio
 
     const cr = await getCompileResult(document)
     const offset = document.offsetAt(position)
-    return _findDefinitions(cr, offset, findScriptBlockDefinitions)
+    return _findDefinitions(cr, offset, resolveFilePath, findScriptBlockDefinitions)
 }
 
 export const findTypeDefinitions: TypeDefinitionHandler = async (

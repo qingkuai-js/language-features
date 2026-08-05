@@ -12,7 +12,8 @@ import type {
     GetCompletionsParms,
     SignatureHelpParams,
     ResolveCompletionParams,
-    TPICCommonRequestParams
+    TPICCommonRequestParams,
+    ResolveFilePathParams
 } from "../../../../types/communication"
 import type { QingkuaiFileInfo } from "./file"
 import type { Logger } from "../../../../shared-util/log"
@@ -21,17 +22,19 @@ import type { AdapterFS, AdapterPath, TsNormalizedPath } from "../../../../types
 
 import { setState } from "./state"
 import { proxyProject } from "./proxies"
+import { resolveFilePath } from "./convert/file"
 import { getNavigationTree } from "./convert/navtree"
 import { getComponentInfos } from "./convert/component"
 import { getAndConvertHoverTip } from "./convert/hover"
 import { LocationConvertor } from "./convert/localtions"
 import { getAndConvertReferences } from "./convert/reference"
 import { getAndConvertDiagnostics } from "./convert/diagnostic"
-import { confirmTypesForCompileResult } from "./convert/content"
+import { getAndConvertInlayHints } from "./convert/inlay-hint"
 import { getAndConvertSignatureHelp } from "./convert/signature"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 import { ensureGetQingkuaiFileInfo, updateQingkuaiFile } from "./file"
 import { findAndConvertImplementations } from "./convert/implementation"
+import { confirmTypesForCompileResultWithAdapter } from "./convert/content"
 import { getAndConvertDefinitions, getAndConvertTypeDefinitions } from "./convert/definition"
 import { getAndConvertCompletionDetail, getAndConvertCompletionInfo } from "./convert/completion"
 import { getAndConvertPrepareRenameLocation, getAndConvertRenameLocations } from "./convert/rename"
@@ -41,9 +44,6 @@ export class TypescriptAdapter {
 
     public service = new AdapterService(this)
     public qingkuaiFileInfos = new Map<TsNormalizedPath, QingkuaiFileInfo>()
-
-    // qingkuai 文件导入映射，导入方文件名 -> 被导入的 qingkuai 文件名列表
-    public resolvedQingkuaiModules = new Map<TsNormalizedPath, Set<string>>()
 
     constructor(
         public ts: typeof TS,
@@ -67,7 +67,7 @@ export class TypescriptAdapter {
         }
         for (const [_, fileInfo] of this.qingkuaiFileInfos) {
             if (!fileInfo.typesConfirmed) {
-                confirmTypesForCompileResult(this, fileInfo)
+                confirmTypesForCompileResultWithAdapter(this, fileInfo)
             }
         }
         this.initialized = true
@@ -150,12 +150,20 @@ class AdapterService {
         return new LocationConvertor(this.adapter, fileName)
     }
 
+    resolveFilePath(params: ResolveFilePathParams) {
+        return resolveFilePath(this.adapter, params)
+    }
+
     getHoverTip(params: TPICCommonRequestParams) {
         return getAndConvertHoverTip(this.adapter, params)
     }
 
     getDiagnostics(fileName: string) {
         return getAndConvertDiagnostics(this.adapter, fileName)
+    }
+
+    getInlayHints(fileName: string) {
+        return getAndConvertInlayHints(this.adapter, fileName)
     }
 
     getNavigationTree(fileName: string) {
@@ -192,6 +200,10 @@ class AdapterService {
 
     getRenameLocations(params: TPICCommonRequestParams) {
         return getAndConvertRenameLocations(this.adapter, params)
+    }
+
+    confirmTypes(fileInfo: QingkuaiFileInfo) {
+        confirmTypesForCompileResultWithAdapter(this.adapter, fileInfo)
     }
 
     getAndConvertPrepareRenameLocation(params: TPICCommonRequestParams) {

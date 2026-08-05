@@ -6,9 +6,12 @@ import * as vscode from "vscode"
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { ProjectKind } from "../../../shared-util/constant"
+import { createConfigResolver } from "qingkuai-language-service"
+import { adapterFs, adapterPath } from "../../../shared-util/adapter"
 
 export const outputChannel = vscode.window.createOutputChannel("QingKuai", "log")
 export const Logger = createLogger({ write: outputChannel.appendLine })
+export const qingkuaiConfigResolver = createConfigResolver(adapterFs, adapterPath)
 
 export const languageStatusItem = vscode.languages.createLanguageStatusItem(
     "Qingkuai.LanguageServerStatus",
@@ -20,6 +23,8 @@ export let client: LanguageClient
 export let serverModulePath: string
 export let projectKind = ProjectKind.JS
 export let limitedScriptLanguageFeatures = true
+
+export const disposables: vscode.Disposable[] = [outputChannel]
 
 export function setState(options: SetStateOptions) {
     if (!isUndefined(options.client)) {

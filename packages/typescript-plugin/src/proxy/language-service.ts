@@ -1,7 +1,7 @@
 import type TS from "typescript"
 
 import { adapter } from "../state"
-import { PROXIED_MARK } from "../constant"
+import { PROXIED_MARK, qkFileImpotPathRemoveRE } from "../constant"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 
 // 首次获取诊断信息是完成 TypescriptAdapter 的初始化（确定 qingkuai 文件的类型定义内容）
@@ -52,22 +52,20 @@ export function proxyGetEditsForFileRename(languageService: TS.LanguageService) 
             ...rest
         )
         originalRet.forEach(item => {
-            let removeRE: RegExp
             const editQingkuaiFile = isQingkuaiFileName(item.fileName)
             const qingkuaiConfig = editQingkuaiFile
                 ? adapter.getQingkuaiConfig(item.fileName)
                 : undefined
             const locationConvertor = adapter.service.createLocationConvertor(item.fileName)
-            if (qingkuaiConfig?.resolveImportExtension) {
-                removeRE = /\.qk(?:\/index(?:\.[jt]s)?)?$/
-            } else {
-                removeRE = /(?:\/index(?:\.[jt]s)?)?$/
-            }
             item.textChanges.forEach(change => {
                 if (editQingkuaiFile) {
                     change.span = locationConvertor.textSpan.toSourceTextSpan(change.span)
                 }
-                change.newText = change.newText.replace(removeRE, "")
+                change.newText = change.newText.replace(qkFileImpotPathRemoveRE, "")
+
+                if (qingkuaiConfig?.resolveImportExtension && change.newText.endsWith(".qk")) {
+                    change.newText = change.newText.slice(0, -3)
+                }
             })
         })
         return originalRet

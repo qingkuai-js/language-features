@@ -1,3 +1,4 @@
+import { getIdentifierDescriptionsMap } from "./util/qingkuai"
 import { debounce, generatePromiseAndResolver } from "../../../shared-util/sundry"
 
 export type {
@@ -10,13 +11,40 @@ export type {
     ComponentAttributeItem
 } from "../../../types/common"
 
+export type {
+    PrettierAndPlugins,
+    ScriptCompletionDetail,
+    DoResolveCodeLensFunc,
+    FindScriptDefinitionsFunc,
+    FindScriptReferencesFunc,
+    FindScriptTypeDefinitionsFunc,
+    GetCodeLensConfigFunc,
+    GetCompileResultFunc,
+    GetComponentInfosFunc,
+    GetCssConfigFunc,
+    GetScriptBlockSignatureFunc,
+    GetScriptCompletionDetailFunc,
+    GetScriptCompletionsFunc,
+    GetScriptDiagnosticsFunc,
+    GetScriptHoverFunc,
+    GetScriptImplementationsFunc,
+    GetScriptInlayHintsFunc,
+    GetScriptNavTreeFunc,
+    HandleConfigParsingMessage,
+    InsertSnippetFunc,
+    PrepareRenameInScriptBlockFunc,
+    RenameInScriptBlockFunc,
+    ResolveFilePathFunc
+} from "./types/service"
+
+export type { GeneralFunc } from "../../../types/util"
 export type { Logger } from "../../../shared-util/log"
 export type { CompileIntermidiateFunc } from "./types/service"
 export type { ShowReferencesCommandParams } from "./types/service"
 export type { TsPluginQingkuaiConfig } from "../../../types/common"
+export type { ResolveModuleNameLiteralsFunc } from "./types/adapter"
 export type { InsertSnippetParams } from "../../../types/communication"
 export type { AdapterTsProject, AdapterTsProjectService } from "./types/adapter"
-export type { PrettierAndPlugins, ScriptCompletionDetail } from "./types/service"
 
 export {
     SIGNATURE_TRIGGER_CHARS,
@@ -25,10 +53,13 @@ export {
 } from "./constants"
 export { doHover } from "./service/hover"
 export { format } from "./service/format"
+export { ConfigParsingMessageKind } from "./enums"
+export { getInlayHint } from "./service/inlay-hint"
 export { getDiagnostic } from "./service/diagnostic"
 export { findReferences } from "./service/reference"
 export { getSignatureHelp } from "./service/signature"
 export { createLogger } from "../../../shared-util/log"
+export { createConfigResolver } from "./service/config"
 export { findComponentTagRanges } from "./util/qingkuai"
 export { rename, prepareRename } from "./service/rename"
 export { ProjectKind } from "../../../shared-util/constant"
@@ -39,4 +70,4 @@ export { resolveScriptBlockCompletion } from "./service/complete/resolve"
 export { getDocumentColors, getColorPresentations } from "./service/color"
 export { findDefinitions, findTypeDefinitions } from "./service/definition"
 
-export const util = { debounce, generatePromiseAndResolver }
+export const util = { debounce, generatePromiseAndResolver, getIdentifierDescriptionsMap }
