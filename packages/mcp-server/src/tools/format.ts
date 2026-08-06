@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/server"
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import prettier from "prettier"
 import nodeModule from "node:module"

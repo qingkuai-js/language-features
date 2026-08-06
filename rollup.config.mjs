@@ -10,7 +10,7 @@ export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
     const mcpServerExternal = [
         "qingkuai/compiler",
-        "@modelcontextprotocol/server",
+        /^@modelcontextprotocol\/sdk(\/.*)?$/,
         "zod",
         "prettier",
         "prettier-plugin-qingkuai"

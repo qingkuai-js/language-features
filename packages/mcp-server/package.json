@@ -28,7 +28,7 @@
     },
     "dependencies": {
         "@cfworker/json-schema": "^4.1.1",
-        "@modelcontextprotocol/server": "2.0.0-alpha.2",
+        "@modelcontextprotocol/sdk": "catalog:",
         "prettier": "catalog:",
         "prettier-plugin-qingkuai": "catalog:",
         "qingkuai": "catalog:",

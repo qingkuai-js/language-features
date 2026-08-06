@@ -2,6 +2,7 @@ packages:
   - ./packages/*
 
 catalog:
+  "@modelcontextprotocol/sdk": ^1.30.0
   qingkuai: ^1.0.84
   prettier: ^3.5.3
   typescript: ^6.0.3
