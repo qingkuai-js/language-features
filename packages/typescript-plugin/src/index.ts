@@ -37,7 +37,10 @@ export = function init(modules: { typescript: typeof TS }) {
                             extension: ".qk",
                             isMixedContent: false,
                             scriptKind: modules.typescript.ScriptKind.Deferred
-                        }
+                        },
+
+                        // @ts-expect-error: access private property
+                        ...info.project.projectService.extraFileExtensions
                     ]
                 })
             }
