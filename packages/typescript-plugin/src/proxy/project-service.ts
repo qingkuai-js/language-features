@@ -1,7 +1,6 @@
 import type TS from "typescript"
 
 import { PROXIED_MARK } from "../constant"
-import { refreshDiagnostics } from "../server/diagnostic/refresh"
 import { isQingkuaiFileName } from "../../../../shared-util/assert"
 
 // 代理js/ts配置文件变更，刷新qk文件诊断信息
@@ -47,19 +46,17 @@ export function proxyEditContent(projectService: TS.server.ProjectService) {
 //
 // After enabling the plugin, the invocation logic of `updateRootAndOptionsOfNonInferredProject` is incorrect
 // Refer to TypeScript issue: https://github.com/microsoft/TypeScript/issues/61302
-export function proxyUpdateRootAndOptions(projectService: TS.server.ProjectService) {
-    const porjectServiceAny = projectService as any
-    const oriMethod = porjectServiceAny.updateRootAndOptionsOfNonInferredProject
-    porjectServiceAny.updateRootAndOptionsOfNonInferredProject = (project: any, ...rest: any) => {
-        const existingPluginNames = new Set<string>()
-        const isBug = project.plugins?.some(({ name }: any) => {
-            if (existingPluginNames.has(name)) {
-                return true
-            }
-            return (existingPluginNames.add(name), false)
-        })
-        !isBug && oriMethod.call(projectService, project, ...rest)
-    }
-}
-
-
+// export function proxyUpdateRootAndOptions(projectService: TS.server.ProjectService) {
+//     const porjectServiceAny = projectService as any
+//     const oriMethod = porjectServiceAny.updateRootAndOptionsOfNonInferredProject
+//     porjectServiceAny.updateRootAndOptionsOfNonInferredProject = (project: any, ...rest: any) => {
+//         const existingPluginNames = new Set<string>()
+//         const isBug = project.plugins?.some(({ name }: any) => {
+//             if (existingPluginNames.has(name)) {
+//                 return true
+//             }
+//             return (existingPluginNames.add(name), false)
+//         })
+//         !isBug && oriMethod.call(projectService, project, ...rest)
+//     }
+// }

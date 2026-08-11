@@ -6,12 +6,13 @@ import type { AdapterTsProject } from "../../types/adapter"
 import type { HoverTipResult, TPICCommonRequestParams } from "../../../../../types/communication"
 
 import { ts } from "../state"
-import { LSU_AND_DOT } from "../../constants"
+import { LS_PACKAGE, LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
 import { getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
+import { intrinsicMethodDisplayRE } from "../../regular"
 
 export function getAndConvertHoverTip(
     adapter: TypescriptAdapter,
@@ -57,7 +58,8 @@ export function getAndConvertHoverTip(
         if (
             node.parent &&
             ts.isPropertyAccessExpression(node.parent) &&
-            node.parent.expression.getText() === qingkuaiConstants.LSC.UTIL
+            node.parent.expression.getText() === qingkuaiConstants.LSC.UTIL &&
+            adapter.service.isFrom(fileName, node.parent, LS_PACKAGE)
         ) {
             return {
                 content: "any",
@@ -73,10 +75,14 @@ export function getAndConvertHoverTip(
 
     const { start, length } = ret.textSpan
     const documentation = convertDisplayPartsToPlainTextWithLink(ret.documentation)
-    const display = convertDisplayPartsToPlainTextWithLink(ret.displayParts).replace(
-        LSU_AND_DOT,
-        ""
-    )
+
+    let display = convertDisplayPartsToPlainTextWithLink(ret.displayParts).replace(LSU_AND_DOT, "")
+    if (node && adapter.service.isFrom(fileName, node, LS_PACKAGE)) {
+        display = display.replace(intrinsicMethodDisplayRE, m => {
+            return m.startsWith("\n") ? "" : "function"
+        })
+    }
+
     return {
         range: [start, start + length] as Pair<number>,
         content: mdCodeBlockGen("ts", display + idStatusDisplay) + "\n" + documentation

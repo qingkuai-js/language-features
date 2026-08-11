@@ -31,17 +31,12 @@ export = function init(modules: { typescript: typeof TS }) {
                     projectService: info.project.projectService,
                     adapter: createAdapter(modules.typescript, projectService)
                 })
-                info.project.projectService.setHostConfiguration({
-                    extraFileExtensions: [
-                        {
-                            extension: ".qk",
-                            isMixedContent: false,
-                            scriptKind: modules.typescript.ScriptKind.Deferred
-                        },
 
-                        // @ts-expect-error: access private property
-                        ...info.project.projectService.extraFileExtensions
-                    ]
+                // @ts-expect-error: access private property
+                ;(info.project.projectService.hostConfiguration.extraFileExtensions ??= []).push({
+                    extension: ".qk",
+                    isMixedContent: false,
+                    scriptKind: modules.typescript.ScriptKind.Deferred
                 })
             }
             return info.languageService

@@ -4,6 +4,7 @@ export const inEntityCharacterRE = /^[a-zA-Z\d]+;/
 export const ignoredComponentNameChars = /[^a-zA-Z\d]/g
 export const completeEntityCharacterRE = /&[a-zA-Z\d]*$/
 export const jsValidIdentifierRE = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/
+export const intrinsicMethodDisplayRE = /^\(alias\)|\nimport.*$/g
 export const emmetTagNameRE = /(?:^|\s|<)[a-zA-z][a-zA-Z\d\-_.:]*$/
 export const CompletionImportTextEditRE = /^\s*(?:(?:update|add) )?import .* from/
 
