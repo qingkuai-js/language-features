@@ -84,6 +84,7 @@ export const RETRIGGER_SUGGEST_COMMAND: Command = {
     command: QingkuaiCommands.TriggerSuggest
 }
 
+export const LS_PACKAGE = "qingkuai/language-service"
 export const LSU_AND_DOT = qingkuaiConstants.LSC.UTIL + "."
 
 export const SOURCE_SPAN_MARK: unique symbol = Symbol(

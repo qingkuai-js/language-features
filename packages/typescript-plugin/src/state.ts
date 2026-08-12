@@ -6,7 +6,7 @@ import type { TypescriptAdapter } from "qingkuai-language-service/adapters"
 
 import { createLogger } from "../../../shared-util/log"
 import { createConfigResolver } from "qingkuai-language-service"
-import { adapterFs, adapterPath } from "../../../shared-util/adapter"
+import { ADAPTER_FS, ADAPTER_PATH } from "../../../shared-util/constant"
 import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 
 export let ts: typeof TS
@@ -14,7 +14,7 @@ export let adapter: TypescriptAdapter
 export let tsPluginIpcServer = DEFAULT_PARTICIPANT
 export let projectService: TS.server.ProjectService
 
-export const qingkuaiConfigResolver = createConfigResolver(adapterFs, adapterPath)
+export const qingkuaiConfigResolver = createConfigResolver(ADAPTER_FS, ADAPTER_PATH)
 
 // typescript扩展客户端命令执行状态，键名为要等待的命令，值为Promise和他的解决方法
 export const tsServerCommandStatus = new Map<string, readonly [Promise<any>, GeneralFunc]>()

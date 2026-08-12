@@ -12,7 +12,7 @@ import {
     proxyGetDefinitionAndBoundSpanToConvert,
     proxyGetTypeDefinitionAtPositionToConvert
 } from "./convert/definition"
-import { PROXIED_MARK } from "../constants"
+import { LS_PACKAGE, PROXIED_MARK } from "../constants"
 import { proxyGetQuickInfoAtPosition } from "./convert/hover"
 import { proxyFindReferencesToConvert } from "./convert/reference"
 import { proxyGetImplementationAtPositionToConvert } from "./convert/implementation"
@@ -160,10 +160,22 @@ export function getOverrideResolveModuleLiterals(
                     : undefined
 
             if (!moduleFileInfo || modulePath === containingFileInfo?.path) {
+                if (
+                    containingFileInfo &&
+                    moduleText === LS_PACKAGE &&
+                    item.resolvedModule?.packageId
+                ) {
+                    containingFileInfo.qingkuaiPackagePath =
+                        item.resolvedModule?.resolvedFileName ?? ""
+                }
                 if (inferredAsQingkuaiFile && !item.resolvedModule) {
                     ;((item as any).failedLookupLocations ??= []).push(...failedQkFiles)
                 }
                 return item
+            }
+
+            if (containingFileInfo && item.resolvedModule?.packageId) {
+                containingFileInfo.qingkuaiPackagePath = item.resolvedModule?.resolvedFileName ?? ""
             }
 
             return {

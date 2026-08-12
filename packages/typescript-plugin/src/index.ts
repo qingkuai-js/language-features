@@ -14,8 +14,8 @@ import { attachLanguageServerIPCHandlers } from "./server"
 import { excludeProperty } from "../../../shared-util/sundry"
 import { createConfigResolver } from "qingkuai-language-service"
 import { createServer } from "../../../shared-util/ipc/participant"
-import { adapterFs, adapterPath } from "../../../shared-util/adapter"
 import { TypescriptAdapter } from "qingkuai-language-service/adapters"
+import { ADAPTER_FS, ADAPTER_PATH } from "../../../shared-util/constant"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
 
 export = function init(modules: { typescript: typeof TS }) {
@@ -31,14 +31,12 @@ export = function init(modules: { typescript: typeof TS }) {
                     projectService: info.project.projectService,
                     adapter: createAdapter(modules.typescript, projectService)
                 })
-                info.project.projectService.setHostConfiguration({
-                    extraFileExtensions: [
-                        {
-                            extension: ".qk",
-                            isMixedContent: false,
-                            scriptKind: modules.typescript.ScriptKind.Deferred
-                        }
-                    ]
+
+                // @ts-expect-error: access private property
+                ;(info.project.projectService.hostConfiguration.extraFileExtensions ??= []).push({
+                    extension: ".qk",
+                    isMixedContent: false,
+                    scriptKind: modules.typescript.ScriptKind.Deferred
                 })
             }
             return info.languageService
@@ -80,7 +78,7 @@ export = function init(modules: { typescript: typeof TS }) {
                 parseHost,
                 project.getCurrentDirectory()
             )
-            const qingkuaiConfigResolver = createConfigResolver(adapterFs, adapterPath)
+            const qingkuaiConfigResolver = createConfigResolver(ADAPTER_FS, ADAPTER_PATH)
             for (const fileName of parsed.fileNames) {
                 setQingkuaiConfig(fileName, {
                     hoverTipReactiveStatus: true,
@@ -173,8 +171,8 @@ function createAdapter(ts: typeof TS, projectService: TS.server.ProjectService) 
     return new TypescriptAdapter(
         ts,
         Logger,
-        adapterFs,
-        adapterPath,
+        ADAPTER_FS,
+        ADAPTER_PATH,
         compile,
         projectService,
         getQingkuaiConfig,

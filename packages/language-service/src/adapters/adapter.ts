@@ -137,6 +137,32 @@ class AdapterService {
         return (find(fileName), Array.from(referenceFileNames))
     }
 
+    getPackagePath(from: string, packageName: string) {
+        const path = this.adapter.getNormalizedPath(from)
+        const project = this.adapter.getDefaultProject(path)
+        const program = project?.getLanguageService().getProgram()
+        const compilerOptions = program?.getCompilerOptions()
+        const sourceFile = this.adapter.getDefaultSourceFile(path)
+        if (!project || !compilerOptions || !sourceFile) {
+            return ""
+        }
+
+        const literal = this.adapter.ts.factory.createStringLiteral(packageName)
+
+        // @ts-expect-error: set private property
+        literal.parent = sourceFile
+
+        const resolvedModules = project.resolveModuleNameLiterals?.(
+            [literal],
+            path,
+            undefined,
+            compilerOptions,
+            sourceFile,
+            undefined
+        )
+        return resolvedModules?.[0]?.resolvedModule?.resolvedFileName ?? ""
+    }
+
     isFileOpening(fileName: string) {
         if (isQingkuaiFileName(fileName)) {
             return this.adapter.service.ensureGetQingkuaiFileInfo(fileName).isOpen

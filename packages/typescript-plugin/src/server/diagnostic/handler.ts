@@ -12,5 +12,5 @@ export function attachGetDiagnostic() {
 }
 
 export function attachRefreshDiagnostic() {
-    tsPluginIpcServer.onNotification<string>(TP_HANDLERS.RefreshDiagnostic, refreshDiagnostics)
+    tsPluginIpcServer.onNotification(TP_HANDLERS.RefreshDiagnostic, refreshDiagnostics)
 }

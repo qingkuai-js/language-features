@@ -1,3 +1,26 @@
+# 2026-08-12
+
+> packages version: vscode-extension@1.0.31
+
+features:
+
+1. added package path resolution and enhanced hover tip functionality ([7e94403](https://github.com/qingkuai-js/language-tools/commit/7e94403))
+
+fixes:
+
+1. preserved existing extra file extensions when registering `.qk` ([acf73aa](https://github.com/qingkuai-js/language-tools/commit/acf73aa))
+
+refactor:
+
+1. simplified hover tip logic and enhanced file path handling ([aef3d30](https://github.com/qingkuai-js/language-tools/commit/aef3d30))
+2. migrated `mcp-server` from experimental `@modelcontextprotocol/server` to the stable SDK ([4263467](https://github.com/qingkuai-js/language-tools/commit/4263467))
+3. enhanced `createConfigResolver` to accept a default configuration ([3cdb721](https://github.com/qingkuai-js/language-tools/commit/3cdb721))
+4. updated adapter imports and created adapter functions for `fs` and `path` ([d441ff2](https://github.com/qingkuai-js/language-tools/commit/d441ff2))
+
+others:
+
+1. renamed adapter constants for consistency across modules ([a0badc2](https://github.com/qingkuai-js/language-tools/commit/a0badc2))
+
 # 2026-08-05
 
 > packages version: vscode-extension@1.0.30

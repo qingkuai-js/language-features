@@ -1,5 +1,5 @@
 import type { DocEntry } from "../types"
-import type { McpServer } from "@modelcontextprotocol/server"
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import nodeFs from "node:fs"
 import nodePath from "node:path"

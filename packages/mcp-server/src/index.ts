@@ -1,4 +1,5 @@
-import { McpServer, StdioServerTransport } from "@modelcontextprotocol/server"
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
 import { registerPrompts } from "./prompts"
 import { registerDocTools } from "./tools/docs"

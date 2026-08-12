@@ -25,6 +25,10 @@ export type { LSDiagnostic } from "../types/adapter"
 export type { Getter } from "../../../../types/util"
 export type { TsNormalizedPath } from "../../../../types/common"
 
+export {
+    createAdapterFsWithNodeFs,
+    createAdapterPathWithNodePath
+} from "../../../../shared-util/adapter"
 export { QingkuaiFileInfo } from "./file"
 export { TypescriptAdapter } from "./adapter"
 export { correctDiagnosticLoc } from "./convert/diagnostic"

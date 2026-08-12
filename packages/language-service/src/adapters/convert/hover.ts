@@ -6,9 +6,10 @@ import type { AdapterTsProject } from "../../types/adapter"
 import type { HoverTipResult, TPICCommonRequestParams } from "../../../../../types/communication"
 
 import { ts } from "../state"
-import { LSU_AND_DOT } from "../../constants"
+import { intrinsicMethodDisplayRE } from "../../regular"
+import { LS_PACKAGE, LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
-import { getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
+import { getDeclaredFileName, getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
@@ -28,6 +29,8 @@ export function getAndConvertHoverTip(
     const config = adapter.getQingkuaiConfig(fileInfo.path)
     const languageService = adapter.getDefaultLanguageService(fileInfo.path)!
     const node = getNodeAtPositionWithin(program.getSourceFile(fileName)!, pos)
+    const declaredFileName = node ? getDeclaredFileName(node, typeChecker) : ""
+    const isFromLSPackage = declaredFileName === fileInfo.qingkuaiPackagePath
 
     if (node && ts.isIdentifier(node)) {
         const nodeRange: Pair<number> = [node.getStart(), node.getEnd()]
@@ -53,9 +56,10 @@ export function getAndConvertHoverTip(
             }
         }
 
-        // 待办：思考是否可以用一种更好的方式去除内部方法悬停提示
+        // qingkuai/language-service 中的工具方法显示为 any
         if (
             node.parent &&
+            isFromLSPackage &&
             ts.isPropertyAccessExpression(node.parent) &&
             node.parent.expression.getText() === qingkuaiConstants.LSC.UTIL
         ) {
@@ -73,10 +77,14 @@ export function getAndConvertHoverTip(
 
     const { start, length } = ret.textSpan
     const documentation = convertDisplayPartsToPlainTextWithLink(ret.documentation)
-    const display = convertDisplayPartsToPlainTextWithLink(ret.displayParts).replace(
-        LSU_AND_DOT,
-        ""
-    )
+
+    let display = convertDisplayPartsToPlainTextWithLink(ret.displayParts).replace(LSU_AND_DOT, "")
+    if (node && isFromLSPackage) {
+        display = display.replace(intrinsicMethodDisplayRE, m => {
+            return m.startsWith("\n") ? "" : "function"
+        })
+    }
+
     return {
         range: [start, start + length] as Pair<number>,
         content: mdCodeBlockGen("ts", display + idStatusDisplay) + "\n" + documentation
