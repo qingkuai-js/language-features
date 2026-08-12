@@ -22,6 +22,7 @@ export class QingkuaiFileInfo {
     public isOpen = false
     public typesConfirmed = false
     public slotNames: string[] = []
+    public qingkuaiPackagePath = ""
     public defaultExportTypeStr = ""
     public lsDiagnostics: LSDiagnostic[] = []
     public attributes: ComponentAttributeItem[] = []

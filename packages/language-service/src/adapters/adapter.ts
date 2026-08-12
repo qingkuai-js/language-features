@@ -163,29 +163,6 @@ class AdapterService {
         return resolvedModules?.[0]?.resolvedModule?.resolvedFileName ?? ""
     }
 
-    isFrom(fileName: string, node: TS.Node, packageName: string) {
-        if (!this.adapter.ts.isIdentifier(node)) {
-            return false
-        }
-
-        const path = this.adapter.getNormalizedPath(fileName)
-        const program = this.adapter.getDefaultProgram(path)
-        const typeChecker = program?.getTypeChecker()
-        const symbol = typeChecker?.getSymbolAtLocation(node)
-        if (!symbol || !(symbol.flags & this.adapter.ts.SymbolFlags.Alias)) {
-            return false
-        }
-
-        const aliasSymbol = typeChecker!.getAliasedSymbol(symbol)
-        if (!aliasSymbol || !aliasSymbol.declarations) {
-            return false
-        }
-        return (
-            this.getPackagePath(fileName, packageName) ===
-            aliasSymbol.declarations[0].getSourceFile().fileName
-        )
-    }
-
     isFileOpening(fileName: string) {
         if (isQingkuaiFileName(fileName)) {
             return this.adapter.service.ensureGetQingkuaiFileInfo(fileName).isOpen

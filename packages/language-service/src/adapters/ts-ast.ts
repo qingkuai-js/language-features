@@ -85,6 +85,20 @@ export function isComponentFuncReturns(node: TS.Node): boolean {
     })
 }
 
+export function getDeclaredFileName(node: TS.Node, typeChecker: TS.TypeChecker) {
+    if (!ts.isIdentifier(node)) {
+        return ""
+    }
+
+    const symbol = typeChecker?.getSymbolAtLocation(node)
+    if (!symbol || !(symbol.flags & ts.SymbolFlags.Alias)) {
+        return ""
+    }
+
+    const aliasSymbol = typeChecker!.getAliasedSymbol(symbol)
+    return aliasSymbol?.declarations?.[0].getSourceFile().fileName ?? ""
+}
+
 // 遍历所有后代节点
 export function walkTsNode(node: TS.Node | undefined, callback: (node: TS.Node) => void) {
     if (!isUndefined(node)) {
