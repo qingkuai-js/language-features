@@ -1,3 +1,17 @@
+# 2026-08-15
+
+> packages version: vscode-extension@1.0.32
+
+fixes:
+
+1. retried MCP server registration when the launch entry is delayed ([d6fe35d](https://github.com/qingkuai-js/language-tools/commit/d6fe35d))
+2. cached config resolution and preserved defaults on `extends` ([4417362](https://github.com/qingkuai-js/language-tools/commit/4417362))
+
+refactor:
+
+1. simplified compile result caching and removed stale cache handling ([150644d](https://github.com/qingkuai-js/language-tools/commit/150644d))
+2. inlined `@modelcontextprotocol/sdk` into `mcp-server` and added JSON support ([e6fb61f](https://github.com/qingkuai-js/language-tools/commit/e6fb61f))
+
 # 2026-08-12
 
 > packages version: vscode-extension@1.0.31
