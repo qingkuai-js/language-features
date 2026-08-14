@@ -11,7 +11,7 @@ import { Logger } from "./state"
 export function registerMcpServerDefinitionProvider(context: ExtensionContext) {
     const vscodeApi = vscode as any
     const logStartFailed = (reason: string) => {
-        Logger.warn(`MCP server registration failed${reason ? `: ${reason}` : ""}.`)
+        Logger.error(`MCP server registration failed${reason ? `: ${reason}` : ""}.`)
     }
 
     if (typeof vscodeApi?.lm?.registerMcpServerDefinitionProvider !== "function") {
@@ -24,16 +24,35 @@ export function registerMcpServerDefinitionProvider(context: ExtensionContext) {
         return logStartFailed("McpStdioServerDefinition constructor is unavailable")
     }
 
-    const launch = resolveModelServerLaunch(context)
+    // 启动入口可能在注册时尚未就绪（例如 dev 构建未完成），就绪后再通知 VS Code 重新拉取定义
+    let launch = resolveModelServerLaunch(context)
     if (!launch) {
-        return logStartFailed("qingkuai-mcp-server dependency not found")
+        Logger.warn("MCP server launch entry not found yet, waiting for it to become available...")
     }
 
-    Logger.info(`MCP server resolved: command=${launch.command}, entry=${launch.args[0]}`)
+    const onDidChangeMcpServerDefinitionsEmitter = new vscode.EventEmitter<void>()
+
+    const retryTimer = setInterval(() => {
+        if (launch) {
+            return
+        }
+        if ((launch = resolveModelServerLaunch(context))) {
+            clearInterval(retryTimer)
+            Logger.info(`MCP server launch entry ready: ${launch.args[0]}`)
+            onDidChangeMcpServerDefinitionsEmitter.fire()
+        }
+    }, 2000)
+    context.subscriptions.push({ dispose: () => clearInterval(retryTimer) })
 
     const provider = {
+        onDidChangeMcpServerDefinitions: onDidChangeMcpServerDefinitionsEmitter.event,
         provideMcpServerDefinitions() {
+            if (!launch) {
+                Logger.warn("MCP server definition requested, but launch entry is not ready yet")
+                return []
+            }
             Logger.info(`MCP server definition requested: ${launch.title} v${launch.version}`)
+
             const serverDefinition = new definitionCtor(
                 launch.title,
                 launch.command,
@@ -43,13 +62,25 @@ export function registerMcpServerDefinitionProvider(context: ExtensionContext) {
             )
             serverDefinition.cwd = vscode.Uri.file(launch.cwd)
             return [serverDefinition]
+        },
+        resolveMcpServerDefinition(server: any) {
+            // 编辑器真正要启动该 server 时会调用此方法；这里仅用于观察启动行为
+            Logger.info(
+                `MCP server start requested by editor: label=${server?.label ?? launch?.title}, ` +
+                    `command=${server?.command ?? launch?.command}`
+            )
+            return server
         }
     }
 
     context.subscriptions.push(
-        vscodeApi.lm.registerMcpServerDefinitionProvider(providerId, provider)
+        vscodeApi.lm.registerMcpServerDefinitionProvider(providerId, provider),
+        onDidChangeMcpServerDefinitionsEmitter
     )
-    Logger.info("MCP server definition provider registered successfully.")
+    Logger.info(
+        `MCP server definition provider registered successfully. ` +
+            `entry=${launch?.args?.[0] ?? "(pending, waiting for launch entry)"}`
+    )
 }
 
 function resolveModelServerLaunch(context: ExtensionContext): ModelServerLaunchInfo | undefined {

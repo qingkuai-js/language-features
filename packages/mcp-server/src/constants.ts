@@ -44,6 +44,7 @@ export const COMPILE_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
     - Reactivity detection and optimization
     - Source map generation
     Returns compiled JavaScript code, error messages, and source mappings.
+    Use this when the user wants to compile or transpile .qk source code to JavaScript, or asks about the compilation result.
 `)
 
 export const SYNTAX_CHECK_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
@@ -52,6 +53,7 @@ export const SYNTAX_CHECK_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
     - Script syntax errors
     - Directive usage and attributes
     Returns syntax errors, warnings, and type information without code generation.
+    Use this when the user wants to validate or check .qk code syntax, or reports a syntax error in a .qk file.
 `)
 
 export const FORMAT_CODE_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
@@ -62,6 +64,7 @@ export const FORMAT_CODE_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
     - Component attribute formatting
     Input is a file path. The tool reads file contents, loads Prettier config with that path, formats, and writes back to the same file.
     Returns write result and any formatting errors.
+    Use this when the user wants to format, reformat, or fix the styling of a .qk file.
 `)
 
 export const BOOTSTRAP_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
@@ -69,9 +72,7 @@ export const BOOTSTRAP_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
 `)
 
 export const SEARCH_DOCS_TOOL_DESCRIPTION = qingkuaiUtil.formatSourceCode(`
-    Search official Qingkuai syntax/reference docs for .qk files.
-    This is the primary source for syntax and API questions.
-    Always call this tool before falling back to website search.
-    Also use this for project setup/scaffolding requests (installation, init, create app) before generating commands or code.
-    Use this for questions mentioning qingkuai, qk, directives, grammar, attributes, compiler rules, examples, install, init, scaffold, or framework usage.
+    Search the official Qingkuai reference docs for .qk files. This is the AUTHORITATIVE source for Qingkuai syntax, directives, attributes, events, reactivity, and components.
+    ALWAYS call this tool when the user asks about Qingkuai syntax, grammar, directives, attributes, events, interpolation, reactivity, components, compiler rules, or how to write .qk code — do NOT answer from memory.
+    Call it for any Qingkuai-related question before explaining or writing .qk code. Also use it for keywords: qingkuai, qk, syntax, grammar, directive, attribute, event, interpolation, component, reactivity, examples, install, init, scaffold.
 `)
