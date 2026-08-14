@@ -46,95 +46,92 @@ export async function getCompileResult(document: TextDocument) {
         }
     }
 
-    const clientConfig = await getConfigurationOfFile()
-    const compileResult = compileIntermediate(document.getText(), {
-        allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive,
-        shorthandDerivedDeclaration: clientConfig.qingkuaiConfig.shorthandDerivedDeclaration
-    })
-    const isTS = compileResult.scriptDescriptor.isTS
-    const scriptLanguageId = isTS ? "typescript" : "javascript"
+    const pms = (async () => {
+        const clientConfig = await getConfigurationOfFile()
+        const compileResult = compileIntermediate(document.getText(), {
+            allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive,
+            shorthandDerivedDeclaration: clientConfig.qingkuaiConfig.shorthandDerivedDeclaration
+        })
+        const isTS = compileResult.scriptDescriptor.isTS
+        const scriptLanguageId = isTS ? "typescript" : "javascript"
 
-    const ret: CompileResult = Object.assign(compileResult, {
-        filePath,
-        document,
-        scriptLanguageId,
-        uri: document.uri,
-        config: clientConfig,
-        isSynchronized: false,
-        version: document.version,
-        getVscodeRange(startOrLoc: number | ASTLocation, end?: number) {
-            if (isNumber(startOrLoc)) {
+        const ret: CompileResult = Object.assign(compileResult, {
+            filePath,
+            document,
+            scriptLanguageId,
+            uri: document.uri,
+            config: clientConfig,
+            isSynchronized: false,
+            version: document.version,
+            getVscodeRange(startOrLoc: number | ASTLocation, end?: number) {
+                if (isNumber(startOrLoc)) {
+                    return {
+                        start: document.positionAt(startOrLoc),
+                        end: document.positionAt(end ?? startOrLoc)
+                    }
+                }
                 return {
-                    start: document.positionAt(startOrLoc),
-                    end: document.positionAt(end ?? startOrLoc)
+                    start: document.positionAt(startOrLoc.start.index),
+                    end: document.positionAt(startOrLoc.end.index)
                 }
             }
-            return {
-                start: document.positionAt(startOrLoc.start.index),
-                end: document.positionAt(startOrLoc.end.index)
-            }
-        }
-    } as const)
+        } as const)
 
-    // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
-    const pms = (async () => {
+        // 非测试环境下需要将最新的中间代码发送给typescript-plugin-qingkuai以更新快照
         if (!ret.isSynchronized) {
             await synchronizeContentToTypescriptPlugin()
             await getConfigurationOfFile()
             ret.isSynchronized = true
         }
         return ret
-    })().catch(err => {
-        compileCache.delete(document.uri)
-        throw err
-    })
 
-    // 将编译结果同步到typescript-plugin-qingkuai
-    async function synchronizeContentToTypescriptPlugin() {
-        if (!isTestingEnv && !limitedScriptLanguageFeatures) {
-            const idDescriptions: Record<string, string> = {}
-            traverseObject(compileResult.identifierStatusInfo, (key, info) => {
-                idDescriptions[key] = info.description
-            })
-            const adjustedIndexMap: UpdateContentResult =
-                await tpic.sendRequest<UpdateContentParams>(TP_HANDLERS.UpdateContent, {
-                    isTS,
-                    fileName: filePath,
-                    content: compileResult.code,
-                    identifierDescriptions: idDescriptions,
-                    positions: compressPositions(ret.positions),
-                    itos: compressNumberArray(ret.indexMap.itos),
-                    stoi: compressNumberArray(ret.indexMap.stoi),
-                    getTypeDelayIndexes: compileResult.getTypeDelayInterIndexes,
-                    positionFlags: compressNumberArray(ret.positions.map(pos => pos.flag))
+        // 将编译结果同步到typescript-plugin-qingkuai
+        async function synchronizeContentToTypescriptPlugin() {
+            if (!isTestingEnv && !limitedScriptLanguageFeatures) {
+                const idDescriptions: Record<string, string> = {}
+                traverseObject(compileResult.identifierStatusInfo, (key, info) => {
+                    idDescriptions[key] = info.description
                 })
-            ret.indexMap.itos = recoverNumberArray(adjustedIndexMap.aitos)
-            ret.indexMap.stoi = recoverNumberArray(adjustedIndexMap.astoi)
+                const adjustedIndexMap: UpdateContentResult =
+                    await tpic.sendRequest<UpdateContentParams>(TP_HANDLERS.UpdateContent, {
+                        isTS,
+                        fileName: filePath,
+                        content: compileResult.code,
+                        identifierDescriptions: idDescriptions,
+                        positions: compressPositions(ret.positions),
+                        itos: compressNumberArray(ret.indexMap.itos),
+                        stoi: compressNumberArray(ret.indexMap.stoi),
+                        getTypeDelayIndexes: compileResult.getTypeDelayInterIndexes,
+                        positionFlags: compressNumberArray(ret.positions.map(pos => pos.flag))
+                    })
+                ret.indexMap.itos = recoverNumberArray(adjustedIndexMap.aitos)
+                ret.indexMap.stoi = recoverNumberArray(adjustedIndexMap.astoi)
+            }
         }
-    }
 
-    async function getConfigurationOfFile() {
-        if (configCache.has(filePath)) {
-            return configCache.get(filePath)!
+        async function getConfigurationOfFile() {
+            if (configCache.has(filePath)) {
+                return configCache.get(filePath)!
+            }
+
+            const res: GetClientLanguageConfigResult = await connection.sendRequest(
+                LS_HANDLERS.GetLanguageConfig,
+                filePath
+            )
+            updatePrettierConfigurationForQingkuaiFile(res)
+
+            if (!limitedScriptLanguageFeatures && res.typescriptConfig) {
+                updateTypescriptConfigurationForQingkuaiFile(res)
+                tpic.sendNotification<ConfigureFileParams>(TP_HANDLERS.ConfigureFile, {
+                    ...res,
+                    fileName: filePath
+                })
+            }
+            return (configCache.set(filePath, res), res)
         }
+    })()
 
-        const res: GetClientLanguageConfigResult = await connection.sendRequest(
-            LS_HANDLERS.GetLanguageConfig,
-            filePath
-        )
-        updatePrettierConfigurationForQingkuaiFile(res)
-
-        if (!limitedScriptLanguageFeatures && res.typescriptConfig) {
-            updateTypescriptConfigurationForQingkuaiFile(res)
-            tpic.sendNotification<ConfigureFileParams>(TP_HANDLERS.ConfigureFile, {
-                ...res,
-                fileName: filePath
-            })
-        }
-        return (configCache.set(filePath, res), res)
-    }
-
-    return (compileCache.set(document.uri, pms), await pms)
+    return await (compileCache.set(document.uri, pms), pms)
 }
 
 // 清空已缓存的配置内容
