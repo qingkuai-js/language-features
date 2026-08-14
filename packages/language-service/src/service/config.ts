@@ -67,7 +67,7 @@ class ConfigResolver {
         const configPath = this.path.resolve(dir, ".qingkuairc")
 
         const cacheAndReturn = (value = {}) => {
-            const ret = Object.assign(value, this.defaultConfig)
+            const ret = Object.assign(this.defaultConfig, value)
             return (this.cache.set(dir, ret), ret)
         }
 
@@ -108,12 +108,13 @@ class ConfigResolver {
 
         try {
             const extendsConfig = JSON.parse(this.fs.read(extendsPath))
-            return Object.assign(extendsConfig, config)
+            return cacheAndReturn(Object.assign(extendsConfig, config))
         } catch {
             onmessage?.(configPath, {
                 kind: ConfigParsingMessageKind.Warning,
                 value: `The configuration file content referenced by "extends" field is not valid JSON.`
             })
+            return cacheAndReturn(config)
         }
     }
 }
