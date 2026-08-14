@@ -1,5 +1,6 @@
 import fsExtra from "fs-extra"
 import dts from "rollup-plugin-dts"
+import json from "@rollup/plugin-json"
 import esbuild from "rollup-plugin-esbuild"
 import commonjs from "@rollup/plugin-commonjs"
 
@@ -10,8 +11,6 @@ export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
     const mcpServerExternal = [
         "qingkuai/compiler",
-        /^@modelcontextprotocol\/sdk(\/.*)?$/,
-        "zod",
         "prettier",
         "prettier-plugin-qingkuai"
     ]
@@ -116,7 +115,8 @@ export default defineConfig(commandLineArgs => {
             },
             onwarn,
             external: mcpServerExternal,
-            plugins: [nodeResolve(), commonjs(), esbuild({ target: "esnext" })]
+            // json 用于内联 @modelcontextprotocol/sdk 时处理 ajv 导入的 JSON schema 文件
+            plugins: [nodeResolve(), commonjs(), json(), esbuild({ target: "esnext" })]
         }
     ]
 
