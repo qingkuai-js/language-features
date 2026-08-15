@@ -15,8 +15,13 @@ The runtime package exports APIs for component lifecycle hooks, reactive side ef
 ### Type Exports
 
 - `ComponentInstance`
+- `EffectCallback`
+- `EffectFunc`
+- `EffectHandle`
 - `HtmlBlockOptions`
 - `QingkuaiComponent`
+- `WatcherCallback`
+- `WatchFunc`
 
 ### Lifecycle
 
@@ -58,6 +63,7 @@ See: [Watchers and Side Effects](docs://basic/watchers-and-side-effects.md)
 
 - `createShallowStore`
 - `createStore`
+- `getCurrentInstance`
 - `mountApp`
 - `nextTick`
 - `toRaw`
@@ -121,6 +127,7 @@ The `util` object contains the following properties:
 ### Flags
 
 - `PositionFlag`
+- `TestingMode`
 
 ### Methods
 

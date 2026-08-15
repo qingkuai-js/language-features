@@ -136,6 +136,30 @@ interface Props extends ComponentProps<string> {
 
 ---
 
+## Default Value Inference
+
+In a component file, using the built-in `defaults` method lets you set default values for optional component attributes while narrowing the types of `props` and `refs`.
+
+```ts
+interface Props {
+    name?: string
+    age?: number
+    fixed: string
+}
+
+interface Refs {
+    checked?: boolean
+}
+```
+
+The argument type of `defaults` is the properties declared as optional in the `Props` and `Refs` types:
+<img src="/static/medias/defaults-parameter-type.png" alt="defaults-parameter-type.png" style="width: 80%; margin-left: 10%;" />
+
+After calling `defaults`, the properties of `props` and `refs` that received a default value are narrowed to non-optional (required) types in the code that follows, which matches the runtime behavior:
+<img src="/static/medias/prop-type-narrowing.png" alt="prop-type-narrowing.png" style="width: 60%; margin-left: 20%;" />
+
+---
+
 ## Slot Context
 
 In component files, you do not need to declare slot context types manually. Qingkuai language services infer slot context types automatically from the `slot` tag:

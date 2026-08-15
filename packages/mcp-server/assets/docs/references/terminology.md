@@ -16,6 +16,14 @@ See: [Introduction](docs://getting-started/introduction.md), [Component Basics](
 
 ---
 
+## Component Instance
+
+A component instance is the runtime object created after a component file is compiled. It carries the members exported by the component and its internal state. In a parent component, you can obtain the instance of a child component through the `&handle` reference attribute on the component tag and use it to access the exported members; it is also the binding argument of the watcher and side effect methods imported from the `qingkuai` runtime package.
+
+See: [Component Exports](docs://components/exports.md), [Component Reference Attributes](docs://components/attributes.md#reference-attributes)
+
+---
+
 ## Event
 
 An event is an event attribute declared with the `@` prefix. It is used to bind interaction logic in templates or expose callable callbacks to the outside of a component.
@@ -178,6 +186,6 @@ See: [Attributes](docs://components/attributes.md), [Slots](docs://components/sl
 
 ## Built-in Methods
 
-Built-in methods are part of the compiler intrinsics. They refer to the 11 method identifiers that can be used directly in component files: `reactive`, `shallow`, `alias`, `derived`, `derivedExp`, `watchExp`, `preWatchExp`, `postWatchExp`, `syncWatchExp`, `defaultProps`, and `defaultRefs`. They are essentially compile-time markers that are transformed into internal method calls during compilation.
+Built-in methods are part of the compiler intrinsics. They refer to the method identifiers that can be used directly in component files, including the reactivity-marking methods `raw`, `reactive`, `shallow`, `alias`, `derived`, and `derivedExp`, the default-value declaration method `defaults`, the watcher convenience registration methods `watchExp`, `preWatchExp`, `postWatchExp`, and `syncWatchExp`, and the watcher and side effect methods `watch`, `preWatch`, `postWatch`, `syncWatch`, `effect`, `preEffect`, `postEffect`, and `syncEffect`. They are essentially compile-time markers that are transformed into internal method calls during compilation.
 
 See: [Reactivity Declaration](docs://basic/reactivity.md#reactivity-declaration), [Watchers](docs://basic/watchers-and-side-effects.md#watchers), [Compiler Intrinsics](docs://references/intrinsics.md)

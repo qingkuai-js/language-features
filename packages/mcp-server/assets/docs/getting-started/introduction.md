@@ -6,7 +6,7 @@ When writing components, component scripts can be placed in embedded language ta
 
 ```qk
 <lang-js>
-    let count = 1
+    let count = 0
     let name = "World"
 
     setTimeout(() => {
@@ -92,7 +92,7 @@ Compared with today's popular frontend frameworks, Qingkuai has the following co
 
 - TypeScript: the framework supports [TypeScript](https://www.typescriptlang.org/) out of the box with no extra configuration. This helps avoid many potential bugs during development. In addition, the language server handles many details of type hints and inference for component files, such as automatically inferring the types of component and slot context identifiers.
 
-- Debugging experience: the compiler does a significant amount of work to improve debugging. For example, in development mode it avoids noise from reactive declarations and adds matching declarations for context identifiers declared by directives such as [for](/basic/compilation-directives.html#list-rendering) and [slot](/components/slots.html#passing-context).
+- Debugging experience: the compiler does a significant amount of work to improve debugging. For example, in development mode it avoids noise from reactive declarations and adds matching declarations for context identifiers declared by directives such as [for](/basic/compilation-directives.md#list-rendering) and [slot](/components/slots.md#passing-context).
 
 - Update granularity: Qingkuai does not use a `Virtual DOM`. Changes to reactive variables are mapped directly to native `DOM API` calls. This removes the `diff` overhead of a virtual DOM. Consider the following example:
 

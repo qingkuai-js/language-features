@@ -265,17 +265,18 @@ let { str } = alias(refs)
 
 ## Specifying Default Values
 
-Component attributes support default values. When a parent component does not pass a certain attribute, the component can specify a default value internally to ensure that it still works correctly. Through the compiler built-ins `defaultProps` and `defaultRefs`, you can declare default values for component attributes:
+Component attributes support default values. When a parent component does not pass a certain attribute, the component can specify a default value internally to ensure that it still works correctly. Through the compiler built-in `defaults`, you can declare default values for component attributes:
 
 ```js
-defaultRefs({
-    checked: false
-})
-
-defaultProps({
-    age: 0,
-    name: "Unknown",
-    description: "This is a default user info."
+defaults({
+    refs: {
+        checked: false
+    },
+    props: {
+        age: 0,
+        name: "Unknown",
+        description: "This is a default user info."
+    }
 })
 ```
 

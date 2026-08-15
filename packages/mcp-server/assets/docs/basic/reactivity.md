@@ -6,7 +6,7 @@ In frontend development, <b>Reactivity</b> is a mechanism that keeps data state 
 
 ## Reactivity Declaration
 
-In Qingkuai, you do not need to declare reactive variables manually. The compiler attaches reactive capability to identifiers according to the [reactivity inference rules](/references/reactivity-infer-rules.html). In the following example, `progress` is changed from `"pending"` to `"completed"` inside the script, and the template updates automatically. This is a simple example of reactivity:
+In Qingkuai, you do not need to declare reactive variables manually. The compiler attaches reactive capability to identifiers according to the [reactivity inference rules](/references/reactivity-infer-rules.md). In the following example, `progress` is changed from `"pending"` to `"completed"` inside the script, and the template updates automatically. This is a simple example of reactivity:
 
 ```qk
 <lang-js>

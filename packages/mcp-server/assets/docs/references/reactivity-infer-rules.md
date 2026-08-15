@@ -85,22 +85,22 @@ If an identifier is not accessed in the template, the compiler infers it as a ra
 
 ### Used in the Template
 
-If an identifier is accessed in the template and is declared with `let` or `var` with a literal initial value, the compiler also checks whether it is modified anywhere in the script:
+When an identifier is accessed in the template, the compiler checks whether it is modified anywhere in the script. This check applies to identifiers declared with `let` or `var` with a literal initial value, as well as to mutable identifiers with a non-literal initializer (such as `let x = foo()`) in `shallow` mode:
 
 - **Not modified**: inferred as a raw value to avoid unnecessary dependency collection and update overhead
 - **Modified**: inferred as the reactivity type corresponding to the current reactivity mode
 
 ```qk
-<lang-ts>
-    let a = 1    // used in the template, but never modified -> raw value
-    let b = 0    // used in the template and modified -> type depends on the current reactivity mode
-    function increment() {
-        b++
+<lang-js shallow>
+    let count = 0
+    let state = load()   // never assigned -> stays a raw variable
+    function setCount(v) {
+        count = v        // assignment exists in the source -> count is inferred as shallow
     }
-</lang-ts>
+</lang-js>
 
-<p>{ a }</p>
-<button @click={increment}>{ b }</button>
+<p>{ state }</p>
+<button @click={setCount}>{ count }</button>
 ```
 
 ### Reference Attributes
@@ -131,8 +131,8 @@ The [`allowConstReactive`](docs://misc/config-files.md#allowconstreactive) runti
 
 ```qk
 <lang-ts>
-    const config = reactive(loadConfig())  // error: allowConstReactive is disabled
-    const list = shallow(getList())        // error: allowConstReactive is disabled
+    const list = shallow(getList())        // compile error: 1070
+    const config = reactive(loadConfig())  // compile error: 1070
 </lang-ts>
 ```
 

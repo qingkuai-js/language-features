@@ -108,16 +108,74 @@ See: [Watchers](docs://basic/watchers-and-side-effects.md#watchers), [Convenienc
 
 ---
 
-## defaultProps
+## watch
 
-`defaultProps` is a built-in method used to define default values for component attributes. Through `defaultProps`, developers can specify defaults for normal attributes and event attributes. When the parent component does not pass the corresponding attributes, those defaults are used.
+`watch` is a built-in method used to register a watcher for reactive state. When the observed value changes, the callback is invoked with the previous value and the current value. `watch` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
 
-See: [Attributes](docs://components/attributes.md)
+See: [Watchers](docs://basic/watchers-and-side-effects.md#watchers)
 
 ---
 
-## defaultRefs
+## preWatch
 
-`defaultRefs` is a built-in method used to define default values for component reference attributes. Through `defaultRefs`, developers can specify defaults for reference attributes. When the parent component does not pass the corresponding references, those defaults are used.
+`preWatch` is a built-in method used to register a pre-watcher. A pre-watcher is triggered before the update scheduler runs, which is suitable for logic that needs to run after state changes but before template updates. `preWatch` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
 
-See: [Reference Attributes](docs://components/attributes.md#reference-attributes)
+See: [Pre-Watchers](docs://basic/watchers-and-side-effects.md#pre-watchers)
+
+---
+
+## postWatch
+
+`postWatch` is a built-in method used to register a post-watcher. A post-watcher is triggered after scheduled updates are complete, which is suitable for logic that needs to wait until the state is stable or the DOM has been updated. `postWatch` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
+
+See: [Post-Watchers](docs://basic/watchers-and-side-effects.md#post-watchers)
+
+---
+
+## syncWatch
+
+`syncWatch` is a built-in method used to register a synchronous watcher. Its callback is triggered immediately after a dependent reactive value changes, before the update scheduler runs. `syncWatch` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
+
+See: [Synchronous Watchers](docs://basic/watchers-and-side-effects.md#synchronous-watchers)
+
+---
+
+## effect
+
+`effect` is a built-in method used to register a reactive side effect. Reactive values accessed while the callback runs are collected as dependencies automatically, and the callback reruns whenever any of them changes. `effect` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
+
+See: [Side Effects](docs://basic/watchers-and-side-effects.md#side-effects)
+
+---
+
+## preEffect
+
+`preEffect` is a built-in method used to register a pre-effect. A pre-effect is triggered before the update scheduler runs, which is suitable for logic that needs to run after state changes but before template updates. `preEffect` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
+
+See: [Side Effects](docs://basic/watchers-and-side-effects.md#side-effects)
+
+---
+
+## postEffect
+
+`postEffect` is a built-in method used to register a post-effect. A post-effect is triggered after scheduled updates are complete, which is suitable for logic that needs to wait until the state is stable or the DOM has been updated. `postEffect` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
+
+See: [Side Effects](docs://basic/watchers-and-side-effects.md#side-effects)
+
+---
+
+## syncEffect
+
+`syncEffect` is a built-in method used to register a synchronous effect. Its callback is triggered immediately after a dependent reactive value changes, before the update scheduler runs. `syncEffect` can be called directly without any import; the compiler binds it to the current component instance and cleans it up when the component is destroyed.
+
+See: [Side Effects](docs://basic/watchers-and-side-effects.md#side-effects)
+
+---
+
+## defaults
+
+`defaults` is a built-in method used to define default values for optional component attributes. It accepts an object as its argument: the `props` key specifies defaults for normal attributes and event attributes, and the `refs` key specifies defaults for reference attributes. When the parent component does not pass the corresponding attributes, those defaults are used.
+
+`defaults` must be called once, as a standalone expression statement in the top-level scope of an embedded script block.
+
+See: [Specifying Default Values](docs://components/attributes.md#specifying-default-values)

@@ -53,7 +53,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1034 | Empty context pattern with no binding identifiers declared                                                                                 |
 | 1035 | A `#html` directive tag must contain exactly one text child node                                                                           |
 | 1036 | `#slot` is used in an invalid position; it is allowed only on first-level child elements of a component node                               |
-| 1037 | Too many directive binding patterns, such as on `#for` or `#then`                                                                          |
+| 1037 | Too many directive destructuring binding patterns, such as on `#for` or `#then`                                                             |
 | 1038 | `#slot` is missing a valid slot name; the value after `from` must be a string literal                                                      |
 | 1039 | The `name` attribute of `<slot>` must be a static value                                                                                    |
 | 1040 | `#target` is used in an invalid position; using it on a first-level child of a component causes target ambiguity                           |
@@ -87,6 +87,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1068 | The `src` attribute on the embedded style tag requires a non-empty value                                                                   |
 | 1069 | The `#scope` directive can only be used on components                                                                                      |
 | 1070 | Marking a `const` declaration with `reactive` or `shallow` is disallowed when the `allowConstReactive` compile option is disabled          |
+| 1071 | The `defaults` built-in method can only be called once in the embedded script block                                                       |
 
 ---
 
@@ -106,10 +107,9 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 9010 | Keyboard event flags are invalid on non-keyboard events and will be ignored                                                      |
 | 9011 | Duplicate event flags will be ignored                                                                                            |
 | 9012 | A `<qk:spread>` tag without required parts (such as dynamic attributes, reference attributes, or event listeners) is unnecessary |
-| 9013 | Duplicate default value definitions; the later one overrides the earlier one                                                     |
+| 9013 | The `#scope` directive is unnecessary here because this component already has an actual ancestor element                         |
 | 9014 | Built-in method received more arguments than expected; extra arguments will be ignored                                           |
 | 9015 | The `#scope` directive has no effect because the current component has no scoped styles                                          |
-| 9016 | The `#scope` directive is unnecessary here because this component already has an actual ancestor element                         |
 
 ---
 
@@ -123,6 +123,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 2004 | Maximum recursive update depth exceeded, commonly caused by recursive updates in async side effects or watchers |
 | 2005 | Invalid target element; it is not a valid `Element`, or it cannot be obtained through the selector              |
 | 2006 | The specified property value must be an array or `Set`                                                          |
+| 2007 | Cannot render the component: the given value is neither a component function nor a `Promise` that resolves to a component function |
 
 ---
 
@@ -132,6 +133,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | ---- | --------------------------------------------------------------------------------------------------------------------- |
 | 8001 | No reactive dependencies were collected when executing a side effect or watcher, so the side effect will be destroyed |
 | 8002 | An assignment was performed on a read-only or invalid target, and the assignment will be ignored                      |
+| 8003 | Attempted to create content after the owning component was destroyed, commonly when an async callback runs after the component is removed and tries to create child components or register watchers or side effects; the creation has been ignored |
 
 ---
 
