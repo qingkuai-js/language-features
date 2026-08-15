@@ -1,5 +1,13 @@
 # 2026-08-15
 
+> packages version: vscode-extension@1.0.33
+
+docs:
+
+1. updated mcp-server documentation to the latest `qingkuai@1.0.91` docs ([d745140](https://github.com/qingkuai-js/language-tools/commit/d745140))
+
+# 2026-08-15
+
 > packages version: vscode-extension@1.0.32
 
 fixes:
