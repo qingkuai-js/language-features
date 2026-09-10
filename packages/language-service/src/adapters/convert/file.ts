@@ -28,5 +28,5 @@ export function resolveFilePath(adapter: TypescriptAdapter, params: ResolveFileP
         }
     }
 
-    return params.to
+    return adapter.path.resolve(params.from, "..", params.to)
 }

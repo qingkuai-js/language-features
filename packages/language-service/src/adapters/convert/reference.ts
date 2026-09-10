@@ -54,11 +54,10 @@ export function proxyFindReferencesToConvert(
     const languageService = project.getLanguageService()
     const findReferences = languageService.findReferences
     languageService.findReferences = (fileName, position) => {
-        const result: TS.ReferencedSymbol[] = []
-        const originalRet = findReferences.call(languageService, fileName, position)
+        const result = findReferences.call(languageService, fileName, position)
 
         // 当查找到的引用是组件导出时，再次查找引用并追加到结果中
-        originalRet?.forEach(item => {
+        result?.forEach(item => {
             item.references.forEach(reference => {
                 if (reference.fileName !== fileName) {
                     return
@@ -70,13 +69,13 @@ export function proxyFindReferencesToConvert(
                 if (!node || !adapter.ts.isIdentifier(node) || !isComponentFuncReturns(node)) {
                     return
                 }
-                originalRet.push(
+                result.push(
                     ...(findReferences.call(languageService, fileName, node.getStart()) ?? [])
                 )
             })
         })
 
-        originalRet?.forEach(item => {
+        result?.forEach(item => {
             item.references = item.references.filter(reference => {
                 if (!isQingkuaiFileName(reference.fileName)) {
                     return true
@@ -94,6 +93,6 @@ export function proxyFindReferencesToConvert(
                 return reference.textSpan !== referenceLocationConvertor.textSpan.defaultValue
             })
         })
-        return originalRet
+        return result
     }
 }
