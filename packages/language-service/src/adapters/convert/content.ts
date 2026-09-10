@@ -4,16 +4,21 @@ import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
 import type { Getter, Setter } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
-import type { ExtractedSlotName, ExtractedSlotContext, GlobalTypeItem } from "../../types/adapter"
+import type { ExtractedSlotName, ExtractedSlotContext, MetaType } from "../../types/adapter"
 
+import {
+    UnknownMetaMember,
+    BadExternalMetaType,
+    TypeExportNotAllowed,
+    MetaOrMemberNonObjectTs
+} from "../../messages/error"
 import { setState, ts as stateTs } from "../state"
 import { isInTopScope, walkTsNode } from "../ts-ast"
-import { GlobalTypeIsNonObjectJs } from "../../messages/warn"
-import { GLOBAL_TYPE_IDS, LSU_AND_DOT } from "../../constants"
+import { MetaOrMemberNonObjectJs } from "../../messages/warn"
 import { isUndefined } from "../../../../../shared-util/assert"
 import { traverseObject } from "../../../../../shared-util/sundry"
+import { META_TYPE_ID, META_MEMBER_IDS, LSU_AND_DOT } from "../../constants"
 import { constants as qingkuaiConstants, util as qingkuaiUtil } from "qingkuai/compiler"
-import { GlobalTypeIsNonObjectTs, ExternalGlobalTypeWithGenerics } from "../../messages/error"
 
 export function confirmTypesForCompileResultWithAdapter(
     adapter: TypescriptAdapter,
@@ -57,157 +62,194 @@ export function confirmTypesForCompileResult(
     if (fileInfo.typesConfirmed || !updateSourceFile()) {
         return
     }
+
+    let metaGenericText = ""
+    let metaTypeParametersText = ""
+    let templateTags: string[] = []
+    let posOfSecondLineStart: number
+    let metaType: MetaType | undefined
+
+    try {
+        posOfSecondLineStart = ts.getPositionOfLineAndCharacter(sourceFile, 1, 0)
+    } catch {
+        return
+    }
     fileInfo.typesConfirmed = true
 
-    const componentGenerics: string[] = []
     const slotNames: ExtractedSlotName[] = []
-    const globalTypes: Record<string, GlobalTypeItem> = {}
     const extractedSlotContexts: ExtractedSlotContext[][] = []
+    const [LSC, LSU] = [qingkuaiConstants.LSC, qingkuaiConstants.LSC.UTIL]
 
+    const anyValueStr = LSU + ".anyValue"
+    const metaInstanceId = "__qk__metaInstance"
+    const emptyObjectStr = `${LSU}.EmptyObject`
+    const intrinsics = Array.from(META_MEMBER_IDS)
     const edit = new FileEdit(fileInfo, updateContent)
-    const anyValueStr = qingkuaiConstants.LSC.UTIL + ".anyValue"
     const getTypeDelayIndexesSet = new Set(fileInfo.getTypeDelayIndexes)
-    const posOfSecondLineStart = ts.getPositionOfLineAndCharacter(sourceFile, 1, 0)
 
     walkTsNode(sourceFile, node => {
         if (
             ts.isVariableDeclaration(node) &&
             node.initializer &&
             ts.isArrowFunction(node.initializer) &&
-            node.name.getText() === qingkuaiConstants.LSC.COMPONENT &&
+            node.name.getText() === LSC.COMPONENT &&
             isInTopScope(node)
         ) {
             componentFuncNode = node
         }
 
         if (!fileInfo.isTS) {
-            const jsDocs = (node as any).jsDoc as TS.JSDoc[] | undefined
-            jsDocs?.forEach(jsDoc => {
+            ;((node as any).jsDoc as TS.JSDoc[] | undefined)?.forEach(jsDoc => {
                 for (const jsDocTag of jsDoc.tags ?? []) {
                     if (
-                        ts.isJSDocTypedefTag(jsDocTag) &&
-                        jsDocTag.name?.text &&
-                        GLOBAL_TYPE_IDS.has(jsDocTag.name.text) &&
-                        !globalTypes[jsDocTag.name.text] &&
-                        isInTopScope(jsDocTag)
+                        metaType ||
+                        !ts.isJSDocTypedefTag(jsDocTag) ||
+                        jsDocTag.name?.text !== META_TYPE_ID ||
+                        !isInTopScope(jsDocTag)
                     ) {
-                        const constraints: string[] = []
-                        const genericNames: string[] = []
-                        const globalType = typeChecker.getTypeAtLocation(jsDocTag)
-                        const templateTags = jsDocTag.parent.tags?.filter(ts.isJSDocTemplateTag)
-                        if (!(globalType.flags & ts.TypeFlags.Object)) {
-                            fileInfo.pushDiagnostic(
-                                jsDocTag.getStart(),
-                                jsDocTag.getEnd(),
-                                GlobalTypeIsNonObjectJs(jsDocTag.name.text)
-                            )
-                        }
-                        templateTags?.forEach(tag => {
-                            tag.typeParameters.forEach((param, index) => {
-                                const genericName = jsDocTag.name!.text[0] + param.name.text
-                                const constraint =
-                                    param.constraint ?? (index === 0 ? tag.constraint : undefined)
-                                const constraintText = constraint?.getText() ?? ""
-                                if (constraintText) {
-                                    constraints.push(constraintText)
-                                }
-                                genericNames.push(genericName)
-                                componentGenerics.push(`@template ${constraintText} ${genericName}`)
-                            })
-                        })
-                        globalTypes[jsDocTag.name.text] = {
-                            constraints,
-                            genericNames,
-                            type: globalType,
-                            isExternal: false
-                        }
+                        continue
                     }
+                    metaType = {
+                        type: typeChecker.getTypeAtLocation(jsDocTag),
+                        end: fileInfo.getSourceIndex(jsDocTag.name.getEnd()),
+                        start: fileInfo.getSourceIndex(jsDocTag.name.getStart())
+                    }
+                    jsDocTag.parent.tags?.filter(ts.isJSDocTemplateTag)?.forEach(tag => {
+                        tag.typeParameters.forEach(param => {
+                            let templateTag = ` * @template `
+                            const genericName = param.name.text
+                            const constraintText = tag.constraint?.type.getText()
+                            if (metaGenericText) {
+                                metaGenericText += ", "
+                            }
+                            if (metaTypeParametersText) {
+                                metaTypeParametersText += ", "
+                            }
+                            if (((metaTypeParametersText += genericName), constraintText)) {
+                                templateTag += `{${constraintText}} `
+                                metaTypeParametersText += ` extends ${constraintText}`
+                            }
+                            metaGenericText += `${genericName}`
+                            templateTags.push(templateTag + genericName)
+                        })
+                    })
                 }
             })
         } else if (
             (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node)) &&
-            GLOBAL_TYPE_IDS.has(node.name.text) &&
-            !globalTypes[node.name.text] &&
+            node.name.text === META_TYPE_ID &&
+            !metaType &&
             isInTopScope(node)
         ) {
-            const constraints: string[] = []
-            const genericNames: string[] = []
-            const globalType = typeChecker.getTypeAtLocation(node)
-            if (!(globalType.flags & ts.TypeFlags.Object)) {
-                fileInfo.pushDiagnostic(
-                    node.name.getStart(),
-                    node.name.getEnd(),
-                    GlobalTypeIsNonObjectTs(node.name.text)
+            if (node.typeParameters) {
+                metaTypeParametersText = sourceFile.text.slice(
+                    node.typeParameters.pos,
+                    node.typeParameters.end
                 )
             }
             node.typeParameters?.forEach(param => {
-                const genericName = node.name.text[0] + param.name.text
-                if (param.constraint) {
-                    constraints.push(param.constraint.getText())
+                if (metaGenericText) {
+                    metaGenericText += ", "
                 }
-                componentGenerics.push(
-                    `${genericName}${param.constraint ? ` extends ${param.constraint.getText()}` : ""}`
-                )
-                genericNames.push(genericName)
+                metaGenericText += param.name.text
             })
-            globalTypes[node.name.text] = {
-                genericNames,
-                constraints,
-                isExternal: false,
-                type: typeChecker.getTypeAtLocation(node)
+            metaType = {
+                type: typeChecker.getTypeAtLocation(node),
+                end: fileInfo.getSourceIndex(node.name.getEnd()),
+                start: fileInfo.getSourceIndex(node.name.getStart())
             }
         }
 
-        if (ts.isImportDeclaration(node)) {
-            if (isInTopScope(node)) {
-                const identifiers: TS.Identifier[] = []
-                if (ts.isImportDeclaration(node) && node.importClause) {
-                    if (node.importClause.name) {
-                        identifiers.push(node.importClause.name)
-                    }
-                    if (
-                        node.importClause.namedBindings &&
-                        !ts.isNamespaceImport(node.importClause.namedBindings)
-                    ) {
-                        for (const spec of node.importClause.namedBindings.elements) {
-                            identifiers.push(spec.name)
-                        }
+        if (!metaType && ts.isImportDeclaration(node) && isInTopScope(node)) {
+            const identifiers: TS.Identifier[] = []
+            if (node.importClause) {
+                if (node.importClause.name) {
+                    identifiers.push(node.importClause.name)
+                }
+                if (
+                    node.importClause.namedBindings &&
+                    !ts.isNamespaceImport(node.importClause.namedBindings)
+                ) {
+                    for (const spec of node.importClause.namedBindings.elements) {
+                        identifiers.push(spec.name)
                     }
                 }
-                for (const id of identifiers) {
-                    if (!globalTypes[id.text] && GLOBAL_TYPE_IDS.has(id.text)) {
-                        const symbol = typeChecker.getSymbolAtLocation(id)
-                        const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
-                        if (aliasedSymbol && aliasedSymbol.flags & ts.SymbolFlags.Type) {
-                            const globalType = typeChecker.getTypeAtLocation(
-                                aliasedSymbol.declarations![0]
-                            )
-                            if (!(globalType.flags & ts.TypeFlags.Object)) {
-                                fileInfo.pushDiagnostic(
-                                    id.getStart(),
-                                    id.getEnd(),
-                                    GlobalTypeIsNonObjectTs(id.text)
-                                )
-                            } else if (
-                                (globalType as TS.ObjectType).objectFlags &
-                                    ts.ObjectFlags.Reference &&
-                                typeChecker.getTypeArguments(globalType as TS.TypeReference).length
-                            ) {
-                                fileInfo.pushDiagnostic(
-                                    id.getStart(),
-                                    id.getEnd(),
-                                    ExternalGlobalTypeWithGenerics()
-                                )
-                            }
-                            globalTypes[id.text] = {
-                                isExternal: true,
-                                constraints: [],
-                                genericNames: [],
-                                type: globalType
-                            }
-                        }
+            }
+            for (const id of identifiers) {
+                if (id.text !== META_TYPE_ID || metaType) {
+                    continue
+                }
+
+                const symbol = typeChecker.getSymbolAtLocation(id)
+                const aliasedSymbol = symbol && typeChecker.getAliasedSymbol(symbol)
+                if (!aliasedSymbol || !(aliasedSymbol.flags & ts.SymbolFlags.Type)) {
+                    continue
+                }
+
+                const aliasedDecl = aliasedSymbol.declarations?.[0]
+                if (
+                    !aliasedDecl ||
+                    !(
+                        ts.isTypeAliasDeclaration(aliasedDecl) ||
+                        ts.isInterfaceDeclaration(aliasedDecl)
+                    )
+                ) {
+                    continue
+                }
+                if (aliasedDecl.typeParameters?.length) {
+                    fileInfo.pushDiagnostic(
+                        fileInfo.getSourceIndex(id.getStart()),
+                        fileInfo.getSourceIndex(id.getEnd()),
+                        BadExternalMetaType(id.text),
+                        true
+                    )
+                    continue
+                }
+                metaType = {
+                    end: fileInfo.getSourceIndex(id.getEnd()),
+                    start: fileInfo.getSourceIndex(id.getStart()),
+                    type: typeChecker.getTypeAtLocation(aliasedDecl)
+                }
+                break
+            }
+        }
+
+        // 组件导出规则：嵌入脚本不允许导出类型（类型/契约放外部 .ts），3005。
+        // export 声明必为 sourceFile 直接子节点；需判 node.parent 存在（sourceFile 自身 parent 为 undefined）。
+        if (node.parent && ts.isSourceFile(node.parent)) {
+            if (ts.isExportDeclaration(node) && node.exportClause) {
+                if (ts.isNamespaceExport(node.exportClause)) {
+                    return
+                }
+                for (const element of node.exportClause.elements) {
+                    if (element.isTypeOnly) {
+                        fileInfo.pushDiagnostic(
+                            element.getStart(),
+                            element.getEnd(),
+                            TypeExportNotAllowed(element.name.text)
+                        )
+                        continue
+                    }
+                    const exportSymbol = typeChecker.getSymbolAtLocation(element.name)
+                    const aliasedExport = exportSymbol && typeChecker.getAliasedSymbol(exportSymbol)
+                    if (aliasedExport && !(aliasedExport.flags & ts.SymbolFlags.Value)) {
+                        fileInfo.pushDiagnostic(
+                            element.getStart(),
+                            element.getEnd(),
+                            TypeExportNotAllowed(element.name.text)
+                        )
                     }
                 }
+            } else if (
+                ts.canHaveModifiers(node) &&
+                node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword) &&
+                (ts.isTypeAliasDeclaration(node) || ts.isInterfaceDeclaration(node))
+            ) {
+                fileInfo.pushDiagnostic(
+                    node.name.getStart(),
+                    node.name.getEnd(),
+                    TypeExportNotAllowed(node.name.text)
+                )
             }
         }
 
@@ -218,27 +260,34 @@ export function confirmTypesForCompileResult(
             ts.isIdentifier(node.expression.name) &&
             ts.isIdentifier(node.expression.expression) &&
             getTypeDelayIndexesSet.has(node.getStart()) &&
-            node.expression.getText() === qingkuaiConstants.LSC.GET_TYPE_DELAY_MARKING
+            node.expression.getText() === LSC.GET_TYPE_DELAY_MARKING
         ) {
             const slotNameNode = node.arguments[0] as TS.StringLiteral
             const contextPropertyNode = node.arguments[1] as TS.StringLiteral
+
+            // 源位置可能落在虚拟文件的未映射区间（itos 为 -1），
+            // 任一端点为 -1 时去除 sourceRange，避免负索引污染映射
+            //
+            // Source positions may fall in unmapped virtual-file regions
+            // (itos is -1); drop the sourceRange when either endpoint is -1
+            // to prevent negative-index pollution of the mapping
+            const toSourceRange = (node: TS.Node): [number, number] | undefined => {
+                const start = fileInfo.getSourceIndex(node.getStart())
+                const end = fileInfo.getSourceIndex(node.getEnd())
+                return start === -1 || end === -1 ? undefined : [start, end]
+            }
+
             if (slotNameNode.text !== slotNames[slotNames.length - 1]?.name) {
                 slotNames.push({
                     name: slotNameNode.text,
-                    sourceRange: [
-                        fileInfo.getSourceIndex(slotNameNode.getStart()),
-                        fileInfo.getSourceIndex(slotNameNode.getEnd())
-                    ]
+                    sourceRange: toSourceRange(slotNameNode)
                 })
                 fileInfo.slotNames.push(slotNameNode.text)
             }
             ;(extractedSlotContexts[slotNames.length - 1] ??= []).push({
                 property: {
                     name: contextPropertyNode.text,
-                    sourceRange: [
-                        fileInfo.getSourceIndex(contextPropertyNode.getStart()),
-                        fileInfo.getSourceIndex(contextPropertyNode.getEnd())
-                    ]
+                    sourceRange: toSourceRange(contextPropertyNode)
                 },
                 valueType: typeChecker.typeToString(
                     typeChecker.getTypeAtLocation(node.arguments[2])
@@ -247,16 +296,50 @@ export function confirmTypesForCompileResult(
         }
     })
 
-    // 提取组件的 Props 和 Refs 键值属性
-    // 待办：废除目前的 ComponentInfo["attributes"] 结构，改为只需要一个记录拥有 candidates 的属性列表
-    // 用于判断是否需要再次触发补全建议，其他情况则直接使用 Typescript 原生能力返回补全建议和悬停提示
-    traverseObject(globalTypes, (kind, globalType) => {
-        if (
-            globalType &&
-            (kind === "Props" || kind === "Refs") &&
-            globalType.type.flags & ts.TypeFlags.Object
-        ) {
-            for (const property of typeChecker.getPropertiesOfType(globalType.type)) {
+    // 检查 Meta 及其成员类型是否符合约束
+    if (metaType) {
+        const NonObject = fileInfo.isTS ? MetaOrMemberNonObjectTs : MetaOrMemberNonObjectJs
+        if (!(metaType.type.flags & ts.TypeFlags.Object)) {
+            fileInfo.pushDiagnostic(metaType.start, metaType.end, NonObject(), true)
+        }
+        for (const property of typeChecker.getPropertiesOfType(metaType.type)) {
+            const propStart = property.declarations?.[0]
+                ? ((property.declarations[0] as any).name?.getStart?.() ??
+                  property.declarations[0].getStart())
+                : metaType.start
+            const propEnd = property.declarations?.[0]
+                ? ((property.declarations[0] as any).name?.getEnd?.() ??
+                  property.declarations[0].getEnd())
+                : metaType.end
+            if (!META_MEMBER_IDS.has(property.name)) {
+                fileInfo.pushDiagnostic(propStart, propEnd, UnknownMetaMember(property.name), true)
+                continue
+            }
+
+            const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
+            if (!isObjectLikeMemberType(ts, propertyType)) {
+                fileInfo.pushDiagnostic(propStart, propEnd, NonObject(property.name), true)
+            }
+        }
+    }
+
+    // 提取组件的 props / refs 属性并记录到 fileInfo.attributes
+    if (metaType && metaType.type.flags & ts.TypeFlags.Object) {
+        for (const [kind, member] of [
+            ["Props", "props"],
+            ["Refs", "refs"]
+        ] as const) {
+            const memberSymbol = typeChecker.getPropertyOfType(metaType.type, member)
+            if (!memberSymbol) {
+                continue
+            }
+
+            const memberType = typeChecker.getTypeOfSymbolAtLocation(memberSymbol, sourceFile)
+            if (!(memberType.flags & ts.TypeFlags.Object)) {
+                continue
+            }
+
+            for (const property of typeChecker.getPropertiesOfType(memberType)) {
                 const propertyType = typeChecker.getTypeOfSymbolAtLocation(property, sourceFile)
                 const attributeItem: ComponentAttributeItem = {
                     kind,
@@ -286,70 +369,88 @@ export function confirmTypesForCompileResult(
                 }
             }
         }
-    })
+    }
 
-    // 全局声明中如果没有 Props 和 Refs 类型，则为其添加一个空对象声明
-    ;["Props", "Refs"].forEach(kind => {
-        const globalType = globalTypes[kind]
-        if (!globalType) {
-            edit.setEditIndex(posOfSecondLineStart)
+    const getIntrinsicType = (member: string, inArg?: boolean) => {
+        if (!metaType) {
+            return emptyObjectStr
+        }
 
-            if (fileInfo.isTS) {
-                edit.push(`type ${kind} = ${qingkuaiConstants.LSC.UTIL}.EmptyObject;\n`)
-            } else {
-                edit.push(`/** @typedef {${qingkuaiConstants.LSC.UTIL}.EmptyObject} ${kind} */\n`)
+        const memberSymbol = typeChecker.getPropertyOfType(metaType.type, member)
+        if (!memberSymbol) {
+            return emptyObjectStr
+        }
+        if (inArg) {
+            return `Meta${metaGenericText ? `<${metaGenericText}>` : ""}["${member}"]`
+        }
+
+        const inner = `typeof ${metaInstanceId}["${member}"]`
+        return `${LSU}.Prettify<${member === "refs" ? inner : `Readonly<${inner}>`}>`
+    }
+
+    const getIntrinsicDeclrations = () => {
+        let wrapMetaFuncType = "() => Meta"
+        const partsOfResult: string[] = []
+        if (metaTypeParametersText && metaGenericText) {
+            wrapMetaFuncType = `<${metaTypeParametersText}>(meta: Meta<${metaGenericText}>) => typeof meta`
+        }
+
+        if (fileInfo.isTS) {
+            partsOfResult.push(
+                `const ${metaInstanceId} = (${anyValueStr} as (${wrapMetaFuncType}))();`
+            )
+            for (const item of intrinsics) {
+                partsOfResult.push(`const ${item}: ${getIntrinsicType(item)} = ${anyValueStr};`)
+            }
+        } else {
+            partsOfResult.push(
+                `const ${metaInstanceId} = (/** @type ${wrapMetaFuncType} */() => {})();`
+            )
+            for (const item of intrinsics) {
+                partsOfResult.push(
+                    `/** @type {${getIntrinsicType(item)}} */\nconst ${item} = ${anyValueStr};`
+                )
             }
         }
-    })
-    if (fileInfo.isTS && !edit.isEmpty) {
-        edit.flush()
+        return partsOfResult.join("\n")
     }
 
-    // 为组件函数返回值标注类型
-    let contextRefsType = "Refs"
-    let declareRefsType = "Refs"
-    let contextPropsType = "Props"
-    let declarePropsType = "Props"
-    if (globalTypes.Refs?.constraints.length) {
-        declareRefsType = `Refs<${globalTypes.Refs.constraints.join(", ")}>`
-    }
-    if (globalTypes.Refs?.genericNames.length) {
-        contextRefsType = `Refs<${globalTypes.Refs.genericNames.join(", ")}>`
-    }
-    if (globalTypes.Props?.constraints.length) {
-        declarePropsType = `Props<${globalTypes.Props.constraints.join(", ")}>`
-    }
-    if (globalTypes.Props?.genericNames.length) {
-        contextPropsType = `Props<${globalTypes.Props.genericNames.join(", ")}>`
-    }
     if (fileInfo.isTS) {
         edit.setEditIndex(posOfSecondLineStart)
-        edit.push(`const props: Readonly<${declarePropsType}> = ${anyValueStr};\n`)
-        edit.push(`const refs: ${declareRefsType} = ${anyValueStr};\n`)
+        edit.push(getIntrinsicDeclrations())
         edit.flush()
 
-        if (componentGenerics.length) {
-            edit.setEditIndex(componentFuncNode.initializer!.getStart() + 1)
-            edit.push(`<${componentGenerics.join(", ")}>`)
+        if (metaTypeParametersText) {
+            edit.setEditIndex(componentFuncNode.initializer!.getStart())
+            edit.push(metaTypeParametersText)
             edit.flush()
         }
-        edit.setEditIndex(componentFuncNode.initializer!.getStart() + 2)
-        edit.push(`: { props: ${contextPropsType}; refs: ${contextRefsType}; slots: `)
+        if (metaTypeParametersText) {
+            edit.setEditIndex(componentFuncNode.initializer!.getStart())
+            edit.push(`<${metaTypeParametersText}>`)
+            edit.flush()
+        }
+
+        edit.setEditIndex(componentFuncNode.initializer!.getStart() + 5)
+        edit.push(
+            intrinsics.reduce((ret, cur, index) => {
+                const isLast = index === intrinsics.length - 1
+                return `${ret}${cur}: ${getIntrinsicType(cur, true)}; ${isLast ? "slots: " : ""}`
+            }, ": { ")
+        )
     } else {
         edit.setEditIndex(0)
-        edit.push(`/** @type {Readonly<${declarePropsType}>} */ const props = ${anyValueStr};\n`)
-        edit.push(`/** @type {${declareRefsType}} */ const refs = ${anyValueStr};\n`)
+        edit.push(getIntrinsicDeclrations())
         edit.flush()
-        edit.push("/**\n")
-
-        for (const generic of componentGenerics) {
-            edit.push(` * ${generic}\n`)
-        }
         edit.setEditIndex(componentFuncNode.parent.getStart())
-        edit.push(` * @param {Object} _\n * @param {${contextPropsType}} _.props\n`)
-        edit.push(` * @param {${contextRefsType}} _.refs\n * @param {`)
+        edit.push("/**\n" + templateTags.join("\n") + "\n")
+        edit.push(
+            intrinsics.reduce((ret, cur, index) => {
+                const postfix = index === intrinsics.length - 1 ? " * @param {" : ""
+                return `${ret} * @param {${getIntrinsicType(cur, true)}} meta.${cur}\n${postfix}`
+            }, " * @param {Object} meta\n")
+        )
     }
-
     if (!slotNames.length) {
         edit.push(`${LSU_AND_DOT}EmptyObject`)
     } else {
@@ -370,7 +471,7 @@ export function confirmTypesForCompileResult(
     if (fileInfo.isTS) {
         edit.push("}")
     } else {
-        edit.push("} _.slots\n */\n")
+        edit.push("} meta.slots\n */\n")
     }
     edit.flush()
     updateSourceFile()
@@ -382,7 +483,12 @@ export function confirmTypesForCompileResult(
             defaultExportSymbol,
             sourceFile
         )
-        fileInfo.defaultExportTypeStr = typeChecker.typeToString(defaultExportType)
+        const typeStr = typeChecker.typeToString(
+            defaultExportType,
+            sourceFile,
+            ts.TypeFormatFlags.NoTruncation
+        )
+        fileInfo.defaultExportTypeStr = typeStr.replaceAll(LSU_AND_DOT, "")
     }
 }
 
@@ -427,6 +533,10 @@ export class FileEdit {
     }
 
     flush() {
+        if (!this.items.length) {
+            return
+        }
+
         let newContent: string
         const startIndex = this.editStartIndex
         const originalContent = this.fileInfo.code
@@ -477,4 +587,17 @@ function isEnumerablePropertyOfGlobalTypes(ts: typeof TS, symbol: TS.Symbol) {
             return false
         }
     }
+}
+
+// 成员类型是否可视为对象类型：对象，或“对象 | undefined”这类可选成员联合。
+function isObjectLikeMemberType(ts: typeof TS, type: TS.Type): boolean {
+    if (type.flags & ts.TypeFlags.Object) {
+        return true
+    }
+    if (type.isUnion()) {
+        return type.types.every(part => {
+            return part.flags & (ts.TypeFlags.Object | ts.TypeFlags.Undefined)
+        })
+    }
+    return false
 }
