@@ -6,13 +6,13 @@ import type { AdapterTsProject } from "../../types/adapter"
 import type { HoverTipResult, TPICCommonRequestParams } from "../../../../../types/communication"
 
 import { ts } from "../state"
+import { LSU_AND_DOT } from "../../constants"
 import { intrinsicMethodDisplayRE } from "../../regular"
-import { LS_PACKAGE, LSU_AND_DOT } from "../../constants"
 import { mdCodeBlockGen } from "../../../../../shared-util/docs"
-import { getDeclaredFileName, getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 import { convertDisplayPartsToPlainTextWithLink } from "./documentation"
 import { debugAssert, isUndefined } from "../../../../../shared-util/assert"
+import { getDeclaredFileName, getNodeAtPositionWithin, isInTopScope } from "../ts-ast"
 
 export function getAndConvertHoverTip(
     adapter: TypescriptAdapter,
