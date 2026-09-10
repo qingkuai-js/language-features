@@ -10,6 +10,7 @@ packages/mcp-server/scripts
 features.md
 .vscode/launch.json
 **/package-lock.json
+/scripts/local-*.sh
 /scripts/build-vsce.ts
 packages/vscode-extension/*.zip
 packages/vscode-extension/*.vsix
