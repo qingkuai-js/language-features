@@ -10,12 +10,6 @@ export function registerCompilerTools(server: McpServer) {
         {
             inputSchema: z.object({
                 source: z.string().min(1).describe("Qingkuai (.qk) source code to check"),
-                shorthandDerivedDeclaration: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Enable shorthand derived declaration syntax (e.g., $var instead of derived()). Default: false"
-                    ),
                 allowConstReactive: z
                     .boolean()
                     .optional()
@@ -26,10 +20,9 @@ export function registerCompilerTools(server: McpServer) {
             title: "Check Qingkuai Syntax",
             description: SYNTAX_CHECK_TOOL_DESCRIPTION
         },
-        async ({ source, shorthandDerivedDeclaration, allowConstReactive }) => {
+        async ({ source, allowConstReactive }) => {
             try {
                 const result = compileIntermediate(source, {
-                    shorthandDerivedDeclaration,
                     allowConstReactive
                 })
 
@@ -91,10 +84,6 @@ export function registerCompilerTools(server: McpServer) {
                     .boolean()
                     .optional()
                     .describe("Preserve HTML comments in template. Default: false"),
-                shorthandDerivedDeclaration: z
-                    .boolean()
-                    .optional()
-                    .describe("Enable shorthand derived declaration syntax. Default: false"),
                 allowConstReactive: z
                     .boolean()
                     .optional()
@@ -118,7 +107,6 @@ export function registerCompilerTools(server: McpServer) {
             sourcemap,
             interpretiveComments,
             preserveHtmlComments,
-            shorthandDerivedDeclaration,
             allowConstReactive,
             reactivityMode,
             whitespace
@@ -130,7 +118,6 @@ export function registerCompilerTools(server: McpServer) {
                     sourcemap,
                     interpretiveComments,
                     preserveHtmlComments,
-                    shorthandDerivedDeclaration,
                     allowConstReactive,
                     reactivityMode,
                     whitespace

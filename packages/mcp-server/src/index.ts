@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 
+import { SERVER_INSTRUCTIONS } from "./constants"
 import { registerPrompts } from "./prompts"
 import { registerDocTools } from "./tools/docs"
 import { loadDocResources } from "./resources/docs"
@@ -20,7 +21,9 @@ const server = new McpServer(
             tools: {},
             prompts: {},
             resources: {}
-        }
+        },
+        // 随 initialize 响应（InitializeResult.instructions）下发，宿主注入模型上下文
+        instructions: SERVER_INSTRUCTIONS
     }
 )
 

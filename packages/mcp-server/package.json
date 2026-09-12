@@ -24,7 +24,8 @@
     ],
     "scripts": {
         "inspect": "mcp-inspector",
-        "copydocs": "tsx scripts/copy-docs.ts"
+        "verifydocs": "tsx scripts/verify-search.ts",
+        "copydocs": "tsx scripts/copy-docs.ts && npm run verifydocs"
     },
     "dependencies": {
         "@cfworker/json-schema": "^4.1.1",
