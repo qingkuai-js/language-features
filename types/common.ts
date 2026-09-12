@@ -79,7 +79,6 @@ export type QingkuaiConfiguration = {
     allowConstReactive: boolean
     interpretiveComments: boolean
     resolveImportExtension: boolean
-    shorthandDerivedDeclaration: boolean
     reactivityMode: "reactive" | "shallow"
     whitespace: "preserve" | "trim" | "collapse" | "trim-collapse"
     preserveHtmlComments: "all" | "never" | "development" | "production"

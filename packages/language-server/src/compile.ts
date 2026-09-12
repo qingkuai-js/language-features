@@ -49,8 +49,7 @@ export async function getCompileResult(document: TextDocument) {
     const pms = (async () => {
         const clientConfig = await getConfigurationOfFile()
         const compileResult = compileIntermediate(document.getText(), {
-            allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive,
-            shorthandDerivedDeclaration: clientConfig.qingkuaiConfig.shorthandDerivedDeclaration
+            allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive
         })
         const isTS = compileResult.scriptDescriptor.isTS
         const scriptLanguageId = isTS ? "typescript" : "javascript"
