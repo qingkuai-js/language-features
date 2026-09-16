@@ -13,6 +13,7 @@ import {
     recoverNumberArray,
     compressNumberArray
 } from "../../../../shared-util/qingkuai"
+import { INITIAL_VERSION } from "../constants"
 import { PositionFlag } from "qingkuai/compiler"
 import { ignoredComponentNameChars } from "../regular"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
@@ -150,7 +151,7 @@ export function updateQingkuaiFile(
     const newFileInfo = new QingkuaiFileInfo(
         params.content,
         params.isTS,
-        existing?.version ?? 0,
+        existing?.version ?? INITIAL_VERSION,
         filePathToComponentName(adapter, path),
         path,
         params.getTypeDelayIndexes,
@@ -193,7 +194,7 @@ function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {
     const compileRes = adapter.compile(path)
     const existing = adapter.qingkuaiFileInfos.get(path)
-    const newVersion = existing ? existing.version + 1 : 0
+    const newVersion = existing ? existing.version + 1 : INITIAL_VERSION
     const fileInfo = new QingkuaiFileInfo(
         compileRes.code,
         compileRes.scriptDescriptor.isTS,

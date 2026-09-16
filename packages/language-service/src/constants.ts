@@ -4,6 +4,7 @@ import { QingkuaiCommands } from "./enums"
 import { constants as qingkuaiConstants } from "qingkuai/compiler"
 
 export const META_TYPE_ID = "Meta"
+export const INITIAL_VERSION = Date.now()
 export const LS_PACKAGE = "qingkuai/language-service"
 export const LSU_AND_DOT = qingkuaiConstants.LSC.UTIL + "."
 

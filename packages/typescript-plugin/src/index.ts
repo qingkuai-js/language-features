@@ -23,8 +23,6 @@ export = function init(modules: { typescript: typeof TS }) {
         create(info: TS.server.PluginCreateInfo) {
             const project = info.project
             const projectService = project.projectService
-            proxyTypescript(info)
-
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,
@@ -39,7 +37,7 @@ export = function init(modules: { typescript: typeof TS }) {
                     scriptKind: modules.typescript.ScriptKind.Deferred
                 })
             }
-            return info.languageService
+            return (proxyTypescript(info), info.languageService)
         },
 
         onConfigurationChanged(params: ConfigPluginParms) {
