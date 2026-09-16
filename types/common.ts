@@ -77,11 +77,12 @@ export interface TSFormattingOptions {
 
 export type QingkuaiConfiguration = {
     allowConstReactive: boolean
+    requireReactivityMark: boolean
     interpretiveComments: boolean
     resolveImportExtension: boolean
     reactivityMode: "reactive" | "shallow"
     whitespace: "preserve" | "trim" | "collapse" | "trim-collapse"
-    preserveHtmlComments: "all" | "never" | "development" | "production"
+    preserveHtmlComments: "always" | "never" | "development" | "production"
 }
 
 export interface TSClientConfiguration {

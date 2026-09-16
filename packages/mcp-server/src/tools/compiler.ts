@@ -88,6 +88,12 @@ export function registerCompilerTools(server: McpServer) {
                     .boolean()
                     .optional()
                     .describe("Allow constant declarations to be marked as reactive. Default: true"),
+                requireReactivityMark: z
+                    .boolean()
+                    .optional()
+                    .describe(
+                        "Require top-level variable declarations to be explicitly marked with reactivity built-ins. Default: false"
+                    ),
                 reactivityMode: z
                     .enum(["reactive", "shallow"])
                     .optional()
@@ -105,23 +111,29 @@ export function registerCompilerTools(server: McpServer) {
             hashId,
             debug,
             sourcemap,
+            whitespace,
+            reactivityMode,
+            allowConstReactive,
             interpretiveComments,
             preserveHtmlComments,
-            allowConstReactive,
-            reactivityMode,
-            whitespace
+            requireReactivityMark,
         }) => {
             try {
-                const result = compile(source, {
-                    hashId,
-                    debug,
-                    sourcemap,
-                    interpretiveComments,
-                    preserveHtmlComments,
-                    allowConstReactive,
-                    reactivityMode,
-                    whitespace
-                })
+                // 发布版 qingkuai 的类型声明尚未包含 requireReactivityMark，运行时已支持
+                const options = Object.assign(
+                    {
+                        hashId,
+                        debug,
+                        sourcemap,
+                        interpretiveComments,
+                        preserveHtmlComments,
+                        allowConstReactive,
+                        reactivityMode,
+                        whitespace
+                    },
+                    { requireReactivityMark }
+                )
+                const result = compile(source, options)
 
                 const errorCount = result.messages.filter(m => m.type === "error").length
                 const warningCount = result.messages.filter(m => m.type === "warning").length

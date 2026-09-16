@@ -37,6 +37,13 @@
             "markdownDescription": "Controls whether **constant declarations** can be marked as **reactive**.\n\nWhen enabled, variables declared with `const` can be inferred as reactive according to the [reactivity inference rules](https://qingkuai.dev/references/reactivity-infer-rules.html), and can also be explicitly marked with the compiler built-ins `reactive` or `shallow`.\n\nWhen set to `false`, variables declared with `const` are not inferred as reactive, and explicitly using `reactive` or `shallow` to mark a constant declaration causes a compile error.\n\nThis option is `true` by default."
         },
 
+        "requireReactivityMark": {
+            "type": "boolean",
+            "default": false,
+            "description": "Controls whether top-level variable declarations must be explicitly marked with reactivity built-in methods.",
+            "markdownDescription": "Controls whether **top-level variable declarations** in script blocks must be explicitly marked with a reactivity built-in method (`raw`, `reactive`, `shallow`, `derived`, or `alias`).\n\nWhen enabled, unmarked top-level variable declarations cause a compile error.\n\nThis option is `false` by default."
+        },
+
         "resolveImportExtension": {
             "type": "boolean",
             "default": true,
