@@ -2,13 +2,13 @@
 
 Component slots are used to pass structured UI content, that is, template fragments, into a component. Their biggest difference from attributes lies in the kind of content being passed: attributes pass data, while slots pass interface structure. Through slots, a parent component can insert custom DOM content into specific locations of a child component, enabling greater flexibility and reusability. This makes slots essential when building generic components such as layout containers, modals, and list renderers.
 
-<img src="/static/medias/slots-en.png" />
+<img src="/static/medias/component-slots-en.png" />
 
 ---
 
 ## Basic Usage
 
-Inside a component, use the `slot` tag to declare where slot content should be inserted. This location is called a [slot outlet](docs://references/terminology.md#slot-outlet):
+Inside a component, use the `slot` tag to declare the slot location. It is called a [slot outlet](docs://references/terminology.md#slot-outlet), and this term will be used consistently hereafter to refer to the location where the `slot` tag is placed:
 
 ```qk
 <!-- Inner.qk -->
@@ -77,7 +77,9 @@ Child elements inside the `slot` tag are treated as the slot's default content. 
 ```qk
 <!-- Outer.qk -->
 <Inner />
+```
 
+```qk
 <!-- Inner.qk -->
 <div class="inner-box">
     <slot>Default content</slot>
@@ -106,9 +108,8 @@ Many components need more than one slot. When a component has multiple slots, us
 </footer>
 ```
 
-<div class="custom-block tip">
-    A slot without a <code>name</code> attribute is named <code>default</code> by default.
-</div>
+> [!TIP]
+> A slot without a `name` attribute is named `default` by default.
 
 When using the component, you can specify the slot name through the `slot` [directive](docs://basic/compilation-directives.md):
 
@@ -116,7 +117,7 @@ When using the component, you can specify the slot name through the `slot` [dire
 <Article>
     <!-- The slot name can be omitted when it is default -->
     <div #slot={"default"}>Article contents...</div>
-    <p #slot={"footer"}>Copyright information...</p>
+    <p #slot={"footer"}>Copyright informations...</p>
 </Article>
 ```
 
@@ -126,8 +127,8 @@ When [slot content](docs://references/terminology.md#slot-content) consists only
 <Article>
     <qk:spread>Article contents...</qk:spread>
     <qk:spread #slot={"footer"}>
-        <p>Release information...</p>
-        <p>Copyright information...</p>
+        <p>Released informations...</p>
+        <p>Copyright informations...</p>
     </qk:spread>
 </Article>
 ```
@@ -148,9 +149,8 @@ As described in [Scope](#scope), slot content can normally access only the data 
 </article>
 ```
 
-<div class="custom-block tip">
-    The <code>name</code> attribute on a <code>slot</code> tag is used only to identify the slot itself. It is not passed into slot content.
-</div>
+> [!TIP]
+> The `name` attribute on a `slot` tag is used only to specify the slot name. It is not passed into slot content.
 
 At the [slot outlet](docs://references/terminology.md#slot-outlet), you can receive this context object through the `slot` [directive](docs://basic/compilation-directives.md) and assign it to an identifier:
 
@@ -174,15 +174,14 @@ You can also destructure the context object directly when receiving it through t
 </Article>
 ```
 
-<div class="custom-block warning">
-    After destructuring the context object, the destructured values usually lose their reactivity. However, if one of those values is itself a reactive complex structure, reactivity is still preserved when you access its properties. Keep this in mind when using destructuring syntax.
-</div>
+> [!WARNING]
+> After destructuring the context object, the destructured values usually lose their reactivity. However, if one of those values is itself a reactive complex structure, reactivity is still preserved when you access its properties. Keep this in mind when using destructuring syntax.
 
 ---
 
 ## Render by Slot Presence
 
-In some cases, a component needs to decide whether to render a part of its structure based on whether a specific slot has been passed. For this, you can use the `slots` compiler intrinsic. `slots` is an object, and accessing a property on it by slot name returns a boolean: if that slot was passed, the result is `true`; otherwise it is `false`.
+In some cases, a component needs to decide whether to render a part of its structure based on whether a specific slot has been passed. For this, you can use the `slots` built-in identifier. `slots` is an object, and accessing a property on it by slot name returns a boolean: if that slot was passed, the result is `true`; otherwise it is `false`.
 
 In the following example, the footer area is rendered only when `footer` slot content is actually passed from outside:
 

@@ -9,7 +9,7 @@ Debugging is an essential part of locating and fixing issues during development.
 In development mode, the compiler generates [source maps](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/SourceMap) for component files by default, mapping compiled output back to the original component file across two dimensions:
 
 - **Script mapping**: Maps compiled JavaScript code back to the script block or template interpolation in the component file, so you can inspect variables and set breakpoints in the original source.
-- **Style mapping**: Maps compiled CSS back to the style block in the component file, so the browser's Styles panel shows the original rules instead of the compiled stylesheet.
+- **Style mapping**: Maps the built CSS back to the style block in the component file, so the browser's Styles panel shows the original rules instead of the compiled stylesheet.
 
 ---
 
@@ -37,11 +37,10 @@ In development mode, the compiler attaches debug information to context identifi
 
 ### Interpolation Block Updates
 
-As you may have noticed from the screenshots above, the compiler creates mapping points at the start and end of each interpolation block. This allows you to clearly see the state of the DOM before and after an update, helping you better understand the component's update process.
+As you may have noticed from the screenshots above, within the component file the compiler creates mapping points at the start and end of each interpolation block. This is so that during debugging you can clearly see the state of the DOM before and after the operation, helping you better understand the component's update process.
 
-<div class="custom-block tip">
-    If a tag's content contains multiple interpolation blocks, the start of the first block and the end of the last block correspond to the states before and after the DOM operation, respectively.
-</div>
+> [!TIP]
+> If a tag's content contains multiple interpolation blocks, the start of the first block and the end of the last block correspond to the states before and after the DOM operation, respectively.
 
 ---
 

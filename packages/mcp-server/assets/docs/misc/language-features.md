@@ -10,15 +10,14 @@ Currently, we only publish the extension for [VS Code](https://code.visualstudio
 
 <img src="/static/medias/extension.png" alt="VS Code extension" />
 
-<div class="custom-block tip">
-    If you encounter IDE-related issues, please submit an issue in Qingkuai's <a href="https://github.com/qingkuai-js/language-features">language-features</a> repository.
-</div>
+> [!TIP]
+> If you encounter IDE-related issues, please submit an issue in Qingkuai's [language-features](https://github.com/qingkuai-js/language-features) repository.
 
 ---
 
 ## Emmet
 
-Qingkuai language service provides solid [Emmet](https://emmet.io) support. However, because dynamic attributes conflict with Emmet's attribute-removal syntax, component files use `-` to remove attributes. The example below creates an `input` tag without a `type` attribute in a component file:
+Qingkuai language service provides solid [Emmet](https://emmet.io) support. However, because dynamic attributes conflict with Emmet's attribute-removal syntax, component files use the `-` character to remove attributes. The example below uses Emmet syntax to create an `input` tag without a `type` attribute in a component file:
 
 ```txt
 input[-type]
@@ -40,7 +39,7 @@ creates a dynamic attribute:
 
 ## Formatting
 
-Qingkuai language service includes built-in document formatting, implemented by [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai). If a component file contains syntax errors, formatting may fail. In that case, check the IDE `output` panel:
+Qingkuai language service includes built-in document formatting, implemented by [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai). If a component file contains syntax errors, formatting may fail. In that case, you can view the failure message in the IDE `output` panel:
 
 <img src="/static/medias/format-error.png" alt="formatting error" />
 
@@ -49,14 +48,13 @@ Qingkuai language service includes built-in document formatting, implemented by 
 ## Restart Language Service
 
 When language service behavior is abnormal, open the VS Code command palette (`Ctrl+Shift+P` or `Cmd+Shift+P`), then run `Qingkuai: Restart Language Server` to restart the language service:
-
 <img src="/static/medias/restart-language-server.png" alt="restart language service" />
 
 ---
 
 ## Code Navigation
 
-Code navigation is frequently used during development, and has some framework-specific usage in component files:
+Code navigation is frequently used during development, and has some specific usages in component files:
 
 - Find slot definitions: Hold down the meta key and left-click the `slot` attribute on a first-level child element of a component;
 - Find component definitions: Hold down the meta key and left-click a component tag or a component identifier in an embedded script;

@@ -90,7 +90,7 @@ Prefer compiler inference. Only use explicit controls when needed:
 
 For derived state:
 
-- Use `$` shorthand only when `.qingkuairc` enables `shorthandDerivedDeclaration` and project style already uses it.
+- Identifiers prefixed with `$` are ordinary variables with no reactive meaning. Never treat them as derived state.
 - Use `derivedExp(expr)` for short expressions.
 - Use `derived(() => ...)` for complex logic.
 

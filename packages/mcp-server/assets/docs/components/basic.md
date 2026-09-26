@@ -1,8 +1,8 @@
 # Basics
 
-In Qingkuai, components are the basic units for building user interfaces. Each component represents an independent and reusable UI piece, from a simple button to a complex page. Components are inherently encapsulated and composable, making UI development clearer and more efficient.
+In Qingkuai, components are the basic units for building user interfaces. Each component represents an independent and reusable UI piece, which can be either a simple button or a complex page. Components are inherently encapsulated and composable, making UI development clearer and more efficient.
 
-The image below shows a component-based representation of a blog page, where each area represents a component. Areas with the same color indicate component reuse:
+<img src="/static/medias/component-basic-en.png" />
 
 ---
 
@@ -14,14 +14,15 @@ Assuming we have defined a component via a `Component.qk` file, we can import it
 
 ```qk
 <lang-js>
-    import Component from "./path/to/Component.qk"
+    import Component from "./Component.qk"
 </lang-js>
 
 <Component />
 <Component />
 ```
 
-<div class="custom-block tip">From here on, we will use the term <code>component file</code> to refer to files with the <code>.qk</code> extension.</div>
+> [!TIP]
+> From here on, we will use the term `component file` to refer to files with the `.qk` extension.
 
 Component names support kebab-case format. The following usages are equivalent:
 
@@ -40,9 +41,10 @@ By default, when formatting component files, all component names will be transfo
 }
 ```
 
-<div class="custom-block tip">When using this configuration, the Qingkuai language server also prioritizes kebab-case component tags in auto-completion.</div>
+> [!TIP]
+> When using this configuration, the Qingkuai language server will also prioritize kebab-case component tags when providing component tag completion suggestions.
 
-Component tags also support member access syntax, which is commonly seen when working with [async components](docs://components/async-components.md):
+Additionally, component tags support member access syntax, which is very common when used together with [async components](docs://components/async-components.md):
 
 ```qk
 <Module.default />

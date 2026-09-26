@@ -1,12 +1,12 @@
 # Configuration Files
 
-When building applications with Qingkuai, you usually do not need complicated setup to get an out-of-the-box development experience. In real projects, however, Qingkuai provides a flexible configuration system so that you can adapt its behavior to different development needs and customization requirements. A unified configuration mechanism improves project consistency, makes team collaboration smoother, and provides a solid foundation for maintainable applications.
+When building applications with Qingkuai, you usually do not need complicated configuration to get an out-of-the-box development experience. In real projects, however, to adapt to different development needs or customize behavior, Qingkuai provides a flexible configuration file mechanism that helps you control the way it works more precisely. A unified configuration mechanism not only improves project consistency, but also makes team collaboration smoother, serving as an important foundation for building maintainable applications.
 
 ---
 
 ## Runtime Configuration
 
-Qingkuai runtime behavior can be configured through the `.qingkuairc` file. Component files are affected by the runtime configuration file in the current directory or the nearest parent directory. For example, in the following directory structure, the `Hello` component is affected by the configuration file in its own directory, while `App` is affected by the configuration file in the project root:
+Qingkuai's runtime configuration is modified through the `.qingkuairc` file. Component files are affected by the runtime configuration file in the current directory or its nearest parent directory. For example, in the following directory structure, the `Hello` component file is affected by the configuration file in its own directory, while the `App` component is affected by the configuration file in the project root:
 
 ```txt
 qingkuai-app
@@ -23,7 +23,7 @@ qingkuai-app
 This property configures the reactivity mode that Qingkuai infers by default. It is a string whose allowed values are `reactive` and `shallow`, and its default value is `reactive`:
 
 - `reactive`: uses deep reactivity, so nested objects and arrays are also tracked automatically.
-- `shallow`: uses shallow reactivity, so only top-level value changes are tracked automatically.
+- `shallow`: uses shallow reactivity, so only changes to top-level values are tracked automatically, and nested values are not tracked automatically.
 
 ### whitespace
 
@@ -38,6 +38,10 @@ This property configures how whitespace in templates is handled. It is a string 
 
 This property configures whether HTML comment nodes are preserved. It is a string whose allowed values are `never`, `always`, `development`, and `production`, and its default value is `development`.
 
+### requireReactivityMark
+
+This property configures whether top-level variable declarations in script blocks must be explicitly marked with a reactivity built-in method (`raw`, `reactive`, `shallow`, `derived`, or `alias`). It is a boolean whose default value is `false`. When enabled, top-level variable declarations that are not explicitly marked cause a compile error.
+
 ### resolveImportExtension
 
 This property configures whether the `.qk` extension may be omitted in import statements inside component files. It is a boolean value and defaults to `true`:
@@ -47,18 +51,9 @@ This property configures whether the `.qk` extension may be omitted in import st
 import Component from "./Component"
 ```
 
-### shorthandDerivedDeclaration
-
-This property configures whether shorthand declarations for derived reactive state are enabled. It is a boolean value and defaults to `true`. When enabled, identifiers that start with `$` in the top-level scope of an embedded script block are automatically compiled into [derived reactive state](docs://basic/reactivity.md#derived-reactive-state). Setting it to `false` disables this behavior:
-
-```js
-// Shorthand declaration of derived reactive state
-const $double = number * 2
-```
-
 ### allowConstReactive
 
-This property configures whether constant declarations may be marked as reactive. It is a boolean value and defaults to `true`. When set to `false`, constant declarations are not [inferred](docs://references/reactivity-infer-rules.md) as reactive, and explicitly marking a constant declaration with `reactive` or `shallow` causes a compile error.
+This property configures whether constant declarations may be marked as reactive. It is a boolean value and defaults to `true`. When set to `false`, variables declared in constant declarations are not [inferred](docs://references/reactivity-infer-rules.md) as having reactivity, and explicitly marking a constant declaration with `reactive` or `shallow` causes a compile error.
 
 ### interpretiveComments
 
@@ -68,7 +63,7 @@ This property configures whether interpretive comments are inserted into compila
 
 ## Formatting Configuration
 
-Formatting support in the Qingkuai language service is implemented through [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai), which is a Prettier plugin. Formatting for component files therefore follows standard [Prettier configuration](https://prettier.io/docs/options). Some additional options only apply to component files. These options must be placed under the `qingkuai` object in your Prettier configuration file, for example:
+Formatting support in the Qingkuai language service is implemented through [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai), which is a Prettier plugin. Formatting for component files follows standard [Prettier configuration](https://prettier.io/docs/options). Among these options, some additional configuration options only take effect for component files; they must be placed under the `qingkuai` object in your Prettier configuration file, for example:
 
 ```json
 {

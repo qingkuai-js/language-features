@@ -7,9 +7,10 @@ The watcher and side effect APIs are part of Qingkuai's reactivity system. They 
 - `preWatch`, `preEffect`: triggered before the update scheduler. They are suitable for logic that needs to run after state changes but before scheduled updates.
 - `postWatch`, `postEffect`: triggered after scheduled updates are complete. They are suitable when you need to wait until state and DOM updates have settled.
 
-Inside a [component file](docs://references/terminology.md#component-file), the watcher and side effect APIs are all [built-in methods](docs://references/terminology.md#built-in-methods) — there is no need to import them from the runtime package. The compiler generates methods bound to the [component](docs://components/basic.md) as needed for the API calls, so every watcher and side effect registered inside a component is correctly bound to the [component instance](docs://references/terminology.md#component-instance). As a result, you do not need to worry about memory leaks: they are all stopped and their memory released when the component unmounts, whether they were registered in synchronous or asynchronous logic.
+Inside a [component file](docs://references/terminology.md#component-file), the watcher and side effect APIs are all [built-in methods](docs://references/terminology.md#built-in-methods) — there is no need to import them from the [runtime package](docs://references/terminology.md#runtime-package). The compiler generates methods bound to the [component](docs://components/basic.md) as needed for the API calls, so every watcher and side effect registered inside a component is correctly bound to the [component instance](docs://references/terminology.md#component-instance). As a result, you do not need to worry about memory leaks: they are all stopped and their memory released when the component unmounts, whether they were registered in synchronous or asynchronous logic.
 
-<div class="custom-block warning">The watcher and side effect APIs are mainly intended as transition tools for developers coming from frameworks such as <a href="https://cn.vuejs.org">Vue</a>. They help lower the learning curve during migration. However, we do not recommend using these APIs heavily in production projects. Side effects are usually registered as callbacks, and their trigger locations do not appear directly in the call stack, which makes the call chain less intuitive and harder to trace. This pattern also makes it less convenient to rely on IDE features such as go-to-definition and find references for efficient review and maintenance. If your project values maintainability and readability, prefer explicit data flow and function composition when organizing reactive logic.</div>
+> [!WARNING]
+> The watcher and side effect APIs are mainly intended as transition tools for developers coming from frameworks such as [Vue](https://cn.vuejs.org). They help lower the learning curve during migration. However, we do not recommend using these APIs heavily in production projects. Side effects are usually registered as callbacks, and their trigger locations do not appear directly in the call stack, which makes the call chain less intuitive and harder to trace. This pattern also makes it less convenient to rely on IDE features such as go-to-definition and find references for efficient review and maintenance. If your project values maintainability and readability, prefer explicit data flow and function composition when organizing reactive logic.
 
 ---
 
@@ -26,13 +27,13 @@ In the following example, a watcher is registered for the `name` variable. When 
     watch(
         () => name,
         (pre, cur) => {
-            console.log(pre, cur) // JavaScript Qingkuai
-            console.log(paragraph.textContent) // name is: JavaScript
+            console.log(pre, cur) // logs: JavaScript Qingkuai
+            console.log(paragraph.textContent) // logs: name is: Javascript
         }
     )
 </lang-js>
 
-<p &dom={paragraph}>name is: {name}</p>
+<p &handle={paragraph}>name is: {name}</p>
 <button @click={name = "Qingkuai"}>Change Name</button>
 ```
 
@@ -43,13 +44,13 @@ In the following example, a watcher is registered for the `name` variable. When 
     watch(
         () => name,
         (pre, cur) => {
-            console.log(pre, cur) // JavaScript Qingkuai
-            console.log(paragraph.textContent) // name is: JavaScript
+            console.log(pre, cur) // logs: JavaScript Qingkuai
+            console.log(paragraph.textContent) // logs: name is: Javascript
         }
     )
 </lang-ts>
 
-<p &dom={paragraph}>name is: {name}</p>
+<p &handle={paragraph}>name is: {name}</p>
 <button @click={name = "Qingkuai"}>Change Name</button>
 ```
 
@@ -66,13 +67,13 @@ A watcher registered synchronously through `watch` inside an embedded language t
     preWatch(
         () => name,
         (pre, cur) => {
-            console.log(pre, cur) // JavaScript Qingkuai
-            console.log(paragraph.textContent) // name is: JavaScript
+            console.log(pre, cur) // logs: JavaScript Qingkuai
+            console.log(paragraph.textContent) // logs: name is: Javascript
         }
     )
 </lang-js>
 
-<p &dom={paragraph}>name is: {name}</p>
+<p &handle={paragraph}>name is: {name}</p>
 <button @click={name = "Qingkuai"}>Change Name</button>
 ```
 
@@ -83,13 +84,13 @@ A watcher registered synchronously through `watch` inside an embedded language t
     preWatch(
         () => name,
         (pre, cur) => {
-            console.log(pre, cur) // JavaScript Qingkuai
-            console.log(paragraph.textContent) // name is: JavaScript
+            console.log(pre, cur) // logs: JavaScript Qingkuai
+            console.log(paragraph.textContent) // logs: name is: Javascript
         }
     )
 </lang-ts>
 
-<p &dom={paragraph}>name is: {name}</p>
+<p &handle={paragraph}>name is: {name}</p>
 <button @click={name = "Qingkuai"}>Change Name</button>
 ```
 
@@ -106,13 +107,13 @@ A post-watcher is the opposite of a pre-watcher. It runs after scheduled updates
     postWatch(
         () => name,
         (pre, cur) => {
-            console.log(pre, cur) // JavaScript Qingkuai
-            console.log(paragraph.textContent) // name is: Qingkuai
+            console.log(pre, cur) // logs: JavaScript Qingkuai
+            console.log(paragraph.textContent) // logs: name is: QingKuai
         }
     )
 </lang-js>
 
-<p &dom={paragraph}>name is: {name}</p>
+<p &handle={paragraph}>name is: {name}</p>
 <button @click={name = "Qingkuai"}>Change Name</button>
 ```
 
@@ -123,13 +124,13 @@ A post-watcher is the opposite of a pre-watcher. It runs after scheduled updates
     postWatch(
         () => name,
         (pre, cur) => {
-            console.log(pre, cur) // JavaScript Qingkuai
-            console.log(paragraph.textContent) // name is: Qingkuai
+            console.log(pre, cur) // logs: JavaScript Qingkuai
+            console.log(paragraph.textContent) // logs: name is: QingKuai
         }
     )
 </lang-ts>
 
-<p &dom={paragraph}>name is: {name}</p>
+<p &handle={paragraph}>name is: {name}</p>
 <button @click={name = "Qingkuai"}>Change Name</button>
 ```
 
@@ -142,7 +143,7 @@ The callbacks of `watch`, `preWatch`, and `postWatch` are all triggered asynchro
     let name = "JavaScript"
 
     function handleChangeName() {
-        name = "Qingkuai" // logs: JavaScript Qingkuai
+        name = "Qingkuai" // logs: Javascript QingKuai
     }
 
     syncWatch(
@@ -159,7 +160,7 @@ The callbacks of `watch`, `preWatch`, and `postWatch` are all triggered asynchro
 
 ### Convenience Registration
 
-In standard watcher registration, the first argument must be a `getter` function that returns the value being observed. This is slightly verbose for simple expressions. To address that, the compiler provides a group of convenience registration methods similar in spirit to [derivedExp](/basic/reactivity.md#derived-reactive-state): `watchExp`, `preWatchExp`, `postWatchExp`, and `syncWatchExp`. The compiler automatically converts the first argument of these methods into a `getter` function, so you can pass an expression directly:
+In standard watcher registration, the first argument must be a `getter` function that returns the value being observed. This is slightly verbose for simple expressions. To address that, Qingkuai provides a group of convenience registration methods similar in spirit to [derivedExp](docs://basic/reactivity.md#derived-reactive-state): `watchExp`, `preWatchExp`, `postWatchExp`, and `syncWatchExp`. The compiler automatically converts the first argument of these methods into a `getter` function, so you can pass an expression directly:
 
 ```js
 // Normal watcher registration
@@ -187,7 +188,7 @@ syncWatchExp(identifier, (pre, cur) => {
 
 ## Side Effects
 
-Unlike watchers, `effect` only accepts a callback. Dependency collection and reactive logic are combined into one place: the reactive values accessed while the callback runs are collected automatically as dependencies, and the callback runs again whenever any of them changes. In the following example, the `effect` callback accesses `userId`, so every time `userId` changes, a new request is sent and the user information is updated:
+Unlike watchers, `effect` only accepts a callback. Dependency tracking and reactive logic are combined into one: the reactive values accessed while the callback runs are collected automatically as dependencies, and the callback runs again whenever any of them changes. In the following example, the `effect` callback accesses `userId`, so every time `userId` changes, a new request is sent and the user information is updated:
 
 |js|ts|
 
@@ -238,22 +239,122 @@ syncEffect(() => {})
 
 ---
 
-## Importing from the Runtime Package
+## External Registration
 
-To use the watcher and side effect APIs outside [component files](docs://references/terminology.md#component-file), import the corresponding methods from the `qingkuai` runtime package:
+Sometimes you may want to register watchers or side effects outside a component file — for example, to organize reactive logic in a standalone external module. There are two ways to do this:
+
+- Pass the component's built-in watcher/side effect methods as arguments to the external module, which calls them to register watchers or side effects bound to the current component instance.
+- Import the watcher and side effect APIs from the [runtime package](docs://references/terminology.md#runtime-package) and specify the binding through the first argument: passing a [component instance](docs://references/terminology.md#component-instance) behaves exactly like the built-in methods, while passing `null` creates a [global watcher](docs://references/terminology.md#global-watcher) or [global side effect](docs://references/terminology.md#global-side-effect) that is not bound to any component.
+
+### Passing Built-in Methods
+
+Because a component's built-in methods are already bound to the current component instance, passing them as arguments to an external module is a convenient way to create watchers or side effects bound to that instance:
+
+|js|ts|
 
 ```js
-import { watch, effect, preWatch, postWatch, syncWatch } from "qingkuai"
+// util.js
+export function createEffect(effect) {
+    effect(() => {
+        // ...
+    })
+}
 ```
 
-Unlike the built-in methods in component files, these runtime-imported methods **do not bind the current component instance automatically**. The first argument is a [component instance](docs://references/terminology.md#component-instance) or `null`, which specifies how the registration is bound; the remaining arguments are the same as the built-in methods of a component.
+```ts
+// util.ts
+import type { BoundEffectFunc } from "qingkuai"
 
-The value of the first argument determines how the registration is cleaned up:
+export function createEffect(effect: BoundEffectFunc) {
+    effect(() => {
+        // ...
+    })
+}
+```
 
-- **Pass a component instance**: the registration is linked to that component's destruction lifecycle. Whether registered synchronously or asynchronously, it is cleaned up automatically when the component is destroyed.
-- **Pass `null`**: the registration is not linked to any component and is never cleaned up automatically. You must manage its lifecycle manually by calling `stop` on the returned handle.
+Inside the component, call the external module's side effect registration function and pass the built-in `effect` method as the argument:
 
-It is worth emphasizing that we **strongly discourage** registering global watchers and side effects inside a component; a reasonable design is usually to register such global side effects in an external `js` / `ts` module. If you really need to register one inside a component, you can import the corresponding API from the runtime package and pass `null` as the first argument to register a watcher or side effect that you manage manually:
+```qk
+<lang-js>
+    import { createEffect } from "./util"
+
+    createEffect(effect)
+</lang-js>
+```
+
+### Importing from the Runtime Package
+
+As described at the beginning of this section, the watcher and side effect APIs imported from the runtime package specify their binding through the first argument; in every other respect they work exactly like the built-in methods. Their advantage over the built-in methods is that the binding target can be specified dynamically:
+
+```js
+import { preWatch, getCurrentInstance } from "qingkuai"
+
+const watchHandle = preWatch(
+    getCurrentInstance(),
+    () => count,
+    (pre, cur) => {
+        // ...
+    }
+)
+```
+
+In the example above, we obtain the current component instance with `getCurrentInstance` in the external module and pass it as the first argument to `preWatch`, which creates a pre-watcher bound to the current component. However, this approach has a potential pitfall: `getCurrentInstance` only returns the correct instance during the synchronous execution of a component's initialization or update phase, and its result in async logic is unpredictable. A better approach is therefore to have the external module accept the component instance as a parameter, and let the component pass in the built-in `instance` identifier:
+
+|js|ts|
+
+```js
+// util.js
+import { preWatch } from "qingkuai"
+
+export function createPreWatch(instance) {
+    preWatch(
+        instance,
+        () => count,
+        (pre, cur) => {
+            // ...
+        }
+    )
+}
+```
+
+```ts
+import type { ComponentInstance } from "qingkuai"
+
+import { preWatch } from "qingkuai"
+
+export function createPreWatch(instance: ComponentInstance<any>) {
+    preWatch(
+        instance,
+        () => count,
+        (pre, cur) => {
+            // ...
+        }
+    )
+}
+```
+
+```qk
+<lang-js>
+    import { createPreWatch } from "./util"
+
+    createPreWatch(instance)
+</lang-js>
+```
+
+Passing `null` as the first argument creates a [global watcher](docs://references/terminology.md#global-watcher) or [global side effect](docs://references/terminology.md#global-side-effect): they are not bound to any component instance, are not [cleaned up automatically](#automatic-cleanup), and their lifecycle must be managed manually. They are typically used for scenarios such as global state management or global event listeners:
+
+```js
+import { effect } from "qingkuai"
+
+const handle = effect(null, () => {
+    // ...
+})
+
+// Don't forget to clean up manually at the right time
+handle.stop()
+```
+
+Note in particular that we **strongly discourage** registering global watchers or global side effects inside a component; it is usually more reasonable to register them in a module outside the component. If you really must register one inside a component, import the relevant API from the runtime package and pass `null` as the first argument to create a watcher or side effect that you manage manually:
 
 ```qk
 <lang-js>
@@ -267,83 +368,8 @@ It is worth emphasizing that we **strongly discourage** registering global watch
 </lang-js>
 ```
 
-<div class="custom-block warning">Here you must alias the imported API (such as <code>manualEffect</code>). Because the component file already has built-in methods with the same names, importing an identifier with the same name directly triggers a compile error. This restriction is intentional — we hope this awkward usage makes you realize that you may be using an anti-pattern that we do not recommend.</div>
-
-Outside component files, the most common approach is to pass `null` and let the caller manage the lifecycle manually:
-
-```js
-import { watch, effect } from "qingkuai"
-
-const watchHandle = watch(
-    null,
-    () => count,
-    (pre, cur) => {
-        // ...
-    }
-)
-
-const effectHandle = effect(null, () => {
-    // side effect logic ...
-})
-
-// Stop and release resources manually
-watchHandle.stop()
-effectHandle.stop()
-```
-
-If you want the registration to be cleaned up automatically when the component is destroyed, you need to obtain a binding to a component instance. There are two common ways to do so:
-
-**1. Accept the component's built-in `effect` / `watch` method as an argument**
-
-The built-in `effect`, `watch`, and other methods inside a component file are already bound to the current component instance. You can pass them as arguments to an external module, which calls these methods to create watchers or side effects bound to the corresponding component instance:
-
-```qk
-<lang-js>
-    import { collectEffects } from "./utils"
-
-    // Pass the component's built-in effect method as an argument to the external module
-    collectEffects(effect)
-</lang-js>
-```
-
-In the external module, the full type of the `effect` argument is `EffectFunc` (and `WatchFunc` for `watch`):
-
-|js|ts|
-
-```js
-// External module: accepts the component's built-in effect method as an argument
-export function collectEffects(effect) {
-    effect(() => {
-        // ...
-    })
-}
-```
-
-```ts
-import type { EffectFunc } from "qingkuai"
-
-// External module: accepts the component's built-in effect method as an argument
-export function collectEffects(effect: EffectFunc) {
-    effect(() => {
-        // ...
-    })
-}
-```
-
-**2. Get the current component instance via `getCurrentInstance`**
-
-You can also import `getCurrentInstance` from the `qingkuai` runtime package, synchronously obtain the current component instance in the component logic, and pass it to the watcher or side effect APIs:
-
-```qk
-<lang-js>
-    import { getCurrentInstance, effect } from "qingkuai"
-
-    const instance = getCurrentInstance()
-    effect(instance, () => {
-        // ...
-    })
-</lang-js>
-```
+> [!WARNING]
+> Here the imported API must be aliased (for example as `manualEffect`). Component files already have built-in methods with the same names, so importing an identifier with the same name directly triggers a compile error. This restriction is intentional: the slightly inconvenient usage is meant to remind you that you are relying on an anti-pattern that we do not recommend.
 
 ---
 
@@ -430,7 +456,7 @@ If a watcher or side effect callback collects no reactive dependencies during ex
 </lang-js>
 ```
 
-This usually means the callback did not read reactive values, or dependency reads were skipped by control flow:
+This usually means the callback did not read reactive values, or the read path was short-circuited by a conditional branch:
 
 ```qk
 <lang-js>
@@ -438,12 +464,12 @@ This usually means the callback did not read reactive values, or dependency read
     let value = reactive("hello")
 
     effect(() => {
-        // When flag is true, only returns a constant without reading any reactive value
+        // When the flag is true, no reactive values have been read
         if (flag) {
             console.log("no reactive deps")
             return
         }
-        console.log(value) // This line is never reached
+        console.log(value)
     })
 </lang-js>
 ```

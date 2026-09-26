@@ -33,7 +33,7 @@ Many build tools optimize modules loaded through [dynamic import](https://develo
 <AsyncModule />
 ```
 
-If you need to show a loading state or a failure fallback, combine it with the [async processing](docs://basic/compilation-directives.md#async-processing) directives:
+If you need to show a loading state or a failed-to-load state, combine it with the [async processing](docs://basic/compilation-directives.md#async-processing) directives:
 
 ```qk
 <div #await={import("./Component.qk")}>
@@ -45,7 +45,7 @@ If you need to show a loading state or a failure fallback, combine it with the [
 <div #catch>Fail to load Component.qk</div>
 ```
 
-Both omitting the `default` property access (using the module directly) and destructuring the component identifier in `#then` before use are supported:
+Both omitting the `default` property access and destructuring the component identifier in `#then` before use are supported:
 
 ```qk
 <qk:spread #then={Module}>
@@ -129,6 +129,7 @@ Combined with async processing directives:
     }
 </lang-js>
 
+
 <div #await={Module}>Loading...</div>
 <qk:spread #then={View}>
     <View />
@@ -141,17 +142,16 @@ Combined with async processing directives:
 
 ## Getting an Instance
 
-Like a normal component tag, an async component tag also supports the `&handle` [reference attribute](docs://components/attributes.md#reference-attributes), so you can obtain the component instance and access its exported members:
+Like a normal component tag, an async component tag also supports the `&handle` [reference attribute](docs://components/attributes.md#reference-attributes), so you can properly obtain the component instance and access its exported members:
 
 ```qk
 <lang-js>
-    import { onAfterMount } from "qingkuai"
-
     const AsyncView = import("./AsyncOne.qk")
+
     let asyncView
 
     onAfterMount(() => {
-        console.log(asyncView) // async component instance
+        console.log(asyncView) // logs: async component instance
     })
 </lang-js>
 
@@ -162,12 +162,10 @@ Combined with async processing directives:
 
 ```qk
 <lang-js>
-    import { onAfterMount } from "qingkuai"
-
     let asyncView
 
     onAfterMount(() => {
-        console.log(asyncView) // async component instance
+        console.log(asyncView) // logs: async component instance
     })
 </lang-js>
 

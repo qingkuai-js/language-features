@@ -1,8 +1,8 @@
 # Installation
 
-If you just want a quick try, you can start with the [online playground](https://try.qingkuai.dev).
+If you just want to quickly experience Qingkuai, you can first try the [online playground](https://try.qingkuai.dev).
 
-For the full development experience, creating a local project is recommended. With [create-qingkuai](https://www.npmjs.com/package/create-qingkuai), you can initialize a project quickly by running one of the following commands in your terminal:
+We recommend creating a project locally for the full development experience. With [create-qingkuai](https://www.npmjs.com/package/create-qingkuai), you can quickly initialize a project by simply running one of the following commands in your terminal:
 
 |npm|pnpm|yarn|
 
@@ -34,7 +34,7 @@ If you want to create a TypeScript version, just add the `-ts` option:
 ➜ yarn dlx create-qingkuai@latest my-app -ts
 ```
 
-After the project is created, enter the project directory, install dependencies, and start the local development server:
+After the project is created, enter the project directory and install the dependencies, then start the development server locally:
 
 |npm|pnpm|yarn|
 

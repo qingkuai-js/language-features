@@ -21,26 +21,22 @@ To access values from the embedded script language inside a template, simply wri
 <p>value of variable is: {variable}</p>
 ```
 
-The page then shows: <u>value of variable is: Qingkuai</u>, and when the value of `variable` changes, the page updates accordingly.
+| The page then shows: <u>value of variable is: Qingkuai</u>, and when the value of `variable` changes, the page updates in sync as well.
 
 ---
 
 ## Dynamic Attributes
 
-Sometimes interpolation is needed not only in text, but also in attribute values. In that case, add an exclamation mark `!` before a normal attribute name and wrap the value in curly braces to use dynamic attribute syntax:
+However, sometimes interpolation is needed not only in text, but also in attribute values. In that case, add an exclamation mark `!` before a normal attribute name and wrap the value in curly braces to use dynamic attribute syntax:
 
 ```qk
 <div !id={dynamicId}></div>
 ```
 
-<div class="custom-block tip">All interpolation blocks are reactive. When a reactive variable in the embedded script language changes, the corresponding DOM property is updated as well.</div>
-
-<br />
-
 When `class` is used as a dynamic attribute, it can also accept an object or an array as its value. If the value is an object, keys whose values are truthy are applied to the class list. If the value is an array, every item in the array is applied to the class list. In other words, both of the following forms are allowed:
 
 ```qk
-<!-- Object form of dynamic class -->
+<!-- Dynamic class attribute in object form -->
 <div
     !class={
         {
@@ -50,11 +46,11 @@ When `class` is used as a dynamic attribute, it can also accept an object or an 
     }
 ></div>
 
-<!-- Array form of dynamic class -->
+<!-- Dynamic class attribute in array form -->
 <div !class={[a, b, c, d]}></div>
 ```
 
-Note that in template syntax, the same tag cannot have multiple attributes with the same name, even if one is a normal attribute and the other is dynamic. `class` is the exception. It allows one normal class attribute and one dynamic class attribute to coexist, and the compiler merges the two class lists:
+Note that in template syntax, the same tag cannot have multiple attributes with the same name, even if one is a normal attribute and the other is dynamic. `class` is the exception. It allows a normal class attribute and a dynamic class attribute to coexist (only one of each is allowed), and the compiler merges the two class lists:
 
 ```qk
 <!-- Compiler error: duplicate attribute name -->
@@ -64,20 +60,21 @@ Note that in template syntax, the same tag cannot have multiple attributes with 
 <div class="container" !class={getDynamicClassList()}></div>
 ```
 
-If the interpolation block only needs a single identifier with the same name as the attribute, the interpolation block can be omitted. The following two forms are equivalent:
+If the interpolation block only needs a single identifier with the same name as the attribute, the interpolation block can be omitted. In other words, the following two forms are equivalent:
 
 ```qk
 <div !id></div>
 <div !id={id}></div>
 ```
 
-<div class="custom-block warning">If the attribute name is a keyword or reserved word in the embedded script language, this syntax is not supported, such as <code>class</code> or <code>for</code>.</div>
+> [!WARNING]
+> If the attribute name is a keyword or reserved word in the embedded script language, this syntax is not supported, such as `class` or `for`.
 
 ---
 
 ## Valid Interpolation Expressions
 
-Whether you are writing text interpolation, dynamic attribute interpolation, or interpolation for [directives](docs://basic/compilation-directives.md), [reference attributes](docs://basic/reference-attributes.md), or [events](docs://basic/event-handling.md), only expressions are allowed. Statements are not. A simple rule of thumb is to ask whether the code could appear on the right-hand side of an assignment. If not, it is probably a statement rather than an expression. Each line below is a valid interpolation expression:
+Whether you are writing text interpolation, dynamic attribute interpolation, or interpolation for [directives](docs://basic/compilation-directives.md), [reference attributes](docs://basic/reference-attributes.md), or [events](docs://basic/event-handling.md) described later, only expressions are allowed. Statements are not. A simple rule of thumb is to ask whether the code could appear on the right-hand side of an assignment. If not, it is probably a statement rather than an expression. Each line in the code below is a valid interpolation expression:
 
 ```qk
 {a * b - 5}
@@ -97,7 +94,7 @@ Whether you are writing text interpolation, dynamic attribute interpolation, or 
 {str.split("").reverse().join("")}
 ```
 
-Each line below is a statement, so it cannot appear inside an interpolation block. Otherwise, the compiler throws a fatal error:
+Each line in the code below, on the other hand, is a statement and cannot appear inside an interpolation block; otherwise, the compiler throws a fatal error:
 
 ```qk
 {id;}
