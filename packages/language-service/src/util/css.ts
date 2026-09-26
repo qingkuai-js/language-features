@@ -2,12 +2,12 @@ import type { CompileResult } from "../../../../types/common"
 import type { LanguageService } from "vscode-css-languageservice"
 
 import {
-    TextDocument,
     getCSSLanguageService,
     getLESSLanguageService,
     getSCSSLanguageService
 } from "vscode-css-languageservice"
 import { debugAssert } from "../../../../shared-util/assert"
+import { TextDocument } from "vscode-languageserver-textdocument"
 
 export function walkStyleSheet(node: any, cb: (node: any) => void) {
     ;(cb(node), node.children?.forEach((c: any) => walkStyleSheet(c, cb)))

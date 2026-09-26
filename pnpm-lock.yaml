@@ -136,6 +136,9 @@ importers:
       vscode-css-languageservice:
         specifier: ^6.3.10
         version: 6.3.10
+      vscode-languageserver-textdocument:
+        specifier: 'catalog:'
+        version: 1.0.14
       vscode-languageserver-types:
         specifier: 'catalog:'
         version: 3.17.5
@@ -155,9 +158,6 @@ importers:
       vscode-languageserver:
         specifier: 'catalog:'
         version: 9.0.1
-      vscode-languageserver-textdocument:
-        specifier: 'catalog:'
-        version: 1.0.14
 
   packages/mcp-server:
     dependencies:

@@ -47,6 +47,7 @@
     "dependencies": {
         "strip-ansi": "^7.2.0",
         "vscode-css-languageservice": "^6.3.10",
+        "vscode-languageserver-textdocument": "catalog:",
         "vscode-languageserver-types": "catalog:",
         "vscode-uri": "catalog:"
     },
@@ -54,8 +55,7 @@
         "@types/node": "catalog:",
         "@vscode/emmet-helper": "catalog:",
         "qingkuai": "catalog:",
-        "vscode-languageserver": "catalog:",
-        "vscode-languageserver-textdocument": "catalog:"
+        "vscode-languageserver": "catalog:"
     },
     "description": "The language service for qingkuai"
 }
