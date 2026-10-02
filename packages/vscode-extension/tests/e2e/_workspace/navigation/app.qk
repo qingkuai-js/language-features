@@ -1,0 +1,5 @@
+<lang-js>
+    import Main from "./main.qk"
+</lang-js>
+
+<Main />

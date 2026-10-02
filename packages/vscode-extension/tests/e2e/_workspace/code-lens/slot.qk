@@ -1,0 +1,7 @@
+<lang-js>
+    import Main from "../navigation/main.qk"
+</lang-js>
+
+<Main>
+    <slot>fallback</slot>
+</Main>

@@ -1,0 +1,4 @@
+<lang-ts>
+    let slotTitle = "A"
+</lang-ts>
+<slot name="main" !title={slotTitle}></slot>

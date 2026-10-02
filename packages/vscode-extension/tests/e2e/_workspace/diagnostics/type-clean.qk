@@ -1,0 +1,8 @@
+<lang-ts>
+    import RefsChild from "./refs-child.qk"
+    const cleanItems = [1, 2, 3]
+    const cleanOk = (ev: Event) => { ev.preventDefault() }
+</lang-ts>
+<RefsChild &refCount={1} />
+<div @click={cleanOk}></div>
+<div #for={item of cleanItems}>{item}</div>

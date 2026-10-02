@@ -1,0 +1,4 @@
+<lang-ts>
+    const forItems = [1, 2, 3]
+</lang-ts>
+<div #for={item of forItems}>{item.nopeProp}</div>

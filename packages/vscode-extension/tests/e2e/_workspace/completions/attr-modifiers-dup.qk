@@ -1,0 +1,3 @@
+<div @click|once|capture|></div>
+<input @input|compose|>
+<div @keyup|enter|>

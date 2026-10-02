@@ -252,22 +252,28 @@
         "directory": "packages/vscode-extension"
     },
     "scripts": {
+        "test:e2e": "node scripts/run-vscode-test.mjs",
+        "test:e2e:clean": "node scripts/run-vscode-test.mjs --grep @known-bug --invert",
+        "test:e2e:known": "node scripts/run-vscode-test.mjs --grep @known-bug",
         "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
         "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
         "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json"
     },
     "devDependencies": {
         "@types/vscode": "catalog:",
+        "@vscode/test-cli": "^0.0.15",
+        "@vscode/test-electron": "^3.1.0",
         "js-yaml": "^4.1.0",
-        "vsce": "^2.15.0"
+        "vsce": "^2.15.0",
+        "vscode-jsonrpc": "^9.0.3"
     },
     "dependencies": {
-        "prettier": "catalog:",
         "@vscode/emmet-helper": "^2.11.0",
+        "prettier": "catalog:",
         "prettier-plugin-qingkuai": "catalog:",
         "qingkuai": "catalog:",
-        "qingkuai-mcp-server": "workspace:*",
         "qingkuai-language-service": "workspace:*",
+        "qingkuai-mcp-server": "workspace:*",
         "typescript-plugin-qingkuai": "workspace:*",
         "vscode-css-languageservice": "^6.3.10",
         "vscode-languageclient": "^9.0.1",

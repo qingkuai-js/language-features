@@ -6,13 +6,14 @@ import * as vscode from "vscode"
 
 import nodeFs from "node:fs"
 
-import { client, disposables } from "./state"
-import { runAll } from "../../../shared-util/sundry"
+import { runAll, sleep } from "../../../shared-util/sundry"
+import { client, disposables, workspaceReadyPromise } from "./state"
 
 export class QingkuaiCommands {
     public showReferences = "qingkuai.showReferences"
     public openFileByPath = "qingkuai.openFileByFilePath"
     public viewServerLogs = "qingkuai.viewLanguageServerLogs"
+    public waitForWorkspaceReady = "qingkuai.waitForWorkspaceReady"
     public restartLanguageServer = "qingkuai.restartLanguageServer"
 
     constructor(outputChannel: vscode.OutputChannel, activeLanguageServer: GeneralFunc) {
@@ -20,6 +21,14 @@ export class QingkuaiCommands {
             // 查看 qingkuai 语言服务器日志
             vscode.commands.registerCommand(this.viewServerLogs, () => {
                 outputChannel.show()
+            }),
+
+            // 等待语言服务器工作区就绪，超时（毫秒）返回 false
+            vscode.commands.registerCommand(this.waitForWorkspaceReady, async (timeout = 60000) => {
+                return await Promise.race([
+                    workspaceReadyPromise.then(() => true),
+                    sleep(timeout).then(() => false)
+                ])
             }),
 
             // 重启qingkuai语言服务器

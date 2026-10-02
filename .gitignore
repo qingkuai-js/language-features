@@ -1,16 +1,17 @@
 dist
 test-space
 node_modules
-.github/skills
 packages/mcp-server/scripts
 
 .history
 .DS_Store
+.vscode-test/
+.github/skills
+.vscode/launch.json
 
 features.md
-.vscode/launch.json
 **/package-lock.json
-/scripts/local-*.sh
+/scripts/link-local.sh
 /scripts/build-vsce.ts
 packages/vscode-extension/*.zip
 packages/vscode-extension/*.vsix

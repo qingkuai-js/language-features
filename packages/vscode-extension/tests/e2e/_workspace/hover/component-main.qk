@@ -1,0 +1,7 @@
+<lang-ts>
+    interface Meta {
+        props: { title: string }
+    }
+    let inner = 1
+</lang-ts>
+<p>{inner}</p>

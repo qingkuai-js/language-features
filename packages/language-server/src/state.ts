@@ -10,6 +10,7 @@ import { TextDocuments, ProposedFeatures, createConnection } from "vscode-langua
 
 export let isTestingEnv = true
 export let projectKind = ProjectKind.JS
+export let workspaceReadyNotified = false
 export let tpic = DEFAULT_PARTICIPANT // Typescript Plugin Icp Client
 export let limitedScriptLanguageFeatures = process.env.LIMITED_SCRIPT !== "0"
 
@@ -34,6 +35,9 @@ export function setState(options: SetStateOptions) {
     }
     if (!isUndefined(options.limitedScriptLanguageFeatures)) {
         limitedScriptLanguageFeatures = options.limitedScriptLanguageFeatures
+    }
+    if (!isUndefined(options.workspaceReadyNotified)) {
+        workspaceReadyNotified = options.workspaceReadyNotified
     }
 }
 

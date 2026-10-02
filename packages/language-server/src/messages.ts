@@ -1,6 +1,7 @@
 export enum Messages {
     LanguageServerStarted = "QingKuai language server starts successfully.",
     ConnectTsServerPluginSuccess = "Connect to typescript-plugin-qingkuai ipc server successfully.",
+    WorkspaceReady = "The workspace is ready: the first qingkuai document has been processed through the whole pipeline.",
     WaitForReconnectTsServer = "Typescript server has exited and is watting to reconnect the ipc server of typescript-plugin-qingkuai...",
     ConnectTsServerPluginFailed = "Failed to connect to typescript-plugin-qingkuai ipc server within one minute, please check whether the vscode built-in typescript-language-features extension is enabled."
 }

@@ -1,0 +1,5 @@
+<lang-js>
+    import ComponentMain from "./component-main.qk"
+</lang-js>
+
+<ComponentMain !title={"T"} />

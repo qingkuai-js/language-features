@@ -1,0 +1,5 @@
+<lang-js>
+    import RenameChild from "./rename-child.qk"
+</lang-js>
+
+<RenameChild />

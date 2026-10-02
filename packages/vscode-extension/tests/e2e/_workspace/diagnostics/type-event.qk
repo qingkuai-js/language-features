@@ -1,0 +1,4 @@
+<lang-ts>
+    const evtBad = (n: number) => n
+</lang-ts>
+<div @click={evtBad}></div>

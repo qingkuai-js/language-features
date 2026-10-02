@@ -1,0 +1,4 @@
+<lang-ts>
+    const evtOk = (ev: Event) => { ev.preventDefault() }
+</lang-ts>
+<div @click={evtOk}></div>

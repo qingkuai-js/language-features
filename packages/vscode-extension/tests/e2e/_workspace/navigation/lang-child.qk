@@ -1,0 +1,4 @@
+<lang-js>
+    let langTagVar = 1
+</lang-js>
+<p>{langTagVar}</p>

@@ -1,7 +1,7 @@
 import type { PromiseWithState } from "../types/common"
 import type { AnyObject, GeneralFunc } from "../types/util"
 
-import { randomBytes } from "node:crypto"
+import nodeCrypto from "node:crypto"
 
 export function sleep(ms: number) {
     return new Promise(resolve => {
@@ -60,7 +60,7 @@ export function debounce<T extends GeneralFunc>(
 
 // 生成指定长度的随机哈希字符串
 export function createRandomHash(length: number) {
-    const bs = randomBytes(Math.ceil(length / 2))
+    const bs = nodeCrypto.randomBytes(Math.ceil(length / 2))
     return bs.toString("hex").slice(0, length)
 }
 

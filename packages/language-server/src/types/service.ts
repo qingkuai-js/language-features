@@ -7,6 +7,7 @@ export type SetStateOptions = Partial<{
     tpic: IpcParticipant
     isTestingEnv: boolean
     projectKind: ProjectKind
+    workspaceReadyNotified: boolean
     tpicConnectedResolver: GeneralFunc
     tpicConnectedPromise: PromiseWithState
     limitedScriptLanguageFeatures: boolean

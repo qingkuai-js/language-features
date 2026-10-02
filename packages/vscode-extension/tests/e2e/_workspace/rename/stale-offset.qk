@@ -1,0 +1,5 @@
+<lang-js>
+    let vAlpha1 = reactive(1)
+</lang-js>
+
+<p>{vAlpha1}</p>

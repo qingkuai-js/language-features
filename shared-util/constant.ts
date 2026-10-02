@@ -45,6 +45,7 @@ export enum LS_HANDLERS {
     TestLog = "qingkuai/testLog",
     RenameFile = "qingkuai/renameFile",
     InsertSnippet = "qingkuai/insertSnippet",
+    WorkspaceReady = "qingkuai/workspaceReady",
     GetClientConfig = "qingkuai/getClientConfig",
     TsServerIsKilled = "qingkuai/tsServerIsKilled",
     RefreshDiagnostic = "qingkuai/refreshDiagnostics",

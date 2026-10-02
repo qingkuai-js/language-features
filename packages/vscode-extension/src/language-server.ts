@@ -19,28 +19,46 @@ import {
     limitedScriptLanguageFeatures
 } from "./state"
 import {
-    ServerOptions,
     TransportKind,
     LanguageClient,
+    ServerOptions,
     LanguageClientOptions
 } from "vscode-languageclient/node"
 import { Messages } from "./messages"
+import { startConfigWatcher } from "./config"
 import { inspect } from "../../../shared-util/log"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { LS_HANDLERS, NOOP } from "../../../shared-util/constant"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
+import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
 
 export async function activeLanguageServer() {
     languageStatusItem.busy = true
 
+    // 每次激活都重置工作区就绪 Promise，等待本次语言服务器发出就绪通知后解决
+    const [readyPromise, readyResolver] = generatePromiseAndResolver()
+    setState({
+        workspaceReadyPromise: readyPromise,
+        workspaceReadyResolver: readyResolver
+    })
+
     const clientWatcher = vscode.workspace.createFileSystemWatcher("**/.clientrc")
     disposables.push(clientWatcher)
+
     const languageServerOptions: ServerOptions = {
-        args: ["--nolazy"],
-        module: serverModulePath,
-        transport: TransportKind.ipc
+        run: {
+            module: serverModulePath,
+            transport: TransportKind.ipc
+        },
+        debug: {
+            options: {
+                execArgv: ["--nolazy"]
+            },
+            module: serverModulePath,
+            transport: TransportKind.ipc
+        }
     }
     const languageClientOptions: LanguageClientOptions = {
         initializationOptions: {
@@ -71,14 +89,20 @@ export async function activeLanguageServer() {
     attachCustomHandlers(configTsServerPlugin)
 
     const connectToTsServer = await configTsServerPlugin(false)
-    languageServerOptions.options = {
+    const serverProcessOptions = {
         env: {
             ...process.env,
             LIMITED_SCRIPT: +limitedScriptLanguageFeatures
         }
     }
+    languageServerOptions.debug.options = {
+        ...serverProcessOptions,
+        ...languageServerOptions.debug.options
+    }
+    languageServerOptions.run.options = serverProcessOptions
     await languageClient.start()
     await connectToTsServer()
+    startConfigWatcher()
     attachFileSystemHandlers()
     attachVscodeEventHandlers()
     languageStatusItem.busy = false

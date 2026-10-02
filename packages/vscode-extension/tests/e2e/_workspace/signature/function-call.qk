@@ -1,0 +1,7 @@
+<lang-js>
+    function add(a, b) {
+        return a + b
+    }
+</lang-js>
+
+<p>{add(}</p>

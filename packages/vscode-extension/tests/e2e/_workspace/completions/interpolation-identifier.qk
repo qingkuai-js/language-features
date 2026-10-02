@@ -1,0 +1,6 @@
+<lang-js>
+    let count = reactive(0)
+    let total = reactive(1)
+</lang-js>
+
+<p>{co}</p>

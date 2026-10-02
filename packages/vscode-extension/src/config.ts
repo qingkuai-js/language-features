@@ -105,7 +105,7 @@ export function getExtensionConfig(uri: vscode.Uri): ExtensionConfiguration {
     } as any
 }
 
-function startConfigWatcher() {
+export function startConfigWatcher() {
     // 监听扩展配置项变化，并通知 qingkuai 语言服务器清空配置项缓存
     disposables.push(
         vscode.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
