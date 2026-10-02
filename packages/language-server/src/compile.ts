@@ -24,8 +24,8 @@ import { ensureGetTextDocument } from "./util"
 import { compileIntermediate } from "qingkuai/compiler"
 import { traverseObject } from "../../../shared-util/sundry"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { isNumber, isUndefined } from "../../../shared-util/assert"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
+import { isNull, isNumber, isUndefined } from "../../../shared-util/assert"
 
 const compileCache = new Map<string, Promise<CompileResult>>()
 const configCache = new Map<string, GetClientLanguageConfigResult>()
@@ -133,7 +133,7 @@ export async function getCompileResult(document: TextDocument) {
 
 // 清空已缓存的配置内容
 export function cleanConfigCache(dir?: string) {
-    if (isUndefined(dir)) {
+    if (isNull(dir) || isUndefined(dir)) {
         configCache.clear()
     } else {
         for (const key of configCache.keys()) {

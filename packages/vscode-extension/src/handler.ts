@@ -17,8 +17,9 @@ import {
     getExtensionConfig,
     getTypescriptConfig
 } from "./config"
-import { client, disposables } from "./state"
+import { Messages } from "./messages"
 import { LS_HANDLERS } from "../../../shared-util/constant"
+import { Logger, client, disposables, workspaceReadyResolver } from "./state"
 
 export function attachVscodeEventHandlers() {
     // 活跃文档切换且新活跃文档的语言 id 为 qingkuai 时刷新诊断信息
@@ -33,6 +34,12 @@ export function attachVscodeEventHandlers() {
 
 export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginFunc) {
     disposables.push(
+        // 语言服务器工作区就绪通知
+        client.onNotification(LS_HANDLERS.WorkspaceReady, () => {
+            Logger.info(Messages.WorkspaceReady)
+            workspaceReadyResolver()
+        }),
+
         // ts server 服务器进程退出通知，尝试重连
         client.onNotification(LS_HANDLERS.TsServerIsKilled, async () => {
             client.isRunning() && configTsServerPlugin(true).then(c => c())

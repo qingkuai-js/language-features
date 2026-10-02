@@ -1,35 +1,35 @@
 import type { AdapterFS, AdapterPath } from "../types/common"
 
-import NodeFS from "node:fs"
-import NodePath from "node:path"
+import nodeFs from "node:fs"
+import nodePath from "node:path"
 
-export function createAdapterFsWithNodeFs(nodeFs: typeof NodeFS): AdapterFS {
+export function createAdapterFsWithNodeFs(fsImpl: typeof nodeFs): AdapterFS {
     return {
         exist(path) {
-            return nodeFs.existsSync(path)
+            return fsImpl.existsSync(path)
         },
         read(path) {
-            return nodeFs.readFileSync(path, "utf-8")
+            return fsImpl.readFileSync(path, "utf-8")
         }
     }
 }
 
-export function createAdapterPathWithNodePath(nodePath: typeof NodePath): AdapterPath {
+export function createAdapterPathWithNodePath(pathImpl: typeof nodePath): AdapterPath {
     return {
         ext(path: string) {
-            return nodePath.extname(path)
+            return pathImpl.extname(path)
         },
         dir(path: string) {
-            return nodePath.dirname(path)
+            return pathImpl.dirname(path)
         },
         base(path: string) {
-            return nodePath.basename(path)
+            return pathImpl.basename(path)
         },
         resolve(...paths: string[]) {
-            return nodePath.resolve(...paths)
+            return pathImpl.resolve(...paths)
         },
         relative(from: string, to: string) {
-            return nodePath.relative(from, to)
+            return pathImpl.relative(from, to)
         }
     }
 }

@@ -1,0 +1,5 @@
+<lang-js>
+    let count = reactive(0)
+</lang-js>
+
+<p>{count}</p>

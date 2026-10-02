@@ -62,13 +62,33 @@ export async function rename(
         if (isIndexesInvalid(interIndex)) {
             return null
         }
-        return doScriptBlockRename(
+        const scriptEdits = await doScriptBlockRename(
             cr,
             sourceIndex,
             util.kebab2Camel(newName),
             getCompileRes,
             renameInScriptBlock
         )
+        if (scriptEdits || !tagNameRanges.start) {
+            return scriptEdits
+        }
+
+        // TS 侧没有可改名符号（如组件未导入/未声明）时，标签名位置退回纯模板改名，
+        // 编辑文本与符号存在时 doScriptBlockRename 产出的模板侧编辑保持同一格式
+        const useKebab = cr.config?.prettierConfig?.componentTagFormatPreference === "kebab"
+        const pascalName = util.kebab2Camel(newName)
+        const tagNewText = useKebab ? util.camel2Kebab(pascalName) : pascalName
+        traverseObject(tagNameRanges, (_, range) => {
+            textEdits.push({
+                newText: tagNewText,
+                range: cr.getVscodeRange(...range!)
+            })
+        })
+        return {
+            changes: {
+                [cr.uri]: textEdits
+            }
+        }
     }
 
     // HTML标签重命名

@@ -1,0 +1,5 @@
+div[!class=expression]
+input[-type &value=inpValue]
+div[#for="item, index of arr"]
+span[!class &value #for @keyup|stop|once]
+div[@click="()=>{console.log(expression)}"]

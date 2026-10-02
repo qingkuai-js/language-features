@@ -7,10 +7,11 @@ import type {
     OnNotificationMethod,
     SendNotificationMethod
 } from "./types"
-import type { Socket } from "net"
+import type { Socket } from "node:net"
 import type { GeneralFunc } from "../../types/util"
 
-import net from "net"
+import nodeNet from "node:net"
+
 import { NOOP } from "../constant"
 import { getReleaseId, releaseId } from "./id"
 import { isUndefined, isPromise } from "../assert"
@@ -29,7 +30,7 @@ export function createServer(sockPath: string) {
     const handlers = new Map<string, GeneralFunc>()
     const resolvers = new Map<string, GeneralFunc>()
     return new Promise<IpcParticipant>((resolve, reject) => {
-        const server = net.createServer(socket => {
+        const server = nodeNet.createServer(socket => {
             resolve(newParticipant(socket, handlers, resolvers, "server"))
         })
         server.listen(sockPath)
@@ -41,7 +42,7 @@ export function connectTo(sockPath: string) {
     const handlers = new Map<string, GeneralFunc>()
     const resolvers = new Map<string, GeneralFunc>()
     return new Promise<IpcParticipant>((resolve, reject) => {
-        const client = net.createConnection(sockPath, () => {
+        const client = nodeNet.createConnection(sockPath, () => {
             resolve(newParticipant(client, handlers, resolvers, "client"))
         })
         client.on("error", err => reject(err))

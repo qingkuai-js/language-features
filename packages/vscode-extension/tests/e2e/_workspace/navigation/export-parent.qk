@@ -1,0 +1,7 @@
+<lang-ts>
+    import ExportChild from "./export-child.qk"
+    let inst = null
+</lang-ts>
+<ExportChild &handle={inst}>
+    <span>{inst.exportCount}</span>
+</ExportChild>

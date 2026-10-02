@@ -1,10 +1,11 @@
-import fs from "node:fs"
-import { createConnection } from "net"
+import nodeFs from "node:fs"
+import nodeNet from "node:net"
+
 import { createRandomHash } from "../sundry"
 
 // 删除套接字/命名管道文件
 export function rmSockFile(sockName: string) {
-    fs.rmSync(getSockPath(sockName))
+    nodeFs.rmSync(getSockPath(sockName))
 }
 
 // 确定不同平台上套接字/命名管道文件的路径
@@ -19,9 +20,10 @@ export function getSockPath(name: string) {
 // 检查套接字/命名管道文件是否正在使用
 export function isSockInUse(sockPath: string) {
     return new Promise<boolean>(resolve => {
-        createConnection(sockPath, () => {
+        const socket = nodeNet.createConnection(sockPath, () => {
             resolve(true)
-        }).on("error", () => {
+        })
+        socket.on("error", () => {
             resolve(false)
         })
     })
@@ -32,13 +34,13 @@ export function isSockInUse(sockPath: string) {
 export async function getValidPathWithHash(name: string) {
     const existingSocks = new Set<string>()
     if (process.platform !== "win32") {
-        for (const fileName of fs.readdirSync("/tmp")) {
+        for (const fileName of nodeFs.readdirSync("/tmp")) {
             if (fileName.startsWith(name) && fileName.endsWith(".sock")) {
                 const sockFullPath = "/tmp/" + fileName
                 if (await isSockInUse(sockFullPath)) {
                     existingSocks.add(sockFullPath)
                 } else {
-                    fs.rmSync("/tmp/" + fileName)
+                    nodeFs.rmSync("/tmp/" + fileName)
                 }
             }
         }
