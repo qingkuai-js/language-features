@@ -91,12 +91,10 @@ export interface TSClientConfiguration {
 }
 
 export type PrettierConfiguration = PrettierOptions & {
-    qingkuai: Partial<{
-        selfCloseEmptySlotTags: boolean
-        spaceAroundInterpolation: boolean
-        componentTagFormatPreference: "camel" | "kebab"
-        componentAttributeFormatPreference: "camel" | "kebab"
-    }>
+    spaceAroundInterpolation?: boolean
+    selfCloseEmptySlotTags?: boolean
+    componentTagFormatPreference?: "camel" | "kebab"
+    componentAttributeFormatPreference?: "camel" | "kebab"
 }
 
 export type CompileResult = CompileIntermediateResult & {
