@@ -63,15 +63,13 @@ This property configures whether interpretive comments are inserted into compila
 
 ## Formatting Configuration
 
-Formatting support in the Qingkuai language service is implemented through [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai), which is a Prettier plugin. Formatting for component files follows standard [Prettier configuration](https://prettier.io/docs/options). Among these options, some additional configuration options only take effect for component files; they must be placed under the `qingkuai` object in your Prettier configuration file, for example:
+Formatting support in the Qingkuai language service is implemented through [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai), which is a Prettier plugin. Formatting for component files follows standard [Prettier configuration](https://prettier.io/docs/options). Among these options, some additional configuration options only take effect for component files; they are placed directly as top-level properties alongside standard Prettier options, for example:
 
 ```json
 {
     "tabWidth": 4,
     "printWidth": 80,
-    "qingkuai": {
-        "spaceAroundInterpolation": true
-    }
+    "spaceAroundInterpolation": true
 }
 ```
 

@@ -23,7 +23,7 @@ keywords: ["reactivity", "reactive", "shallow", "raw", "derived", "derivedExp", 
 | `noTracking` | `import { noTracking } from "qingkuai"` 后 `noTracking(fn)` | 非响应式读取：在执行传入函数期间暂停依赖追踪 |
 | `createStore` | `import { createStore } from "qingkuai"` 后 `createStore({ ... })` | 创建响应式状态存储，可在组件外使用并被多个组件共享 |
 
-组件级响应性模式覆盖：在嵌入脚本标签上加 `reactive` 或 `shallow` 属性——`<lang-js reactive>`（深）或 `<lang-js shallow>`。
+组件级响应性模式覆盖：在嵌入脚本标签上加 `reactive` 或 `shallow` 属性，即 `<lang-js reactive>`（深）或 `<lang-js shallow>`。
 
 ## 规则
 
@@ -47,7 +47,7 @@ keywords: ["reactivity", "reactive", "shallow", "raw", "derived", "derivedExp", 
 
 ## 示例
 
-编译器推导的响应性——模板自动更新：
+编译器推导的响应性，模板自动更新：
 
 ```qk
 <lang-js>
@@ -61,7 +61,7 @@ keywords: ["reactivity", "reactive", "shallow", "raw", "derived", "derivedExp", 
 <h1>Task status: {progress}</h1>
 ```
 
-`raw()` 脱离响应性——`progress` 变化但页面不更新：
+`raw()` 脱离响应性，`progress` 变化但页面不更新：
 
 ```qk
 <lang-js>
@@ -88,7 +88,7 @@ keywords: ["reactivity", "reactive", "shallow", "raw", "derived", "derivedExp", 
 <p>{double} {doubleExp}</p>
 ```
 
-非响应式读取——`message` 的变化不会触发 `summary` 重新求值：
+非响应式读取，`message` 的变化不会触发 `summary` 重新求值：
 
 ```js
 import { noTracking } from "qingkuai"

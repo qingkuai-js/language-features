@@ -20,7 +20,7 @@ keywords: ["component", "component file", ".qk", "import", "tag", "kebab-case", 
 
 1. 一个 `.qk` 文件对应一个组件；导入后在模板区以与导入标识符同名的标签复用。
 2. 以大写字母开头或包含 `-`、`.` 的标签名会被视为组件标签。
-3. 默认情况下，格式化会把组件名转换为 camelCase；在 `.prettierrc` 中配置 `{"qingkuai": {"componentTagFormatPreference": "kebab"}}` 可切换为 kebab-case，语言服务也会随之在补全中优先给出 kebab-case 标签。
+3. 默认情况下，格式化会把组件名转换为 camelCase；在 `.prettierrc` 中配置 `{"componentTagFormatPreference": "kebab"}` 可切换为 kebab-case，语言服务也会随之在补全中优先给出 kebab-case 标签。
 4. 组件标签支持成员访问语法（`<Module.default />`），常见于异步组件。
 
 ## 示例

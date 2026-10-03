@@ -20,7 +20,7 @@ Components are the basic units for building Qingkuai UIs. Each `.qk` file define
 
 1. One component per `.qk` file; import it and reuse it in the template section by adding a tag with the same name as the import identifier.
 2. Component tag names starting with an uppercase letter or containing `-` or `.` are treated as component tags.
-3. By default, formatting transforms component names to camelCase; a `.prettierrc` containing `{"qingkuai": {"componentTagFormatPreference": "kebab"}}` switches to kebab-case, and the language server then prioritizes kebab-case tags in completion.
+3. By default, formatting transforms component names to camelCase; a `.prettierrc` containing `{"componentTagFormatPreference": "kebab"}` switches to kebab-case, and the language server then prioritizes kebab-case tags in completion.
 4. Component tags support member access syntax (`<Module.default />`), commonly seen with async components.
 
 ## Examples

@@ -19,7 +19,7 @@ keywords: ["dynamic component", "component switch", "derived", "动态组件"]
 
 1. 把导入的组件赋给变量，以变量作为标签名；改变变量即切换渲染的组件。
 2. 动态组件上引用属性的句柄在组件切换时自动更新；在 `await nextTick()` 之后读取新实例。
-3. TypeScript 下优先使用 `derived` 而不是手动声明联合类型——编译器从函数的返回值推导联合类型。
+3. TypeScript 下优先使用 `derived` 而不是手动声明联合类型：编译器从函数的返回值推导联合类型。
 
 ## 示例
 

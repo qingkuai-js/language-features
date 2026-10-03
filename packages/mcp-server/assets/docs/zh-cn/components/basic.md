@@ -35,9 +35,7 @@ Qingkuai 的组件定义采取了与 [Vue](https://cn.vuejs.org) 和 [Svelte](ht
 
 ```json
 {
-    "qingkuai": {
-        "componentTagFormatPreference": "kebab"
-    }
+    "componentTagFormatPreference": "kebab"
 }
 ```
 

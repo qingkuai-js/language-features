@@ -63,15 +63,13 @@ import Component from "./Component"
 
 ## 格式化配置
 
-Qingkuai 语言服务的格式化功能基于 [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai) 实现，这是一个 Prettier 插件，组件文件的格式化遵循常规的 [Prettier 配置](https://prettier.io/docs/options)。其中有一些仅对组件文件生效的附加配置选项，它们需要写在 Prettier 配置文件的 `qingkuai` 对象下，例如：
+Qingkuai 语言服务的格式化功能基于 [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai) 实现，这是一个 Prettier 插件，组件文件的格式化遵循常规的 [Prettier 配置](https://prettier.io/docs/options)。其中有一些仅对组件文件生效的附加配置选项，它们与常规 Prettier 选项一样直接写在配置文件的一级属性中，例如：
 
 ```json
 {
     "tabWidth": 4,
     "printWidth": 80,
-    "qingkuai": {
-        "spaceAroundInterpolation": true
-    }
+    "spaceAroundInterpolation": true
 }
 ```
 

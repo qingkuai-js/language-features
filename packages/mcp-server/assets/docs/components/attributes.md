@@ -418,9 +418,7 @@ By default, formatting a component file rewrites all kebab-case component attrib
 
 ```json
 {
-    "qingkuai": {
-        "componentAttributeFormatPreference": "kebab"
-    }
+    "componentAttributeFormatPreference": "kebab"
 }
 ```
 

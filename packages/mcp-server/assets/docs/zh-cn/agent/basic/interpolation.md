@@ -20,9 +20,9 @@ Qingkuai 的模板语法几乎就是 HTML，但有细微差异：属性值必须
 
 ## 规则
 
-1. 花括号内只允许表达式——任何能出现在赋值右侧的内容。合法示例：`{a * b - 5}`、``{`Hello ${str}`}``、`{new Date()}`、`{() => {}}`、`{condition ? a : b}`、`{str.split("").reverse().join("")}`，甚至类/函数表达式 `{class MyClass{}}`。
+1. 花括号内只允许表达式，即任何能出现在赋值右侧的内容。合法示例：`{a * b - 5}`、``{`Hello ${str}`}``、`{new Date()}`、`{() => {}}`、`{condition ? a : b}`、`{str.split("").reverse().join("")}`，甚至类/函数表达式 `{class MyClass{}}`。
 2. 语句绝不合法，会触发致命编译错误：`{id;}`、`{return 10}`、`{const n = 10}`、`{if(cond){}}`、`{switch(v){}}`、`{for(const u of users){}}`、`{import {raw} from "qingkuai"}`。
-3. 同一标签不能声明两个同名属性，即使一个是普通属性一个是动态属性——`class` 是唯一例外（允许一个普通 + 一个动态，由编译器合并）。
+3. 同一标签不能声明两个同名属性，即使一个是普通属性一个是动态属性。`class` 是唯一例外（允许一个普通 + 一个动态，由编译器合并）。
 
 ## 约束
 

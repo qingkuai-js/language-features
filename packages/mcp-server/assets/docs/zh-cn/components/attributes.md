@@ -418,9 +418,7 @@ Qingkuai 组件的属性名称与组件名称一样，支持 kebab 格式和驼�
 
 ```json
 {
-    "qingkuai": {
-        "componentAttributeFormatPreference": "kebab"
-    }
+    "componentAttributeFormatPreference": "kebab"
 }
 ```
 

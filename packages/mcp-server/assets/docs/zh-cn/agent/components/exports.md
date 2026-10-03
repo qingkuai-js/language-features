@@ -5,7 +5,7 @@ keywords: ["export", "member exports", "component instance", "handle", "导出"]
 
 # 成员导出
 
-组件文件内的 `export` 语句把导出成员附加到组件实例上——组件文件编译为带默认导出的函数，因此导出成员要通过实例消费，而不是通过 `import`。
+组件文件内的 `export` 语句把导出成员附加到组件实例上：组件文件编译为带默认导出的函数，因此导出成员要通过实例消费，而不是通过 `import`。
 
 ## 语法
 
@@ -16,11 +16,11 @@ keywords: ["export", "member exports", "component instance", "handle", "导出"]
 | 默认导出 | ✗ 不支持 | — |
 | 再导出（`export { x } from "..."`） | ✗ 不支持 | — |
 | `export =` | ✗ 不支持 | — |
-| 类型导出（`export type`/`export interface`/列表中的类型） | ✗ 不允许——类型在运行时不存在 | 共享类型请放入外部 `.ts` 文件，由各组件导入 |
+| 类型导出（`export type`/`export interface`/列表中的类型） | ✗ 不允许，类型在运行时不存在 | 共享类型请放入外部 `.ts` 文件，由各组件导入 |
 
 ## 规则
 
-1. 导出成员通过 `&handle` 获得的组件实例访问（如 `<Child &handle={child} />`），然后 `child.exportedValue` / `child.exportedFunction()`——通常在 `onAfterMount` 内。
+1. 导出成员通过 `&handle` 获得的组件实例访问（如 `<Child &handle={child} />`），然后 `child.exportedValue` / `child.exportedFunction()`，通常在 `onAfterMount` 内。
 2. 跨组件共享类型（如 `Meta` 契约类型）时，在外部 `.ts` 文件中定义并在每个组件中 `import type`；导入 `Meta` 后组件即自动绑定该类型。
 3. 组件文件内只有 `export 声明` 与 `export 列表` 两种合法形式。
 
@@ -75,7 +75,7 @@ export interface Meta {
 ## 约束
 
 - 绝不用 `import` 消费组件导出；它们是实例成员。
-- 不要向组件文件添加 `export default`、再导出或类型导出——都是编译错误。
+- 不要向组件文件添加 `export default`、再导出或类型导出，都是编译错误。
 
 ## 参见
 

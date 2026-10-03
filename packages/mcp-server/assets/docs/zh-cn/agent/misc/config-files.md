@@ -5,7 +5,7 @@ keywords: ["config", ".qingkuairc", "prettierrc", "reactivityMode", "whitespace"
 
 # 配置文件
 
-运行配置按目录通过 `.qingkuairc` 文件修改；组件文件受当前目录或其最近上级目录中的配置文件影响。格式化遵循标准 Prettier 配置，Qingkuai 专属选项嵌套在 `qingkuai` 对象下。
+运行配置按目录通过 `.qingkuairc` 文件修改；组件文件受当前目录或其最近上级目录中的配置文件影响。格式化遵循标准 Prettier 配置，Qingkuai 专属选项与常规 Prettier 选项一样直接写在配置文件的一级属性中。
 
 ## 运行配置（.qingkuairc）
 
@@ -19,7 +19,7 @@ keywords: ["config", ".qingkuairc", "prettierrc", "reactivityMode", "whitespace"
 | `allowConstReactive` | boolean | `true` | `false` 时常量声明的变量不会被推导为具有响应性，显式用 `reactive`/`shallow` 标记常量声明会引发编译错误 1070 |
 | `interpretiveComments` | boolean | `true` | 在编译结果中插入解释性注释 |
 
-## 格式化配置（.prettierrc → `qingkuai` 对象）
+## 格式化配置（.prettierrc）
 
 | 属性 | 类型/取值 | 默认值 | 含义 |
 |---|---|---|---|
@@ -47,9 +47,7 @@ keywords: ["config", ".qingkuairc", "prettierrc", "reactivityMode", "whitespace"
 {
     "tabWidth": 4,
     "printWidth": 80,
-    "qingkuai": {
-        "spaceAroundInterpolation": true
-    }
+    "spaceAroundInterpolation": true
 }
 ```
 

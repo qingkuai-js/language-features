@@ -122,6 +122,7 @@ keywords: ["qingkuai", ".qk", "syntax", "指令", "引用属性", "组件", "响
 | 内置元素（`qk:spread`） | [builtin-elements.md](docs://zh-cn/agent/misc/builtin-elements.md) |
 | 语言功能概览 | [language-features.md](docs://zh-cn/agent/misc/language-features.md) |
 | 安装 | [install.md](docs://zh-cn/agent/getting-started/install.md) |
+| 命令行工具（初始化 / 类型检查 / 格式化 / 构建） | [cli.md](docs://zh-cn/agent/misc/cli.md) |
 | 框架概览与设计哲学 | [introduction.md](docs://zh-cn/agent/getting-started/introduction.md) |
 
 ## 语法依赖路由

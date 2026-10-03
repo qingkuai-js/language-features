@@ -35,9 +35,7 @@ By default, when formatting component files, all component names will be transfo
 
 ```json
 {
-    "qingkuai": {
-        "componentTagFormatPreference": "kebab"
-    }
+    "componentTagFormatPreference": "kebab"
 }
 ```
 

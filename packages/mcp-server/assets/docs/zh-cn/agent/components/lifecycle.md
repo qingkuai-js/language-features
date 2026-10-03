@@ -1,5 +1,5 @@
 ---
-description: "Qingkuai 组件生命周期：onAfterMount、onBeforeDestroy、onAfterDestroy、onBeforeUpdate、onAfterUpdate —— 内建注册规则与绑定实例的外部注册。"
+description: "Qingkuai 组件生命周期：onAfterMount、onBeforeDestroy、onAfterDestroy、onBeforeUpdate、onAfterUpdate，内建注册规则与绑定实例的外部注册。"
 keywords: ["lifecycle", "onAfterMount", "onBeforeDestroy", "onBeforeUpdate", "onAfterUpdate", "生命周期"]
 ---
 
@@ -21,9 +21,9 @@ keywords: ["lifecycle", "onAfterMount", "onBeforeDestroy", "onBeforeUpdate", "on
 
 ## 规则
 
-1. 所有生命周期方法都是组件文件的内建方法——直接调用、无需导入；编译器将其绑定到当前组件实例。
+1. 所有生命周期方法都是组件文件的内建方法：直接调用、无需导入；编译器将其绑定到当前组件实例。
 2. 在异步逻辑（如 `setTimeout` 内）注册的回调仍然绑定到正确的组件实例。
-3. 注册时对应阶段已经过去，回调永远不会触发，开发模式会发出警告——例如 `setTimeout` 内注册的 `onAfterMount` 永不触发。例外：`onBeforeUpdate`/`onAfterUpdate` 的窗口每次更新都会重现，迟到注册会在下次更新时照常触发。
+3. 注册时对应阶段已经过去，回调永远不会触发，开发模式会发出警告，例如 `setTimeout` 内注册的 `onAfterMount` 永不触发。例外：`onBeforeUpdate`/`onAfterUpdate` 的窗口每次更新都会重现，迟到注册会在下次更新时照常触发。
 4. 外部注册从 `qingkuai` 运行时包导入方法，第一个参数是目标组件实例，随后是回调。也可以把内建生命周期方法本身传给外部模块（与监视器和上下文的模式相同）。
 
 ## 示例
