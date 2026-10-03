@@ -163,17 +163,14 @@ export async function getCompileResultByPath(path: string) {
 
 function updatePrettierConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {
     const { prettierConfig: pc, extensionConfig: ec } = config
-    if (isUndefined(pc.qingkuai)) {
-        pc.qingkuai = {}
+    if (isUndefined(pc.spaceAroundInterpolation)) {
+        pc.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
     }
-    if (isUndefined(pc.qingkuai.spaceAroundInterpolation)) {
-        pc.qingkuai.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
+    if (isUndefined(pc.componentTagFormatPreference)) {
+        pc.componentTagFormatPreference = ec.componentTagFormatPreference
     }
-    if (isUndefined(pc.qingkuai.componentTagFormatPreference)) {
-        pc.qingkuai.componentTagFormatPreference = ec.componentTagFormatPreference
-    }
-    if (isUndefined(pc.qingkuai.componentAttributeFormatPreference)) {
-        pc.qingkuai.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
+    if (isUndefined(pc.componentAttributeFormatPreference)) {
+        pc.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
     }
 }
 

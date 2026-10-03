@@ -2,57 +2,50 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "allOf": [{ "$ref": "https://json.schemastore.org/prettierrc" }],
     "properties": {
-        "qingkuai": {
-            "type": "object",
-            "description": "Configuration options used by prettier-plugin-qingkuai when formatting `.qk` files.",
-            "markdownDescription": "Configuration options used by **prettier-plugin-qingkuai** when formatting `.qk` files.",
-            "properties": {
-                "spaceAroundInterpolation": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Controls whether spaces are inserted inside interpolation blocks.",
-                    "markdownDescription": "Controls whether spaces are inserted **inside interpolation blocks** in qingkuai component(.qk) files.\n\nInterpolation blocks use **single curly braces**.\n\nExample:\n\nWithout spaces:\n\n```qingkuai\n{count}\n```\n\nWith spaces:\n\n```qingkuai\n{ count }\n```"
-                },
+        "spaceAroundInterpolation": {
+            "type": "boolean",
+            "default": false,
+            "description": "Controls whether spaces are inserted inside interpolation blocks.",
+            "markdownDescription": "Controls whether spaces are **inside interpolation blocks** in qingkuai component(.qk) files.\n\nInterpolation blocks use **single curly braces**.\n\nExample:\n\nWithout spaces:\n\n```qingkuai\n{count}\n```\n\nWith spaces:\n\n```qingkuai\n{ count }\n```"
+        },
 
-                "selfCloseEmptySlotTags": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Convert empty slot tags to self-closing format.",
-                    "markdownDescription": "Controls whether **empty slot tags** are converted to **self-closing** format.\n\nExample:\n\nBefore:\n\n```qingkuai\n<slot></slot>\n```\n\nAfter:\n\n```qingkuai\n<slot />\n```"
-                },
+        "selfCloseEmptySlotTags": {
+            "type": "boolean",
+            "default": true,
+            "description": "Convert empty slot tags to self-closing format.",
+            "markdownDescription": "Controls whether **empty slot tags** are converted to **self-closing** format.\n\nExample:\n\nBefore:\n\n```qingkuai\n<slot></slot>\n```\n\nAfter:\n\n```qingkuai\n<slot />\n```"
+        },
 
-                "componentTagFormatPreference": {
-                    "type": "string",
-                    "default": "camel",
-                    "description": "Controls the preferred naming style for component tags in qingkuai component(.qk) files.",
-                    "oneOf": [
-                        {
-                            "const": "camel",
-                            "markdownDescription": "Prefer **camel case** component tags.\n\nExample:\n\n```qingkuai\n<MyComponent></MyComponent>\n```"
-                        },
-                        {
-                            "const": "kebab",
-                            "markdownDescription": "Prefer **kebab case** component tags.\n\nExample:\n\n```qingkuai\n<my-component></my-component>\n```"
-                        }
-                    ]
+        "componentTagFormatPreference": {
+            "type": "string",
+            "default": "camel",
+            "description": "Controls the preferred naming style for component tags in qingkuai component(.qk) files.",
+            "oneOf": [
+                {
+                    "const": "camel",
+                    "markdownDescription": "Prefer **camel case** component tags.\n\nExample:\n\n```qingkuai\n<MyComponent></MyComponent>\n```"
                 },
-
-                "componentAttributeFormatPreference": {
-                    "type": "string",
-                    "default": "camel",
-                    "description": "Controls the preferred naming style for component attributes in qingkuai component(.qk) files.",
-                    "oneOf": [
-                        {
-                            "const": "camel",
-                            "markdownDescription": "Prefer **camel case** component attributes.\n\nExample:\n\n```qingkuai\n<MyComponent myCustomAttribute />\n```"
-                        },
-                        {
-                            "const": "kebab",
-                            "markdownDescription": "Prefer **kebab case** component attributes.\n\nExample:\n\n```qingkuai\n<MyComponent my-custom-attribute />\n```"
-                        }
-                    ]
+                {
+                    "const": "kebab",
+                    "markdownDescription": "Prefer **kebab case** component tags.\n\nExample:\n\n```qingkuai\n<my-component></my-component>\n```"
                 }
-            }
+            ]
+        },
+
+        "componentAttributeFormatPreference": {
+            "type": "string",
+            "default": "camel",
+            "description": "Controls the preferred naming style for component attributes in qingkuai component(.qk) files.",
+            "oneOf": [
+                {
+                    "const": "camel",
+                    "markdownDescription": "Prefer **camel case** component attributes.\n\nExample:\n\n```qingkuai\n<MyComponent myCustomAttribute />\n```"
+                },
+                {
+                    "const": "kebab",
+                    "markdownDescription": "Prefer **kebab case** component attributes.\n\nExample:\n\n```qingkuai\n<MyComponent my-custom-attribute />\n```"
+                }
+            ]
         }
     }
 }

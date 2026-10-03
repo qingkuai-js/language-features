@@ -326,7 +326,7 @@ export async function doComplete(
         const nameRange = cr.getVscodeRange(nameStartIndex, nameEndIndex)
         const useKebab =
             attrName.includes("-") ||
-            prettierConfig?.qingkuai.componentAttributeFormatPreference === "kebab"
+            prettierConfig?.componentAttributeFormatPreference === "kebab"
 
         // 返回引用属性补全建议
         if (!isTestingEnv && nameFirstChar === "&") {
