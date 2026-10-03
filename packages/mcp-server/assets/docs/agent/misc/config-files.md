@@ -5,7 +5,7 @@ keywords: ["config", ".qingkuairc", "prettierrc", "reactivityMode", "whitespace"
 
 # Configuration Files
 
-The runtime configuration is modified per directory through the `.qingkuairc` file; component files are affected by the configuration file in the current directory or its nearest parent directory. Formatting follows standard Prettier configuration, with Qingkuai-specific options nested under the `qingkuai` object.
+The runtime configuration is modified per directory through the `.qingkuairc` file; component files are affected by the configuration file in the current directory or its nearest parent directory. Formatting follows standard Prettier configuration, with Qingkuai-specific options placed directly as top-level properties alongside standard Prettier options.
 
 ## Runtime configuration (.qingkuairc)
 
@@ -19,7 +19,7 @@ The runtime configuration is modified per directory through the `.qingkuairc` fi
 | `allowConstReactive` | boolean | `true` | when `false`, variables declared in constant declarations are not inferred as having reactivity, and explicitly marking a constant declaration with `reactive`/`shallow` raises compile error 1070 |
 | `interpretiveComments` | boolean | `true` | Inserts interpretive comments into the compilation result |
 
-## Formatting configuration (.prettierrc → `qingkuai` object)
+## Formatting configuration (.prettierrc)
 
 | Property | Type / values | Default | Meaning |
 |---|---|---|---|
@@ -47,9 +47,7 @@ The runtime configuration is modified per directory through the `.qingkuairc` fi
 {
     "tabWidth": 4,
     "printWidth": 80,
-    "qingkuai": {
-        "spaceAroundInterpolation": true
-    }
+    "spaceAroundInterpolation": true
 }
 ```
 

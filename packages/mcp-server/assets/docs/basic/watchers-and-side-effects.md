@@ -419,7 +419,8 @@ watchExp(identifier, (pre, cur) => {
         // do something ...
     }, 1000)
 
-    return () => clearTimeout(timer) // runs before the watcher triggers again
+    // runs before the watcher triggers again
+    return () => clearTimeout(timer)
 })
 ```
 
@@ -431,7 +432,8 @@ watchExp(identifier, (pre, cur) => {
         // do something ...
     }, 1000)
 
-    return () => clearTimeout(timer) // runs before the watcher triggers again
+    // runs before the watcher triggers again
+    return () => clearTimeout(timer)
 })
 ```
 

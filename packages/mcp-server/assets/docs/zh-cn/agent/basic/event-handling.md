@@ -18,7 +18,7 @@ keywords: ["events", "@click", "@keydown", "$arg", "event handler flags", "event
 | `@click={handleAddCount($arg)}` | 内联处理器中的调用表达式；被调用方法内的 `this` 自动绑定到当前元素 |
 | `@click\|self\|once={...}` | 事件处理标志，以 `\|` 追加在事件名之后 |
 
-事件对象访问：普通处理器声明参数（`e.target === this`，都指向被点击元素）；内联处理器使用 `$arg`——在元素上是原生事件对象，在组件内联事件处理器上则是传入的任意参数。使用 `<lang-ts>` 时 `$arg` 的类型被严格推导：`@keydown` 为 `KeyboardEvent`，`@click` 为 `MouseEvent`。
+事件对象访问：普通处理器声明参数（`e.target === this`，都指向被点击元素）；内联处理器使用 `$arg`，在元素上是原生事件对象，在组件内联事件处理器上则是传入的任意参数。使用 `<lang-ts>` 时 `$arg` 的类型被严格推导：`@keydown` 为 `KeyboardEvent`，`@click` 为 `MouseEvent`。
 
 功能标志：
 
@@ -31,7 +31,7 @@ keywords: ["events", "@click", "@keydown", "$arg", "event handler flags", "event
 | `capture` | 在捕获阶段触发处理器（`options.capture`） |
 | `passive` | 告知浏览器处理器内绝不会调用 `event.preventDefault`；移动端性能优化（`options.passive`） |
 
-按键标志——只在相关按键按住时运行处理器；仅可用于 `keyup`、`keydown` 等键盘相关事件：
+按键标志，只在相关按键按住时运行处理器；仅可用于 `keyup`、`keydown` 等键盘相关事件：
 
 | 标志 | 含义 |
 | --- | --- |

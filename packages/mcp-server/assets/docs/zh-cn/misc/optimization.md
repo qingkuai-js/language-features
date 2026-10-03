@@ -46,7 +46,7 @@
 ```
 
 > [!TIP]
-> 在 [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) 等框架性能对比测试中，各框架的成绩通常来自由框架作者或核心贡献者精心优化的版本——往往需要针对每一处状态更新仔细斟酌响应性标记的使用。而在 Qingkuai 中，只需上面两行配置，无需精心优化每一处响应性标记，就能获得接近极致的运行时性能。
+> 在 [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) 等框架性能对比测试中，各框架的成绩通常来自由框架作者或核心贡献者精心优化的版本，往往需要针对每一处状态更新仔细斟酌响应性标记的使用。而在 Qingkuai 中，只需上面两行配置，无需精心优化每一处响应性标记，就能获得接近极致的运行时性能。
 
 ---
 

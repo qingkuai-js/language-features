@@ -11,7 +11,7 @@ API 按入口包划分，便于按需引入并保持清晰的职责边界：运�
 
 ### 类型导出
 
-`BoundEffectFunc`、`BoundLifecycleFunc`、`BoundSetContextFunc`、`BoundSetContextGetterFunc`、`BoundWatchFunc`、`ComponentContexts`、`ComponentExports`、`ComponentInstance`、`ComponentProps`、`ComponentRefs`、`ComponentShape`、`ComponentSlots`、`DeclareComponent`、`EffectCallback`、`EffectHandle`、`HtmlBlockOptions`、`WatchCallback` —— 用法见 TypeScript 支持。
+`BoundEffectFunc`、`BoundLifecycleFunc`、`BoundSetContextFunc`、`BoundSetContextGetterFunc`、`BoundWatchFunc`、`ComponentContexts`、`ComponentExports`、`ComponentInstance`、`ComponentProps`、`ComponentRefs`、`ComponentShape`、`ComponentSlots`、`DeclareComponent`、`EffectCallback`、`EffectHandle`、`HtmlBlockOptions`、`WatchCallback`，用法见 TypeScript 支持。
 
 ### 实例绑定 API
 
@@ -21,7 +21,7 @@ API 按入口包划分，便于按需引入并保持清晰的职责边界：运�
 | 监视器/副作用 | `watch`、`preWatch`、`postWatch`、`syncWatch`、`effect`、`preEffect`、`postEffect`、`syncEffect` | 第一参数 = 组件实例，或 `null` 表示全局（手动 `stop()`） |
 | 上下文 | `setContext`、`setContextGetter`、`getContexts` | 第一参数 = 目标实例；`setContext` 向其上下文层写入值，`setContextGetter` 写入响应式 `getter`，`getContexts` 返回目标实例的上下文链头对象 |
 
-组件文件内这些同名方法都是内建方法（无需导入、已绑定实例；上下文另有 `setContextExp` 简写）。组件文件内导入同名标识符是编译错误——请为导入起别名。
+组件文件内这些同名方法都是内建方法（无需导入、已绑定实例；上下文另有 `setContextExp` 简写）。组件文件内导入同名标识符是编译错误，请为导入起别名。
 
 ### 响应性优化控制
 
@@ -33,7 +33,7 @@ API 按入口包划分，便于按需引入并保持清晰的职责边界：运�
 |---|---|
 | `mountApp` | 挂载应用 |
 | `nextTick` | 在更新调度器稳定后 resolve 的 Promise |
-| `getCurrentInstance` | 当前实例——只在同步初始化/更新阶段有效；优先改为传递内建 `instance` |
+| `getCurrentInstance` | 当前实例，只在同步初始化/更新阶段有效；优先改为传递内建 `instance` |
 | `createStore` / `createShallowStore` | 响应式状态存储（深/浅），用于跨组件共享 |
 | `toReactive` / `toShallow` / `toRaw` | 状态转换 |
 
@@ -54,7 +54,7 @@ API 按入口包划分，便于按需引入并保持清晰的职责边界：运�
 ## 规则
 
 1. 组件文件内绝不导入实例绑定 API；使用内建方法。外部模块中导入并显式绑定。
-2. `getCurrentInstance()` 在异步逻辑中不可靠——改为沿调用链传递 `instance` 参数。
+2. `getCurrentInstance()` 在异步逻辑中不可靠，改为沿调用链传递 `instance` 参数。
 3. `EffectHandle`（`stop`/`pause`/`resume`）是所有监视器/副作用注册的返回类型；全局（`null` 绑定）注册必须手动 stop。
 
 ## 参见

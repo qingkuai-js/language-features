@@ -1,5 +1,5 @@
 ---
-description: "Qingkuai 编译指令：#if/#elif/#else、#for、#key、#await/#then/#catch、#html、#target、#scope、#slot —— 精确用法形式、语义、优先级顺序与约束。"
+description: "Qingkuai 编译指令：#if/#elif/#else、#for、#key、#await/#then/#catch、#html、#target、#scope、#slot，精确用法形式、语义、优先级顺序与约束。"
 keywords: ["#if", "#elif", "#else", "#for", "#key", "#await", "#then", "#catch", "#html", "#target", "#scope", "#slot", "qk:spread", "directive", "指令", "条件渲染", "列表渲染", "异步"]
 ---
 
@@ -26,13 +26,13 @@ keywords: ["#if", "#elif", "#else", "#for", "#key", "#await", "#then", "#catch",
 2. `#for` 接受数字、数组、对象、字符串、`Set`、`Map` 或求值为这些类型的表达式。`#for={3}` 渲染三份。
 3. 迭代命名使用 `of`：`#for={item, index of source}`。item 或 index 位置允许解构（如 `#for={{ name, age }, extension of languageInfos}`）。
 4. 对于对象和 `Map`，`item` 是值，`index` 是键。
-5. `#for` 的数据源使用 `of`，绝不使用 `in`——`in` 是 JavaScript 运算符，会使指令值产生歧义。
+5. `#for` 的数据源使用 `of`，绝不使用 `in`。`in` 是 JavaScript 运算符，会使指令值产生歧义。
 6. 当列表渲染的元素持有本地 DOM 状态（如输入框值）时添加 `#key`，使节点在插入/删除/重排时按标识而非索引被追踪。
 7. `#await={promise}` 在等待期间渲染其标签；`#then` 在兑现时渲染，`#catch` 在拒绝时渲染。兑现/拒绝的值通过指令值中的标识符或解构接收。
 8. 不需要等待 UI 时，`#await` 与 `#then` 可以放在同一标签上。
 9. `#html` 将文本渲染为 HTML 片段（普通插值只会转义后更新 `textContent`）。其可选值为 `Partial<{ escapeTags: string[], escapeStyle: boolean, escapeScript: boolean }>`，用于让部分受信内容保持转义。
 10. `#target` 将节点挂载到另一个父元素下（如全屏模态框）；其值为 CSS 选择器字符串或 `HTMLElement`。
-11. `#scope` 将父组件的作用域属性传递给子组件根元素，使父级样式可以覆盖子组件。它可沿祖先链组合——每个 `#scope` 都会把自己的作用域属性附加到最终根元素上。
+11. `#scope` 将父组件的作用域属性传递给子组件根元素，使父级样式可以覆盖子组件。它可沿祖先链组合：每个 `#scope` 都会把自己的作用域属性附加到最终根元素上。
 12. 当子组件根节点是 `qk:spread` 或另一个组件（没有真实 DOM 元素）时，`#scope` 会深入到第一个真实元素并附加作用域属性。
 13. `qk:spread` 是指令的虚拟挂载点：不渲染任何内容，让一条指令作用于全部子节点（包括文本节点），避免无意义的包装元素。
 14. 同一标签上的指令遵循优先级链；例如 `#if` + `#for` 同时使用时，`#if` 先决定是否渲染。要反转行为就嵌套：把高优先级指令放在外层标签，或用 `qk:spread` 作为外层容器。

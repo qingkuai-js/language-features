@@ -24,7 +24,7 @@ keywords: ["reference attributes", "&value", "&checked", "&handle", "refs", "two
 3. `&handle` 是获取常规模板标签对应 DOM 元素的方式；组件完成挂载与渲染后变量才收到该元素，在 `onAfterMount` 中读取即可观察到这一点。
 4. 被绑定元素销毁时，引用属性自动将绑定变量重置为 `null`，避免悬空引用。
 5. 与动态属性一样，引用属性与变量同名时插值块可省略：`<div &handle></div>` 等价于 `<div &handle={handle}></div>`。
-6. 引用属性的值必须是可赋值（其他语言中通常称为左值或可取址）、非常量的目标——大致是能出现在 `=` 左侧的表达式。合法：`{identifier}`、`{arr[index]}`、`{obj.property}`。
+6. 引用属性的值必须是可赋值（其他语言中通常称为左值或可取址）、非常量的目标，大致是能出现在 `=` 左侧的表达式。合法：`{identifier}`、`{arr[index]}`、`{obj.property}`。
 7. 在 TypeScript 中，`&handle` 的值按标签严格定类型（`div` 为 `HTMLDivElement`，`p` 为 `HTMLParagraphElement`）；接收方类型也可以定义为基类 `HTMLElement`。
 
 ## 约束
@@ -32,7 +32,7 @@ keywords: ["reference attributes", "&value", "&checked", "&handle", "refs", "two
 - 属性名是嵌入脚本语言的关键字或保留字（如 `class`、`for`）时不支持省略简写。
 - 不合法的引用属性值：函数调用 `{test()}`、可选链 `{arr?.[index]}` 或 `{obj?.property}`、三元表达式 `{condition ? v1: v2}`。
 - "非常量"是一般性要求，但 `multiple` `select` 的 `&value` 目标可以是 `const`，因为 Qingkuai 只调用其方法（参见[表单处理](docs://zh-cn/agent/basic/forms.md)）。
-- `&handle` 与 `onAfterMount` 一起演示——它是组件挂载并渲染完成后运行的生命周期回调；不要假设引用在此之前已被赋值。
+- `&handle` 与 `onAfterMount` 一起演示，它是组件挂载并渲染完成后运行的生命周期回调；不要假设引用在此之前已被赋值。
 
 ## 示例
 

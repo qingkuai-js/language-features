@@ -419,7 +419,8 @@ watchExp(identifier, (pre, cur) => {
         // do something ...
     }, 1000)
 
-    return () => clearTimeout(timer) // 监视器重新触发前会先执行这个清理函数
+    // 监视器重新触发前会先执行这个清理函数
+    return () => clearTimeout(timer)
 })
 ```
 
@@ -431,7 +432,8 @@ watchExp(identifier, (pre, cur) => {
         // do something ...
     }, 1000)
 
-    return () => clearTimeout(timer) // 监视器重新触发前会先执行这个清理函数
+    // 监视器重新触发前会先执行这个清理函数
+    return () => clearTimeout(timer)
 })
 ```
 

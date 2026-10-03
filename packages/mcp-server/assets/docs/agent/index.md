@@ -122,6 +122,7 @@ Reference-attribute values must be assignable lvalues: identifiers, `arr[index]`
 | Built-in elements (`qk:spread`) | [builtin-elements.md](docs://agent/misc/builtin-elements.md) |
 | Language features overview | [language-features.md](docs://agent/misc/language-features.md) |
 | Installation | [install.md](docs://agent/getting-started/install.md) |
+| Command line tool (init / type checking / formatting / build) | [cli.md](docs://agent/misc/cli.md) |
 | Framework overview and design philosophy | [introduction.md](docs://agent/getting-started/introduction.md) |
 
 ## Syntax Dependency Route
