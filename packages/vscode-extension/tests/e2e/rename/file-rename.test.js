@@ -1,6 +1,6 @@
 const vscode = require("vscode")
-const nodeAssert = require("node:assert")
 const nodePath = require("node:path")
+const nodeAssert = require("node:assert")
 
 const { openFixture, eventually, diagnosticsOf } = require("../utils/helpers")
 
@@ -12,6 +12,13 @@ const CHILD_CONTENT = "<p>rename-child</p>"
 // 与 _workspace/rename/import-parent.qk 逐字节一致；rename 后恢复现场用
 const PARENT_CONTENT = 'import RenameChild from "./rename-child.qk"\n\n<RenameChild />'
 
+// 扩展按脚本块语言读取 typescript/javascript.updateImportsOnFileMove.enabled，
+// 两节都设为 always 以跳过询问弹窗（e2e 无法应答模态框）
+const UPDATE_IMPORTS_SETTINGS = [
+    "javascript.updateImportsOnFileMove.enabled",
+    "typescript.updateImportsOnFileMove.enabled"
+]
+
 describe("rename/file-rename", function () {
     let wsPath
     before(async function () {
@@ -21,11 +28,8 @@ describe("rename/file-rename", function () {
 
     const uriOf = name => vscode.Uri.file(nodePath.join(wsPath, "rename", name))
 
-    it("import paths of importers updated after renaming a .qk component file @known-bug", async function () {
-        // 【已确认 BUG】workspace.fs.rename 后导入方 import 路径不被更新——
-        // 扩展与内置 TS 均未对 .qk 参与重命名编辑计算（代码中无 willRename 管线）。
-        // 前置断言已保证 import 在重命名前解析成功，排除"本来就解析不了"的干扰。
-        // 先就位 child + parent，并等待模块解析就绪（无 2307）
+    it("import paths of importers updated after renaming a .qk component file", async function () {
+        // 前置断言保证 import 在重命名前解析成功，排除"本来就解析不了"的干扰
         await openFixture("rename", CHILD_NAME)
 
         const parent = await openFixture("rename", PARENT_NAME)
@@ -44,21 +48,28 @@ describe("rename/file-rename", function () {
             { message: "import did not resolve before rename" }
         )
 
+        for (const setting of UPDATE_IMPORTS_SETTINGS) {
+            await vscode.workspace
+                .getConfiguration()
+                .update(setting, "always", vscode.ConfigurationTarget.Workspace)
+        }
+
         let renamed = false
         try {
-            // 真实文件系统重命名
-            await vscode.workspace.fs.rename(uriOf(CHILD_NAME), uriOf(RENAMED_NAME), {
-                overwrite: true
-            })
-            renamed = true
+            // workspace.fs.rename 不触发 onWillRenameFiles（VSCode 文档约定），
+            // 只有 applyEdit + renameFile 与资源管理器手势会进入扩展的重命名管线
+            const renameEdit = new vscode.WorkspaceEdit()
+            renameEdit.renameFile(uriOf(CHILD_NAME), uriOf(RENAMED_NAME), { overwrite: true })
+            renamed = await vscode.workspace.applyEdit(renameEdit)
 
-            // 断言导入方的 import 路径最终更新为新文件名
+            // 断言导入方的 import 路径最终更新为新文件名。
+            // resolveImportExtension 默认开启，更新的导入路径不带 .qk 扩展名
             await eventually(
                 async () => {
                     const fresh = await vscode.workspace.openTextDocument(parent.uri)
                     const text = fresh.getText()
                     nodeAssert.ok(
-                        text.includes('from "./rename-child-moved.qk"'),
+                        text.includes('from "./rename-child-moved"'),
                         `import path should be updated to the new file name after rename, got: ${JSON.stringify(text.slice(0, 200))}`
                     )
                     return true
@@ -67,6 +78,12 @@ describe("rename/file-rename", function () {
             )
         } finally {
             // 恢复原状，避免污染 workspace 内的其他测试
+            for (const setting of UPDATE_IMPORTS_SETTINGS) {
+                await vscode.workspace
+                    .getConfiguration()
+                    .update(setting, undefined, vscode.ConfigurationTarget.Workspace)
+                    .catch(() => {})
+            }
             if (renamed) {
                 await vscode.workspace.fs.rename(uriOf(RENAMED_NAME), uriOf(CHILD_NAME), {
                     overwrite: true

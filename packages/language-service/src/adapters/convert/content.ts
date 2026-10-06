@@ -1,10 +1,15 @@
 import type TS from "typescript"
 
+import type {
+    MetaType,
+    FileEditItem,
+    ExtractedSlotName,
+    ExtractedSlotContext
+} from "../../types/adapter"
 import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
 import type { Getter, Setter } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
-import type { ExtractedSlotName, ExtractedSlotContext, MetaType } from "../../types/adapter"
 
 import {
     UnknownMetaMember,
@@ -496,10 +501,7 @@ export class FileEdit {
     private index = -1
     private insertInfo: Record<number, number> = {}
 
-    public items: {
-        content: string
-        sourceRange?: Pair<number>
-    }[] = []
+    public items: FileEditItem[] = []
 
     constructor(
         private fileInfo: QingkuaiFileInfo,

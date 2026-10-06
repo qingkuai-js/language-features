@@ -1,5 +1,7 @@
 import type TS from "typescript"
 
+import type { PluginModules } from "./types"
+
 import type { ConfigPluginParms } from "../../../types/communication"
 import type { CompileIntermidiateFunc } from "qingkuai-language-service"
 import type { QingkuaiFileInfo } from "qingkuai-language-service/adapters"
@@ -18,7 +20,7 @@ import { TypescriptAdapter } from "qingkuai-language-service/adapters"
 import { ADAPTER_FS, ADAPTER_PATH } from "../../../shared-util/constant"
 import { getQingkuaiConfig, setQingkuaiConfig } from "./server/configuration/method"
 
-export = function init(modules: { typescript: typeof TS }) {
+export = function init(modules: PluginModules) {
     return {
         create(info: TS.server.PluginCreateInfo) {
             const project = info.project

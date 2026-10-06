@@ -1,6 +1,11 @@
 import type TS from "typescript"
 
 import type {
+    AdapterTsProject,
+    FileReferenceOptions,
+    AdapterTsProjectService
+} from "../types/adapter"
+import type {
     GetQingkuaiConfigFunc,
     GetUserPreferencesFunc,
     CompileIntermidiateFunc,
@@ -17,7 +22,6 @@ import type {
 } from "../../../../types/communication"
 import type { QingkuaiFileInfo } from "./file"
 import type { Logger } from "../../../../shared-util/log"
-import type { AdapterTsProject, AdapterTsProjectService } from "../types/adapter"
 import type { AdapterFS, AdapterPath, TsNormalizedPath } from "../../../../types/common"
 
 import { setState } from "./state"
@@ -113,13 +117,7 @@ class AdapterService {
     constructor(private adapter: TypescriptAdapter) {}
 
     // 获取引用指定文件的文件名列表
-    getFileReferences(
-        fileName: string,
-        options?: {
-            recursive?: boolean
-            justOpening?: boolean
-        }
-    ) {
+    getFileReferences(fileName: string, options?: FileReferenceOptions) {
         const referenceFileNames = new Set<string>()
         const find = (by: string) => {
             this.adapter.forEachProject(project => {

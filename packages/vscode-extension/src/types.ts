@@ -1,3 +1,4 @@
+import type { Uri } from "vscode"
 import type { GeneralFunc } from "../../../types/util"
 import type { PromiseWithState } from "../../../types/common"
 import type { ProjectKind } from "../../../shared-util/constant"
@@ -24,6 +25,11 @@ export type ModelServerLaunchInfo = {
     cwd: string
     title: string
     version: string
+}
+
+export type RenameFilePair = {
+    oldUri: Uri
+    newUri: Uri
 }
 
 export type ConfigTsServerPluginFunc = (isReconnect: boolean) => Promise<GeneralFunc>
