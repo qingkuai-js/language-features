@@ -44,9 +44,23 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
             client.isRunning() && configTsServerPlugin(true).then(c => c())
         }),
 
-        // 插入片段通知，qingkuai 语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
+        // 向指定文档插入文本片段的通知
         client.onNotification(LS_HANDLERS.InsertSnippet, (params: InsertSnippetParams) => {
-            vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(params.text))
+            // 带 uri 时精确定位目标编辑器；否则插入到活跃编辑器
+            const editor = params.uri
+                ? vscode.window.visibleTextEditors.find(
+                      e => e.document.uri.toString() === params.uri
+                  )
+                : vscode.window.activeTextEditor
+
+            // 内容基于旧版本缓冲计算且文档已被编辑过时丢弃，防止插入与当前内容错配
+            const staled =
+                editor !== undefined &&
+                params.version !== undefined &&
+                editor.document.version !== params.version
+            if (editor && !staled) {
+                editor.insertSnippet(new vscode.SnippetString(params.text))
+            }
             params.command && vscode.commands.executeCommand(params.command)
         }),
 

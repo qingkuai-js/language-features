@@ -21,6 +21,7 @@ import {
 import {
     TransportKind,
     LanguageClient,
+    Middleware,
     ServerOptions,
     LanguageClientOptions
 } from "vscode-languageclient/node"
@@ -64,6 +65,7 @@ export async function activeLanguageServer() {
         initializationOptions: {
             limitedScriptLanguageFeatures
         },
+        middleware: createStaleResponseGuard(),
         documentSelector: [
             {
                 scheme: "file",
@@ -177,4 +179,37 @@ async function warmupTsServer(tsExtenstionAPI: any) {
     }
     Logger.info("TypeScript server warmup completed.")
     return warmupFilePath
+}
+
+// 请求在途期间文档被编辑过（版本变化），响应坐标基于旧缓冲，应用到新缓冲会写坏
+// 文件或错位渲染；此类响应一律丢弃。补全/签名等键入驱动的特性不在此列：它们的
+// 请求天然逐键过期，由 VSCode 自身的刷新周期消化
+function createStaleResponseGuard(): Middleware {
+    const isStaled = (uri: vscode.Uri, versionBefore: number) => {
+        const live = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString())
+        return live === undefined || live.version !== versionBefore
+    }
+
+    return {
+        provideRenameEdits: async (document, position, newName, token, next) => {
+            const version = document.version
+            const result = await next(document, position, newName, token)
+            return isStaled(document.uri, version) ? null : result
+        },
+        provideDocumentFormattingEdits: async (document, options, token, next) => {
+            const version = document.version
+            const result = await next(document, options, token)
+            return isStaled(document.uri, version) ? null : result
+        },
+        provideDocumentRangeFormattingEdits: async (document, range, options, token, next) => {
+            const version = document.version
+            const result = await next(document, range, options, token)
+            return isStaled(document.uri, version) ? null : result
+        },
+        provideInlayHints: async (document, viewPort, token, next) => {
+            const version = document.version
+            const result = await next(document, viewPort, token)
+            return isStaled(document.uri, version) ? [] : result
+        }
+    }
 }

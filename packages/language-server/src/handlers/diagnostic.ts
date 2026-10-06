@@ -23,12 +23,20 @@ export const publishDiagnostics = debounce(
         try {
             const cr = await getCompileResult(document)
             const diagnostics = await getDiagnostic(cr, getScriptDiagnostics)
-            connection.sendDiagnostics({ uri, diagnostics })
+            connection.sendDiagnostics({
+                uri,
+                diagnostics,
+                version: cr.version
+            })
         } catch (err) {
             Logger.warn(
                 `Publish diagnostics failed: ${err instanceof Error ? err.message : String(err)}`
             )
-            connection.sendDiagnostics({ uri, diagnostics: [] })
+            connection.sendDiagnostics({
+                uri,
+                diagnostics: [],
+                version: document.version
+            })
         }
     },
     300,
@@ -39,7 +47,8 @@ export const publishDiagnostics = debounce(
 export function clearDiagnostics(uri: string) {
     connection.sendNotification("textDocument/publishDiagnostics", {
         uri,
-        diagnostics: []
+        diagnostics: [],
+        version: documents.get(uri)?.version
     })
 }
 

@@ -120,6 +120,8 @@ export interface FindDefinitionsResult {
 
 export interface InsertSnippetParams {
     text: string
+    uri?: string
+    version?: number
     command?: string
 }
 
