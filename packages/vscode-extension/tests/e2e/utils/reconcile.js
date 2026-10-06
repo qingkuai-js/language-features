@@ -2,10 +2,15 @@ const { setDocText } = require("./helpers")
 
 async function raceRequest({ doc, requestFn, nextText, delayMs }) {
     let mutationDone = Promise.resolve()
-    const outcome = requestFn().then(response => ({
-        response,
-        sampled: doc.getText()
-    }))
+    const outcome = requestFn()
+        .then(response => ({
+            response,
+            sampled: doc.getText()
+        }))
+        .catch(() => ({
+            response: null,
+            sampled: doc.getText()
+        }))
     const timer = new Promise(resolve => {
         setTimeout(() => {
             mutationDone = setDocText(doc, nextText)

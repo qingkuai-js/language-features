@@ -1,7 +1,9 @@
-const nodeAssert = require("node:assert")
 const nodePath = require("node:path")
-const nodeChildProcess = require("node:child_process")
+const nodeAssert = require("node:assert")
 const rpc = require("vscode-jsonrpc/node")
+const nodeChildProcess = require("node:child_process")
+
+const { eventually } = require("../utils/helpers")
 
 describe("publish-version/version-field", function () {
     let child, connection
@@ -39,7 +41,7 @@ describe("publish-version/version-field", function () {
         }
     })
 
-    it("publishDiagnostics notification carries a version field matching the document version @known-bug", async function () {
+    it("publishDiagnostics notification carries a version field matching the document version", async function () {
         const uri = "file:///virtual/publish-version.qk"
         await connection.sendNotification("textDocument/didOpen", {
             textDocument: { uri, languageId: "qingkuai", version: 1, text: "<p>{}</p>\n" }
