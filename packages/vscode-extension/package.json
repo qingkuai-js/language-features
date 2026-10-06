@@ -94,7 +94,14 @@
                     "storage.type.function.arrow",
                     "keyword.operator.relational",
                     "keyword.operator.bitwise.shift"
-                ]
+                ],
+                "tokenTypes": {
+                    "punctuation.definition.template-expression": "other",
+                    "entity.name.type.instance.jsdoc": "other",
+                    "entity.name.function.tagged-template": "other",
+                    "meta.import string.quoted": "other",
+                    "variable.other.jsdoc": "other"
+                }
             },
             {
                 "language": "qingkuai-emmet",
