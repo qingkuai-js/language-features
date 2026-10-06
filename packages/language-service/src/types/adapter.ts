@@ -67,3 +67,13 @@ export interface AdapterTsProject {
     getScriptSnapshot?: TS.LanguageServiceHost["getScriptSnapshot"]
     resolveModuleNameLiterals?: TS.LanguageServiceHost["resolveModuleNameLiterals"]
 }
+
+export interface FileReferenceOptions {
+    recursive?: boolean
+    justOpening?: boolean
+}
+
+export interface FileEditItem {
+    content: string
+    sourceRange?: Pair<number>
+}

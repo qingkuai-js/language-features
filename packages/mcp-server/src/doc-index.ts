@@ -1,6 +1,7 @@
 import type {
     DocEntry,
     DocIndex,
+    DocInfo,
     DocLang,
     DocLayer,
     DocSection,
@@ -8,6 +9,7 @@ import type {
     ParsedQuery,
     SearchResult,
     RankedSection,
+    SectionGroup,
     SearchOptions,
     IndexedSection
 } from "./types"
@@ -31,11 +33,7 @@ const MAX_SCORED_BIGRAMS = 8
 /** agent 层平铺加权：平手时偏向结构化参考，但翻不过内容丰富度差距与路由加权 */
 const AGENT_LAYER_BOOST = 15
 
-export function docInfoFromUri(relativePath: string): {
-    lang: DocLang
-    layer: DocLayer
-    canonicalUri: string
-} {
+export function docInfoFromUri(relativePath: string): DocInfo {
     let lang: DocLang = "en"
     let layer: DocLayer = "tutorial"
     let canonical = relativePath
@@ -303,7 +301,7 @@ export function searchDocIndex(
     }
 
     // 分组：同一 canonical 文档（en+zh）合并，agent 层独立成组
-    const groupMap = new Map<string, { doc: IndexedDoc; sections: RankedSection[] }>()
+    const groupMap = new Map<string, SectionGroup>()
 
     const rankedSections = Array.from(scored.entries())
         .filter(([, score]) => score >= 1)
@@ -360,7 +358,7 @@ export function searchDocIndex(
             fuzzyPool.set(section, hit)
         }
     }
-    const fuzzyGroups = new Map<string, { doc: IndexedDoc; sections: RankedSection[] }>()
+    const fuzzyGroups = new Map<string, SectionGroup>()
     for (const [section, hit] of Array.from(fuzzyPool.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, FUZZY_LIMIT * 2)) {

@@ -49,7 +49,6 @@ export enum LS_HANDLERS {
     GetClientConfig = "qingkuai/getClientConfig",
     TsServerIsKilled = "qingkuai/tsServerIsKilled",
     RefreshDiagnostic = "qingkuai/refreshDiagnostics",
-    ApplyWorkspaceEdit = "qingkuai/applyWorkspaceEdit",
     ConnectToTsServer = "qingkuai/languageClientCreated",
     GetLanguageConfig = "qingkuai/getClientLanguageConfig",
     CleanLanguageConfigCache = "qingkuai/cleanConfigurationCache",

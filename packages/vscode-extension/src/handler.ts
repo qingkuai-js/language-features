@@ -1,7 +1,6 @@
 import type {
     InsertSnippetParams,
     GetClientConfigParams,
-    ApplyWorkspaceEditParams,
     GetClientLanguageConfigResult
 } from "../../../types/communication"
 import type { ConfigTsServerPluginFunc } from "./types"
@@ -83,29 +82,6 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
                 return getClientConfig(uri, params.section, params.name)
             }
             return vscode.workspace.getConfiguration(params.section, uri)
-        }),
-
-        // 应用工作区更改
-        client.onNotification(LS_HANDLERS.ApplyWorkspaceEdit, (edits: ApplyWorkspaceEditParams) => {
-            const workspaceEdit = new vscode.WorkspaceEdit()
-            edits.forEach(editItem => {
-                editItem.changes.forEach(change => {
-                    workspaceEdit.replace(
-                        vscode.Uri.file(editItem.fileName),
-                        new vscode.Range(
-                            new vscode.Position(
-                                change.range.start.line,
-                                change.range.start.character
-                            ),
-                            new vscode.Position(change.range.end.line, change.range.end.character)
-                        ),
-                        change.newText
-                    )
-                })
-            })
-            vscode.workspace.applyEdit(workspaceEdit, {
-                isRefactoring: true
-            })
         })
     )
 }

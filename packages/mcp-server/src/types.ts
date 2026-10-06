@@ -2,6 +2,13 @@ export type DocLang = "en" | "zh-cn"
 
 export type DocLayer = "agent" | "tutorial"
 
+/** 从 docs:// URI 解析出的语言层与规范 URI */
+export type DocInfo = {
+    lang: DocLang
+    layer: DocLayer
+    canonicalUri: string
+}
+
 export type DocEntry = {
     name: string
     uri: string
@@ -58,6 +65,11 @@ export type RankedGroup = {
     sections: RankedSection[]
 }
 
+export type SectionGroup = {
+    doc: IndexedDoc
+    sections: RankedSection[]
+}
+
 export type DocIndex = {
     docs: IndexedDoc[]
     sections: IndexedSection[]
@@ -80,4 +92,14 @@ export type ParsedQuery = {
     normalized: string
     tokens: string[]
     cjkRuns: string[]
+}
+
+export type DocUriParts = {
+    targetUri: string
+    anchor: string
+}
+
+export type TaskRoute = {
+    patterns: string[]
+    paths: string[]
 }

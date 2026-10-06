@@ -1,4 +1,4 @@
-import type { DocEntry, DocSection } from "../types"
+import type { DocEntry, DocSection, DocUriParts } from "../types"
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import {
@@ -225,7 +225,7 @@ function parseSectionsOf(entry: DocEntry): DocSection[] {
     return parseDocSections(stub, entry.content, extractDocTitle(entry.content) ?? entry.name)
 }
 
-function splitDocUri(input: string): { targetUri: string; anchor: string } {
+function splitDocUri(input: string): DocUriParts {
     let value = input.trim()
     const hashIndex = value.indexOf("#")
     let anchor = ""
