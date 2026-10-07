@@ -189,14 +189,11 @@ export function ensureGetQingkuaiFileInfo(adapter: TypescriptAdapter, path: TsNo
 
 function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
     const ext = adapter.path.ext(filePath)
-    const base = adapter.path
-        .base(filePath)
-        .slice(0, -ext.length)
+    const base = adapter.path.base(filePath).slice(0, -ext.length)
+    const componentName = qingkuaiUtils
+        .kebab2Camel(base, true)
         .replace(ignoredComponentNameChars, "")
-    if (!base) {
-        return "Anonymous"
-    }
-    return qingkuaiUtils.kebab2Camel(base, true)
+    return componentName || "Anonymous"
 }
 
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {

@@ -24,21 +24,21 @@ const NOISE_PREFIXES = [
 ]
 
 const MAX_BLOCK_SKIP = 300
+const userArgs = process.argv.slice(2)
+const TSCONFIG_SUITE_DIRS = new Set(["completions"])
 const PROPOSALS_END = "Proceeding with EXTRA proposals"
 const PROPOSALS_START = "appears in product.json but enables LESS API proposals"
 
-// 测试按功能目录分窗运行：每个目录单独起一个测试窗口（bin.mjs 每次调用都重新执行
-// 配置模块，得到独立的扩展宿主/LS/tsserver/workspace 副本），目录间零共享，跨套件
-// 干扰（LS/tsserver 重启窗口、负载拖垮预热 deadline）物理隔离；每窗整份拷贝
-// _workspace，跨目录 fixture import（如 code-lens → navigation）保持可用。
-// 单文件运行（--run 在场）保持单趟透传，便于调试单个套件；grep 类过滤原样透传到
-// 每一窗（mocha 对零匹配退出码为 0，无 known 项的目录空跑一窗即通过）
-const userArgs = process.argv.slice(2)
+const phaseNeedsTsconfig = args =>
+    args.some(arg =>
+        [...TSCONFIG_SUITE_DIRS].some(dir => new RegExp(`[\\\\/]${dir}[\\\\/]`).test(arg))
+    )
 const phases = userArgs.includes("--run")
-    ? [{ name: "single", args: userArgs }]
+    ? [{ name: "single", args: userArgs, env: phaseNeedsTsconfig(userArgs) }]
     : suiteDirectories().map(dir => ({
           name: dir.name,
-          args: ["--run", ...dir.files, ...userArgs]
+          args: ["--run", ...dir.files, ...userArgs],
+          env: TSCONFIG_SUITE_DIRS.has(dir.name)
       }))
 
 let currentChild = null
@@ -49,7 +49,7 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 let exitCode = 0
 for (const phase of phases) {
     process.stdout.write(`\n===== [e2e] ${phase.name} =====\n`)
-    exitCode = (await runPhase(phase.args)) || exitCode
+    exitCode = (await runPhase(phase.args, phase.env)) || exitCode
 }
 process.exit(exitCode)
 
@@ -71,10 +71,14 @@ function suiteDirectories() {
         .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function runPhase(args) {
+function runPhase(args, withTsconfig) {
     return new Promise(resolve => {
         const child = (currentChild = nodeChildProcess.spawn(process.execPath, [binMjs, ...args], {
-            stdio: ["inherit", "pipe", "pipe"]
+            stdio: ["inherit", "pipe", "pipe"],
+            env: {
+                ...process.env,
+                ...(withTsconfig ? { QK_E2E_TSCONFIG: "1" } : null)
+            }
         }))
         pipeFiltered(child.stdout, process.stdout)
         pipeFiltered(child.stderr, process.stderr)
