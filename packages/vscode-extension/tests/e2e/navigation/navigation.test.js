@@ -43,11 +43,11 @@ describe("navigation/identifier", function () {
         )
     })
 
-    it("references: declaration → usage in template @known-bug", async function () {
+    it("references: declaration → usage in template", async function () {
         const refs = await vscode.commands.executeCommand(
             "vscode.executeReferenceProvider",
             doc.uri,
-            posOf(doc, "let count", 1, 4)
+            posOf(doc, "count", 1, -1)
         )
         nodeAssert.ok(
             refs && refs.length >= 1,

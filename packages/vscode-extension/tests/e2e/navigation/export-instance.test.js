@@ -23,9 +23,7 @@ function definitionsWhenReady(doc, pos, mustContain) {
 }
 
 describe("navigation/export-instance", function () {
-    it("instance property definition jumps back to child component export declaration @known-bug", async function () {
-        // 【已确认 BUG 家族】definition 返回空——与组件 definition 空同根因
-        // （import .qk 的模块解析链失效，跨文件导航全部断链）。
+    it("instance property definition jumps back to child component export declaration", async function () {
         await openFixture("navigation", "export-child.qk")
 
         const parent = await openFixture("navigation", "export-parent.qk")
@@ -39,7 +37,7 @@ describe("navigation/export-instance", function () {
         )
     })
 
-    it("exported identifier references cover instance property usage in parent component @known-bug", async function () {
+    it("exported identifier references cover instance property usage in parent component", async function () {
         const child = await openFixture("navigation", "export-child.qk")
         await openFixture("navigation", "export-parent.qk")
 

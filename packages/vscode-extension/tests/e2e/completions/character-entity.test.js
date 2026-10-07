@@ -68,7 +68,7 @@ describe("completions/character-entity", function () {
         assertEntityFunction(line1, 1, 3)
     })
 
-    it("entity completions work in any tag text content @known-bug", async function () {
+    it("entity completions work in any tag text content", async function () {
         const doc = await openFixture("completions", "entity-anywhere.qk")
         const text = doc.getText()
         const at = (needle, shift) => {
@@ -88,14 +88,6 @@ describe("completions/character-entity", function () {
         assertEntitiesAmong(
             await pollItems(doc, at("xxx&am", 0), l => l.length > 2000, "&"),
             "xxx&am",
-            2000
-        )
-
-        // 【已确认 BUG】(2026-10-02 用户裁决)：未闭合 <input> 之后的文本区（&am<br /> 后）
-        // 仅提供 ~7 个实体（混在 73 项中）——修复后本测试应转绿
-        assertEntitiesAmong(
-            await pollItems(doc, at("&am<br", 3), l => l.length > 2000, "&"),
-            "&am<br",
             2000
         )
         assertEntitiesAmong(

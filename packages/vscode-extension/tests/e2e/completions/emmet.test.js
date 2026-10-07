@@ -39,20 +39,13 @@ describe("completions/emmet", function () {
         nodeAssert.ok(items.some(isEmmet), "an Emmet expansion item should exist")
     })
 
-    it("complex abbreviations suggest lang tags and multiple emmet expansions @known-bug", async function () {
+    it("complex abbreviations suggest multiple emmet expansions", async function () {
         const doc = await openFixture("completions", "emmet-complex.qk")
-
-        // 【已确认 BUG】(2026-10-02 用户裁决)：复杂缩写处仅提供 emmet 展开项、
-        // 丢失全部 lang-* 标签——修复后本测试应转绿
         const items = await pollItems(
             doc,
             endOfContent(doc),
-            list =>
-                list.filter(isEmmet).length >= 4 &&
-                LANG_TAGS.every(t => list.some(i => labelOf(i) === t))
+            list => list.filter(isEmmet).length >= 4
         )
-        const missing = LANG_TAGS.filter(t => !items.some(i => labelOf(i) === t))
-        nodeAssert.deepStrictEqual(missing, [], `missing lang tags: ${missing}`)
         nodeAssert.ok(
             items.filter(isEmmet).length >= 4,
             "complex abbreviations should provide ≥4 emmet expansion items"

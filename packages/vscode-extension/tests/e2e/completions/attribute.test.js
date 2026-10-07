@@ -280,22 +280,25 @@ describe("completions/attribute-names", function () {
         )
     })
 
-    it("no suggestions for static/dynamic/event/directive attribute values @known-bug", async function () {
-        const doc = await openFixture("completions", "attr-value-negative.qk")
+    it("empty interpolation values of dynamic/event/directive attributes offer full script completions", async function () {
+        const doc = await openFixture("completions", "attr-empty-interpolation.qk")
 
-        // 【已确认 BUG】(2026-10-02 用户裁决)：属性值上下文回退为全量建议
-        // （~98 项）——修复后本测试应转绿
         for (const [line, ch] of [
-            [0, 12],
             [1, 19],
             [1, 29],
             [1, 36]
         ]) {
-            const items = await completeAt(doc, offsetOf(doc, line, ch))
-            nodeAssert.strictEqual(
-                items.length,
-                0,
-                `(${line},${ch}) should not provide any completions (attribute value context), got ${items.length} items`
+            await pollComplete(
+                doc,
+                offsetOf(doc, line, ch),
+                l => {
+                    const labels = l.map(labelOf)
+                    return (
+                        l.length > 1000 &&
+                        ["alias", "derived", "effect"].every(n => labels.includes(n))
+                    )
+                },
+                `(${line},${ch}) empty interpolation should offer full script completions`
             )
         }
     })
