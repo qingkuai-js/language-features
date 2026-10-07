@@ -30,6 +30,14 @@ nodeFs.cpSync(nodePath.join(extRoot, "tests/e2e/_workspace"), workspaceDir, {
     recursive: true
 })
 
+if (process.env.QK_E2E_TSCONFIG) {
+    nodeFs.writeFileSync(
+        nodePath.join(workspaceDir, "tsconfig.json"),
+        JSON.stringify({ compilerOptions: {} }, null, 4) + "\n",
+        "utf-8"
+    )
+}
+
 export default defineConfig({
     mocha: {
         ui: "bdd",

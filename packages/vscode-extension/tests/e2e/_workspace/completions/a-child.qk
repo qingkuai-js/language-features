@@ -1,0 +1,4 @@
+<lang-js>
+    let title = reactive("hi")
+</lang-js>
+<p>{title}</p>
