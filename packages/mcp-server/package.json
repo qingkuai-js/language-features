@@ -1,6 +1,6 @@
 {
     "name": "qingkuai-mcp-server",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "type": "module",
     "author": "mlgq",
     "license": "MIT",
@@ -23,6 +23,7 @@
         "dist/index.mjs"
     ],
     "scripts": {
+        "prepublishOnly": "node ../../scripts/enforce-pnpm-publish.mjs",
         "inspect": "mcp-inspector",
         "verifydocs": "tsx scripts/verify-search.ts",
         "copydocs": "tsx scripts/copy-docs.ts && npm run verifydocs"

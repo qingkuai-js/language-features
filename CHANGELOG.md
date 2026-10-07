@@ -1,5 +1,15 @@
 # 2026-10-07
 
+> packages version: language-service@1.0.19, mcp-server@1.0.8
+>
+> both packages republish their previous versions' content with workspace `catalog:` dependencies resolved to real specifiers — the 1.0.18 and 1.0.7 manifests shipped unresolved `catalog:` versions and cannot be installed
+
+fixes:
+
+1. re-exported `FileReferenceOptions` from the adapters entry to silence the rollup-plugin-dts warning ([7d2e26f](https://github.com/qingkuai-js/language-tools/commit/7d2e26f))
+
+# 2026-10-07
+
 > packages version: language-service@1.0.18, mcp-server@1.0.7, vscode-extension@1.0.34
 
 features:

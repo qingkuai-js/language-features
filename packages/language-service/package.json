@@ -3,7 +3,7 @@
     "license": "MIT",
     "author": "mlgq",
     "type": "module",
-    "version": "1.0.18",
+    "version": "1.0.19",
     "keywords": [
         "qingkuai",
         "language-service"
@@ -39,6 +39,7 @@
         }
     },
     "scripts": {
+        "prepublishOnly": "node ../../scripts/enforce-pnpm-publish.mjs",
         "postpublish": "curl -X PUT 'https://registry-direct.npmmirror.com/-/package/qingkuai-language-service/syncs'"
     },
     "peerDependencies": {
