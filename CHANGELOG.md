@@ -1,3 +1,44 @@
+# 2026-10-07
+
+> packages version: language-service@1.0.18, mcp-server@1.0.7, vscode-extension@1.0.34
+
+features:
+
+1. enhanced `Meta` component contract handling in content processing and added diagnostics for unknown members, exported contracts and generic external types ([c5f1951](https://github.com/qingkuai-js/language-tools/commit/c5f1951))
+2. implemented document indexing and search in the MCP server ([f0d236f](https://github.com/qingkuai-js/language-tools/commit/f0d236f))
+3. added `requireReactivityMark` configuration option ([590af9c](https://github.com/qingkuai-js/language-tools/commit/590af9c))
+
+fixes:
+
+1. fixed import statements not being updated when renaming files ([0bc6ef2](https://github.com/qingkuai-js/language-tools/commit/0bc6ef2))
+2. discarded stale language feature responses on document version changes and sent versioned `publishDiagnostics` ([c4fa8b5](https://github.com/qingkuai-js/language-tools/commit/c4fa8b5))
+3. fixed missing bracket colorization on jsdoc braces inside embedded script blocks ([871acc3](https://github.com/qingkuai-js/language-tools/commit/871acc3))
+4. fixed kebab-case component file names suggesting wrong casing (`a-child.qk` now suggests `AChild`) ([6e8df9e](https://github.com/qingkuai-js/language-tools/commit/6e8df9e))
+5. fixed relative path resolution in `resolveFilePath` and reference aggregation for component exports ([af06fe6](https://github.com/qingkuai-js/language-tools/commit/af06fe6))
+6. fixed inverted `findAncestorUntil` matching and component return detection for block-bodied arrow functions ([9cd8eaa](https://github.com/qingkuai-js/language-tools/commit/9cd8eaa))
+7. initialized file versions from a unique `INITIAL_VERSION` constant instead of zero ([34e40e9](https://github.com/qingkuai-js/language-tools/commit/34e40e9))
+
+refactor:
+
+1. moved custom formatting options in `.prettierrc` from the nested `qingkuai` key to the top level ([d31e17c](https://github.com/qingkuai-js/language-tools/commit/d31e17c))
+2. removed the `shorthandDerivedDeclaration` configuration option ([1a25bc1](https://github.com/qingkuai-js/language-tools/commit/1a25bc1))
+3. adopted `vscode-languageserver-textdocument` for text document handling ([f43c54a](https://github.com/qingkuai-js/language-tools/commit/f43c54a))
+
+docs:
+
+1. synchronized MCP server agent docs to the latest documentation ([fd5f17a](https://github.com/qingkuai-js/language-tools/commit/fd5f17a), [5253426](https://github.com/qingkuai-js/language-tools/commit/5253426))
+
+tests:
+
+1. added an e2e test suite for the vscode extension with per-run workspace isolation and workspace-ready signaling ([ea130f0](https://github.com/qingkuai-js/language-tools/commit/ea130f0))
+2. switched slot fixtures to TS script blocks so semantic type errors are reported ([76334dd](https://github.com/qingkuai-js/language-tools/commit/76334dd))
+3. fixed assertion offsets and annotated instance types in fixtures, clearing all known-bug markers ([ebfe7e1](https://github.com/qingkuai-js/language-tools/commit/ebfe7e1))
+4. covered unimported workspace component suggestions and asserted accepting one writes the embedded script block and import statement ([6e8df9e](https://github.com/qingkuai-js/language-tools/commit/6e8df9e))
+
+others:
+
+1. downgraded `typescript` to 6.0.2 for compatibility ([aa6e899](https://github.com/qingkuai-js/language-tools/commit/aa6e899))
+
 # 2026-08-15
 
 > packages version: vscode-extension@1.0.33
