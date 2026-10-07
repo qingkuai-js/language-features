@@ -1,6 +1,6 @@
-<lang-js>
+<lang-ts>
     import SlotChild from "./slot-child.qk"
-</lang-js>
+</lang-ts>
 
 <SlotChild>
     <div #slot={slotCtx from "main"}>{slotCtx.title}</div>

@@ -52,6 +52,14 @@ export class QingkuaiFileInfo {
         }
     }
 
+    get currentItos(): number[] {
+        return this.itos
+    }
+
+    get currentStoi(): number[] {
+        return this.stoi
+    }
+
     getSourceIndex(interIndex: number) {
         return this.itos[interIndex]
     }
