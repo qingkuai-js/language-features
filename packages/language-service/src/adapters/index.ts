@@ -21,9 +21,9 @@ export type {
     UpdateContentParams,
     UpdateContentResult
 } from "../../../../types/communication"
-export type { LSDiagnostic } from "../types/adapter"
 export type { Getter } from "../../../../types/util"
 export type { TsNormalizedPath } from "../../../../types/common"
+export type { LSDiagnostic, FileReferenceOptions } from "../types/adapter"
 
 export {
     createAdapterFsWithNodeFs,
