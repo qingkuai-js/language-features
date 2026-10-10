@@ -52,8 +52,8 @@ export class LocationConvertor {
             if (isIndexesInvalid(sourceIndex)) {
                 return undefined
             }
-            // 源索引可能落在 positions 表之外（映射表长度与源长度并不严格对齐），
-            // 取不到位置时返回 undefined，避免空引用抛异常打断整条请求
+            // 越界判定统一在 getPositionByIndex 内完成（见 ../file.ts），这里只处理
+            // "没有位置"的情况，不再由各个调用点各自解引用
             const position = fileInfo.getPositionByIndex(sourceIndex)
             if (!position) {
                 return undefined
@@ -127,9 +127,9 @@ export class LocationConvertor {
             }
 
             const fileInfo = this.adapter.service.ensureGetQingkuaiFileInfo(this.filePath)
+            // 越界由 getPositionByIndex 统一判定（见 ../file.ts），取不到就退回默认范围
             const startPosition = fileInfo.getPositionByIndex(sourceStart)
             const endPosition = fileInfo.getPositionByIndex(sourceEnd)
-            // 源索引越出 positions 表时取不到位置，退回默认范围而不是空引用抛错
             if (!startPosition || !endPosition) {
                 return this.languageServerRange.defaultValue
             }
