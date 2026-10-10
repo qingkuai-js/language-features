@@ -4,11 +4,29 @@ const nodeAssert = require("node:assert")
 const { openFixture, eventually, posOf, firstHoverValue } = require("../utils/helpers")
 
 describe("hover/component-tag", function () {
-    it("imported component tag hover shows name satisfies type signature", async function () {
+    let app
+
+    // 预热屏障：组件标签/属性悬停要经 TS 插件取组件信息（跨文件建程序），冷启动下首个
+    // 请求可能远超断言期限；先等标签悬停命中，断言阶段只负责内容正确性
+    before(async function () {
         await openFixture("hover", "component-main.qk")
+        app = await openFixture("hover", "component-app.qk")
 
-        const app = await openFixture("hover", "component-app.qk")
+        const pos = posOf(app, "<ComponentMain", 1, -3)
+        await eventually(
+            async () => {
+                const value = await firstHoverValue(app, pos)
+                nodeAssert.match(
+                    value,
+                    /ComponentMain\s+satisfies\s+\S+/,
+                    "warmup: component tag hover should be available"
+                )
+            },
+            { deadline: 60000, message: "component tag hover warmup timed out" }
+        )
+    })
 
+    it("imported component tag hover shows name satisfies type signature", async function () {
         // 悬停在开始标签名 ComponentMain 内部
         const pos = posOf(app, "<ComponentMain", 1, -3)
         await eventually(
@@ -21,15 +39,11 @@ describe("hover/component-tag", function () {
                 )
                 return value
             },
-            { message: "component tag type signature hover did not appear" }
+            { deadline: 20000, message: "component tag type signature hover did not appear" }
         )
     })
 
     it("component prop hover shows (property) name: type", async function () {
-        await openFixture("hover", "component-main.qk")
-
-        const app = await openFixture("hover", "component-app.qk")
-
         // 悬停在属性名 title 内部（! 之后）
         const pos = posOf(app, "!title", 1, -3)
         await eventually(
@@ -42,7 +56,7 @@ describe("hover/component-tag", function () {
                 )
                 return value
             },
-            { message: "component prop type hover did not appear" }
+            { deadline: 20000, message: "component prop type hover did not appear" }
         )
     })
 

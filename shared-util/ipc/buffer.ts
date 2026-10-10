@@ -1,7 +1,5 @@
 import type { Message } from "./types"
 
-import { isUndefined } from "../assert"
-
 // 将消息体转为 buffer，此方法转换后的buffer前4个字节是消息体的长度
 export function createMessageBuffer(data: any, name: string, id = "") {
     const messageBody = Buffer.from(
@@ -17,37 +15,29 @@ export function createMessageBuffer(data: any, name: string, id = "") {
 }
 
 // 创建一个 Buffer 读取器，此方法与 createMessageBuffer 方法保持一致：将前4个字节读做消息体长度
-// 返回的读取器中的read方法考虑了粘包/分包处理，每成功读取一个完整的数据包会调用一次 handler 回调
+// 返回的读取器中的 read 方法统一累积到内部缓冲后再按 长度前缀 切分，因此天然处理粘包/分包，
+// 也包括"长度前缀本身被拆到两个数据包"的情形（旧实现在前缀未满 4 字节时会误判为完整报文并解析空体）
 export function createBufferReader() {
-    let preBuffer = Buffer.alloc(0)
-    let messageLength: number | undefined = undefined
+    let pending = Buffer.alloc(0)
 
     return {
-        read(buffer: Buffer, handler: (data: Message) => void) {
-            for (let prefixLen = 0; buffer.length; ) {
-                if (!isUndefined(messageLength)) {
-                    prefixLen = 0
-                } else if (buffer.length < 4) {
-                    prefixLen = messageLength = 0
-                } else {
-                    messageLength = buffer.readUInt32BE(0) + (prefixLen = 4)
-                }
+        read(chunk: Buffer, handler: (data: Message) => void) {
+            pending = pending.length ? Buffer.concat([pending, chunk]) : chunk
 
-                if (buffer.length >= messageLength) {
-                    const bodyBuffer = buffer.subarray(prefixLen, messageLength)
-                    const messageBody = Buffer.concat([preBuffer, bodyBuffer])
-                    const message = JSON.parse(messageBody.toString())
-                    buffer = buffer.subarray(messageLength)
-                    preBuffer = Buffer.alloc(0)
-                    messageLength = undefined
-                    handler(message)
-                } else {
-                    const bodyBuffer = buffer.subarray(prefixLen)
-                    preBuffer = Buffer.concat([preBuffer, bodyBuffer])
-                    messageLength -= buffer.length
-                    buffer = Buffer.alloc(0)
+            while (pending.length >= 4) {
+                const bodyLength = pending.readUInt32BE(0)
+                if (pending.length < 4 + bodyLength) {
                     break
                 }
+
+                const messageBody = pending.subarray(4, 4 + bodyLength)
+                pending = pending.subarray(4 + bodyLength)
+
+                // 单条报文解析失败不应让整个 socket 数据回调抛错（会变成进程级未捕获异常，
+                // 打断语言服务器与插件之间的整条通道）；丢弃该条并由调用方的请求超时兜底
+                try {
+                    handler(JSON.parse(messageBody.toString()))
+                } catch {}
             }
         }
     }

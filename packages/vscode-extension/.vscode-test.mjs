@@ -24,7 +24,8 @@ const userDataDir = nodeFs.mkdtempSync(nodePath.join(tempRoot, runPrefix + "user
 nodeFs.symlinkSync(
     nodePath.join(extRoot, "../../node_modules"),
     nodePath.join(workspaceDir, "node_modules"),
-    "dir"
+    // Windows 未开启开发者模式时没有创建符号链接的权限，目录联结不需要该权限
+    process.platform === "win32" ? "junction" : "dir"
 )
 nodeFs.cpSync(nodePath.join(extRoot, "tests/e2e/_workspace"), workspaceDir, {
     recursive: true
@@ -36,6 +37,28 @@ if (process.env.QK_E2E_TSCONFIG) {
         JSON.stringify({ compilerOptions: {} }, null, 4) + "\n",
         "utf-8"
     )
+}
+
+// 每次调用都会新建 workspace/user-data 临时目录，而一次完整套件按阶段会起 14 次本配置，
+// 共残留 28 个目录；仅有 2 小时 TTL 兜底时，连续多轮运行会在 %TEMP% 里持续累积、拖慢
+// 文件系统。退出时只清理本次调用自己创建的两个目录，不影响并发运行的其他实例。
+function cleanupOwnTempDirs() {
+    for (const dir of [workspaceDir, userDataDir]) {
+        try {
+            // 目录联结（workspace/node_modules）在递归删除时会被当链接摘掉，不会穿透到真实 node_modules
+            nodeFs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 })
+        } catch {}
+    }
+}
+process.on("exit", cleanupOwnTempDirs)
+for (const [signal, code] of [
+    ["SIGINT", 130],
+    ["SIGTERM", 143]
+]) {
+    process.on(signal, () => {
+        cleanupOwnTempDirs()
+        process.exit(code)
+    })
 }
 
 export default defineConfig({
