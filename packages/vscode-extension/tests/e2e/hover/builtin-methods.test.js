@@ -4,28 +4,6 @@ const nodeAssert = require("node:assert")
 const { openFixture, eventually, posOf, firstHoverValue, labelOf } = require("../utils/helpers")
 
 describe("hover/builtin-methods", function () {
-    // 预热屏障：签名帮助要经 TS 插件在脚本块内取类型，冷启动/负载下可能远超 5s；
-    // 先等首个签名帮助命中，断言阶段只负责内容正确性
-    before(async function () {
-        const doc = await openFixture("hover", "builtin-signature.qk")
-        const pos = posOf(doc, "setContext(", 1, 0)
-        await eventually(
-            async () => {
-                const help = await vscode.commands.executeCommand(
-                    "vscode.executeSignatureHelpProvider",
-                    doc.uri,
-                    pos,
-                    "("
-                )
-                nodeAssert.ok(
-                    help && help.signatures && help.signatures.length > 0,
-                    "warmup: setContext( should provide signature help"
-                )
-            },
-            { deadline: 60000, message: "signature help warmup timed out" }
-        )
-    })
-
     it("setContext hover shows built-in docs", async function () {
         const doc = await openFixture("hover", "builtin-set-context.qk")
 

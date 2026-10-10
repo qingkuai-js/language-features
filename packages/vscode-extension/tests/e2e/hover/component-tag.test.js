@@ -4,26 +4,11 @@ const nodeAssert = require("node:assert")
 const { openFixture, eventually, posOf, firstHoverValue } = require("../utils/helpers")
 
 describe("hover/component-tag", function () {
+    // 前两个用例共用同一份已打开的夹具文档，只在 describe 级打开一次
     let app
-
-    // 预热屏障：组件标签/属性悬停要经 TS 插件取组件信息（跨文件建程序），冷启动下首个
-    // 请求可能远超断言期限；先等标签悬停命中，断言阶段只负责内容正确性
     before(async function () {
         await openFixture("hover", "component-main.qk")
         app = await openFixture("hover", "component-app.qk")
-
-        const pos = posOf(app, "<ComponentMain", 1, -3)
-        await eventually(
-            async () => {
-                const value = await firstHoverValue(app, pos)
-                nodeAssert.match(
-                    value,
-                    /ComponentMain\s+satisfies\s+\S+/,
-                    "warmup: component tag hover should be available"
-                )
-            },
-            { deadline: 60000, message: "component tag hover warmup timed out" }
-        )
     })
 
     it("imported component tag hover shows name satisfies type signature", async function () {
