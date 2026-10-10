@@ -68,12 +68,17 @@ export class QingkuaiFileInfo {
         return this.stoi[sourceIndex]
     }
 
+    // 索引越界的唯一判定点：映射表 itos/stoi 会被 adjustIndexMap 重写，而 positions
+    // 不参与该调整，两者不同步时就会出现超出 positions 范围的正数索引（isIndexesInvalid
+    // 只拦 undefined 与 -1，拦不住这种）。越界一律视为"没有位置"，由调用点决定退回默认值，
+    // 避免各调用点自行解引用 undefined 抛异常打断整条请求
     getPositionByIndex(index: number) {
-        return this.positions[index]
+        return index >= 0 && index < this.positions.length ? this.positions[index] : undefined
     }
 
     isPositionFlagSetAtIndex(key: keyof typeof PositionFlag, index: number) {
-        return !!(this.positions[index].flag & PositionFlag[key])
+        const position = this.getPositionByIndex(index)
+        return !!position && !!(position.flag & PositionFlag[key])
     }
 
     adjustIndexMap(edit: FileEdit) {

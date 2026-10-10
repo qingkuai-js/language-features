@@ -420,6 +420,15 @@ export function confirmTypesForCompileResult(
         return partsOfResult.join("\n")
     }
 
+    // 未能识别出组件函数时（文件本就不含组件函数，或编译出的中间代码结构与预期不符）
+    // 没有可注入类型的组件函数节点，必须在此提前返回：其后代码会直接访问
+    // componentFuncNode.initializer / .parent，空引用抛出的异常会沿 IPC 请求冒泡——
+    // 同步处理器中会变成 ts 服务器的未捕获异常，异步处理器中会让对端请求永久挂起。
+    // 注意此时不能先执行任何 edit.flush()，否则中间代码会被改到一半后中断
+    if (isUndefined(componentFuncNode)) {
+        return
+    }
+
     if (fileInfo.isTS) {
         edit.setEditIndex(posOfSecondLineStart)
         edit.push(getIntrinsicDeclrations())

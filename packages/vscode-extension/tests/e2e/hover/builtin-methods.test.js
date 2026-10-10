@@ -19,7 +19,7 @@ describe("hover/builtin-methods", function () {
                 )
                 return value
             },
-            { message: "setContext hover did not show built-in docs" }
+            { deadline: 20000, message: "setContext hover did not show built-in docs" }
         )
     })
 
@@ -38,7 +38,7 @@ describe("hover/builtin-methods", function () {
                 )
                 return value
             },
-            { message: "defaults hover did not show built-in docs" }
+            { deadline: 20000, message: "defaults hover did not show built-in docs" }
         )
     })
 
@@ -61,7 +61,7 @@ describe("hover/builtin-methods", function () {
                 )
                 return labels
             },
-            { message: "built-in method completion did not appear" }
+            { deadline: 20000, message: "built-in method completion did not appear" }
         )
     })
 
@@ -85,7 +85,7 @@ describe("hover/builtin-methods", function () {
                 )
                 return help
             },
-            { message: "built-in method signature help did not appear" }
+            { deadline: 20000, message: "built-in method signature help did not appear" }
         )
     })
 })

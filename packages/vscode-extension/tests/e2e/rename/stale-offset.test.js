@@ -14,8 +14,10 @@ describe("rename/stale-offset", function () {
     async function writeVersion(text) {
         const ws = vscode.workspace.workspaceFolders[0]
         uri = vscode.Uri.file(nodePath.join(ws.uri.fsPath, "rename", "stale-offset.qk"))
-        await vscode.workspace.fs.writeFile(uri, Buffer.from(text))
         if (!doc) {
+            // 仅在首次建文档时落盘以生成文件；文档已打开后再落盘会触发 VSCode 重载，
+            // 与在途的缓冲区编辑形成版本竞态（applyEdit 被拒），故后续版本切换只改缓冲区
+            await vscode.workspace.fs.writeFile(uri, Buffer.from(text))
             doc = await vscode.workspace.openTextDocument(uri)
             await vscode.window.showTextDocument(doc)
         }

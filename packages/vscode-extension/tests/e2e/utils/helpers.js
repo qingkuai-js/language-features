@@ -61,17 +61,29 @@ async function eventually(
     throw new Error(message + (lastErr ? ": " + (lastErr.message || lastErr) : ""))
 }
 
-/** 在打开的文档上用 WorkspaceEdit 做全文替换 */
+/**
+ * 在打开的文档上用 WorkspaceEdit 做全文替换。
+ * 对已打开的文档落盘会触发 VSCode 的文件重载，文档版本可能在 applyEdit 在途时跃迁，
+ * 编辑随即被拒（"has changed in the meantime"）；而该重载落地的正是目标内容，因此把
+ * "当前文本已等于目标" 视为成功，并对版本跃迁做有界重试，消除这层固有竞态。
+ */
 async function setDocText(doc, text) {
-    const edit = new vscode.WorkspaceEdit()
-    edit.replace(
-        doc.uri,
-        new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)),
-        text
-    )
-
-    const ok = await vscode.workspace.applyEdit(edit)
-    nodeAssert.ok(ok, "applyEdit should succeed")
+    for (let attempt = 0; attempt < 10; attempt++) {
+        if (doc.getText() === text) {
+            return
+        }
+        const edit = new vscode.WorkspaceEdit()
+        edit.replace(
+            doc.uri,
+            new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)),
+            text
+        )
+        if (await vscode.workspace.applyEdit(edit)) {
+            return
+        }
+        await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    nodeAssert.ok(doc.getText() === text, "applyEdit should succeed")
 }
 
 /** 返回文档中第 occurrence 次出现 search 的位置 */

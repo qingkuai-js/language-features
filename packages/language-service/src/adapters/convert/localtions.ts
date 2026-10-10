@@ -49,12 +49,18 @@ export class LocationConvertor {
             const fileInfo = this.adapter.service.ensureGetQingkuaiFileInfo(this.filePath)
             const interIndex = this.lineAndCharacter.toInterIndex(lineAndCharacter)
             const sourceIndex = fileInfo.getSourceIndex(interIndex)
-            if (!isIndexesInvalid(sourceIndex)) {
-                const position = fileInfo.getPositionByIndex(sourceIndex)
-                return {
-                    line: position.line - 1,
-                    character: position.column
-                }
+            if (isIndexesInvalid(sourceIndex)) {
+                return undefined
+            }
+            // 越界判定统一在 getPositionByIndex 内完成（见 ../file.ts），这里只处理
+            // "没有位置"的情况，不再由各个调用点各自解引用
+            const position = fileInfo.getPositionByIndex(sourceIndex)
+            if (!position) {
+                return undefined
+            }
+            return {
+                line: position.line - 1,
+                character: position.column
             }
         },
 
@@ -121,8 +127,12 @@ export class LocationConvertor {
             }
 
             const fileInfo = this.adapter.service.ensureGetQingkuaiFileInfo(this.filePath)
+            // 越界由 getPositionByIndex 统一判定（见 ../file.ts），取不到就退回默认范围
             const startPosition = fileInfo.getPositionByIndex(sourceStart)
             const endPosition = fileInfo.getPositionByIndex(sourceEnd)
+            if (!startPosition || !endPosition) {
+                return this.languageServerRange.defaultValue
+            }
             return {
                 start: {
                     line: startPosition.line - 1,
