@@ -1,3 +1,17 @@
+# 2026-10-11
+
+> packages version: vscode-extension@1.0.35, language-service@1.0.20
+
+fixes:
+
+1. guarded null dereferences in the language service adapters and settled failed ipc requests with an error envelope so plugin requests never hang ([c45ffb0](https://github.com/qingkuai-js/language-tools/commit/c45ffb0))
+2. fixed dead invalid-value highlighting on attribute values: the end of both `=` sub-rules now requires a `(?<!=)` guard and the invalid character class excludes `>` so it no longer swallows the tag closing ([bbba97e](https://github.com/qingkuai-js/language-tools/commit/bbba97e))
+
+tests:
+
+1. added an e2e test suite for syntax highlighting (TextMate grammar) ([bbba97e](https://github.com/qingkuai-js/language-tools/commit/bbba97e))
+2. removed outdated language-server tests ([8b747cf](https://github.com/qingkuai-js/language-tools/commit/8b747cf))
+
 # 2026-10-07
 
 > packages version: language-service@1.0.19, mcp-server@1.0.8
