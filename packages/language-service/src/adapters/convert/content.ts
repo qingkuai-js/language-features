@@ -8,6 +8,7 @@ import type {
 } from "../../types/adapter"
 import type { QingkuaiFileInfo } from "../file"
 import type { TypescriptAdapter } from "../adapter"
+import type { Logger } from "../../../../../shared-util/log"
 import type { Getter, Setter } from "../../../../../types/util"
 import type { ComponentAttributeItem, Pair } from "../../../../../types/common"
 
@@ -31,6 +32,7 @@ export function confirmTypesForCompileResultWithAdapter(
 ) {
     return confirmTypesForCompileResult(
         adapter.ts,
+        adapter.logger,
         fileInfo,
         newContent => {
             adapter.updateContent(fileInfo, newContent)
@@ -43,6 +45,7 @@ export function confirmTypesForCompileResultWithAdapter(
 
 export function confirmTypesForCompileResult(
     ts: typeof TS,
+    logger: Logger,
     fileInfo: QingkuaiFileInfo,
     updateContent: Setter<string>,
     getTsProgram: Getter<TS.Program | undefined>
@@ -418,6 +421,13 @@ export function confirmTypesForCompileResult(
             }
         }
         return partsOfResult.join("\n")
+    }
+
+    if (isUndefined(componentFuncNode)) {
+        logger?.warn(
+            `confirmTypesForCompileResult: component func not found in ${fileInfo.path}, skip type confirmation`
+        )
+        return
     }
 
     if (fileInfo.isTS) {

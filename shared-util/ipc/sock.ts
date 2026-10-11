@@ -1,5 +1,7 @@
 import nodeFs from "node:fs"
 import nodeNet from "node:net"
+import nodeOs from "node:os"
+import nodePath from "node:path"
 
 import { createRandomHash } from "../sundry"
 
@@ -11,7 +13,7 @@ export function rmSockFile(sockName: string) {
 // 确定不同平台上套接字/命名管道文件的路径
 export function getSockPath(name: string) {
     if (process.platform !== "win32") {
-        return `/tmp/${name}.sock`
+        return nodePath.join(getIpcRuntimeDir(), `${name}.sock`)
     } else {
         return `\\\\.\\pipe\\${name}`
     }
@@ -34,13 +36,17 @@ export function isSockInUse(sockPath: string) {
 export async function getValidPathWithHash(name: string) {
     const existingSocks = new Set<string>()
     if (process.platform !== "win32") {
-        for (const fileName of nodeFs.readdirSync("/tmp")) {
+        const dir = getIpcRuntimeDir()
+        nodeFs.mkdirSync(dir, {
+            recursive: true
+        })
+        for (const fileName of nodeFs.readdirSync(dir)) {
             if (fileName.startsWith(name) && fileName.endsWith(".sock")) {
-                const sockFullPath = "/tmp/" + fileName
+                const sockFullPath = nodePath.join(dir, fileName)
                 if (await isSockInUse(sockFullPath)) {
                     existingSocks.add(sockFullPath)
                 } else {
-                    nodeFs.rmSync("/tmp/" + fileName)
+                    nodeFs.rmSync(sockFullPath)
                 }
             }
         }
@@ -57,4 +63,8 @@ export async function getValidPathWithHash(name: string) {
             return nameWithHash
         }
     }
+}
+
+export function getIpcRuntimeDir() {
+    return nodePath.join(process.env.XDG_RUNTIME_DIR || nodeOs.tmpdir(), "qingkuai")
 }

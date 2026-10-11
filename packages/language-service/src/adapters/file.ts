@@ -68,12 +68,14 @@ export class QingkuaiFileInfo {
         return this.stoi[sourceIndex]
     }
 
+    // 避免各调用点解引用 undefined 抛异常打断整条请求
     getPositionByIndex(index: number) {
-        return this.positions[index]
+        return index >= 0 && index < this.positions.length ? this.positions[index] : undefined
     }
 
     isPositionFlagSetAtIndex(key: keyof typeof PositionFlag, index: number) {
-        return !!(this.positions[index].flag & PositionFlag[key])
+        const position = this.getPositionByIndex(index)
+        return !!position && !!(position.flag & PositionFlag[key])
     }
 
     adjustIndexMap(edit: FileEdit) {

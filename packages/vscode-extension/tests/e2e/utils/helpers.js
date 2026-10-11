@@ -61,17 +61,27 @@ async function eventually(
     throw new Error(message + (lastErr ? ": " + (lastErr.message || lastErr) : ""))
 }
 
-/** 在打开的文档上用 WorkspaceEdit 做全文替换 */
+/**
+ * 把打开的文档全文替换为 text：编辑被拒时重试，最多 10 次；失败抛错
+ */
 async function setDocText(doc, text) {
-    const edit = new vscode.WorkspaceEdit()
-    edit.replace(
-        doc.uri,
-        new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)),
-        text
-    )
+    for (let attempt = 0; attempt < 10; attempt++) {
+        if (doc.getText() === text) {
+            return
+        }
 
-    const ok = await vscode.workspace.applyEdit(edit)
-    nodeAssert.ok(ok, "applyEdit should succeed")
+        const edit = new vscode.WorkspaceEdit()
+        edit.replace(
+            doc.uri,
+            new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)),
+            text
+        )
+        if (await vscode.workspace.applyEdit(edit)) {
+            return
+        }
+        await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    nodeAssert.ok(doc.getText() === text, "applyEdit should succeed")
 }
 
 /** 返回文档中第 occurrence 次出现 search 的位置 */

@@ -24,7 +24,7 @@ const userDataDir = nodeFs.mkdtempSync(nodePath.join(tempRoot, runPrefix + "user
 nodeFs.symlinkSync(
     nodePath.join(extRoot, "../../node_modules"),
     nodePath.join(workspaceDir, "node_modules"),
-    "dir"
+    process.platform === "win32" ? "junction" : "dir"
 )
 nodeFs.cpSync(nodePath.join(extRoot, "tests/e2e/_workspace"), workspaceDir, {
     recursive: true
@@ -37,6 +37,30 @@ if (process.env.QK_E2E_TSCONFIG) {
         "utf-8"
     )
 }
+
+// 退出时清理本次调用创建的两个目录，不影响并发运行的其他实例。
+const cleanupOwnTempDirs = () => {
+    for (const dir of [workspaceDir, userDataDir]) {
+        try {
+            nodeFs.rmSync(dir, {
+                recursive: true,
+                force: true,
+                maxRetries: 3
+            })
+        } catch {}
+    }
+}
+
+for (const [signal, code] of [
+    ["SIGINT", 130],
+    ["SIGTERM", 143]
+]) {
+    process.on(signal, () => {
+        cleanupOwnTempDirs()
+        process.exit(code)
+    })
+}
+process.on("exit", cleanupOwnTempDirs)
 
 export default defineConfig({
     mocha: {
