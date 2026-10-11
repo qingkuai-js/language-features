@@ -15,6 +15,7 @@ features.md
 /scripts/build-vsce.ts
 packages/vscode-extension/*.zip
 packages/vscode-extension/*.vsix
+packages/language-service/grammars
 packages/vscode-extension/qingkuai-language-features-*
 packages/vscode-extension/syntaxes/qingkuai.tmLanguage.json
 packages/vscode-extension/syntaxes/qingkuai-emmet.tmLanguage.json

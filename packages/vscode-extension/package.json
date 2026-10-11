@@ -88,7 +88,6 @@
                 },
                 "unbalancedBracketScopes": [
                     "text",
-                    "text-content.qk",
                     "entity.name.tag",
                     "punctuation.definition.tag",
                     "storage.type.function.arrow",
@@ -271,8 +270,11 @@
         "@vscode/test-cli": "^0.0.15",
         "@vscode/test-electron": "^3.1.0",
         "js-yaml": "^4.1.0",
+        "tm-grammars": "^1.32.22",
         "vsce": "^2.15.0",
-        "vscode-jsonrpc": "^9.0.3"
+        "vscode-jsonrpc": "^9.0.3",
+        "vscode-oniguruma": "^2.0.1",
+        "vscode-textmate": "^9.3.2"
     },
     "dependencies": {
         "@vscode/emmet-helper": "^2.11.0",
