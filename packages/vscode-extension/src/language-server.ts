@@ -19,33 +19,53 @@ import {
     limitedScriptLanguageFeatures
 } from "./state"
 import {
-    ServerOptions,
     TransportKind,
     LanguageClient,
+    Middleware,
+    ServerOptions,
     LanguageClientOptions
 } from "vscode-languageclient/node"
 import { Messages } from "./messages"
+import { startConfigWatcher } from "./config"
 import { inspect } from "../../../shared-util/log"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { LS_HANDLERS, NOOP } from "../../../shared-util/constant"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
+import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
 
 export async function activeLanguageServer() {
     languageStatusItem.busy = true
 
+    // 每次激活都重置工作区就绪 Promise，等待本次语言服务器发出就绪通知后解决
+    const [readyPromise, readyResolver] = generatePromiseAndResolver()
+    setState({
+        workspaceReadyPromise: readyPromise,
+        workspaceReadyResolver: readyResolver
+    })
+
     const clientWatcher = vscode.workspace.createFileSystemWatcher("**/.clientrc")
     disposables.push(clientWatcher)
+
     const languageServerOptions: ServerOptions = {
-        args: ["--nolazy"],
-        module: serverModulePath,
-        transport: TransportKind.ipc
+        run: {
+            module: serverModulePath,
+            transport: TransportKind.ipc
+        },
+        debug: {
+            options: {
+                execArgv: ["--nolazy"]
+            },
+            module: serverModulePath,
+            transport: TransportKind.ipc
+        }
     }
     const languageClientOptions: LanguageClientOptions = {
         initializationOptions: {
             limitedScriptLanguageFeatures
         },
+        middleware: createStaleResponseGuard(),
         documentSelector: [
             {
                 scheme: "file",
@@ -71,14 +91,20 @@ export async function activeLanguageServer() {
     attachCustomHandlers(configTsServerPlugin)
 
     const connectToTsServer = await configTsServerPlugin(false)
-    languageServerOptions.options = {
+    const serverProcessOptions = {
         env: {
             ...process.env,
             LIMITED_SCRIPT: +limitedScriptLanguageFeatures
         }
     }
+    languageServerOptions.debug.options = {
+        ...serverProcessOptions,
+        ...languageServerOptions.debug.options
+    }
+    languageServerOptions.run.options = serverProcessOptions
     await languageClient.start()
     await connectToTsServer()
+    startConfigWatcher()
     attachFileSystemHandlers()
     attachVscodeEventHandlers()
     languageStatusItem.busy = false
@@ -153,4 +179,37 @@ async function warmupTsServer(tsExtenstionAPI: any) {
     }
     Logger.info("TypeScript server warmup completed.")
     return warmupFilePath
+}
+
+// 请求在途期间文档被编辑过（版本变化），响应坐标基于旧缓冲，应用到新缓冲会写坏
+// 文件或错位渲染；此类响应一律丢弃。补全/签名等键入驱动的特性不在此列：它们的
+// 请求天然逐键过期，由 VSCode 自身的刷新周期消化
+function createStaleResponseGuard(): Middleware {
+    const isStaled = (uri: vscode.Uri, versionBefore: number) => {
+        const live = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString())
+        return live === undefined || live.version !== versionBefore
+    }
+
+    return {
+        provideRenameEdits: async (document, position, newName, token, next) => {
+            const version = document.version
+            const result = await next(document, position, newName, token)
+            return isStaled(document.uri, version) ? null : result
+        },
+        provideDocumentFormattingEdits: async (document, options, token, next) => {
+            const version = document.version
+            const result = await next(document, options, token)
+            return isStaled(document.uri, version) ? null : result
+        },
+        provideDocumentRangeFormattingEdits: async (document, range, options, token, next) => {
+            const version = document.version
+            const result = await next(document, range, options, token)
+            return isStaled(document.uri, version) ? null : result
+        },
+        provideInlayHints: async (document, viewPort, token, next) => {
+            const version = document.version
+            const result = await next(document, viewPort, token)
+            return isStaled(document.uri, version) ? [] : result
+        }
+    }
 }

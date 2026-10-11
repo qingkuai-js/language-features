@@ -71,11 +71,15 @@ export async function getComponentInfos(fileName: string, typePrintWidth = 80) {
         fileName
     )
     for (const info of componentInfos) {
-        const formatedTypeStr = await prettier.format(info.type, {
-            parser: "babel-ts",
-            printWidth: typePrintWidth
-        })
-        info.type = formatedTypeStr.trim()
+        try {
+            const formatedTypeStr = await prettier.format(info.type, {
+                parser: "babel-ts",
+                printWidth: typePrintWidth
+            })
+            info.type = formatedTypeStr.trim()
+        } catch {
+            Logger.error(`Failed to format type for component: ${info.name}`)
+        }
     }
     return componentInfos
 }

@@ -1,4 +1,4 @@
-# Component Exports
+# Member Exports
 
 In component-based development, the export mechanism determines which capabilities a component exposes externally and how those capabilities should be consumed. A well-designed export interface improves reusability and maintainability, while also constraining internal implementation details to avoid unnecessary coupling. In this section, you will learn the export rules and common practices in Qingkuai component files, helping you strike a balance between encapsulation and external usability.
 
@@ -25,7 +25,6 @@ After compiler processing, a component file becomes a default-exported function,
 ```qk
 <lang-js>
     import Child from "./Child.qk"
-    import { onAfterMount } from "qingkuai"
 
     let child = null
 
@@ -43,7 +42,6 @@ After compiler processing, a component file becomes a default-exported function,
     import type { ComponentInstance } from "qingkuai"
 
     import Child from "./Child.qk"
-    import { onAfterMount } from "qingkuai"
 
     let child: ComponentInstance<typeof Child> | null = null
 
@@ -75,7 +73,7 @@ Because exports in component files are attached to the component instance, expor
 </lang-js>
 ```
 
-Other forms of export statements are not supported, including `default exports`, `re-exports`, and `type exports`:
+Other forms of export statements are not supported, including `default exports`, `re-exports`, and `export =`:
 
 ```qk
 <lang-ts>
@@ -84,8 +82,41 @@ Other forms of export statements are not supported, including `default exports`,
 
     // Re-export is not supported
     export { someFunction } from "./someModule"
-
-    // Type export is not supported
-    export type { SomeType } from "./someModule"
 </lang-ts>
 ```
+
+Exports in component files are attached to the component instance, while types do not exist at runtime. Therefore, component files are not allowed to export any types:
+
+```qk
+<lang-ts>
+    type SomeTypeAlias = {}
+
+    export { SomeTypeAlias }
+
+    export type SomeType = {}
+
+    export interface SomeInterface {}
+
+    export type { ExternalType } from "./types"
+</lang-ts>
+```
+
+If you need to share types across components (for example, the component contract type `Meta`), the recommended approach is to define these types in an external `.ts` file and import them in each component:
+
+```ts
+// types.ts
+export interface Meta {
+    props: {
+        title: string
+    }
+}
+```
+
+```qk
+<lang-ts>
+    import type { Meta } from "./types"
+</lang-ts>
+```
+
+> [!TIP]
+> Once a component imports the `Meta` type, it is already bound to that type — no extra steps are needed. See [TypeScript Support](docs://misc/typescript.md) for details.

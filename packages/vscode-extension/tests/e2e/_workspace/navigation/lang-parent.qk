@@ -1,0 +1,5 @@
+<lang-js>
+    import LangChild from "./lang-child.qk"
+</lang-js>
+
+<LangChild />

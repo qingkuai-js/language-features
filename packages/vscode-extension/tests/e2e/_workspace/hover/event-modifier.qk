@@ -1,0 +1,3 @@
+<div @click|once|capture={handlerClick}>
+    <input @keyup|enter={handleConfirm}>
+</div>

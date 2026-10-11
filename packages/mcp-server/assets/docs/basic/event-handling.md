@@ -30,14 +30,14 @@ Functions such as `handleAddCount` are called event handlers. They can declare p
 ```js
 function handleAddCount(e) {
     count++
-    console.log(e.target === this) // true, both point to the clicked button element
+    console.log(e.target === this) // logs: true
 }
 ```
 
 ```ts
 function handleAddCount(this: HTMLButtonElement, e: MouseEvent) {
     count++
-    console.log(e.target === this) // true, both point to the clicked button element
+    console.log(e.target === this) // logs: true
 }
 ```
 
@@ -48,7 +48,8 @@ Just like [dynamic attributes](docs://basic/interpolation.md#dynamic-attributes)
 <button @click={click}></button>
 ```
 
-<div class="custom-block warning">If the event name is a keyword or reserved word in the embedded script language, this syntax is not supported, such as <code>class</code> or <code>for</code>.</div>
+> [!WARNING]
+> If the event name is a keyword or reserved word in the embedded script language, this syntax is not supported, such as the `class` or `for` attributes.
 
 ---
 
@@ -74,15 +75,14 @@ An inline event handler in the second form is compiled into code similar to this
 <button @click={$arg => count++}>Add Count</button>
 ```
 
-So you can also access the native event object through `$arg` in an inline event handler:
+| So you can also access the native event object through `$arg` in an inline event handler:
 
 ```qk
 <button @click={$arg => console.log($arg.target)}>Add Count</button>
 ```
 
-<div class="custom-block tip">
-    From the perspective of native events, naming <code>$arg</code> as <code>$event</code> might feel more intuitive. However, to keep the semantics consistent, Qingkuai uses <code>$arg</code> as the default parameter name because it also covers arbitrary parameters passed into <a href="docs://components/basic.md">component</a> inline event handlers. In other words, <code>$arg</code> can represent either a native event object or any parameter passed from a component.
-</div>
+> [!TIP]
+> From the perspective of native events, naming `$arg` as `$event` might feel more intuitive. However, from the perspective of semantic consistency, `$arg` better covers the arbitrary parameters passed into [component](docs://components/basic.md) inline event handlers, which we will introduce later. Therefore, in Qingkuai we uniformly use `$arg` as the default parameter name for event handlers, to reflect its generality across components and native events: it can represent either the native event object or arbitrary parameters passed from a component.
 
 If you call other methods inside an inline event handler, Qingkuai automatically binds `this` in the called methods to the current element:
 
@@ -94,7 +94,7 @@ If you call other methods inside an inline event handler, Qingkuai automatically
 
     function handleAddCount(e) {
         count++
-        console.log(e.target === this) // true, both point to the clicked button element
+        console.log(e.target === this) // logs: true
     }
 </lang-js>
 
@@ -108,7 +108,7 @@ If you call other methods inside an inline event handler, Qingkuai automatically
 
     function handleAddCount(this: HTMLButtonElement, e: MouseEvent) {
         count++
-        console.log(e.target === this) // true, both point to the clicked button element
+        console.log(e.target === this) // logs: true
     }
 </lang-ts>
 
@@ -116,9 +116,8 @@ If you call other methods inside an inline event handler, Qingkuai automatically
 <button @click={handleAddCount($arg)}>Add Count</button>
 ```
 
-<div class="custom-block tip">
-    If your embedded script language is <a href="https://www.typescriptlang.org">TypeScript</a>, the type of <code>$arg</code> is strictly inferred. For example, for <code>@keydown</code> it is <a href="https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent">KeyboardEvent</a>; for <code>@click</code> it is <a href="https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent">MouseEvent</a>.
-</div>
+> [!TIP]
+> If your embedded script language is [TypeScript](https://www.typescriptlang.org), the type of `$arg` is strictly inferred. For example, for `@keydown` it is [KeyboardEvent](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent); for `@click` it is [MouseEvent](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent).
 
 ---
 

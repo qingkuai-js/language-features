@@ -1,0 +1,4 @@
+<lang-ts>
+    export let exportCount = reactive(0)
+</lang-ts>
+<p>{exportCount}</p>

@@ -8,8 +8,9 @@ export function findAncestorUntil(
     node: TS.Node,
     callback: (node: TS.Node) => boolean
 ): TS.Node | undefined {
-    while (callback(node)) {
+    while (!callback(node)) {
         node = node.parent
+
         if (!node) {
             return undefined
         }
@@ -73,14 +74,25 @@ export function getAliasedSymbol(typeChecker: TS.TypeChecker, node: TS.Node) {
 
 export function isComponentFuncReturns(node: TS.Node): boolean {
     return !!findAncestorUntil(node, node => {
+        if (!ts.isReturnStatement(node) || !node.parent) {
+            return false
+        }
+
+        const parent = node.parent
+        if (!ts.isBlock(parent) || !parent.parent) {
+            return false
+        }
+
+        const grandParent = parent.parent
+        if (!ts.isArrowFunction(grandParent) || !grandParent.parent) {
+            return false
+        }
+
+        const declaration = grandParent.parent
         return (
-            ts.isReturnStatement(node) &&
-            node.parent &&
-            ts.isArrowFunction(node.parent) &&
-            node.parent.parent &&
-            ts.isVariableDeclaration(node.parent.parent) &&
-            ts.isIdentifier(node.parent.parent.name) &&
-            node.parent.parent.name.text === qingkuaiConstants.LSC.COMPONENT
+            ts.isVariableDeclaration(declaration) &&
+            ts.isIdentifier(declaration.name) &&
+            declaration.name.text === qingkuaiConstants.LSC.COMPONENT
         )
     })
 }

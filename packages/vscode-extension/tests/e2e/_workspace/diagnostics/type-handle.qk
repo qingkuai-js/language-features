@@ -1,0 +1,5 @@
+<lang-ts>
+    let handleEl: HTMLSpanElement | null = null
+</lang-ts>
+<span &handle={handleEl}></span>
+<span>{handleEl.nopeProp}</span>

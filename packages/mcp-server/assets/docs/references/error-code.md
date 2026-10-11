@@ -1,9 +1,9 @@
 # Error Code Reference
 
-The Qingkuai compiler and runtime can emit messages with error codes to help developers locate problems quickly. This section lists the built-in error codes in the current version and explains their meanings for easier lookup and troubleshooting. Error codes are grouped by category, using the following numbering scheme:
+The Qingkuai compiler and runtime can emit messages with error codes to help developers locate problems quickly. This section lists the built-in error codes in the current version and explains their meanings for easier lookup and troubleshooting. Error codes are grouped by functional type, using the following numbering scheme:
 
-- 1xxx: compile errors. These mean the code cannot pass compilation and usually require syntax or logic fixes.
-- 9xxx: compile warnings. These indicate potential problems or discouraged usage, but they do not block compilation.
+- 1xxx: compilation errors. These mean the code cannot pass compilation and usually require syntax or logic fixes.
+- 9xxx: compilation warnings. These indicate potential problems or discouraged usage, but they do not block compilation.
 - 2xxx: runtime errors. These indicate fatal problems during execution and may interrupt the program.
 - 8xxx: runtime warnings. These indicate non-blocking abnormal behavior during execution and should still be reviewed.
 - 3xxx: language service errors. These indicate problems when using language service features in the IDE and may affect development experience.
@@ -13,7 +13,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 
 ---
 
-## Compile Errors
+## Compilation Errors
 
 | Code | Description                                                                                                                                |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -36,10 +36,10 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1017 | Uses a framework-reserved identifier format, identifiers starting with `__qk__`                                                            |
 | 1018 | Unsupported top-level `await` expression                                                                                                   |
 | 1019 | Embedded script blocks do not support these export forms: `export =`, default export, re-export, namespace export, or type export          |
-| 1020 | Compiler intrinsic is redeclared in top-level scope                                                                                        |
-| 1021 | Compiler built-in method is used in an invalid position or call form                                                                       |
+| 1020 | Built-in identifier is redeclared in top-level scope                                                                                       |
+| 1021 | Built-in method is used in an invalid position or call form                                                                                |
 | 1022 | Identifier cannot be redeclared because it conflicts with alias or derived value markers                                                   |
-| 1023 | Reactive marker styles conflict, such as mixing `$` shorthand with other marker styles                                                     |
+| 1023 | The `defaults` built-in method can only be called once in the embedded script block                                                        |
 | 1024 | Invalid arguments for the `alias` built-in method; it must receive exactly one writable target                                             |
 | 1025 | Alias destructuring declaration contains a disallowed pattern                                                                              |
 | 1026 | Directive conflict; they cannot coexist on the same tag                                                                                    |
@@ -53,7 +53,7 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1034 | Empty context pattern with no binding identifiers declared                                                                                 |
 | 1035 | A `#html` directive tag must contain exactly one text child node                                                                           |
 | 1036 | `#slot` is used in an invalid position; it is allowed only on first-level child elements of a component node                               |
-| 1037 | Too many directive destructuring binding patterns, such as on `#for` or `#then`                                                             |
+| 1037 | Too many directive destructuring binding patterns, such as on `#for` or `#then`                                                            |
 | 1038 | `#slot` is missing a valid slot name; the value after `from` must be a string literal                                                      |
 | 1039 | The `name` attribute of `<slot>` must be a static value                                                                                    |
 | 1040 | `#target` is used in an invalid position; using it on a first-level child of a component causes target ambiguity                           |
@@ -70,14 +70,14 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1051 | Duplicate assignment to the same slot name within one component                                                                            |
 | 1052 | TypeScript namespace declarations are not supported in embedded script blocks                                                              |
 | 1053 | `alias` cannot be used to alias a standalone identifier                                                                                    |
-| 1054 | Compiler built-in methods cannot be used in `using` or `await using` declarations                                                          |
+| 1054 | Built-in methods cannot be used in `using` or `await using` declarations                                                                   |
 | 1055 | Nested `<slot>` tags are not allowed                                                                                                       |
 | 1056 | Duplicate `#then` or `#catch` directives in a promise block                                                                                |
 | 1057 | Invalid component name; it cannot be converted into a valid JavaScript identifier or member expression                                     |
 | 1058 | `#html` cannot be used on components or `<slot>` tags                                                                                      |
-| 1059 | The specified built-in method does not support spread arguments                                                                            |
+| 1059 | The specified built-in method does not support spread elements                                                                             |
 | 1060 | Invalid element tag name                                                                                                                   |
-| 1061 | Compiler built-in methods cannot be used in templates                                                                                      |
+| 1061 | Built-in methods cannot be used in templates                                                                                               |
 | 1062 | Reactivity modes conflict; the same tag declares both `reactive` and `shallow`                                                             |
 | 1063 | Generic parameters on a component tag are not closed                                                                                       |
 | 1064 | Generic parameters on a component tag can only be used when the embedded script language is `TypeScript`                                   |
@@ -87,17 +87,20 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 1068 | The `src` attribute on the embedded style tag requires a non-empty value                                                                   |
 | 1069 | The `#scope` directive can only be used on components                                                                                      |
 | 1070 | Marking a `const` declaration with `reactive` or `shallow` is disallowed when the `allowConstReactive` compile option is disabled          |
-| 1071 | The `defaults` built-in method can only be called once in the embedded script block                                                       |
+| 1071 | `raw` must be passed an argument when used as a non-reactive read                                                                          |
+| 1072 | `raw` can only be passed one argument when used as a non-reactive read                                                                     |
+| 1073 | `raw` must be used as a function call when used as a non-reactive read                                                                     |
+| 1074 | Top-level variable declarations must be explicitly marked with a reactivity built-in method when the `requireReactivityMark` compile option is `true` |
 
 ---
 
-## Compile Warnings
+## Compilation Warnings
 
 | Code | Description                                                                                                                      |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------- |
 | 9001 | Value never changes, so the reactive marker is redundant and the value will be treated as raw                                    |
 | 9002 | A top-level scope identifier may be shadowed in a specific scope                                                                 |
-| 9003 | Two declaration syntaxes for derived reactive values are mixed, which is discouraged                                             |
+| 9003 | The `#scope` directive has no effect because the current component has no scoped styles                                          |
 | 9004 | Derived reactive values are read-only, so using a mutable declaration is redundant; `const` is recommended                       |
 | 9005 | Applying `raw` to a literal `const` is redundant                                                                                 |
 | 9006 | The directive does not need a value, so the provided value will be ignored                                                       |
@@ -106,44 +109,47 @@ Looking up messages by code can improve debugging efficiency and help you unders
 | 9009 | Event flags on a component event listener are invalid and will be ignored                                                        |
 | 9010 | Keyboard event flags are invalid on non-keyboard events and will be ignored                                                      |
 | 9011 | Duplicate event flags will be ignored                                                                                            |
-| 9012 | A `<qk:spread>` tag without required parts (such as dynamic attributes, reference attributes, or event listeners) is unnecessary |
+| 9012 | A `<qk:spread>` tag without required attributes (such as dynamic attributes, reference attributes, or event listeners) is redundant |
 | 9013 | The `#scope` directive is unnecessary here because this component already has an actual ancestor element                         |
-| 9014 | Built-in method received more arguments than expected; extra arguments will be ignored                                           |
-| 9015 | The `#scope` directive has no effect because the current component has no scoped styles                                          |
+| 9014 | Nesting `raw` calls is redundant: the argument is already a non-reactive read, so the inner `raw` will be ignored               |
+| 9015 | Unkeyed `#for` list items contain internal state, which may leak between items when the list is updated                           |
 
 ---
 
 ## Runtime Errors
 
-| Code | Description                                                                                                     |
-| ---- | --------------------------------------------------------------------------------------------------------------- |
-| 2001 | The received value for a specific usage, such as `#await`, is not a `Promise`                                   |
-| 2002 | The value of `#for` is not iterable                                                                             |
-| 2003 | The value of `#key` contains duplicates                                                                         |
-| 2004 | Maximum recursive update depth exceeded, commonly caused by recursive updates in async side effects or watchers |
-| 2005 | Invalid target element; it is not a valid `Element`, or it cannot be obtained through the selector              |
-| 2006 | The specified property value must be an array or `Set`                                                          |
+| Code | Description                                                                                                                        |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 2001 | The received value for a specific usage, such as `#await`, is not a `Promise`                                                      |
+| 2002 | The value of `#for` is not iterable                                                                                                |
+| 2003 | The value of `#key` contains duplicates                                                                                            |
+| 2004 | Maximum recursive update depth exceeded, commonly caused by recursive updates in async side effects or watchers                    |
+| 2005 | Invalid target element; it is not a valid `Element`, or it cannot be obtained through the selector                                 |
+| 2006 | The `&value` attribute of `&group` or a multi-select `<select>` must be an array or `Set`                                          |
 | 2007 | Cannot render the component: the given value is neither a component function nor a `Promise` that resolves to a component function |
 
 ---
 
 ## Runtime Warnings
 
-| Code | Description                                                                                                           |
-| ---- | --------------------------------------------------------------------------------------------------------------------- |
-| 8001 | No reactive dependencies were collected when executing a side effect or watcher, so the side effect will be destroyed |
-| 8002 | An assignment was performed on a read-only or invalid target, and the assignment will be ignored                      |
+| Code | Description                                                                                                                                                                                                                                        |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8001 | No reactive dependencies were collected when executing a side effect or watcher, so the side effect will be destroyed                                                                                                                              |
+| 8002 | An assignment was performed on a read-only or invalid target, and the assignment will be ignored                                                                                                                                                   |
 | 8003 | Attempted to create content after the owning component was destroyed, commonly when an async callback runs after the component is removed and tries to create child components or register watchers or side effects; the creation has been ignored |
+| 8004 | A lifecycle hook was registered after its corresponding phase had already passed (e.g. registering `onAfterMount` in an async callback after the component has mounted), so the callback will never be triggered; the registration has been ignored |
 
 ---
 
 ## Language Service Errors
 
-| Code | Description                                                                                                    |
-| ---- | -------------------------------------------------------------------------------------------------------------- |
-| 3001 | Imported external types that include generic parameters cannot be used as global types, such as Props and Refs |
-| 3002 | (TypeScript) A global type declaration is not an object type, such as a primitive or union type                |
-| 3003 | The dependency "qingkuai" cannot be found. Please make sure it is installed and can be resolved                |
+| Code | Description                                                                                                      |
+| ---- | ---------------------------------------------------------------------------------------------------------------- |
+| 3001 | The component contract type `Meta` declares an unknown member (only `props`, `refs`, and `contexts` are allowed) |
+| 3002 | (TypeScript) The `Meta` type or one of its members is not an object type, such as a primitive or union type      |
+| 3003 | The dependency "qingkuai" cannot be found. Please make sure it is installed and can be resolved                  |
+| 3004 | The externally imported type contains generic parameters and cannot be used directly as the component contract `Meta` |
+| 3005 | Types cannot be exported from a component. Move the type to an external `.ts` file and import it                 |
 
 ---
 
@@ -151,5 +157,5 @@ Looking up messages by code can improve debugging efficiency and help you unders
 
 | Code | Description                                                                                                                                 |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 7001 | (JavaScript) A global type declaration defined via `JSDoc` is not an object type, such as a primitive or union type                         |
+| 7001 | (JavaScript) The `Meta` type or one of its members declared via `JSDoc` is not an object type, such as a primitive or union type            |
 | 7002 | The `@keyframes` rule is not scoped. It is recommended to define it in an external stylesheet and import it from the application entry file |

@@ -1,7 +1,6 @@
 import type {
     InsertSnippetParams,
     GetClientConfigParams,
-    ApplyWorkspaceEditParams,
     GetClientLanguageConfigResult
 } from "../../../types/communication"
 import type { ConfigTsServerPluginFunc } from "./types"
@@ -17,8 +16,9 @@ import {
     getExtensionConfig,
     getTypescriptConfig
 } from "./config"
-import { client, disposables } from "./state"
+import { Messages } from "./messages"
 import { LS_HANDLERS } from "../../../shared-util/constant"
+import { Logger, client, disposables, workspaceReadyResolver } from "./state"
 
 export function attachVscodeEventHandlers() {
     // 活跃文档切换且新活跃文档的语言 id 为 qingkuai 时刷新诊断信息
@@ -33,14 +33,34 @@ export function attachVscodeEventHandlers() {
 
 export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginFunc) {
     disposables.push(
+        // 语言服务器工作区就绪通知
+        client.onNotification(LS_HANDLERS.WorkspaceReady, () => {
+            Logger.info(Messages.WorkspaceReady)
+            workspaceReadyResolver()
+        }),
+
         // ts server 服务器进程退出通知，尝试重连
         client.onNotification(LS_HANDLERS.TsServerIsKilled, async () => {
             client.isRunning() && configTsServerPlugin(true).then(c => c())
         }),
 
-        // 插入片段通知，qingkuai 语言服务器需要向当前编辑窗口插入文本片段时会发送此通知
+        // 向指定文档插入文本片段的通知
         client.onNotification(LS_HANDLERS.InsertSnippet, (params: InsertSnippetParams) => {
-            vscode.window.activeTextEditor?.insertSnippet(new vscode.SnippetString(params.text))
+            // 带 uri 时精确定位目标编辑器；否则插入到活跃编辑器
+            const editor = params.uri
+                ? vscode.window.visibleTextEditors.find(
+                      e => e.document.uri.toString() === params.uri
+                  )
+                : vscode.window.activeTextEditor
+
+            // 内容基于旧版本缓冲计算且文档已被编辑过时丢弃，防止插入与当前内容错配
+            const staled =
+                editor !== undefined &&
+                params.version !== undefined &&
+                editor.document.version !== params.version
+            if (editor && !staled) {
+                editor.insertSnippet(new vscode.SnippetString(params.text))
+            }
             params.command && vscode.commands.executeCommand(params.command)
         }),
 
@@ -76,29 +96,6 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
                 return getClientConfig(uri, params.section, params.name)
             }
             return vscode.workspace.getConfiguration(params.section, uri)
-        }),
-
-        // 应用工作区更改
-        client.onNotification(LS_HANDLERS.ApplyWorkspaceEdit, (edits: ApplyWorkspaceEditParams) => {
-            const workspaceEdit = new vscode.WorkspaceEdit()
-            edits.forEach(editItem => {
-                editItem.changes.forEach(change => {
-                    workspaceEdit.replace(
-                        vscode.Uri.file(editItem.fileName),
-                        new vscode.Range(
-                            new vscode.Position(
-                                change.range.start.line,
-                                change.range.start.character
-                            ),
-                            new vscode.Position(change.range.end.line, change.range.end.character)
-                        ),
-                        change.newText
-                    )
-                })
-            })
-            vscode.workspace.applyEdit(workspaceEdit, {
-                isRefactoring: true
-            })
         })
     )
 }

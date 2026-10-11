@@ -1,0 +1,5 @@
+<lang-ts>
+    const awaitPayload = Promise.resolve("x")
+</lang-ts>
+<div #await={awaitPayload}>pending</div>
+<div #then={thenVal}>{thenVal.nopeProp}</div>

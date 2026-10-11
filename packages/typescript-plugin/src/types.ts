@@ -9,3 +9,7 @@ export type SetStateOptions = Partial<{
     adapter: TypescriptAdapter
     projectService: TS.server.ProjectService
 }>
+
+export type PluginModules = {
+    typescript: typeof TS
+}

@@ -10,7 +10,8 @@
         "build:clean": "rimraf packages/language-service/dist packages/mcp-server/dist",
         "build:language-service-types": "cd ./packages/language-service && tsc -p tsconfig.dts.json",
         "build:bundle": "node ./scripts/export-raw.js && rollup -c",
-        "build:post": "rimraf packages/language-service/dist/temp-types"
+        "build:post": "rimraf packages/language-service/dist/temp-types",
+        "reinstall": "find . -name package-lock.json -not -path '*/node_modules/*' -delete && rm -rf node_modules packages/*/node_modules && pnpm install"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^26.0.3",

@@ -32,13 +32,22 @@ export const complete: CompletionHandler = async ({ textDocument, position, cont
         return _getComponentInfos(fileName, 30)
     }
 
+    // 在客户端指定文档中插入代码片段
+    const insertSnippetOfDocument = (snippet: string | InsertSnippetParams) => {
+        connection.sendNotification(LS_HANDLERS.InsertSnippet, {
+            ...(isString(snippet) ? { text: snippet } : snippet),
+            uri: document.uri,
+            version: document.version
+        } satisfies InsertSnippetParams)
+    }
+
     return await doComplete(
         cr,
         offset,
         trigger,
         isTestingEnv,
         projectKind,
-        insertSnippet,
+        insertSnippetOfDocument,
         getComponentInfos,
         getScriptCompletions,
         context?.triggerKind
@@ -53,18 +62,6 @@ export const resolveCompletion: ResolveCompletionHandler = async (item, token) =
         item,
         getCompileResultByPath,
         getScriptCompletionDetail
-    )
-}
-
-// 在客户端活跃文档中插入代码片段
-function insertSnippet(snippet: string | InsertSnippetParams) {
-    connection.sendNotification(
-        LS_HANDLERS.InsertSnippet,
-        isString(snippet)
-            ? {
-                  text: snippet
-              }
-            : snippet
     )
 }
 

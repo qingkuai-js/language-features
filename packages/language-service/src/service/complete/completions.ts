@@ -326,7 +326,7 @@ export async function doComplete(
         const nameRange = cr.getVscodeRange(nameStartIndex, nameEndIndex)
         const useKebab =
             attrName.includes("-") ||
-            prettierConfig?.qingkuai.componentAttributeFormatPreference === "kebab"
+            prettierConfig?.componentAttributeFormatPreference === "kebab"
 
         // 返回引用属性补全建议
         if (!isTestingEnv && nameFirstChar === "&") {
@@ -545,7 +545,6 @@ async function doCustomTagComplete(
         }
 
         // 为内置元素添加emmet支持
-
         builtInTags.forEach(({ name, description }) => {
             const quote = config!.prettierConfig?.singleQuote ? "'" : '"'
             const attr = parentIsComponent ? ` name=${quote}$1${quote}` : " #$1"

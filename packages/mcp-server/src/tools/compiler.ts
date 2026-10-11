@@ -10,12 +10,6 @@ export function registerCompilerTools(server: McpServer) {
         {
             inputSchema: z.object({
                 source: z.string().min(1).describe("Qingkuai (.qk) source code to check"),
-                shorthandDerivedDeclaration: z
-                    .boolean()
-                    .optional()
-                    .describe(
-                        "Enable shorthand derived declaration syntax (e.g., $var instead of derived()). Default: false"
-                    ),
                 allowConstReactive: z
                     .boolean()
                     .optional()
@@ -26,10 +20,9 @@ export function registerCompilerTools(server: McpServer) {
             title: "Check Qingkuai Syntax",
             description: SYNTAX_CHECK_TOOL_DESCRIPTION
         },
-        async ({ source, shorthandDerivedDeclaration, allowConstReactive }) => {
+        async ({ source, allowConstReactive }) => {
             try {
                 const result = compileIntermediate(source, {
-                    shorthandDerivedDeclaration,
                     allowConstReactive
                 })
 
@@ -91,14 +84,16 @@ export function registerCompilerTools(server: McpServer) {
                     .boolean()
                     .optional()
                     .describe("Preserve HTML comments in template. Default: false"),
-                shorthandDerivedDeclaration: z
-                    .boolean()
-                    .optional()
-                    .describe("Enable shorthand derived declaration syntax. Default: false"),
                 allowConstReactive: z
                     .boolean()
                     .optional()
                     .describe("Allow constant declarations to be marked as reactive. Default: true"),
+                requireReactivityMark: z
+                    .boolean()
+                    .optional()
+                    .describe(
+                        "Require top-level variable declarations to be explicitly marked with reactivity built-ins. Default: false"
+                    ),
                 reactivityMode: z
                     .enum(["reactive", "shallow"])
                     .optional()
@@ -116,25 +111,29 @@ export function registerCompilerTools(server: McpServer) {
             hashId,
             debug,
             sourcemap,
+            whitespace,
+            reactivityMode,
+            allowConstReactive,
             interpretiveComments,
             preserveHtmlComments,
-            shorthandDerivedDeclaration,
-            allowConstReactive,
-            reactivityMode,
-            whitespace
+            requireReactivityMark,
         }) => {
             try {
-                const result = compile(source, {
-                    hashId,
-                    debug,
-                    sourcemap,
-                    interpretiveComments,
-                    preserveHtmlComments,
-                    shorthandDerivedDeclaration,
-                    allowConstReactive,
-                    reactivityMode,
-                    whitespace
-                })
+                // 发布版 qingkuai 的类型声明尚未包含 requireReactivityMark，运行时已支持
+                const options = Object.assign(
+                    {
+                        hashId,
+                        debug,
+                        sourcemap,
+                        interpretiveComments,
+                        preserveHtmlComments,
+                        allowConstReactive,
+                        reactivityMode,
+                        whitespace
+                    },
+                    { requireReactivityMark }
+                )
+                const result = compile(source, options)
 
                 const errorCount = result.messages.filter(m => m.type === "error").length
                 const warningCount = result.messages.filter(m => m.type === "warning").length

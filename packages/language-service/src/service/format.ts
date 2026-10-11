@@ -14,8 +14,7 @@ export async function format(
         const formatedContent = await format(source, {
             plugins,
             parser: "qingkuai",
-            ...cr.config?.prettierConfig,
-            ...cr.config?.prettierConfig?.qingkuai
+            ...cr.config?.prettierConfig
         })
 
         return [

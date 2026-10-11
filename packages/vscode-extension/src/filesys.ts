@@ -1,29 +1,26 @@
-import type { RenameFileParams, RetransmissionParams } from "../../../types/communication"
+import type {
+    RenameFileParams,
+    RenameFileResult,
+    RetransmissionParams
+} from "../../../types/communication"
+import type { RenameFilePair } from "./types"
 
 import * as vscode from "vscode"
+
 import nodePath from "node:path"
 
 import { getVscodeConfigTarget } from "./config"
+import { inspect } from "../../../shared-util/log"
 import { debounce } from "../../../shared-util/sundry"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
-import { client, limitedScriptLanguageFeatures, disposables } from "./state"
+import { Logger, client, limitedScriptLanguageFeatures, disposables } from "./state"
 
 export function attachFileSystemHandlers() {
-    if (limitedScriptLanguageFeatures) {
+    if (!limitedScriptLanguageFeatures) {
         disposables.push(
-            vscode.workspace.onDidRenameFiles(async ({ files }) => {
-                for (const { oldUri, newUri } of files) {
-                    const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
-                    if (isQingkuaiFileName(oldPath) && isQingkuaiFileName(newPath)) {
-                        if (await shouldUpdateImports(newUri)) {
-                            client.sendNotification(LS_HANDLERS.RenameFile, {
-                                oldPath,
-                                newPath
-                            } satisfies RenameFileParams)
-                        }
-                    }
-                }
+            vscode.workspace.onWillRenameFiles(evt => {
+                evt.waitUntil(updateImportsOnRename(evt.files))
             })
         )
     }
@@ -66,7 +63,47 @@ export function attachFileSystemHandlers() {
     disposables.push(watcher)
 }
 
-async function shouldUpdateImports(uri: vscode.Uri) {
+async function updateImportsOnRename(files: readonly RenameFilePair[]) {
+    const workspaceEdit = new vscode.WorkspaceEdit()
+    for (const { oldUri, newUri } of files) {
+        const [oldPath, newPath] = [oldUri.fsPath, newUri.fsPath]
+        if (!isQingkuaiFileName(oldPath) || !isQingkuaiFileName(newPath)) {
+            continue
+        }
+        if (!(await shouldUpdateImports(newUri, oldUri))) {
+            continue
+        }
+
+        try {
+            const ret = await client.sendRequest<RenameFileResult>(LS_HANDLERS.RenameFile, {
+                oldPath,
+                newPath
+            } satisfies RenameFileParams)
+            ret.forEach(editItem => {
+                editItem.changes.forEach(change => {
+                    workspaceEdit.replace(
+                        vscode.Uri.file(editItem.fileName),
+                        new vscode.Range(
+                            new vscode.Position(
+                                change.range.start.line,
+                                change.range.start.character
+                            ),
+                            new vscode.Position(change.range.end.line, change.range.end.character)
+                        ),
+                        change.newText
+                    )
+                })
+            })
+        } catch (error) {
+            Logger.warn(
+                `Update imports on renaming ${nodePath.basename(oldPath)} failed.\n${inspect(error)}`
+            )
+        }
+    }
+    return workspaceEdit
+}
+
+async function shouldUpdateImports(newUri: vscode.Uri, oldUri: vscode.Uri) {
     enum ConfigValue {
         never = "never",
         always = "always"
@@ -74,10 +111,11 @@ async function shouldUpdateImports(uri: vscode.Uri) {
     const updateImportsConfigName = "updateImportsOnFileMove.enabled"
     const languageConfig = vscode.workspace.getConfiguration(
         await client.sendRequest(LS_HANDLERS.Retransmission, {
-            data: uri.fsPath,
+            // will 阶段旧路径必然存在，语言 id 由内容决定且不随改名变化
+            data: oldUri.fsPath,
             name: TP_HANDLERS.GetLanguageId
         } satisfies RetransmissionParams),
-        uri
+        newUri
     )
     const updateImportsConfig: string = languageConfig.get(updateImportsConfigName, "prompt")
     if (updateImportsConfig === ConfigValue.always) {
@@ -99,7 +137,7 @@ async function shouldUpdateImports(uri: vscode.Uri) {
     const neverItem: vscode.MessageItem = {
         title: vscode.l10n.t("Never")
     }
-    const message = `Update imports for ${nodePath.basename(uri.fsPath)}`
+    const message = `Update imports for ${nodePath.basename(newUri.fsPath)}`
     const buttons = [rejectItem, acceptItem, alwaysItem, neverItem]
     const choice = await vscode.window.showInformationMessage(message, { modal: true }, ...buttons)
 

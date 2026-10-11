@@ -1,43 +1,44 @@
 # Reactivity Inference Rules
 
-In Qingkuai, the compiler uses a set of inference rules to determine the reactivity type of each identifier automatically. Understanding these rules helps developers manage state more precisely and override default behavior when necessary through explicit markers.
+In Qingkuai, the compiler automatically determines the reactivity type of each identifier based on a set of inference rules. Understanding these rules helps developers manage state better and override default behavior through explicit markers when necessary.
 
 ---
 
 ## Inference Flow
 
-For each identifier in the top-level scope of a script block, the compiler performs reactivity inference in the following order:
+The compiler performs reactivity inference for each identifier in the top-level scope of a script block in the following order:
 
-1. **Check explicit markers**: if a variable declaration calls `reactive`, `shallow`, or `raw` in its initializer, that explicit marker takes priority.
-2. **Apply implicit rules**: if no explicit marker is used, inference is based on how the identifier is used in the template and how it is declared.
+1. **Check explicit markers**: if a variable declaration calls `reactive`, `shallow`, or `raw` in its initial value, inference follows the explicit marker with priority;
+2. **Apply implicit rules**: if no explicit marker is used, the identifier is implicitly inferred based on whether it is accessed in the template and its declaration form.
 
 ---
 
 ## Explicit Markers
 
-Built-in reactivity markers must be called in the initializer of a variable declaration. When an identifier uses one of these built-in methods as an explicit marker, the compiler infers the corresponding reactivity type with priority:
+Built-in reactivity marker methods must be called in the initial value part of a variable declaration. When an identifier is explicitly marked with one of the above built-in methods, the compiler infers it as the corresponding reactivity type with priority:
 
-```qk
-<lang-ts>
-    const config = raw([1, 2, 3])               // raw value
-    const list = shallow({ debug: false })      // shallow reactive
-    const user = reactive({ name: "Qingkuai" }) // deeply reactive
-</lang-ts>
+```js
+const config = raw([1, 2, 3]) // raw value
+const list = shallow({ debug: false }) // shallow reactive
+const user = reactive({ name: "Qingkuai" }) // deeply reactive
 ```
 
-### Degeneration
+### Degenerate Behavior
 
-Even when an explicit marker is used, the identifier degenerates into a raw value and the marker is ignored if both of the following conditions are met:
+Even when an explicit marker is used, if a declaration meets both of the following conditions, the identifier **degenerates into a raw value** and the explicit marker will be ignored by the compiler:
 
 - It is declared with `const`
-- Its initial value is a literal type, such as a numeric literal or string literal
+- Its initial value is a literal type (such as a numeric literal, a string literal, etc.)
 
-```qk
-<lang-ts>
-    const a = shallow(1)    // degenerates into a raw value; shallow is ignored
-    const b = reactive("")  // degenerates into a raw value; reactive is ignored
-    const c = reactive({})  // inferred normally; final reactivity depends on later usage
-</lang-ts>
+```js
+// degenerates into a raw value; shallow is ignored
+const a = shallow(1)
+
+// degenerates into a raw value; reactive is ignored
+const b = reactive("")
+
+// inferred normally; its reactivity type is determined by later usage
+const c = reactive({})
 ```
 
 If degeneration does not occur, the identifier is inferred as the reactivity type specified by the explicit marker.
@@ -47,55 +48,75 @@ If degeneration does not occur, the identifier is inferred as the reactivity typ
 ## Aliases and Derived Values
 
 - Alias bindings can only be created explicitly through the `alias` built-in method.
-- Derived reactive values can only be created and explicitly marked through `derived`, `derivedExp`, or their shorthand declaration forms.
+- Derived reactive values can only be explicitly marked and created through the `derived` or `derivedExp` built-in methods.
 
 These rules are independent of the explicit marking flow for `reactive`, `shallow`, and `raw`:
 
-```qk
-<lang-ts>
-    const firstName = reactive("Qing")
-    const lastName = reactive("kuai")
+```js
+const firstName = reactive("Qing")
+const lastName = reactive("kuai")
 
-    const userName = alias(props.userInfo.name)
+const userName = alias(props.userInfo.name)
 
-    const fullName = derived(() => firstName + " " + lastName)
-    const shortName = derivedExp(firstName + "-" + lastName)
-
-</lang-ts>
+const fullName = derived(() => firstName + " " + lastName)
+const shortName = derivedExp(firstName + "-" + lastName)
 ```
 
 ---
 
 ## Implicit Inference
 
-When an identifier does not use any explicit marker, the compiler applies the following implicit rules.
+When an identifier does not use any explicit marker, the compiler first splits paths by whether it is accessed in the template, then combines the declaration form and modifications in the script to reach the inference result.
 
-### Not Used in the Template
+### Not Accessed in the Template
 
-If an identifier is not accessed in the template, the compiler infers it as a raw value. Such identifiers exist only in script logic and do not participate in dependency collection and update scheduling.
+When an identifier is not accessed in the template, the compiler infers it as a raw value. Such identifiers exist only in script logic and do not participate in dependency collection and the update flow.
 
 ```qk
 <lang-ts>
-    let count = 0     // never used in the template -> raw value
-    let message = ""  // never used in the template -> raw value
+    // never accessed in the template → raw value
+    let count = 0
+
+    // never accessed in the template → raw value
+    let message = ""
 </lang-ts>
 
 <p> count and message are not accessed here </p>
 ```
 
-### Used in the Template
+Note that not every identifier that appears in the template counts as accessed: in template interpolations and embedded script expressions, identifiers wrapped with the built-in method `raw` as a [non-reactive read](docs://basic/reactivity.md#non-reactive-reads) are not considered accessed in the template.
 
-When an identifier is accessed in the template, the compiler checks whether it is modified anywhere in the script. This check applies to identifiers declared with `let` or `var` with a literal initial value, as well as to mutable identifiers with a non-literal initializer (such as `let x = foo()`) in `shallow` mode:
+```qk
+<lang-ts>
+    let user = {
+        name: "Qingkuai"
+    }
 
-- **Not modified**: inferred as a raw value to avoid unnecessary dependency collection and update overhead
+    // no valid reactive access in the template → raw value
+    let config = load()
+</lang-ts>
+
+<p>{user.name + raw(config).label}</p>
+<p>{user.name + raw(config.label)}</p>
+```
+
+### Accessed in the Template
+
+When an identifier is accessed in the template, the compiler checks whether it is modified in the script. This check applies to identifiers declared with `let` or `var` whose initial value is a literal type, identifiers declared by `class` and `function` declarations, as well as mutable identifiers in `shallow` mode whose initial value is a non-literal expression:
+
+- **Not modified**: inferred as a raw value, avoiding unnecessary dependency collection and update overhead
 - **Modified**: inferred as the reactivity type corresponding to the current reactivity mode
 
 ```qk
 <lang-js shallow>
     let count = 0
-    let state = load()   // never assigned -> stays a raw variable
+
+    // never assigned → not reactive
+    let state = load()
+
     function setCount(v) {
-        count = v        // assignment exists in the source -> count is inferred as shallow
+        // assignment exists in the source → count is inferred as shallow
+        count = v
     }
 </lang-js>
 
@@ -103,52 +124,93 @@ When an identifier is accessed in the template, the compiler checks whether it i
 <button @click={setCount}>{ count }</button>
 ```
 
-### Reference Attributes
+The modified-check is not limited to explicit assignments, increments, or other mutation statements in the script; there are two special rules:
 
-For mutable identifiers declared with `let` or `var`, when they are used by reference attributes (such as `&value` and `&dom`), the compiler treats those identifiers as having a reachable mutation path. Even if there is no explicit assignment, increment, or other mutation statement in the script, they are still inferred as reactive.
+1. For mutable identifiers declared with `let` or `var`, when they are used by a reference attribute (such as `&value`, `&handle`), the compiler treats the identifier as having a reachable mutation path; even if there is no mutation statement in the script, it is still inferred as reactive:
+
+    ```qk
+    <lang-ts>
+        let inputValue = "Initial value"
+    </lang-ts>
+
+    <input type="text" &value={inputValue} />
+    ```
+
+2. For non-variable declarations such as `class` declarations, `function` declarations, and TypeScript `enum` declarations: these declarations cannot use explicit markers, and their reactivity is decided entirely by implicit inference. Among them, `class` and `function` declarations follow the same modified-check as `let`/`var` declarations with literal initial values: they are inferred as reactive only when the name is assigned in the script (or used by a reference attribute) and accessed in the template; an `enum` declaration compiles to a mutable binding initialized through assignment, and the compiler treats it as always modified: when accessed in the template, it is directly inferred as the corresponding reactivity type per the current reactivity mode:
+
+    ```qk
+    <lang-ts>
+        class User {
+            name = "Qingkuai"
+        }
+
+        function getUser() {
+            return new User()
+        }
+
+        enum Status {
+            Active,
+            Inactive
+        }
+
+        function reload() {
+            // the name is assigned → satisfies the modified-check
+            getUser = () => new User()
+        }
+    </lang-ts>
+
+    <!-- assigned + accessed in the template → inferred as reactive -->
+    <p>{ getUser().name }</p>
+
+    <!-- enum is always treated as modified → inferred as reactive -->
+    <p>{ Status.Active }</p>
+    ```
+
+### Access Propagation of Derived Sources
+
+When a derived reactive value is accessed in the template, identifiers read inside its `derived` getter or `derivedExp` expression literal are also counted as accessed in the template and participate in inference under the rules of the previous section (the script must still contain a modification):
 
 ```qk
-<lang-ts>
-    let inputValue = "Initial value"
-</lang-ts>
+<lang-js>
+    let count = 0
 
-<input type="text" &value={inputValue} />
+    function setCount(v) {
+        // modification exists → count is inferred as reactive
+        count = v
+    }
+
+    const double = derivedExp(count * 2)
+</lang-js>
+
+<button @click={setCount}>{ double }</button>
 ```
 
-### Other Declaration Forms
+---
 
-For non-variable declarations such as `class` declarations, `function` declarations, and TypeScript `enum` declarations, the compiler treats them as mutable declarations during implicit inference.
-
-- These declarations cannot be explicitly marked with `reactive`, `shallow`, or `raw`.
-- If used in the template, they participate in inference according to the current reactivity mode; otherwise, they are treated as raw values.
-
-### The allowConstReactive Option
+## The allowConstReactive Option
 
 The [`allowConstReactive`](docs://misc/config-files.md#allowconstreactive) runtime configuration option controls whether constant declarations participate in reactivity inference. Its default value is `true`. When this option is set to `false`:
 
-- During implicit inference, constants declared with `const` are not inferred as reactive and are uniformly treated as raw values.
-- During explicit marking, using `reactive` or `shallow` to mark a constant declaration whose initial value is not a literal expression is disallowed and raises a compile error:
+- During implicit inference, constants declared with `const` are not inferred as reactive and are uniformly treated as raw values;
+- During explicit marking, using `reactive` or `shallow` to mark a constant declaration whose initial value is a non-literal expression is disallowed and raises a compile error:
 
-```qk
-<lang-ts>
-    const list = shallow(getList())        // compile error: 1070
-    const config = reactive(loadConfig())  // compile error: 1070
-</lang-ts>
+```js
+const list = shallow(getList()) // compile error: 1070
+const config = reactive(loadConfig()) // compile error: 1070
 ```
 
 ---
 
 ## Inference Hints
 
-If the Qingkuai [VS Code extension](docs://misc/language-features.md#ide-extensions) is installed, identifiers in the top-level scope of embedded scripts display inline hints showing the reactivity status inferred by the compiler:
+If the Qingkuai [VS Code extension](docs://misc/language-features.md#ide-extensions) is installed, identifiers in the top-level scope of embedded scripts show inlay hints of the reactivity status inferred by the compiler:
 
 <img src="/static/medias/inferred-inlay-hint.png" alt="inferred-inlay-hint.png" style="width:60%; margin-left:20%;"  />
 
-<div class="custom-block tip">
-    You can enable or disable this hint by modifying the <code>inlayHintReactiveStatus</code> setting in the VS Code extension.
-</div>
+> [!TIP]
+> You can enable or disable this hint by modifying the `inlayHintReactiveStatus` setting in the VS Code extension.
 
-When hovering over an identifier in the top-level scope, the language server also shows the reactivity type inferred by the compiler in the tooltip:
+When hovering the mouse pointer over an identifier in the top-level scope, the language server also shows the reactivity type inferred by the compiler in the tooltip:
 
 <img src="/static/medias/inferred-reactive.png" alt="inferred-reactive.png" style="width:60%; margin-left:20%;" />
 <img src="/static/medias/inferred-raw-never-mutated.png" alt="inferred-raw-never-mutated.png" style="width:60%; margin-left:20%;"  />
@@ -156,6 +218,5 @@ When hovering over an identifier in the top-level scope, the language server als
 <img src="/static/medias/inferred-derived.png" alt="inferred-derived.png" style="width:60%; margin-left:20%;" />
 <img src="/static/medias/inferred-downgraded.png" alt="inferred-downgraded.png" style="width:60%; margin-left:20%;" />
 
-<div class="custom-block tip">
-    You can enable or disable this hint by modifying the <code>hoverHintReactiveStatus</code> setting in the VS Code extension.
-</div>
+> [!TIP]
+> You can enable or disable this hint by modifying the `hoverHintReactiveStatus` setting in the VS Code extension.

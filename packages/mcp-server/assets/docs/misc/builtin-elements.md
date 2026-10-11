@@ -1,14 +1,14 @@
 # Built-in Elements
 
-In Qingkuai, built-in elements extend template syntax and provide stronger expressive power than standard HTML. They usually take on framework-level responsibilities with specific semantics and behavior, and they play an important role when handling rendering logic or control structures. Built-in elements are typically prefixed with `qk:` to avoid conflicts with future built-in HTML tags or taking over component naming space.
+In Qingkuai, built-in elements are used to extend template syntax and provide stronger expressive power than standard HTML. They usually take on special framework-level responsibilities with specific semantics and behavior, and they play an important role when handling rendering logic or control structures. Built-in elements are typically prefixed with `qk:` to avoid conflicts with future built-in HTML tags or taking over component naming space.
 
 ---
 
 ## Spread
 
-In previous chapters, we have already used the `qk:spread` built-in element many times. Its main role is to act as a virtual mounting point for directives, so all of its child elements are affected together by the mounted directives. Most importantly, it is not rendered as an actual HTML element, so it does not interfere with the final page structure.
+In the example code of previous chapters, we have already used the `qk:spread` built-in element many times. Its main role is to act as a virtual mounting point for directives, so all of its child elements are affected together by the mounted directives. Most importantly, it is not rendered as an actual HTML element, so it does not interfere with the final page structure.
 
-Suppose you want to create multiple `p + button` groups in a loop without introducing an extra meaningless parent element:
+Suppose we want to create multiple `p + button` elements in a loop but do not want to introduce an extra meaningless parent element, we can do this:
 
 ```qk
 <qk:spread #for={3}>
@@ -17,7 +17,7 @@ Suppose you want to create multiple `p + button` groups in a loop without introd
 </qk:spread>
 ```
 
-Another example is conditionally showing multiple `li` elements at once:
+Another example is when we need to conditionally show multiple `li` elements:
 
 ```qk
 <ul class="list">
@@ -30,7 +30,7 @@ Another example is conditionally showing multiple `li` elements at once:
 </ul>
 ```
 
-Or when slot content consists of multiple sibling elements:
+When slot content consists of multiple sibling elements:
 
 ```qk
 <Component>
@@ -41,7 +41,7 @@ Or when slot content consists of multiple sibling elements:
 </Component>
 ```
 
-You can also use it to attach a directive to a text node:
+Adding a directive to a text node:
 
 ```qk
 <qk:spread
@@ -52,6 +52,5 @@ You can also use it to attach a directive to a text node:
 </qk:spread>
 ```
 
-<div class="custom-block tip">
-    These examples share one common pattern: <code>qk:spread</code> is usually used to apply directives uniformly to multiple sibling nodes that do not share a common parent. This is also what the word “spread” in its name conveys.
-</div>
+> [!TIP]
+> One common point can be seen: `qk:spread` is usually used to add directives uniformly to multiple sibling elements that do not share a common parent, which is also exactly what the word “spread” in its name conveys: to scatter, to spread out.

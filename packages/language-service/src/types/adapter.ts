@@ -10,13 +10,19 @@ export interface DiffResult {
 
 export interface ExtractedSlotName {
     name: string
-    sourceRange: Pair<number>
+    sourceRange?: Pair<number>
+}
+
+export interface MetaType {
+    type: TS.Type
+    start: number
+    end: number
 }
 
 export interface ExtractedSlotContext {
     property: {
         name: string
-        sourceRange: Pair<number>
+        sourceRange?: Pair<number>
     }
     valueType: string
 }
@@ -60,4 +66,14 @@ export interface AdapterTsProject {
     getScriptVersion?: TS.LanguageServiceHost["getScriptVersion"]
     getScriptSnapshot?: TS.LanguageServiceHost["getScriptSnapshot"]
     resolveModuleNameLiterals?: TS.LanguageServiceHost["resolveModuleNameLiterals"]
+}
+
+export interface FileReferenceOptions {
+    recursive?: boolean
+    justOpening?: boolean
+}
+
+export interface FileEditItem {
+    content: string
+    sourceRange?: Pair<number>
 }

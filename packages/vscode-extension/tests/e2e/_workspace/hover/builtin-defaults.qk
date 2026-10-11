@@ -1,0 +1,7 @@
+<lang-ts>
+    interface Meta {
+        props?: { title?: string }
+    }
+    defaults({ props: { title: "Untitled" } })
+</lang-ts>
+<p>ok</p>

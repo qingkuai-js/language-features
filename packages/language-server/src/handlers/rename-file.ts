@@ -1,19 +1,16 @@
 import type { RenameFileResult, RenameFileParams } from "../../../../types/communication"
 
-import { LS_HANDLERS, TP_HANDLERS } from "../../../../shared-util/constant"
-import { connection, limitedScriptLanguageFeatures, tpic, tpicConnectedPromise } from "../state"
+import { TP_HANDLERS } from "../../../../shared-util/constant"
+import { tpic, limitedScriptLanguageFeatures, tpicConnectedPromise } from "../state"
 
-export async function renameFile(params: RenameFileParams) {
+export async function renameFile(params: RenameFileParams): Promise<RenameFileResult> {
     if (limitedScriptLanguageFeatures) {
-        return null
+        return []
     }
 
     if (tpicConnectedPromise.state === "pending") {
         await tpicConnectedPromise
     }
 
-    connection.sendNotification(
-        LS_HANDLERS.ApplyWorkspaceEdit,
-        await tpic.sendRequest<RenameFileParams, RenameFileResult>(TP_HANDLERS.RenameFile, params)
-    )
+    return await tpic.sendRequest<RenameFileParams, RenameFileResult>(TP_HANDLERS.RenameFile, params)
 }

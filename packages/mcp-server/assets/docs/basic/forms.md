@@ -1,12 +1,12 @@
 # Form Handling
 
-In the earlier [Reference Attributes](docs://basic/reference-attributes.md) article, we already introduced the basic usage of obtaining variable references through the `&` syntax. In real development, the values of form elements often need to stay synchronized with state variables, so reference attributes are especially important in form handling scenarios. This section focuses on the usage details of reference attributes on form elements, explaining how this mechanism can be used to efficiently access and control form data and achieve reactive data binding and updates.
+In the earlier [Reference Attributes](docs://basic/reference-attributes.md) article, we have already taken a preliminary look at the basic usage of obtaining variable references through the `&` syntax. In real development, the values of form elements often need to stay synchronized with state variables, so reference attributes are especially important in form handling scenarios. This section focuses on the usage details of reference attributes on form elements, explaining how this mechanism can be used to efficiently access and control form data and achieve reactive data binding and updates.
 
 ---
 
 ## Text Input
 
-In the [Form Input Handling](docs://basic/reference-attributes.md#form-input-handling) section of the reference attributes article, we introduced how to use the `&value` reference attribute on an `input` tag to synchronize the input content with a variable in the embedded script. Similarly, `textarea` supports the same pattern:
+In the [Form Input Handling](docs://basic/reference-attributes.md#form-input-processing) section of the reference attributes article, we introduced how to use the `&value` reference attribute on an `input` tag to synchronize the input content with a variable in the embedded script. Similarly, the `textarea` tag also supports the same usage:
 
 ```qk
 <lang-js>
@@ -28,9 +28,8 @@ In addition, the `input` tag can also accept a `&number` reference attribute, wh
 <input type="number" &number={numericValue} />
 ```
 
-<div class="custom-block warning">
-    Note that the <code>&number</code> reference attribute sets the target variable to <code>NaN</code> when the input value cannot be converted into a valid number. For this reason, it is usually intended to be used together with <code>type="number"</code> on the <code>input</code> tag so that the input stays valid.
-</div>
+> [!WARNING]
+> Note that the `&number` reference attribute sets the target variable to `NaN` when the input value cannot be converted into a valid number. For this reason, it should usually be used together with the `type="number"` attribute on the `input` tag to ensure the validity of the input value.
 
 ---
 
@@ -60,7 +59,7 @@ For radio buttons and checkboxes, you can add `&checked` to synchronize the chec
 
 ## Checkbox and Radio Groups
 
-Sometimes you may need to synchronize the combined state of multiple radio buttons or checkboxes. In that case, you can use the `&group` attribute and pass in an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) or [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set):
+Sometimes you may need to synchronize the combined state of multiple checkboxes or radio buttons. In that case, you can use the `&group` attribute and pass in an [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) or [Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set):
 
 |js|ts|
 
@@ -159,7 +158,7 @@ For a multi-select `select`, you can pass an [Array](https://developer.mozilla.o
 <p>Selected items: {selectedItems.join(", ")}</p>
 ```
 
-Using a `Set` is completely equivalent:
+Using a `Set` instead is also completely equivalent:
 
 ```qk
 <lang-js>

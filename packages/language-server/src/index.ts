@@ -1,7 +1,7 @@
-import { connection, tpic } from "./state"
 import { hover } from "./handlers/hover"
 import { format } from "./handlers/format"
 import { connectTsServer } from "./client"
+import { connection, tpic } from "./state"
 import { cleanConfigCache } from "./compile"
 import { inlayHint } from "./handlers/inlay-hint"
 import { initialize } from "./handlers/initialize"
@@ -41,10 +41,10 @@ connection.onRequest("textDocument/inlayHint", inlayHint)
 
 // // 自定义事件处理
 connection.onRequest("ping", _ => "pong")
+connection.onRequest(LS_HANDLERS.RenameFile, renameFile)
 connection.onRequest(LS_HANDLERS.ConnectToTsServer, connectTsServer)
 
 connection.onNotification(LS_HANDLERS.RefreshDiagnostic, (onlyQk: boolean) => {
     tpic.sendNotification(TP_HANDLERS.RefreshDiagnostic, onlyQk)
 })
-connection.onNotification(LS_HANDLERS.RenameFile, renameFile)
 connection.onNotification(LS_HANDLERS.CleanLanguageConfigCache, cleanConfigCache)

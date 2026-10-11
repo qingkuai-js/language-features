@@ -1,0 +1,2 @@
+<div @click={handleClick}@>
+    <input @inp

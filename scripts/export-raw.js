@@ -18,7 +18,6 @@ fsextra.readdirSync(dir, { recursive: true }).forEach(file => {
         for (const item of content.matchAll(re)) {
             const relativePath = item[2].slice(0, -4)
             const absolutePath = nodePath.resolve(fullPath, "..", relativePath)
-            console.log(absolutePath)
             fsextra.createFileSync(absolutePath)
             fsextra.writeFileSync(
                 absolutePath,

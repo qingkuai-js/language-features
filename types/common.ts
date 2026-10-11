@@ -77,12 +77,12 @@ export interface TSFormattingOptions {
 
 export type QingkuaiConfiguration = {
     allowConstReactive: boolean
+    requireReactivityMark: boolean
     interpretiveComments: boolean
     resolveImportExtension: boolean
-    shorthandDerivedDeclaration: boolean
     reactivityMode: "reactive" | "shallow"
     whitespace: "preserve" | "trim" | "collapse" | "trim-collapse"
-    preserveHtmlComments: "all" | "never" | "development" | "production"
+    preserveHtmlComments: "always" | "never" | "development" | "production"
 }
 
 export interface TSClientConfiguration {
@@ -91,12 +91,10 @@ export interface TSClientConfiguration {
 }
 
 export type PrettierConfiguration = PrettierOptions & {
-    qingkuai: Partial<{
-        selfCloseEmptySlotTags: boolean
-        spaceAroundInterpolation: boolean
-        componentTagFormatPreference: "camel" | "kebab"
-        componentAttributeFormatPreference: "camel" | "kebab"
-    }>
+    spaceAroundInterpolation?: boolean
+    selfCloseEmptySlotTags?: boolean
+    componentTagFormatPreference?: "camel" | "kebab"
+    componentAttributeFormatPreference?: "camel" | "kebab"
 }
 
 export type CompileResult = CompileIntermediateResult & {

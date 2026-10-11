@@ -15,6 +15,12 @@ export type IpcParticipant = {
     onNotification: OnNotificationMethod
     sendNotification: SendNotificationMethod
 }
+export type PendingRequestMeta = {
+    name: string
+    startedAt: number
+}
+
+export type OnReadErrorMethod = (msg: string, body: Buffer) => void
 
 export type OnRequestMethod = <P, R = any>(
     name: string,

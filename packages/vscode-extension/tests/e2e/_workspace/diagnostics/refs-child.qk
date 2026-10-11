@@ -1,0 +1,6 @@
+<lang-ts>
+    interface Meta {
+        refs: { refCount: number }
+    }
+</lang-ts>
+<p>child</p>

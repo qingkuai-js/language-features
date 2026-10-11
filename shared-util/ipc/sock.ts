@@ -1,16 +1,19 @@
-import fs from "node:fs"
-import { createConnection } from "net"
+import nodeFs from "node:fs"
+import nodeNet from "node:net"
+import nodeOs from "node:os"
+import nodePath from "node:path"
+
 import { createRandomHash } from "../sundry"
 
 // 删除套接字/命名管道文件
 export function rmSockFile(sockName: string) {
-    fs.rmSync(getSockPath(sockName))
+    nodeFs.rmSync(getSockPath(sockName))
 }
 
 // 确定不同平台上套接字/命名管道文件的路径
 export function getSockPath(name: string) {
     if (process.platform !== "win32") {
-        return `/tmp/${name}.sock`
+        return nodePath.join(getIpcRuntimeDir(), `${name}.sock`)
     } else {
         return `\\\\.\\pipe\\${name}`
     }
@@ -19,9 +22,10 @@ export function getSockPath(name: string) {
 // 检查套接字/命名管道文件是否正在使用
 export function isSockInUse(sockPath: string) {
     return new Promise<boolean>(resolve => {
-        createConnection(sockPath, () => {
+        const socket = nodeNet.createConnection(sockPath, () => {
             resolve(true)
-        }).on("error", () => {
+        })
+        socket.on("error", () => {
             resolve(false)
         })
     })
@@ -32,13 +36,17 @@ export function isSockInUse(sockPath: string) {
 export async function getValidPathWithHash(name: string) {
     const existingSocks = new Set<string>()
     if (process.platform !== "win32") {
-        for (const fileName of fs.readdirSync("/tmp")) {
+        const dir = getIpcRuntimeDir()
+        nodeFs.mkdirSync(dir, {
+            recursive: true
+        })
+        for (const fileName of nodeFs.readdirSync(dir)) {
             if (fileName.startsWith(name) && fileName.endsWith(".sock")) {
-                const sockFullPath = "/tmp/" + fileName
+                const sockFullPath = nodePath.join(dir, fileName)
                 if (await isSockInUse(sockFullPath)) {
                     existingSocks.add(sockFullPath)
                 } else {
-                    fs.rmSync("/tmp/" + fileName)
+                    nodeFs.rmSync(sockFullPath)
                 }
             }
         }
@@ -55,4 +63,8 @@ export async function getValidPathWithHash(name: string) {
             return nameWithHash
         }
     }
+}
+
+export function getIpcRuntimeDir() {
+    return nodePath.join(process.env.XDG_RUNTIME_DIR || nodeOs.tmpdir(), "qingkuai")
 }

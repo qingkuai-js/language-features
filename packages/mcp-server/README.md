@@ -6,10 +6,14 @@ MCP server for [Qingkuai](https://qingkuai.dev) — provides AI agents with synt
 
 | Tool | Description |
 |------|-------------|
-| `search_qingkuai_docs` | Search official Qingkuai syntax/reference docs. Always call this before falling back to website search. |
+| `search_qingkuai_docs` | Search official Qingkuai syntax/reference docs (English, Chinese, or syntax tokens like `#for` / `&value`). Results include matched sections with full content inline and cross-reference links. |
+| `read_qingkuai_doc` | Read a doc by its `docs://` URI; supports `#section` anchors for targeted reading. |
+| `get_qingkuai_project_bootstrap_guide` | Entry point for install/init/scaffold tasks; returns authoritative setup docs. |
 | `check_qingkuai_syntax` | Validate `.qk` source code syntax (template structure, script errors, directive usage) without full compilation. |
 | `compile_qingkuai` | Compile `.qk` source to JavaScript with source maps. |
 | `format_qingkuai_code` | Format a `.qk` file using Prettier with the Qingkuai plugin and write back to disk. |
+
+The server also sends a working protocol via `instructions` on initialize (search docs first, base answers on retrieved sections, prefer reference attributes, verify with `check_qingkuai_syntax`), so hosts surface the workflow even without loading prompts.
 
 ## Prompts
 

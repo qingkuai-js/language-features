@@ -47,8 +47,8 @@ class ConfigResolver {
                 interpretiveComments: true,
                 reactivityMode: "reactive",
                 whitespace: "trim-collapse",
+                requireReactivityMark: false,
                 resolveImportExtension: true,
-                shorthandDerivedDeclaration: true,
                 preserveHtmlComments: "development"
             },
             value

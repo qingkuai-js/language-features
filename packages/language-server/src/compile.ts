@@ -24,8 +24,8 @@ import { ensureGetTextDocument } from "./util"
 import { compileIntermediate } from "qingkuai/compiler"
 import { traverseObject } from "../../../shared-util/sundry"
 import { TextDocument } from "vscode-languageserver-textdocument"
-import { isNumber, isUndefined } from "../../../shared-util/assert"
 import { LS_HANDLERS, TP_HANDLERS } from "../../../shared-util/constant"
+import { isNull, isNumber, isUndefined } from "../../../shared-util/assert"
 
 const compileCache = new Map<string, Promise<CompileResult>>()
 const configCache = new Map<string, GetClientLanguageConfigResult>()
@@ -48,10 +48,7 @@ export async function getCompileResult(document: TextDocument) {
 
     const pms = (async () => {
         const clientConfig = await getConfigurationOfFile()
-        const compileResult = compileIntermediate(document.getText(), {
-            allowConstReactive: clientConfig.qingkuaiConfig.allowConstReactive,
-            shorthandDerivedDeclaration: clientConfig.qingkuaiConfig.shorthandDerivedDeclaration
-        })
+        const compileResult = compileIntermediate(document.getText(), clientConfig.qingkuaiConfig)
         const isTS = compileResult.scriptDescriptor.isTS
         const scriptLanguageId = isTS ? "typescript" : "javascript"
 
@@ -136,7 +133,7 @@ export async function getCompileResult(document: TextDocument) {
 
 // 清空已缓存的配置内容
 export function cleanConfigCache(dir?: string) {
-    if (isUndefined(dir)) {
+    if (isNull(dir) || isUndefined(dir)) {
         configCache.clear()
     } else {
         for (const key of configCache.keys()) {
@@ -166,17 +163,14 @@ export async function getCompileResultByPath(path: string) {
 
 function updatePrettierConfigurationForQingkuaiFile(config: GetClientLanguageConfigResult) {
     const { prettierConfig: pc, extensionConfig: ec } = config
-    if (isUndefined(pc.qingkuai)) {
-        pc.qingkuai = {}
+    if (isUndefined(pc.spaceAroundInterpolation)) {
+        pc.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
     }
-    if (isUndefined(pc.qingkuai.spaceAroundInterpolation)) {
-        pc.qingkuai.spaceAroundInterpolation = ec.insertSpaceAroundInterpolation
+    if (isUndefined(pc.componentTagFormatPreference)) {
+        pc.componentTagFormatPreference = ec.componentTagFormatPreference
     }
-    if (isUndefined(pc.qingkuai.componentTagFormatPreference)) {
-        pc.qingkuai.componentTagFormatPreference = ec.componentTagFormatPreference
-    }
-    if (isUndefined(pc.qingkuai.componentAttributeFormatPreference)) {
-        pc.qingkuai.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
+    if (isUndefined(pc.componentAttributeFormatPreference)) {
+        pc.componentAttributeFormatPreference = ec.componentAttributeFormatPreference
     }
 }
 

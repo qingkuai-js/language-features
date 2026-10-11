@@ -13,6 +13,7 @@ import {
     recoverNumberArray,
     compressNumberArray
 } from "../../../../shared-util/qingkuai"
+import { INITIAL_VERSION } from "../constants"
 import { PositionFlag } from "qingkuai/compiler"
 import { ignoredComponentNameChars } from "../regular"
 import { util as qingkuaiUtils } from "qingkuai/compiler"
@@ -44,6 +45,21 @@ export class QingkuaiFileInfo {
         private getSourceFile: Getter<TS.SourceFile>
     ) {}
 
+    get compressedIndexMap() {
+        return {
+            aitos: compressNumberArray(this.itos),
+            astoi: compressNumberArray(this.stoi)
+        }
+    }
+
+    get currentItos(): number[] {
+        return this.itos
+    }
+
+    get currentStoi(): number[] {
+        return this.stoi
+    }
+
     getSourceIndex(interIndex: number) {
         return this.itos[interIndex]
     }
@@ -52,18 +68,23 @@ export class QingkuaiFileInfo {
         return this.stoi[sourceIndex]
     }
 
+    // 避免各调用点解引用 undefined 抛异常打断整条请求
     getPositionByIndex(index: number) {
-        return this.positions[index]
+        return index >= 0 && index < this.positions.length ? this.positions[index] : undefined
     }
 
     isPositionFlagSetAtIndex(key: keyof typeof PositionFlag, index: number) {
-        return !!(this.positions[index].flag & PositionFlag[key])
+        const position = this.getPositionByIndex(index)
+        return !!position && !!(position.flag & PositionFlag[key])
     }
 
     adjustIndexMap(edit: FileEdit) {
         const newItos: number[] = []
         const editStartIndex = edit.editStartIndex
-        newItos.push(...this.itos.slice(0, editStartIndex))
+        const prefixEnd = Math.min(editStartIndex, this.itos.length)
+        for (let i = 0; i < prefixEnd; i++) {
+            newItos.push(this.itos[i])
+        }
 
         for (let i = 0, j = editStartIndex; i < edit.items.length; i++) {
             const item = edit.items[i]
@@ -75,7 +96,9 @@ export class QingkuaiFileInfo {
                 }
             }
             if (!item.sourceRange) {
-                newItos.push(...Array(contentLength).fill(-1))
+                for (let k = 0; k < contentLength; k++) {
+                    newItos.push(-1)
+                }
 
                 if (this.nextAdjustSourceIndex !== -1) {
                     newItos[interStart] = this.nextAdjustSourceIndex
@@ -92,13 +115,14 @@ export class QingkuaiFileInfo {
             for (let i = 0; i < contentLength; i++) {
                 newItos.push(Math.min(sourceStart + i, sourceEnd - 1))
             }
-            for (let i = 0; i < sourceEnd - sourceStart; i++) {
+            for (let i = 0; i < Math.min(contentLength, sourceEnd - sourceStart); i++) {
                 this.stoi[sourceStart + i] = Math.min(interStart + i, interEnd - 1)
             }
         }
-        const left = this.itos.slice(editStartIndex)
-        this.itos.length = 0
-        this.itos.push(...newItos, ...left)
+        for (let i = editStartIndex; i < this.itos.length; i++) {
+            newItos.push(this.itos[i])
+        }
+        this.itos = newItos
     }
 
     pushDiagnostic(start: number, end: number, value: LSMessage, isSourceLoc?: boolean) {
@@ -137,7 +161,7 @@ export function updateQingkuaiFile(
     const newFileInfo = new QingkuaiFileInfo(
         params.content,
         params.isTS,
-        existing?.version ?? 0,
+        existing?.version ?? INITIAL_VERSION,
         filePathToComponentName(adapter, path),
         path,
         params.getTypeDelayIndexes,
@@ -152,10 +176,7 @@ export function updateQingkuaiFile(
     adapter.updateContent(newFileInfo, params.content)
     adapter.qingkuaiFileInfos.set(path, newFileInfo)
     adapter.service.confirmTypes(newFileInfo)
-    return {
-        aitos: compressNumberArray(itos),
-        astoi: compressNumberArray(stoi)
-    }
+    return newFileInfo.compressedIndexMap
 }
 
 export function ensureGetQingkuaiFileInfo(adapter: TypescriptAdapter, path: TsNormalizedPath) {
@@ -169,17 +190,18 @@ export function ensureGetQingkuaiFileInfo(adapter: TypescriptAdapter, path: TsNo
 }
 
 function filePathToComponentName(adapter: TypescriptAdapter, filePath: string) {
-    const base = adapter.path.base(filePath).replace(ignoredComponentNameChars, "")
-    if (!base) {
-        return "Anonymous"
-    }
-    return qingkuaiUtils.kebab2Camel(base, true)
+    const ext = adapter.path.ext(filePath)
+    const base = adapter.path.base(filePath).slice(0, -ext.length)
+    const componentName = qingkuaiUtils
+        .kebab2Camel(base, true)
+        .replace(ignoredComponentNameChars, "")
+    return componentName || "Anonymous"
 }
 
 function compileQingkuaiFile(adapter: TypescriptAdapter, path: TsNormalizedPath) {
     const compileRes = adapter.compile(path)
     const existing = adapter.qingkuaiFileInfos.get(path)
-    const newVersion = existing ? existing.version + 1 : 0
+    const newVersion = existing ? existing.version + 1 : INITIAL_VERSION
     const fileInfo = new QingkuaiFileInfo(
         compileRes.code,
         compileRes.scriptDescriptor.isTS,
