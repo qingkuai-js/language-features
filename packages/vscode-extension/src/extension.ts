@@ -6,6 +6,7 @@ import { client, setState, disposables, outputChannel, languageStatusItem } from
 import { QingkuaiCommands } from "./command"
 import { activeLanguageServer } from "./language-server"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
+import { attachTypeScriptStatus } from "./typescript-status"
 import { registerMcpServerDefinitionProvider } from "./mcp-server"
 
 export function deactivate(): Thenable<void> | undefined {
@@ -28,6 +29,7 @@ export async function activate(context: ExtensionContext) {
         command: commands.viewServerLogs
     }
     context.subscriptions.push(languageStatusItem)
+    attachTypeScriptStatus(commands.selectTypeScriptPath)
 
     if (isQingkuaiFileName(activeDocument?.uri.fsPath || "")) {
         return activeLanguageServer()

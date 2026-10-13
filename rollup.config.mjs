@@ -7,13 +7,62 @@ import commonjs from "@rollup/plugin-commonjs"
 import { defineConfig } from "rollup"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 
+// 会随扩展发布的产物（扩展本体、tsserver 插件、MCP 服务器）开启压缩：体积能明显减小，
+// 代价是日志与堆栈里的函数名会被混淆（sourcemap 仍然生成，只是 .vsix 里不包含它们）。
+// 语言服务产物不加压缩：它是发布到 npm 的库，需要保持可读。
+// The artifacts shipped with the extension (the extension itself, the tsserver plugin, the MCP
+// server) are minified: the size win is significant and the only cost is that function names in
+// logs and stack traces get mangled (sourcemaps are still emitted, they are just not in the .vsix).
+// The language-service output is left readable because it is published to npm as a library.
+//
+// 注意不要开启 esbuild 的 keepNames：它会把每个函数声明包成 __name(...) 调用，rollup 于是无法再判定
+// 这些模块是死代码，qingkuai-language-service 整包都会被内联进 typescript-plugin（0.2 MB -> 1.5 MB）。
+// Do not turn on esbuild's keepNames: it wraps every function in a __name(...) call, which makes
+// rollup treat those modules as side-effectful, so the whole qingkuai-language-service package gets
+// inlined into typescript-plugin (0.2 MB -> 1.5 MB).
+const shippedCode = { minify: true }
+
+// 把依赖各自分到固定名字的 chunk，产物里一眼能看出哪块是哪部分：语言服务（含它内联的 css
+// 语言服务与 emmet）、LSP 协议栈、编辑器侧的 client、格式化插件；扩展与语言服务器自己的代码
+// 仍由 rollup 决定（入口 chunk + 一个共用 chunk）
+// Dependencies are grouped into fixed-name chunks so the payload shows what is what: the language
+// service (including the css language service and emmet it inlines), the LSP stack, the editor-side
+// client and the formatting plugin; the extension's and language server's own code is left to rollup
+// (the two entry chunks plus one shared chunk).
+function chunkNameOfDependency(id) {
+    const normalized = id.replaceAll("\\", "/")
+    const groups = [
+        [
+            "language-service",
+            "/packages/language-service/",
+            "/vscode-css-languageservice/",
+            "/@vscode/emmet-helper/",
+            "/emmet/",
+            "/@emmetio/"
+        ],
+        ["languageserver", "/vscode-languageserver", "/vscode-jsonrpc/", "/vscode-uri/"],
+        ["languageclient", "/vscode-languageclient/"],
+        [
+            "prettier-plugin",
+            "/prettier-plugin-qingkuai/",
+            "/prettier/",
+            "/semver/",
+            "/minimatch/",
+            "/@babel/",
+            "/lines-and-columns/"
+        ]
+    ]
+    for (const [name, ...patterns] of groups) {
+        if (patterns.some(pattern => normalized.includes(pattern))) {
+            return name
+        }
+    }
+    return undefined
+}
+
 export default defineConfig(commandLineArgs => {
     const isWatchMode = !!commandLineArgs.watch
-    const mcpServerExternal = [
-        "qingkuai/compiler",
-        "prettier",
-        "prettier-plugin-qingkuai"
-    ]
+    const mcpServerExternal = ["qingkuai/compiler", "prettier", "prettier-plugin-qingkuai"]
     const languageExternal = ["vscode", "prettier", "qingkuai/compiler"]
 
     copyGrammarFiles()
@@ -83,11 +132,17 @@ export default defineConfig(commandLineArgs => {
             output: {
                 format: "cjs",
                 sourcemap: true,
-                chunkFileNames: "chunks/shared.js",
-                dir: "packages/vscode-extension/dist"
+                // 客户端与语言服务器共用的代码按职责拆成固定名字的 chunk，产物里一眼能看出
+                // 哪块是哪个依赖（原先它们被合成一个 2.6 MB 的 chunks/shared.js）
+                // The code shared by the client and the language server is split into fixed-name
+                // chunks per responsibility, so the payload shows which dependency is which
+                // (they all used to be merged into a single 2.6 MB chunks/shared.js).
+                chunkFileNames: "chunks/[name].js",
+                dir: "packages/vscode-extension/dist",
+                manualChunks: chunkNameOfDependency
             },
             ...languageOnWarnAndExternal,
-            plugins: [nodeResolve(), commonjs(), esbuild()]
+            plugins: [nodeResolve(), commonjs(), esbuild(shippedCode)]
         },
 
         // typescript plugin
@@ -99,7 +154,7 @@ export default defineConfig(commandLineArgs => {
             },
             onwarn,
             external: ["qingkuai/compiler"],
-            plugins: [nodeResolve(), commonjs(), esbuild()],
+            plugins: [nodeResolve(), commonjs(), esbuild(shippedCode)],
             input: "./packages/typescript-plugin/src/index.ts"
         },
 
@@ -116,7 +171,12 @@ export default defineConfig(commandLineArgs => {
             onwarn,
             external: mcpServerExternal,
             // json 用于内联 @modelcontextprotocol/sdk 时处理 ajv 导入的 JSON schema 文件
-            plugins: [nodeResolve(), commonjs(), json(), esbuild({ target: "esnext" })]
+            plugins: [
+                nodeResolve(),
+                commonjs(),
+                json(),
+                esbuild({ target: "esnext", ...shippedCode })
+            ]
         }
     ]
 

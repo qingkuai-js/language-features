@@ -6,6 +6,8 @@
 src
 scripts
 syntaxes/src
+test-space
+tests
 node_modules/.bin
 qingkuai-language-features*/**
 node_modules/.package-lock.json
@@ -35,38 +37,61 @@ node_modules/js-yaml/**
 node_modules/vsce/**
 
 # monorepo packages
+# 下列包会被 rollup 内联进 dist（server.js / client.js / typescript-plugin），运行期不再从 node_modules 加载，
+# 因此它们都只是构建期的依赖（package.json 中已移到 devDependencies）
+# The packages below are inlined into dist by rollup (server.js / client.js / typescript-plugin) and are
+# never loaded from node_modules at runtime, so they are build-time only (devDependencies in package.json).
 ../**/*.d.ts
 ../**/node_modules/**
+node_modules/qingkuai-language-service/**
 node_modules/typescript-plugin-qingkuai/src
 node_modules/typescript-plugin-qingkuai/.npmignore
 node_modules/typescript-plugin-qingkuai/node_modules
 node_modules/qingkuai-mcp-server/src
 node_modules/qingkuai-mcp-server/scripts
 node_modules/qingkuai-mcp-server/README.md
-node_modules/qingkuai-language-service/src
-node_modules/qingkuai-language-service/tsconfig.dts.json
 
 # package: qingkuai
+# 扩展只通过 qingkuai/compiler 使用 qingkuai（其打包产物依赖同目录下的 chunks），运行时不需要 runtime 入口
+# the extension only uses qingkuai through qingkuai/compiler, whose bundle needs the sibling chunks
+# directory; the runtime entries are not needed
 node_modules/qingkuai/dist/types/**
+node_modules/qingkuai/dist/esm/runtime/**
+node_modules/qingkuai/dist/cjs/runtime/**
 
 # package: prettier
+# prettier 3 的 CJS 入口会动态 import 自己的 ESM 实现，只有被真正请求的解析器才会被加载，
+# 所以这里保留入口、doc 与 .qk 内嵌语言（js/ts/css/scss/less）用到的插件，其余插件与 CLI 相关实现都不需要
+# prettier 3's CJS entry dynamically imports its ESM implementation and only the parsers actually
+# requested get loaded, so the entries, doc and the plugins for the languages embedded in .qk
+# (js/ts/css/scss/less) are kept while the other plugins and the CLI are not needed.
 node_modules/prettier/standalone.js
+node_modules/prettier/standalone.mjs
 node_modules/prettier/THIRD-PARTY-NOTICES.md
+node_modules/prettier/bin/**
+node_modules/prettier/internal/**
+node_modules/prettier/plugins/acorn.js
+node_modules/prettier/plugins/angular.*
+node_modules/prettier/plugins/babel.js
+node_modules/prettier/plugins/estree.js
+node_modules/prettier/plugins/flow.*
+node_modules/prettier/plugins/glimmer.*
+node_modules/prettier/plugins/graphql.*
+node_modules/prettier/plugins/html.*
+node_modules/prettier/plugins/markdown.*
+node_modules/prettier/plugins/meriyah.*
+node_modules/prettier/plugins/postcss.js
+node_modules/prettier/plugins/typescript.*
+node_modules/prettier/plugins/yaml.*
 
 # package: @jridgewell/sourcemap-codec
 node_modules/@jridgewell/sourcemap-codec/src
 node_modules/@jridgewell/sourcemap-codec/types
 
-# package: vscode-css-languageservice
-node_modules/vscode-css-languageservice/docs/**
-node_modules/vscode-css-languageservice/src/**
-node_modules/vscode-css-languageservice/test/**
-
-# package: emmet-helper
-node_modules/@vscode/emmet-helper/test/**
-node_modules/@vscode/emmet-helper/src**
-
 # package: typescript
+# 语言服务器、tsserver 插件与 MCP 服务器都复用宿主已安装的 typescript（VS Code 内置的或工作区内的），
+# 见 shared-util/typescript.ts 与 packages/vscode-extension/src/typescript.ts，因此整个包都不需要附带
+# The language server, the tsserver plugin and the MCP server all reuse the typescript installed by
+# the host (bundled with VS Code or from the workspace), see shared-util/typescript.ts and
+# packages/vscode-extension/src/typescript.ts, so the whole package can be excluded.
 node_modules/typescript/**
-!node_modules/typescript/package.json
-!node_modules/typescript/lib/typescript.js

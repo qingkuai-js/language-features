@@ -7,6 +7,9 @@ import nodeFs from "node:fs"
 import nodePath from "node:path"
 
 import { Logger } from "./state"
+import { isString } from "../../../shared-util/assert"
+import { resolveTypeScriptEntry } from "./typescript"
+import { TYPESCRIPT_ENTRY_ENV } from "../../../shared-util/constant"
 
 export function registerMcpServerDefinitionProvider(context: ExtensionContext) {
     const vscodeApi = vscode as any
@@ -57,7 +60,7 @@ export function registerMcpServerDefinitionProvider(context: ExtensionContext) {
                 launch.title,
                 launch.command,
                 launch.args,
-                {},
+                resolveMcpServerEnv(),
                 launch.version
             )
             serverDefinition.cwd = vscode.Uri.file(launch.cwd)
@@ -81,6 +84,23 @@ export function registerMcpServerDefinitionProvider(context: ExtensionContext) {
         `MCP server definition provider registered successfully. ` +
             `entry=${launch?.args?.[0] ?? "(pending, waiting for launch entry)"}`
     )
+}
+
+// MCP 服务器同样复用 VS Code 已安装的 typescript，这里把它启动所需的环境（含 typescript 入口路径）准备好
+// The MCP server reuses the typescript installed by VS Code as well, so its launch environment
+// (including the typescript entry path) is prepared here.
+function resolveMcpServerEnv(): Record<string, string> {
+    const env: Record<string, string> = {}
+    for (const [key, value] of Object.entries(process.env)) {
+        if (isString(value)) {
+            env[key] = value
+        }
+    }
+    const typescriptEntry = resolveTypeScriptEntry()
+    if (typescriptEntry) {
+        env[TYPESCRIPT_ENTRY_ENV] = typescriptEntry
+    }
+    return env
 }
 
 function resolveModelServerLaunch(context: ExtensionContext): ModelServerLaunchInfo | undefined {

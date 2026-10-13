@@ -30,7 +30,8 @@ import { startConfigWatcher } from "./config"
 import { inspect } from "../../../shared-util/log"
 import { attachFileSystemHandlers } from "./filesys"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
-import { LS_HANDLERS, NOOP } from "../../../shared-util/constant"
+import { resolveTypeScriptEntry } from "./typescript"
+import { LS_HANDLERS, NOOP, TYPESCRIPT_ENTRY_ENV } from "../../../shared-util/constant"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
@@ -91,9 +92,11 @@ export async function activeLanguageServer() {
     attachCustomHandlers(configTsServerPlugin)
 
     const connectToTsServer = await configTsServerPlugin(false)
+    const typescriptEntry = resolveTypeScriptEntry()
     const serverProcessOptions = {
         env: {
             ...process.env,
+            ...(typescriptEntry ? { [TYPESCRIPT_ENTRY_ENV]: typescriptEntry } : {}),
             LIMITED_SCRIPT: +limitedScriptLanguageFeatures
         }
     }

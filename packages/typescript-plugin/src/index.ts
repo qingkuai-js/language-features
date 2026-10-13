@@ -10,7 +10,7 @@ import nodeFs from "node:fs"
 
 import { proxyTypescript } from "./proxy"
 import { ts, setState, adapter, Logger } from "./state"
-import { compileIntermediate } from "qingkuai/compiler"
+import { compileIntermediate, setTypeScript } from "qingkuai/compiler"
 import { isUndefined } from "../../../shared-util/assert"
 import { attachLanguageServerIPCHandlers } from "./server"
 import { excludeProperty } from "../../../shared-util/sundry"
@@ -25,6 +25,12 @@ export = function init(modules: PluginModules) {
         create(info: TS.server.PluginCreateInfo) {
             const project = info.project
             const projectService = project.projectService
+
+            // 复用 tsserver 已加载的 typescript，发布包因此不再需要附带完整的 typescript 包
+            // Reuse the typescript already loaded by tsserver, so the published extension no longer
+            // needs to ship a full copy of the package.
+            setTypeScript(modules.typescript)
+
             if (isUndefined(ts)) {
                 setState({
                     ts: modules.typescript,

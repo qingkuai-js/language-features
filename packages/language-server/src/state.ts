@@ -3,6 +3,7 @@ import type { SetStateOptions } from "./types/service"
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { ProjectKind } from "../../../shared-util/constant"
+import { setTypeScriptFromEnv } from "../../../shared-util/typescript"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
@@ -46,6 +47,13 @@ export const waittingCommands = new Map<string, string>()
 export const Logger = createLogger({ write: console.log })
 export const cachedDocuments = new Map<string, TextDocument>()
 export const connection = createConnection(ProposedFeatures.all)
+
+// 复用宿主提供的 typescript：发布包内不再附带完整的 typescript 包，这里只登记入口文件路径，
+// 编译器首次使用（即首次编译）时才真正加载，避免语言服务器启动时多付一次加载开销
+// Reuse the typescript provided by the host: the published extension no longer ships a full copy of
+// the package, so only the entry file path is registered here. The implementation is loaded when the
+// compiler is first used (the first compilation), which keeps it out of the language server startup.
+setTypeScriptFromEnv()
 
 // 若script语言功能受限，无需连接ts server
 if (limitedScriptLanguageFeatures) {

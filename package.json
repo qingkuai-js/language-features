@@ -7,7 +7,7 @@
     "scripts": {
         "dev": "rollup -c -w",
         "build": "pnpm run build:clean && pnpm run build:language-service-types && pnpm run build:bundle && pnpm run build:post",
-        "build:clean": "rimraf packages/language-service/dist packages/mcp-server/dist",
+        "build:clean": "rimraf packages/language-service/dist packages/mcp-server/dist packages/typescript-plugin/dist packages/vscode-extension/dist",
         "build:language-service-types": "cd ./packages/language-service && tsc -p tsconfig.dts.json",
         "build:bundle": "node ./scripts/export-raw.js && rollup -c",
         "build:post": "rimraf packages/language-service/dist/temp-types",
