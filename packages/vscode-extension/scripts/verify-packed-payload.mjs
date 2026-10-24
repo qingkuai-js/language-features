@@ -234,6 +234,40 @@ function assertInjectableCompiler(stageRoot) {
     }
 }
 
+// prettier 把无扩展名的 `.prettierrc` 交给 YAML 解析器，插件被裁掉时只有真实项目才会暴露问题
+// prettier parses an extensionless `.prettierrc` with its YAML loader, so a payload that drops
+// that plugin only breaks once a project actually carries such a config file
+async function assertPrettierConfigResolution(stageRoot) {
+    const prettierEntry = nodePath.join(stageRoot, "node_modules/prettier/index.mjs")
+    if (!nodeFs.existsSync(prettierEntry)) {
+        throw new Error("the staged payload has no prettier, is the extension built?")
+    }
+
+    const probeDir = nodePath.join(stageRoot, "prettier-config-probe")
+    nodeFs.mkdirSync(probeDir, { recursive: true })
+    nodeFs.writeFileSync(nodePath.join(probeDir, ".prettierrc"), '{ "printWidth": 90 }\n')
+
+    let resolved
+    const prettier = (await import(nodeUrl.pathToFileURL(prettierEntry).href)).default
+    try {
+        resolved = await prettier.resolveConfig(nodePath.join(probeDir, "probe.txt"), {
+            useCache: false,
+            editorconfig: true
+        })
+    } catch (error) {
+        throw new Error(
+            "the staged payload cannot read an extensionless .prettierrc, keep " +
+                "node_modules/prettier/plugins/yaml.mjs in .vscodeignore: " +
+                error.message
+        )
+    }
+    if (resolved?.printWidth !== 90) {
+        throw new Error(
+            "reading .prettierrc from the staged payload returned " + JSON.stringify(resolved)
+        )
+    }
+}
+
 function runMcp(entry, workDir, env, tools) {
     return new Promise(resolve => {
         const child = nodeChildProcess.spawn(process.execPath, [entry], {
@@ -298,6 +332,7 @@ async function main() {
         throw new Error("the staged payload unexpectedly contains a typescript package")
     }
     assertInjectableCompiler(stageRoot)
+    await assertPrettierConfigResolution(stageRoot)
 
     const typescriptEntry = findHostTypeScript()
     if (!typescriptEntry) {

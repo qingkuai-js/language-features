@@ -70,7 +70,7 @@ node_modules/prettier/plugins/markdown.*
 node_modules/prettier/plugins/meriyah.*
 node_modules/prettier/plugins/postcss.js
 node_modules/prettier/plugins/typescript.*
-node_modules/prettier/plugins/yaml.*
+node_modules/prettier/plugins/yaml.js
 
 # package: @jridgewell/sourcemap-codec
 node_modules/@jridgewell/sourcemap-codec/src
