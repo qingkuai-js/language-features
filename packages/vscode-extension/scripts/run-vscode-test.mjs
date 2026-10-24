@@ -1,8 +1,8 @@
 import nodeFs from "node:fs"
-import nodePath from "node:path"
-import nodeModule from "node:module"
 import nodeUrl from "node:url"
+import nodePath from "node:path"
 import nodeUtil from "node:util"
+import nodeModule from "node:module"
 import nodeChildProcess from "node:child_process"
 
 const req = nodeModule.createRequire(import.meta.url)

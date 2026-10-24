@@ -47,8 +47,8 @@ jobs:
             - name: Build
               run: pnpm run build
 
-            # @vscode/test-electron keeps the downloaded VS Code build here; the key follows the version
-            # pinned in .vscode-test.mjs
+            # @vscode/test-electron keeps the downloaded VS Code build here;
+            # the key follows the version pinned in .vscode-test.mjs
             - name: Cache VS Code
               uses: actions/cache@v6
               with:
