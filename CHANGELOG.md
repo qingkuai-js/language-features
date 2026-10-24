@@ -1,6 +1,16 @@
 # 2026-10-24
 
+> packages version: vscode-extension@1.0.37
+
+fixes:
+
+1. restored the prettier yaml plugin in the packaged payload: prettier reads an extensionless `.prettierrc` through its YAML loader, so 1.0.36 could not resolve the client language config in any project that has one, failing diagnostics, inlay hints, code lens, document color, formatting and the MCP format tool ([b19a5ea](https://github.com/qingkuai-js/language-tools/commit/b19a5ea))
+
+# 2026-10-24
+
 > packages version: vscode-extension@1.0.36, language-service@1.0.21, mcp-server@1.0.9
+>
+> note: vscode-extension@1.0.36 is unusable, its payload is missing `prettier/plugins/yaml.mjs` — upgrade to 1.0.37
 
 features:
 
