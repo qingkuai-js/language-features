@@ -1,4 +1,3 @@
-import type { TsPluginQingkuaiConfig } from "../../../types/common"
 import type { ConfigPluginParms, ConnectToTsServerParams } from "../../../types/communication"
 
 import * as vscode from "vscode"
@@ -19,6 +18,12 @@ import {
     limitedScriptLanguageFeatures
 } from "./state"
 import {
+    NOOP,
+    LS_HANDLERS,
+    BUILTIN_COMMANDS,
+    TYPESCRIPT_ENTRY_ENV
+} from "../../../shared-util/constant"
+import {
     TransportKind,
     LanguageClient,
     Middleware,
@@ -29,8 +34,8 @@ import { Messages } from "./messages"
 import { startConfigWatcher } from "./config"
 import { inspect } from "../../../shared-util/log"
 import { attachFileSystemHandlers } from "./filesys"
+import { resolveTypeScriptEntry } from "./typescript"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
-import { LS_HANDLERS, NOOP } from "../../../shared-util/constant"
 import { getValidPathWithHash } from "../../../shared-util/ipc/sock"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { attachCustomHandlers, attachVscodeEventHandlers } from "./handler"
@@ -91,9 +96,14 @@ export async function activeLanguageServer() {
     attachCustomHandlers(configTsServerPlugin)
 
     const connectToTsServer = await configTsServerPlugin(false)
+    const typescriptEntry = resolveTypeScriptEntry()
+    setState({ typescriptEntry })
     const serverProcessOptions = {
         env: {
             ...process.env,
+            ...(typescriptEntry && {
+                [TYPESCRIPT_ENTRY_ENV]: typescriptEntry
+            }),
             LIMITED_SCRIPT: +limitedScriptLanguageFeatures
         }
     }
@@ -165,7 +175,7 @@ async function warmupTsServer(tsExtenstionAPI: any) {
         // 创建并打开文档，触发 TS server 启动并加载插件
         const warmupDoc = await vscode.workspace.openTextDocument(warmupFilePath)
         await vscode.commands.executeCommand(
-            "vscode.executeCompletionItemProvider",
+            BUILTIN_COMMANDS.ExecuteCompletionItemProvider,
             warmupDoc.uri,
             new vscode.Position(0, 0)
         )

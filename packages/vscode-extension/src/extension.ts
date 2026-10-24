@@ -2,11 +2,13 @@ import type { ExtensionContext } from "vscode"
 
 import * as vscode from "vscode"
 
-import { client, setState, disposables, outputChannel, languageStatusItem } from "./state"
-import { QingkuaiCommands } from "./command"
+import { registerQingkuaiCommands } from "./command"
 import { activeLanguageServer } from "./language-server"
+import { QK_COMMANDS } from "../../../shared-util/constant"
+import { attachTypeScriptStatus } from "./typescript-status"
 import { isQingkuaiFileName } from "../../../shared-util/assert"
 import { registerMcpServerDefinitionProvider } from "./mcp-server"
+import { client, setState, disposables, outputChannel, languageStatusItem } from "./state"
 
 export function deactivate(): Thenable<void> | undefined {
     disposables.forEach(d => {
@@ -17,17 +19,18 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 export async function activate(context: ExtensionContext) {
-    const commands = new QingkuaiCommands(outputChannel, activeLanguageServer)
     const activeDocument = vscode.window.activeTextEditor?.document
+    registerQingkuaiCommands(outputChannel, activeLanguageServer)
     registerMcpServerDefinitionProvider(context)
     setState({
         serverModulePath: context.asAbsolutePath("./dist/server.js")
     })
     languageStatusItem.command = {
         title: "View Logs",
-        command: commands.viewServerLogs
+        command: QK_COMMANDS.ViewServerLogs
     }
     context.subscriptions.push(languageStatusItem)
+    attachTypeScriptStatus()
 
     if (isQingkuaiFileName(activeDocument?.uri.fsPath || "")) {
         return activeLanguageServer()

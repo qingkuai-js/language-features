@@ -41,7 +41,7 @@ export function attachCustomHandlers(configTsServerPlugin: ConfigTsServerPluginF
 
         // ts server 服务器进程退出通知，尝试重连
         client.onNotification(LS_HANDLERS.TsServerIsKilled, async () => {
-            client.isRunning() && configTsServerPlugin(true).then(c => c())
+            client?.isRunning() && configTsServerPlugin(true).then(c => c())
         }),
 
         // 向指定文档插入文本片段的通知

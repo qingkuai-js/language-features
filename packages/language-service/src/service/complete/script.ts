@@ -10,7 +10,7 @@ import {
     CompletionItemKind
 } from "vscode-languageserver-types"
 import { isIndexesInvalid } from "../../../../../shared-util/qingkuai"
-import { parseDirectiveValue, util as qingkuaiUtils } from "qingkuai/compiler"
+import { getTypeScript, parseDirectiveValue } from "qingkuai/compiler"
 import { findTemplateAttribute, findTemplateNodeAt } from "../../util/qingkuai"
 
 export async function getAndProcessScriptBlockCompletions(
@@ -39,11 +39,13 @@ export async function getAndProcessScriptBlockCompletions(
     // 如果当前处于 #for 或 #slot 的 patterns 范围内，禁止逗号作为 commit character
     if (attribute?.name.raw === "#for" || attribute?.name.raw === "#slot") {
         try {
+            const ts = getTypeScript()
             const offsetInDirectiveValue = offset - attribute.value.loc.start.index
             for (const pattern of parseDirectiveValue(attribute)!.patterns) {
+                if (ts.isOmittedExpression(pattern) || !ts.isIdentifier(pattern.name)) {
+                    continue
+                }
                 if (
-                    !qingkuaiUtils.ts.isOmittedExpression(pattern) &&
-                    qingkuaiUtils.ts.isIdentifier(pattern.name) &&
                     offsetInDirectiveValue >= pattern.getStart() &&
                     offsetInDirectiveValue <= pattern.getEnd()
                 ) {

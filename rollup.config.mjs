@@ -8,13 +8,10 @@ import { defineConfig } from "rollup"
 import { nodeResolve } from "@rollup/plugin-node-resolve"
 
 export default defineConfig(commandLineArgs => {
+    const shippedCode = { minify: true }
     const isWatchMode = !!commandLineArgs.watch
-    const mcpServerExternal = [
-        "qingkuai/compiler",
-        "prettier",
-        "prettier-plugin-qingkuai"
-    ]
     const languageExternal = ["vscode", "prettier", "qingkuai/compiler"]
+    const mcpServerExternal = ["qingkuai/compiler", "prettier", "prettier-plugin-qingkuai"]
 
     copyGrammarFiles()
 
@@ -83,11 +80,12 @@ export default defineConfig(commandLineArgs => {
             output: {
                 format: "cjs",
                 sourcemap: true,
-                chunkFileNames: "chunks/shared.js",
-                dir: "packages/vscode-extension/dist"
+                chunkFileNames: "chunks/[name].js",
+                dir: "packages/vscode-extension/dist",
+                manualChunks: chunkNameOfDependency
             },
             ...languageOnWarnAndExternal,
-            plugins: [nodeResolve(), commonjs(), esbuild()]
+            plugins: [nodeResolve(), commonjs(), esbuild(shippedCode)]
         },
 
         // typescript plugin
@@ -99,8 +97,8 @@ export default defineConfig(commandLineArgs => {
             },
             onwarn,
             external: ["qingkuai/compiler"],
-            plugins: [nodeResolve(), commonjs(), esbuild()],
-            input: "./packages/typescript-plugin/src/index.ts"
+            input: "./packages/typescript-plugin/src/index.ts",
+            plugins: [nodeResolve(), commonjs(), esbuild(shippedCode)]
         },
 
         // mcp server
@@ -115,8 +113,12 @@ export default defineConfig(commandLineArgs => {
             },
             onwarn,
             external: mcpServerExternal,
-            // json 用于内联 @modelcontextprotocol/sdk 时处理 ajv 导入的 JSON schema 文件
-            plugins: [nodeResolve(), commonjs(), json(), esbuild({ target: "esnext" })]
+            plugins: [
+                nodeResolve(),
+                commonjs(),
+                json(), // 用于内联 @modelcontextprotocol/sdk 时处理 ajv 导入的 JSON schema 文件
+                esbuild({ target: "esnext", ...shippedCode })
+            ]
         }
     ]
 
@@ -176,4 +178,35 @@ function reloadAsRaw() {
             }
         }
     }
+}
+
+function chunkNameOfDependency(id) {
+    const normalized = id.replaceAll("\\", "/")
+    const groups = [
+        [
+            "language-service",
+            "/packages/language-service/",
+            "/vscode-css-languageservice/",
+            "/@vscode/emmet-helper/",
+            "/emmet/",
+            "/@emmetio/"
+        ],
+        ["language-server", "/vscode-languageserver", "/vscode-jsonrpc/", "/vscode-uri/"],
+        ["language-client", "/vscode-languageclient/"],
+        [
+            "prettier-plugin",
+            "/prettier-plugin-qingkuai/",
+            "/prettier/",
+            "/semver/",
+            "/minimatch/",
+            "/@babel/",
+            "/lines-and-columns/"
+        ]
+    ]
+    for (const [name, ...patterns] of groups) {
+        if (patterns.some(pattern => normalized.includes(pattern))) {
+            return name
+        }
+    }
+    return undefined
 }

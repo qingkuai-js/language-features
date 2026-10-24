@@ -18,11 +18,12 @@ export const languageStatusItem = vscode.languages.createLanguageStatusItem(
     "Qingkuai.LanguageServerStatus",
     "qingkuai"
 )
-languageStatusItem.text = "QingKuai Language Server"
+languageStatusItem.text = "$(list-flat) QingKuai Language Server"
 
 export let client: LanguageClient
 export let serverModulePath: string
 export let projectKind = ProjectKind.JS
+export let typeScriptEntry: string | undefined
 export let limitedScriptLanguageFeatures = true
 
 export const disposables: vscode.Disposable[] = [outputChannel]
@@ -34,19 +35,22 @@ export function setState(options: SetStateOptions) {
     if (!isUndefined(options.client)) {
         client = options.client
     }
-    if (options.projectKind) {
+    if (!isUndefined(options.projectKind)) {
         projectKind = options.projectKind
     }
-    if (options.serverModulePath) {
+    if (!isUndefined(options.serverModulePath)) {
         serverModulePath = options.serverModulePath
+    }
+    if (!isUndefined(options.typescriptEntry)) {
+        typeScriptEntry = options.typescriptEntry
+    }
+    if (!isUndefined(options.workspaceReadyPromise)) {
+        workspaceReadyPromise = options.workspaceReadyPromise
+    }
+    if (!isUndefined(options.workspaceReadyResolver)) {
+        workspaceReadyResolver = options.workspaceReadyResolver
     }
     if (!isUndefined(options.limitedScriptLanguageFeatures)) {
         limitedScriptLanguageFeatures = options.limitedScriptLanguageFeatures
-    }
-    if (options.workspaceReadyPromise) {
-        workspaceReadyPromise = options.workspaceReadyPromise
-    }
-    if (options.workspaceReadyResolver) {
-        workspaceReadyResolver = options.workspaceReadyResolver
     }
 }

@@ -6,6 +6,8 @@
 src
 scripts
 syntaxes/src
+test-space
+tests
 node_modules/.bin
 qingkuai-language-features*/**
 node_modules/.package-lock.json
@@ -37,36 +39,43 @@ node_modules/vsce/**
 # monorepo packages
 ../**/*.d.ts
 ../**/node_modules/**
+node_modules/qingkuai-language-service/**
 node_modules/typescript-plugin-qingkuai/src
 node_modules/typescript-plugin-qingkuai/.npmignore
 node_modules/typescript-plugin-qingkuai/node_modules
 node_modules/qingkuai-mcp-server/src
 node_modules/qingkuai-mcp-server/scripts
 node_modules/qingkuai-mcp-server/README.md
-node_modules/qingkuai-language-service/src
-node_modules/qingkuai-language-service/tsconfig.dts.json
 
 # package: qingkuai
 node_modules/qingkuai/dist/types/**
+node_modules/qingkuai/dist/esm/runtime/**
+node_modules/qingkuai/dist/cjs/runtime/**
 
 # package: prettier
 node_modules/prettier/standalone.js
+node_modules/prettier/standalone.mjs
 node_modules/prettier/THIRD-PARTY-NOTICES.md
+node_modules/prettier/bin/**
+node_modules/prettier/internal/**
+node_modules/prettier/plugins/acorn.js
+node_modules/prettier/plugins/angular.*
+node_modules/prettier/plugins/babel.js
+node_modules/prettier/plugins/estree.js
+node_modules/prettier/plugins/flow.*
+node_modules/prettier/plugins/glimmer.*
+node_modules/prettier/plugins/graphql.*
+node_modules/prettier/plugins/html.*
+node_modules/prettier/plugins/markdown.*
+node_modules/prettier/plugins/meriyah.*
+node_modules/prettier/plugins/postcss.js
+node_modules/prettier/plugins/typescript.*
+node_modules/prettier/plugins/yaml.*
 
 # package: @jridgewell/sourcemap-codec
 node_modules/@jridgewell/sourcemap-codec/src
 node_modules/@jridgewell/sourcemap-codec/types
 
-# package: vscode-css-languageservice
-node_modules/vscode-css-languageservice/docs/**
-node_modules/vscode-css-languageservice/src/**
-node_modules/vscode-css-languageservice/test/**
-
-# package: emmet-helper
-node_modules/@vscode/emmet-helper/test/**
-node_modules/@vscode/emmet-helper/src**
-
 # package: typescript
+# qingkuai 编译器使用 vscode 内置或用户已安装的 TypeScript
 node_modules/typescript/**
-!node_modules/typescript/package.json
-!node_modules/typescript/lib/typescript.js

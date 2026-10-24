@@ -24,6 +24,19 @@ export function proxyToFileToSpan(session: any) {
         const fileInfo = adapter.service.ensureGetQingkuaiFileInfo(fileName)
         const startPosition = fileInfo.getPositionByIndex(textSpan.start)
         const endPosition = fileInfo.getPositionByIndex(textSpan.start + textSpan.length)
+        if (!startPosition || !endPosition) {
+            return {
+                file: fileName,
+                start: {
+                    line: 0,
+                    offset: 0
+                },
+                end: {
+                    line: 0,
+                    offset: 0
+                }
+            } satisfies TS.server.protocol.FileSpan
+        }
         return {
             file: fileName,
             start: {

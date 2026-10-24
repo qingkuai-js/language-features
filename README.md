@@ -74,6 +74,21 @@ cd packages/vscode-extension
 npm run build:grammars
 ```
 
+### Packed Payload Check (extension package)
+
+Before publishing, run this after `npm run build`:
+
+```bash
+cd packages/vscode-extension
+npm run verify:packed
+```
+
+It stages the files VS Code would ship (per `.vscodeignore` and the production
+dependencies), then boots the language server and the MCP server from that layout with the host
+typescript injected and no `typescript` package on disk. Pass `--keep` to keep the staged directory
+for inspection. Stop watch mode (`npm run dev`) first: it rewrites `dist` with a development build
+that keeps dependencies external, which the check will (correctly) reject.
+
 ## Architecture Overview
 
 1. VS Code extension starts and launches the QingKuai language server.

@@ -6,11 +6,11 @@
     "private": true,
     "scripts": {
         "dev": "rollup -c -w",
-        "build": "pnpm run build:clean && pnpm run build:language-service-types && pnpm run build:bundle && pnpm run build:post",
-        "build:clean": "rimraf packages/language-service/dist packages/mcp-server/dist",
-        "build:language-service-types": "cd ./packages/language-service && tsc -p tsconfig.dts.json",
-        "build:bundle": "node ./scripts/export-raw.js && rollup -c",
+        "bundle": "node ./scripts/export-raw.js && rollup -c",
+        "build:clean": "rimraf --glob \"packages/*/dist\"",
         "build:post": "rimraf packages/language-service/dist/temp-types",
+        "build:language-service-types": "cd ./packages/language-service && tsc -p tsconfig.dts.json",
+        "build": "pnpm run build:clean && pnpm run build:language-service-types && pnpm run bundle && pnpm run build:post",
         "reinstall": "find . -name package-lock.json -not -path '*/node_modules/*' -delete && rm -rf node_modules packages/*/node_modules && pnpm install"
     },
     "devDependencies": {

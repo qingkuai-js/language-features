@@ -33,12 +33,21 @@
                 "command": "qingkuai.restartLanguageServer",
                 "title": "Restart Language Server",
                 "category": "Qingkuai"
+            },
+            {
+                "command": "qingkuai.selectTypeScriptPath",
+                "title": "Select TypeScript for the QingKuai Compiler",
+                "category": "Qingkuai"
             }
         ],
         "menus": {
             "commandPalette": [
                 {
                     "command": "qingkuai.restartLanguageServer",
+                    "when": "resourceFilename =~ /\\.(?:qk|qingkuairc)/"
+                },
+                {
+                    "command": "qingkuai.selectTypeScriptPath",
                     "when": "resourceFilename =~ /\\.(?:qk|qingkuairc)/"
                 }
             ]
@@ -248,6 +257,12 @@
                     ],
                     "description": "Show compiler-inferred reactivity status as inlay hints for the specified declaration types.",
                     "markdownDescription": "Controls which **declaration types** display inlay hints showing the **compiler-inferred reactivity status** in component files.\n\nThis is useful for understanding how variables are tracked and updated by Qingkuai."
+                },
+                "qingkuai.typescriptPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path of the typescript entry file (lib/typescript.js) used by the Qingkuai compiler. Leave empty to use the typescript bundled with VS Code, or the one of the workspace.",
+                    "markdownDescription": "Path of the `typescript` entry file (`lib/typescript.js`) used by the **Qingkuai compiler**.\n\nThe extension reuses the typescript bundled with VS Code (falling back to the typescript inside the workspace), so it does not have to ship one. Set this when neither can be found, for example in an embedded install without the built-in typescript extension.\n\nThe version in use is shown in the status bar (bottom right); clicking it opens this picker."
                 }
             }
         }
@@ -261,33 +276,34 @@
         "test:e2e": "node scripts/run-vscode-test.mjs",
         "test:e2e:clean": "node scripts/run-vscode-test.mjs --grep @known-bug --invert",
         "test:e2e:known": "node scripts/run-vscode-test.mjs --grep @known-bug",
+        "verify:packed": "node scripts/verify-packed-payload.mjs",
         "build:grammars": "npm run build:grammar && npm run build:emmet-grammar",
         "build:grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai.tmLanguage.yaml > ../qingkuai.tmLanguage.json && npx prettier --write ../qingkuai.tmLanguage.json",
         "build:emmet-grammar": "cd ./syntaxes/src && npx js-yaml ./qingkuai-emmet.tmLanguage.yaml > ../qingkuai-emmet.tmLanguage.json && npx prettier --write ../qingkuai-emmet.tmLanguage.json"
     },
     "devDependencies": {
         "@types/vscode": "catalog:",
+        "@vscode/emmet-helper": "^2.11.0",
         "@vscode/test-cli": "^0.0.15",
         "@vscode/test-electron": "^3.1.0",
         "js-yaml": "^4.1.0",
+        "qingkuai-language-service": "workspace:*",
         "tm-grammars": "^1.32.22",
         "vsce": "^2.15.0",
+        "vscode-css-languageservice": "^6.3.10",
         "vscode-jsonrpc": "^9.0.3",
+        "vscode-languageclient": "^9.0.1",
+        "vscode-languageserver": "catalog:",
+        "vscode-languageserver-textdocument": "catalog:",
+        "vscode-languageserver-types": "catalog:",
         "vscode-oniguruma": "^2.0.1",
         "vscode-textmate": "^9.3.2"
     },
     "dependencies": {
-        "@vscode/emmet-helper": "^2.11.0",
         "prettier": "catalog:",
         "prettier-plugin-qingkuai": "catalog:",
         "qingkuai": "catalog:",
-        "qingkuai-language-service": "workspace:*",
         "qingkuai-mcp-server": "workspace:*",
-        "typescript-plugin-qingkuai": "workspace:*",
-        "vscode-css-languageservice": "^6.3.10",
-        "vscode-languageclient": "^9.0.1",
-        "vscode-languageserver": "catalog:",
-        "vscode-languageserver-textdocument": "catalog:",
-        "vscode-languageserver-types": "catalog:"
+        "typescript-plugin-qingkuai": "workspace:*"
     }
 }

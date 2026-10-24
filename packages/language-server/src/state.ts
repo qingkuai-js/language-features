@@ -4,6 +4,7 @@ import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { ProjectKind } from "../../../shared-util/constant"
 import { TextDocument } from "vscode-languageserver-textdocument"
+import { setTypeScriptFromEnv } from "../../../shared-util/qingkuai"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 import { DEFAULT_PARTICIPANT } from "../../../shared-util/ipc/participant"
 import { TextDocuments, ProposedFeatures, createConnection } from "vscode-languageserver/node"
@@ -52,5 +53,6 @@ if (limitedScriptLanguageFeatures) {
     tpicConnectedResolver()
 }
 
+setTypeScriptFromEnv()
 connection.listen()
 documents.listen(connection)

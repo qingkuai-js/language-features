@@ -7,9 +7,34 @@ import { createAdapterFsWithNodeFs, createAdapterPathWithNodePath } from "./adap
 export const NOOP: GeneralFunc = () => {}
 export const IDENTIFY = <T>(value: T) => value
 
+export enum TypeScriptSource {
+    Setting = "setting",
+    Bundled = "bundled",
+    Workspace = "workspace"
+}
+
 export enum ProjectKind {
     TS = "ts",
     JS = "js"
+}
+
+// qingkuai 扩展注册的命令
+export enum QK_COMMANDS {
+    ShowReferences = "qingkuai.showReferences",
+    OpenFileByPath = "qingkuai.openFileByFilePath",
+    ViewServerLogs = "qingkuai.viewLanguageServerLogs",
+    WaitForWorkspaceReady = "qingkuai.waitForWorkspaceReady",
+    RestartLanguageServer = "qingkuai.restartLanguageServer",
+    SelectTypeScriptPath = "qingkuai.selectTypeScriptPath",
+    GetTypeScriptInfo = "qingkuai.getTypeScriptInfo"
+}
+
+// 扩展代码调用的 VS Code 内置命令
+export enum BUILTIN_COMMANDS {
+    Open = "vscode.open",
+    RestartTsServer = "typescript.restartTsServer",
+    EditorShowReferences = "editor.action.showReferences",
+    ExecuteCompletionItemProvider = "vscode.executeCompletionItemProvider"
 }
 
 export enum TP_HANDLERS {
@@ -56,4 +81,5 @@ export enum LS_HANDLERS {
 }
 
 export const ADAPTER_FS = createAdapterFsWithNodeFs(nodeFs)
+export const TYPESCRIPT_ENTRY_ENV = "QINGKUAI_TYPESCRIPT_ENTRY"
 export const ADAPTER_PATH = createAdapterPathWithNodePath(nodePath)

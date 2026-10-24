@@ -3,7 +3,18 @@ import type { Position } from "vscode-languageserver/node"
 import type { ASTPosition, ASTPositionWithFlag } from "qingkuai/compiler"
 
 import { isUndefined } from "./assert"
+import { TYPESCRIPT_ENTRY_ENV } from "./constant"
+import { setTypeScriptPath } from "qingkuai/compiler"
 import { CompressedPositions } from "../types/communication"
+
+/** 从环境变量中设置 TypeScript 路径 */
+export function setTypeScriptFromEnv(): string | undefined {
+    const entry = process.env[TYPESCRIPT_ENTRY_ENV]
+    if (entry) {
+        setTypeScriptPath(entry)
+    }
+    return entry
+}
 
 export function compressNumberArray(arr: number[]) {
     const compressed: Pair<number>[] = []
