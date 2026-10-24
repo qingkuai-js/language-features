@@ -1,3 +1,24 @@
+# 2026-10-24
+
+> packages version: vscode-extension@1.0.36, language-service@1.0.21, mcp-server@1.0.9
+
+features:
+
+1. reused the host typescript as the compiler implementation so the extension no longer ships typescript ([614e2dc](https://github.com/qingkuai-js/language-tools/commit/614e2dc))
+2. added a typescript picker and a status bar item showing the version in use ([614e2dc](https://github.com/qingkuai-js/language-tools/commit/614e2dc))
+
+fixes:
+
+1. fixed a crash in the typescript plugin when source position mapping fails ([614e2dc](https://github.com/qingkuai-js/language-tools/commit/614e2dc))
+
+tests:
+
+1. added macOS and Windows e2e workflows and a packed payload smoke test, and filtered noise from the e2e output ([614e2dc](https://github.com/qingkuai-js/language-tools/commit/614e2dc), [9ab82e1](https://github.com/qingkuai-js/language-tools/commit/9ab82e1), [f0be540](https://github.com/qingkuai-js/language-tools/commit/f0be540))
+
+others:
+
+1. slimmed the packaged payload, upgraded qingkuai to 1.0.103 and pinned pnpm to 9.15.9 ([614e2dc](https://github.com/qingkuai-js/language-tools/commit/614e2dc), [ff7d957](https://github.com/qingkuai-js/language-tools/commit/ff7d957))
+
 # 2026-10-11
 
 > packages version: vscode-extension@1.0.35, language-service@1.0.20
