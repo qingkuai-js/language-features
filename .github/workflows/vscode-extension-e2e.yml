@@ -1,0 +1,62 @@
+name: E2E
+
+on:
+    push:
+        branches: [dev, main, "ci/**"]
+    pull_request:
+        branches: [dev, main]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: e2e-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    vscode-extension:
+        name: VS Code extension e2e (${{ matrix.os }})
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 60
+        strategy:
+            fail-fast: false
+            matrix:
+                os:
+                    - macos-latest
+                    - windows-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            # pnpm is pinned by the packageManager field in package.json
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            # the grammar JSON files are generated and gitignored, the build copies them
+            - name: Build grammars
+              working-directory: packages/vscode-extension
+              run: pnpm run build:grammars
+
+            - name: Build
+              run: pnpm run build
+
+            # @vscode/test-electron keeps the downloaded VS Code build here; the key follows the version
+            # pinned in .vscode-test.mjs
+            - name: Cache VS Code
+              uses: actions/cache@v6
+              with:
+                  path: packages/vscode-extension/.vscode-test
+                  key: vscode-test-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/vscode-extension/.vscode-test.mjs') }}
+
+            # 已知缺陷用例带 @known-bug 标记，CI 只跑排除它们后的集合
+            # known-bug cases are tagged @known-bug, so CI runs the inverted set
+            - name: Run e2e tests
+              working-directory: packages/vscode-extension
+              run: pnpm run test:e2e:clean

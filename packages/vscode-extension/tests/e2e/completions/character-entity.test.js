@@ -33,13 +33,14 @@ function assertEntityFunction(items, expectStartLine, expectStartChar) {
     }
 }
 
-/** 轮询直到实体列表就绪（排除组件/标签等非实体项混入的瞬态） */
-function pollEntities(doc, offset) {
+/** 轮询直到实体列表就绪（排除组件/标签等非实体项混入的瞬态）；Windows CI 上全量实体首次响应可能超过 5s */
+function pollEntities(doc, offset, deadline = 15000) {
     return pollItems(
         doc,
         offset,
         l => l.length > 2000 && l.every(i => labelOf(i).startsWith("&")),
-        "&"
+        "&",
+        deadline
     )
 }
 
@@ -86,12 +87,12 @@ describe("completions/character-entity", function () {
             )
         }
         assertEntitiesAmong(
-            await pollItems(doc, at("xxx&am", 0), l => l.length > 2000, "&"),
+            await pollItems(doc, at("xxx&am", 0), l => l.length > 2000, "&", 15000),
             "xxx&am",
             2000
         )
         assertEntitiesAmong(
-            await pollItems(doc, at("-&lt", 0), l => l.length > 2000, "&"),
+            await pollItems(doc, at("-&lt", 0), l => l.length > 2000, "&", 15000),
             "-&lt",
             2000
         )

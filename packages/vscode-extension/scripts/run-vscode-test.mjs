@@ -2,6 +2,7 @@ import nodeFs from "node:fs"
 import nodePath from "node:path"
 import nodeModule from "node:module"
 import nodeUrl from "node:url"
+import nodeUtil from "node:util"
 import nodeChildProcess from "node:child_process"
 
 const req = nodeModule.createRequire(import.meta.url)
@@ -20,8 +21,32 @@ const NOISE_PREFIXES = [
     "[CloudSandboxApi",
     "[RemoteAgentHost",
     "[AccountPolicyGate",
-    "Unknown channel: agentHost"
+    "Unknown channel: agentHost",
+    "NativeExtensionHostFactory.",
+    "filterEnabledExtensions:"
 ]
+
+// 已知噪音族的行首特征正则
+const NOISE_PATTERNS = [
+    /^\[main [^\]]+\] (?:StorageMainService|AgentHostProcessManager): /,
+    /^\[main [^\]]+\] update#\w+ /,
+    /^\[main [^\]]+\] \[(?:node-compile-cache|shared storage|AgentHost:stderr)\] /,
+    /^workbench#open\(\)\s*$/,
+    /^Started local extension host with pid \d+\.\s*$/,
+    /^IExtensionHostStarter\.start\(\) took \d+ ms\.\s*$/,
+    /^Loading development extension at /,
+    /^Settings Sync: Account status changed from /,
+    /^\(node:\d+\) \[DEP0169\]/,
+    /^\(Use .+--trace-deprecation /
+]
+
+const isNoise = line => {
+    const plain = nodeUtil.stripVTControlCharacters(line)
+    return (
+        NOISE_PREFIXES.some(prefix => plain.startsWith(prefix)) ||
+        NOISE_PATTERNS.some(pattern => pattern.test(plain))
+    )
+}
 
 const MAX_BLOCK_SKIP = 300
 const userArgs = process.argv.slice(2)
@@ -116,14 +141,14 @@ function pipeFiltered(source, sink) {
                 }
                 continue
             }
-            if (NOISE_PREFIXES.some(prefix => line.startsWith(prefix))) {
+            if (isNoise(line)) {
                 continue
             }
             sink.write(line + "\n")
         }
     })
     source.on("end", () => {
-        if (!skipping && !NOISE_PREFIXES.some(prefix => buffered.startsWith(prefix))) {
+        if (!skipping && !isNoise(buffered)) {
             sink.write(buffered)
         }
     })

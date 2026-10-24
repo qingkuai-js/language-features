@@ -111,7 +111,7 @@ describe("completions/component-tag", function () {
         nodeAssert.match(
             text,
             new RegExp(
-                `<lang-${tag}>\\n\\s*import AChild from "\\.\\/a-child(?:\\.qk)?"\\s*;?\\n<\\/lang-${tag}>`
+                `<lang-${tag}>\\r?\\n\\s*import AChild from "\\.\\/a-child(?:\\.qk)?"\\s*;?\\r?\\n<\\/lang-${tag}>`
             ),
             "the embedded script block should contain the auto import statement"
         )
