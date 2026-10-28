@@ -142,7 +142,6 @@ The `util` object exported by the compiler package contains the following proper
 - `isVoidTag`
 - `kebab2Camel`
 - `toPropertyKey`
-- `ts`
 
 ### Flags
 

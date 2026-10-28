@@ -48,7 +48,7 @@ Used to parse and compile component source code; consumed by build tools, langua
 - **Methods**: `compile`, `compileIntermediate`, `isCompileError`, `isCompileWarning`, `parseDirectiveValue`, `parseEventFlag`, `parseTemplate`.
 - **Types**: `ASTLocation`, `ASTPosition`, `ASTPositionWithFlag`, `CompileIntermediateOptions`, `CompileIntermediateResult`, `CompileOptions`, `CompileResult`, `IdentifierStatus`, `ScriptDescriptor`, `StyleDescriptor`, `TemplateAttribute`, `TemplateNode`, `TemplateNodeContext`, `TextContentPart`.
 - **`constants` object**: `LSC`, `PRESERVED_IDPREFIX`, `SPREAD_TAG`.
-- **`util` object**: `camel2Kebab`, `findEndBracket`, `findOutOfComment`, `findOutOfLiteral`, `findOutOfLiteralComment`, `formatSourceCode`, `isEmbeddedLanguageTag`, `isEmbeddedStyleTag`, `isRequiredValueDirective`, `isVoidTag`, `kebab2Camel`, `toPropertyKey`, `ts`.
+- **`util` object**: `camel2Kebab`, `findEndBracket`, `findOutOfComment`, `findOutOfLiteral`, `findOutOfLiteralComment`, `formatSourceCode`, `isEmbeddedLanguageTag`, `isEmbeddedStyleTag`, `isRequiredValueDirective`, `isVoidTag`, `kebab2Camel`, `toPropertyKey`.
 - **Flags**: `PositionFlag`, `TestingMode`.
 
 ## Rules

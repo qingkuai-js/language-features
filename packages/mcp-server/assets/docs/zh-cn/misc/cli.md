@@ -1,6 +1,6 @@
 # 命令行工具
 
-命令行工具（CLI）是在终端中通过文本命令与程序交互的方式。Qingkuai 提供了官方的命令行工具 `@qingkuai/cli`，安装后通过 qingkuai 命令调用，它支持的能力如下：
+命令行工具（CLI）是在终端中通过文本命令与程序交互的方式。Qingkuai 提供了命令行工具 `@qingkuai/cli`，安装后通过 qingkuai 命令调用，它支持的能力如下：
 
 - `init`：在工作目录中初始化一个新的 Qingkuai 项目，支持 JavaScript 与 TypeScript 两种模板
 - `dev`：启动开发服务器，在开发过程中提供即时热更新（HMR）

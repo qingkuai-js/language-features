@@ -1,6 +1,6 @@
 # Command Line Tool
 
-A command line tool (CLI) is a way of interacting with a program through text commands in a terminal. Qingkuai provides an official command line tool `@qingkuai/cli`. After installation it is invoked through the qingkuai command, and its capabilities are as follows:
+A command line tool (CLI) is a way of interacting with a program through text commands in a terminal. Qingkuai provides a command line tool `@qingkuai/cli`. After installation it is invoked through the qingkuai command, and its capabilities are as follows:
 
 - `init`: initialize a new Qingkuai project in the working directory, with JavaScript and TypeScript templates
 - `dev`: start the dev server with instant hot module replacement (HMR)

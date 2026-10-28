@@ -67,4 +67,4 @@ Qingkuai 语言服务内置了文档格式化功能，该功能由 [prettier-plu
 
 在 Qingkuai 项目中，人工智能可以作为开发辅助能力，帮助你更快完成组件搭建、代码补全、问题排查与文档理解。它并不替代编译器和语言服务本身，而是与现有工具链协同工作，降低重复劳动并提升开发效率。
 
-Qingkuai 的 MCP 服务器由 [qingkuai-mcp-server](https://www.npmjs.com/package/qingkuai-mcp-server) 提供。它主要用于提升 Agent 的响应速度与稳定性，以及对 DSL 语法和组件文件的理解与生成能力。如果你安装了 [VS Code 扩展](docs://zh-cn/misc/language-features.md#ide-扩展)，在组件文件中使用 AI 功能时会自动连接到 MCP 服务器，无需额外配置。如果你希望在其他环境中使用或集成其 AI 能力，也可以直接接入该服务。
+Qingkuai 的 MCP 服务器由 [qingkuai-mcp-server](https://www.npmjs.com/package/qingkuai-mcp-server) 提供。它主要用于提升 Agent 的响应速度与稳定性，以及对 DSL 语法和组件文件的理解与生成能力。VS Code 扩展会自动连接到 MCP 服务器，在组件文件中使用 AI 功能时无需额外配置。如果你希望在其他环境中使用或集成其 AI 能力，也可以直接接入该服务，接入方式与它提供的完整能力参见 [MCP 服务器](docs://zh-cn/misc/mcp-server.md)。

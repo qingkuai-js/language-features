@@ -173,8 +173,8 @@ export const SERVER_INSTRUCTIONS = qingkuaiUtil.formatSourceCode(`
     1. For ANY question about .qk syntax, directives, attributes, events, reactivity, or components: call search_qingkuai_docs FIRST. Never write .qk syntax from memory.
     2. Base answers on the doc sections returned by search_qingkuai_docs; use read_qingkuai_doc when a full document or a specific section is needed.
     3. Prefer reference attributes for two-way binding: use &value/&number/&checked/&group instead of !attr + @event/@update; use &handle instead of querySelector/getElementById.
-    4. Prefer compiler-inferred reactivity; use reactive/shallow/raw only when necessary, and derived()/derivedExp() for derived state.
-    5. After writing or editing .qk code, verify it with check_qingkuai_syntax; use compile_qingkuai if problems persist. Do not finalize output while errors remain.
+    4. Declare reactivity the way the user does: let the compiler infer it when the user relies on inference, and use explicit reactive/shallow/raw marks when the user declares explicitly; consult the reactivityMode, requireReactivityMark, and allowConstReactive settings to pick the concrete form. Use derived()/derivedExp() for derived state.
+    5. After writing or editing .qk code, verify it with check_qingkuai_syntax; use compile_qingkuai if problems persist. For tasks the server has no tool for, such as type checking, use the project's or the user's globally installed @qingkuai/cli (e.g. qingkuai check --types). Do not finalize output while errors remain.
     6. To create or initialize a Qingkuai project, call get_qingkuai_project_bootstrap_guide first and never invent install commands.
 `)
 

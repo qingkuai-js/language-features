@@ -142,7 +142,6 @@ Qingkuai 的 API 按入口包划分，便于按需引入并保持清晰的职责
 - `isVoidTag`
 - `kebab2Camel`
 - `toPropertyKey`
-- `ts`
 
 ### 标志
 

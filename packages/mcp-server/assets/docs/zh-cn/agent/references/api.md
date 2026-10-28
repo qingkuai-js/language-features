@@ -48,7 +48,7 @@ API 按入口包划分，便于按需引入并保持清晰的职责边界：运�
 - **方法**：`compile`、`compileIntermediate`、`isCompileError`、`isCompileWarning`、`parseDirectiveValue`、`parseEventFlag`、`parseTemplate`。
 - **类型**：`ASTLocation`、`ASTPosition`、`ASTPositionWithFlag`、`CompileIntermediateOptions`、`CompileIntermediateResult`、`CompileOptions`、`CompileResult`、`IdentifierStatus`、`ScriptDescriptor`、`StyleDescriptor`、`TemplateAttribute`、`TemplateNode`、`TemplateNodeContext`、`TextContentPart`。
 - **`constants` 对象**：`LSC`、`PRESERVED_IDPREFIX`、`SPREAD_TAG`。
-- **`util` 对象**：`camel2Kebab`、`findEndBracket`、`findOutOfComment`、`findOutOfLiteral`、`findOutOfLiteralComment`、`formatSourceCode`、`isEmbeddedLanguageTag`、`isEmbeddedStyleTag`、`isRequiredValueDirective`、`isVoidTag`、`kebab2Camel`、`toPropertyKey`、`ts`。
+- **`util` 对象**：`camel2Kebab`、`findEndBracket`、`findOutOfComment`、`findOutOfLiteral`、`findOutOfLiteralComment`、`formatSourceCode`、`isEmbeddedLanguageTag`、`isEmbeddedStyleTag`、`isRequiredValueDirective`、`isVoidTag`、`kebab2Camel`、`toPropertyKey`。
 - **标志**：`PositionFlag`、`TestingMode`。
 
 ## 规则
