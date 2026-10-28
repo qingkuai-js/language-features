@@ -145,25 +145,39 @@ async function completeAt(doc, offset, trigger) {
     return (list && list.items) || []
 }
 
-/** 轮询补全直到条件成立返回最终 items；超时返回最后采样（不抛错）；单次请求同受 deadline 硬约束 */
+/** 倒计时哨兵：区分“这一轮没等到响应”和“响应就是空列表” */
+const POLL_SAMPLE_TIMEOUT = Symbol("poll-sample-timeout")
+
+/** 轮询补全直到条件成立返回最终 items；超时返回最后一次真实响应（不抛错）；单次请求同受 deadline 硬约束 */
 async function pollItems(doc, offset, cond, trigger, deadline = 5000) {
     const end = Date.now() + deadline
     let last = []
     while (Date.now() < end) {
         let timer
+        let sampled
         try {
-            last = await Promise.race([
+            sampled = await Promise.race([
                 completeAt(doc, offset, trigger),
                 new Promise(resolve => {
-                    timer = setTimeout(() => resolve([]), end - Date.now())
+                    timer = setTimeout(() => resolve(POLL_SAMPLE_TIMEOUT), end - Date.now())
                 })
             ])
         } finally {
             clearTimeout(timer)
         }
-        if (cond(last)) return last
+        // 倒计时赢下的那一轮不更新样本，否则最后一轮被截断时会把之前的好样本冲成空列表
+        if (sampled !== POLL_SAMPLE_TIMEOUT) {
+            last = sampled
+            if (cond(last)) return last
+        }
         await new Promise(r => setTimeout(r, 300))
     }
+    console.error(
+        `[e2e] completion poll at offset ${offset} did not satisfy its condition within ${deadline}ms; ` +
+            `last sample: ${last.length} items${
+                last.length ? ` (${last.slice(0, 3).map(labelOf).join(", ")})` : ""
+            }`
+    )
     return last
 }
 

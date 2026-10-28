@@ -2,9 +2,12 @@ const nodeAssert = require("node:assert")
 
 const { openFixture, labelOf, pollItems } = require("../utils/helpers")
 
+/** 挑出实体补全项：实体项会与 emmet 缩写（如 &L 前缀下的 Label/Legend）共存 */
+const entitiesOf = items => items.filter(i => labelOf(i).startsWith("&"))
+
 /** 功能断言：全量实体、插入文本以 & 开头、编辑起点正确 */
 function assertEntityFunction(items, expectStartLine, expectStartChar) {
-    items = items.filter(i => labelOf(i).startsWith("&"))
+    items = entitiesOf(items)
     nodeAssert.ok(
         items.length > 2000,
         `entities should be the full set (>2000), got ${items.length}`
@@ -33,15 +36,9 @@ function assertEntityFunction(items, expectStartLine, expectStartChar) {
     }
 }
 
-/** 轮询直到实体列表就绪（排除组件/标签等非实体项混入的瞬态）；Windows CI 上全量实体首次响应可能超过 5s */
+/** 轮询直到实体列表就绪（只对实体子集判定，非实体项混入不影响）；Windows CI 上全量实体首次响应可能超过 5s */
 function pollEntities(doc, offset, deadline = 15000) {
-    return pollItems(
-        doc,
-        offset,
-        l => l.length > 2000 && l.every(i => labelOf(i).startsWith("&")),
-        "&",
-        deadline
-    )
+    return pollItems(doc, offset, l => entitiesOf(l).length > 2000, "&", deadline)
 }
 
 describe("completions/character-entity", function () {
