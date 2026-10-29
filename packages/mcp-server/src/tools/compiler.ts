@@ -1,8 +1,20 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import { z } from "zod"
-import { compile, compileIntermediate } from "qingkuai/compiler"
 import { SYNTAX_CHECK_TOOL_DESCRIPTION, COMPILE_TOOL_DESCRIPTION } from "../constants"
+import { ReactivityMode, WhitespaceMode, compile, compileIntermediate } from "qingkuai/compiler"
+
+const REACTIVITY_MODES = {
+    reactive: ReactivityMode.Reactive,
+    shallow: ReactivityMode.Shallow
+}
+
+const WHITESPACE_MODES = {
+    preserve: WhitespaceMode.Preserve,
+    trim: WhitespaceMode.Trim,
+    collapse: WhitespaceMode.Collapse,
+    "trim-collapse": WhitespaceMode.TrimCollapse
+}
 
 export function registerCompilerTools(server: McpServer) {
     server.registerTool(
@@ -13,9 +25,7 @@ export function registerCompilerTools(server: McpServer) {
                 allowConstReactive: z
                     .boolean()
                     .optional()
-                    .describe(
-                        "Allow constant declarations to be marked as reactive. Default: true"
-                    )
+                    .describe("Allow constant declarations to be marked as reactive. Default: true")
             }),
             title: "Check Qingkuai Syntax",
             description: SYNTAX_CHECK_TOOL_DESCRIPTION
@@ -87,7 +97,9 @@ export function registerCompilerTools(server: McpServer) {
                 allowConstReactive: z
                     .boolean()
                     .optional()
-                    .describe("Allow constant declarations to be marked as reactive. Default: true"),
+                    .describe(
+                        "Allow constant declarations to be marked as reactive. Default: true"
+                    ),
                 requireReactivityMark: z
                     .boolean()
                     .optional()
@@ -116,23 +128,20 @@ export function registerCompilerTools(server: McpServer) {
             allowConstReactive,
             interpretiveComments,
             preserveHtmlComments,
-            requireReactivityMark,
+            requireReactivityMark
         }) => {
             try {
-                // 发布版 qingkuai 的类型声明尚未包含 requireReactivityMark，运行时已支持
-                const options = Object.assign(
-                    {
-                        hashId,
-                        debug,
-                        sourcemap,
-                        interpretiveComments,
-                        preserveHtmlComments,
-                        allowConstReactive,
-                        reactivityMode,
-                        whitespace
-                    },
-                    { requireReactivityMark }
-                )
+                const options = {
+                    hashId,
+                    debug,
+                    sourcemap,
+                    interpretiveComments,
+                    preserveHtmlComments,
+                    allowConstReactive,
+                    requireReactivityMark,
+                    whitespace: whitespace ? WHITESPACE_MODES[whitespace] : undefined,
+                    reactivityMode: reactivityMode ? REACTIVITY_MODES[reactivityMode] : undefined
+                }
                 const result = compile(source, options)
 
                 const errorCount = result.messages.filter(m => m.type === "error").length
