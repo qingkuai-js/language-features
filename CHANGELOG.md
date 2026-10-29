@@ -1,10 +1,11 @@
 # 2026-10-29
 
-> packages version: mcp-server@1.0.10
+> packages version: mcp-server@1.0.10, language-service@1.0.22
 
 fixes:
 
-1. passed enum members for the compiler's `reactivityMode` and `whitespace` options, as `qingkuai@1.0.104` exposes them as enums instead of string literal unions ([cb8dcc6](https://github.com/qingkuai-js/language-tools/commit/cb8dcc6))
+1. declared `@vscode/emmet-helper` as a runtime dependency: the entry statically imports it, so loading the package from outside this workspace failed with `ERR_MODULE_NOT_FOUND` ([5172e81](https://github.com/qingkuai-js/language-tools/commit/5172e81))
+2. passed enum members for the compiler's `reactivityMode` and `whitespace` options, as `qingkuai@1.0.104` exposes them as enums instead of string literal unions ([cb8dcc6](https://github.com/qingkuai-js/language-tools/commit/cb8dcc6))
 
 docs:
 

@@ -130,6 +130,9 @@ importers:
 
   packages/language-service:
     dependencies:
+      '@vscode/emmet-helper':
+        specifier: 'catalog:'
+        version: 2.11.0
       strip-ansi:
         specifier: ^7.2.0
         version: 7.2.0
@@ -149,9 +152,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.1
-      '@vscode/emmet-helper':
-        specifier: 'catalog:'
-        version: 2.11.0
       qingkuai:
         specifier: 'catalog:'
         version: 1.0.104
