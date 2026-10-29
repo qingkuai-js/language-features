@@ -1,3 +1,19 @@
+# 2026-10-29
+
+> packages version: mcp-server@1.0.10
+
+fixes:
+
+1. passed enum members for the compiler's `reactivityMode` and `whitespace` options, as `qingkuai@1.0.104` exposes them as enums instead of string literal unions ([cb8dcc6](https://github.com/qingkuai-js/language-tools/commit/cb8dcc6))
+
+docs:
+
+1. synchronized the bundled MCP server agent docs and refined its working protocol ([ac0b859](https://github.com/qingkuai-js/language-tools/commit/ac0b859))
+
+others:
+
+1. upgraded qingkuai to 1.0.104 ([cb8dcc6](https://github.com/qingkuai-js/language-tools/commit/cb8dcc6))
+
 # 2026-10-24
 
 > packages version: vscode-extension@1.0.37
