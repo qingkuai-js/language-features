@@ -242,6 +242,38 @@ async function waitForNoErrors(
     )
 }
 
+/**
+ * 等待指定片段不再出现在任何诊断里：只关心 forbidden 片段，其它诊断忽略。
+ * 用于“正向信号已经到达、旧错误应当消失”的场景，避免依赖诊断同批发布。
+ */
+async function waitForNoMatchingDiagnostics(
+    uri,
+    fragments,
+    { duration = 1200, interval = 200, stableSamples = 3 } = {}
+) {
+    await waitForWorkspaceReady()
+
+    let stable = 0
+    let lastHits = []
+    const deadline = Date.now() + duration
+    do {
+        const messages = diagnosticsOf(uri).map(diagnostic => diagnostic.message)
+        lastHits = fragments.filter(fragment =>
+            messages.some(message => message.includes(fragment))
+        )
+        if (lastHits.length === 0) {
+            if (++stable >= stableSamples) {
+                return
+            }
+        } else {
+            stable = 0
+        }
+        await new Promise(resolve => setTimeout(resolve, interval))
+    } while (Date.now() < deadline)
+
+    nodeAssert.fail(`diagnostics containing ${JSON.stringify(lastHits)} did not disappear`)
+}
+
 module.exports = {
     openFixture,
     writeFixture,
@@ -256,5 +288,6 @@ module.exports = {
     completeAt,
     pollItems,
     waitForNoErrors,
+    waitForNoMatchingDiagnostics,
     waitForWorkspaceReady
 }

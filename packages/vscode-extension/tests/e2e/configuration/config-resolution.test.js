@@ -2,7 +2,13 @@ const vscode = require("vscode")
 const nodePath = require("node:path")
 const nodeAssert = require("node:assert")
 
-const { openFixture, eventually, diagnosticsOf, waitForNoErrors } = require("../utils/helpers")
+const {
+    openFixture,
+    eventually,
+    diagnosticsOf,
+    waitForNoErrors,
+    waitForNoMatchingDiagnostics
+} = require("../utils/helpers")
 
 const CONST_REACTIVE_HINT = "allowConstReactive"
 const MARK_REQUIRED_HINT = "must be explicitly marked"
@@ -21,20 +27,14 @@ describe("configuration/config-resolution", function () {
 
         const closer = await openFixture("config-resolution", "override", "sub", "app.qk")
         await waitForError(closer.uri, CONST_REACTIVE_HINT)
-        nodeAssert.ok(
-            !hasError(closer.uri, MARK_REQUIRED_HINT),
-            "the parent requireReactivityMark should be overridden by the closer config"
-        )
+        await waitForNoMatchingDiagnostics(closer.uri, [MARK_REQUIRED_HINT])
     })
 
     it("merges extends with the current file taking precedence", async function () {
         const doc = await openFixture("config-resolution", "extends", "sub", "app.qk")
 
         await waitForError(doc.uri, CONST_REACTIVE_HINT)
-        nodeAssert.ok(
-            !hasError(doc.uri, MARK_REQUIRED_HINT),
-            "requireReactivityMark from the extends target should be overridden"
-        )
+        await waitForNoMatchingDiagnostics(doc.uri, [MARK_REQUIRED_HINT])
     })
 
     it("refreshes diagnostics after .qingkuairc changes", async function () {
@@ -51,10 +51,7 @@ describe("configuration/config-resolution", function () {
             )
 
             await waitForError(doc.uri, CONST_REACTIVE_HINT)
-            nodeAssert.ok(
-                !hasError(doc.uri, MARK_REQUIRED_HINT),
-                "requireReactivityMark should be gone after the config update"
-            )
+            await waitForNoMatchingDiagnostics(doc.uri, [MARK_REQUIRED_HINT])
         } finally {
             await vscode.workspace.fs.writeFile(
                 configUri,
@@ -77,10 +74,7 @@ describe("configuration/config-resolution", function () {
             )
 
             await waitForError(doc.uri, MARK_REQUIRED_HINT)
-            nodeAssert.ok(
-                !hasError(doc.uri, CONST_REACTIVE_HINT),
-                "allowConstReactive should be gone after the extends target update"
-            )
+            await waitForNoMatchingDiagnostics(doc.uri, [CONST_REACTIVE_HINT])
         } finally {
             await vscode.workspace.fs.writeFile(
                 baseUri,
@@ -115,6 +109,28 @@ describe("configuration/config-resolution", function () {
         }
     })
 
+    it("recovers after the extends target becomes valid", async function () {
+        const doc = await openFixture(
+            "config-resolution",
+            "extends-recover",
+            "conf",
+            "src",
+            "app.qk"
+        )
+        await waitForError(doc.uri, EMPTY_INTERPOLATION_HINT)
+
+        const baseUri = fixtureUri("config-resolution", "extends-recover", "shared", "base.json")
+        try {
+            await vscode.workspace.fs.writeFile(
+                baseUri,
+                Buffer.from(JSON.stringify({ allowConstReactive: false }))
+            )
+            await waitForError(doc.uri, CONST_REACTIVE_HINT)
+        } finally {
+            await vscode.workspace.fs.writeFile(baseUri, Buffer.from("{ not json\n"))
+        }
+    })
+
     it("applies extends only one level deep", async function () {
         const doc = await openFixture(
             "config-resolution",
@@ -131,16 +147,9 @@ describe("configuration/config-resolution", function () {
                 messages.some(message => message.includes(EMPTY_INTERPOLATION_HINT)),
                 `the component should be compiled, got: ${JSON.stringify(messages)}`
             )
-            nodeAssert.ok(
-                !messages.some(message => message.includes(CONST_REACTIVE_HINT)),
-                "a nested extends target must not be applied (allowConstReactive)"
-            )
-            nodeAssert.ok(
-                !messages.some(message => message.includes(MARK_REQUIRED_HINT)),
-                "a nested extends target must not be applied (requireReactivityMark)"
-            )
             return true
         })
+        await waitForNoMatchingDiagnostics(doc.uri, [CONST_REACTIVE_HINT, MARK_REQUIRED_HINT])
     })
 
     it("reports an unparsable config through an error message", async function () {
@@ -183,11 +192,8 @@ describe("configuration/config-resolution", function () {
 
             await waitForError(first.uri, MARK_REQUIRED_HINT)
             await waitForError(second.uri, MARK_REQUIRED_HINT)
-            nodeAssert.ok(
-                !hasError(first.uri, CONST_REACTIVE_HINT) &&
-                    !hasError(second.uri, CONST_REACTIVE_HINT),
-                "allowConstReactive should be gone after the shared extends target update"
-            )
+            await waitForNoMatchingDiagnostics(first.uri, [CONST_REACTIVE_HINT])
+            await waitForNoMatchingDiagnostics(second.uri, [CONST_REACTIVE_HINT])
         } finally {
             await vscode.workspace.fs.writeFile(
                 baseUri,
@@ -201,10 +207,7 @@ describe("configuration/config-resolution", function () {
     it("picks up a config added after resolution and drops it after removal", async function () {
         const doc = await openFixture("config-resolution", "add", "sub", "app.qk")
         await waitForError(doc.uri, EMPTY_INTERPOLATION_HINT)
-        nodeAssert.ok(
-            !hasError(doc.uri, MARK_REQUIRED_HINT),
-            "defaults should not require reactivity marks"
-        )
+        await waitForNoMatchingDiagnostics(doc.uri, [MARK_REQUIRED_HINT])
 
         const configUri = fixtureUri("config-resolution", "add", ".qingkuairc")
         try {
