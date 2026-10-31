@@ -59,6 +59,30 @@ This property configures whether constant declarations may be marked as reactive
 
 This property configures whether interpretive comments are inserted into compilation output. It is a boolean value and defaults to `true`.
 
+### extends
+
+This property configures the configuration to inherit another JSON configuration file. It is a string whose value is the target file path, resolved relative to the directory of the current configuration file. Options from the inherited file are applied first, and options in the current file override them. Inheritance is only one level deep: an `extends` field inside the inherited file is not followed. If the target file is missing or its content is not a valid JSON object, inheritance is ignored and a warning is reported.
+
+In the following example, the configuration in effect for `src/App.qk` is `reactivityMode: "shallow"` and `whitespace: "preserve"`.
+
+`.qingkuairc`:
+
+```json
+{
+    "extends": "./config/base.json",
+    "whitespace": "preserve"
+}
+```
+
+`config/base.json`:
+
+```json
+{
+    "reactivityMode": "shallow",
+    "whitespace": "collapse"
+}
+```
+
 ---
 
 ## Formatting Configuration

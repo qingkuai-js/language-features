@@ -4,9 +4,9 @@ const nodeAssert = require("node:assert")
 
 const { openFixture, eventually, diagnosticsOf } = require("../utils/helpers")
 
-// 未标记的顶层声明在 requireReactivityMark 下报 1074；被禁用的 const 响应式标记报 1070
-const MARK_REQUIRED_HINT = "must be explicitly marked"
 const CONST_REACTIVE_HINT = "allowConstReactive"
+const MARK_REQUIRED_HINT = "must be explicitly marked"
+const EMPTY_INTERPOLATION_HINT = "Empty interpolation expression block is not allowed"
 
 describe("configuration/config-resolution", function () {
     it("inherits the nearest .qingkuairc from a parent directory", async function () {
@@ -45,7 +45,9 @@ describe("configuration/config-resolution", function () {
         try {
             await vscode.workspace.fs.writeFile(
                 configUri,
-                Buffer.from(JSON.stringify({ requireReactivityMark: false, allowConstReactive: false }))
+                Buffer.from(
+                    JSON.stringify({ requireReactivityMark: false, allowConstReactive: false })
+                )
             )
 
             await waitForError(doc.uri, CONST_REACTIVE_HINT)
@@ -69,7 +71,9 @@ describe("configuration/config-resolution", function () {
         try {
             await vscode.workspace.fs.writeFile(
                 baseUri,
-                Buffer.from(JSON.stringify({ requireReactivityMark: true, allowConstReactive: true }))
+                Buffer.from(
+                    JSON.stringify({ requireReactivityMark: true, allowConstReactive: true })
+                )
             )
 
             await waitForError(doc.uri, MARK_REQUIRED_HINT)
@@ -106,6 +110,116 @@ describe("configuration/config-resolution", function () {
             })
         } finally {
             vscode.window.showErrorMessage = originalShowErrorMessage
+        }
+    })
+
+    it("reloads every config sharing the same extends target", async function () {
+        const first = await openFixture("config-resolution", "multi", "a", "app.qk")
+        await waitForError(first.uri, CONST_REACTIVE_HINT)
+
+        const second = await openFixture("config-resolution", "multi", "b", "app.qk")
+        await waitForError(second.uri, CONST_REACTIVE_HINT)
+
+        const baseUri = fixtureUri("config-resolution", "multi", "shared", "base.json")
+        try {
+            await vscode.workspace.fs.writeFile(
+                baseUri,
+                Buffer.from(
+                    JSON.stringify({ requireReactivityMark: true, allowConstReactive: true })
+                )
+            )
+
+            await waitForError(first.uri, MARK_REQUIRED_HINT)
+            await waitForError(second.uri, MARK_REQUIRED_HINT)
+            nodeAssert.ok(
+                !hasError(first.uri, CONST_REACTIVE_HINT) &&
+                    !hasError(second.uri, CONST_REACTIVE_HINT),
+                "allowConstReactive should be gone after the shared extends target update"
+            )
+        } finally {
+            await vscode.workspace.fs.writeFile(
+                baseUri,
+                Buffer.from(
+                    JSON.stringify({ requireReactivityMark: false, allowConstReactive: false })
+                )
+            )
+        }
+    })
+
+    it("picks up a config added after resolution and drops it after removal", async function () {
+        const doc = await openFixture("config-resolution", "add", "sub", "app.qk")
+        await waitForError(doc.uri, EMPTY_INTERPOLATION_HINT)
+        nodeAssert.ok(
+            !hasError(doc.uri, MARK_REQUIRED_HINT),
+            "defaults should not require reactivity marks"
+        )
+
+        const configUri = fixtureUri("config-resolution", "add", ".qingkuairc")
+        try {
+            await vscode.workspace.fs.writeFile(
+                configUri,
+                Buffer.from(JSON.stringify({ requireReactivityMark: true }))
+            )
+            await waitForError(doc.uri, MARK_REQUIRED_HINT)
+
+            await vscode.workspace.fs.delete(configUri, { useTrash: false })
+            await eventually(() => {
+                nodeAssert.ok(
+                    hasError(doc.uri, EMPTY_INTERPOLATION_HINT),
+                    "the component should stay compiled"
+                )
+                nodeAssert.ok(
+                    !hasError(doc.uri, MARK_REQUIRED_HINT),
+                    "the removed config should not be applied"
+                )
+                return true
+            })
+        } finally {
+            try {
+                await vscode.workspace.fs.delete(configUri, { useTrash: false })
+            } catch {}
+        }
+    })
+
+    it("reports configuration problems through error and warning messages", async function () {
+        const messages = []
+        const originalShowErrorMessage = vscode.window.showErrorMessage
+        const originalShowWarningMessage = vscode.window.showWarningMessage
+        vscode.window.showErrorMessage = message => {
+            messages.push({ kind: "error", message })
+            return Promise.resolve(undefined)
+        }
+        vscode.window.showWarningMessage = message => {
+            messages.push({ kind: "warning", message })
+            return Promise.resolve(undefined)
+        }
+
+        try {
+            await openFixture("config-resolution", "invalid-object", "app.qk")
+            await openFixture("config-resolution", "extends-missing", "app.qk")
+            await openFixture("config-resolution", "extends-bad", "app.qk")
+            await openFixture("config-resolution", "extends-invalid", "app.qk")
+
+            await eventually(() => {
+                const expected = [
+                    ["error", "must be a JSON object"],
+                    ["warning", "does not exist"],
+                    ["warning", "not valid JSON"],
+                    ["warning", "Invalid extends field"]
+                ]
+                for (const [kind, fragment] of expected) {
+                    nodeAssert.ok(
+                        messages.some(
+                            item => item.kind === kind && item.message.includes(fragment)
+                        ),
+                        `expected a ${kind} containing "${fragment}", got: ${JSON.stringify(messages)}`
+                    )
+                }
+                return true
+            })
+        } finally {
+            vscode.window.showErrorMessage = originalShowErrorMessage
+            vscode.window.showWarningMessage = originalShowWarningMessage
         }
     })
 })
