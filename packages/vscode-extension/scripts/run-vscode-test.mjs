@@ -59,11 +59,21 @@ const phaseNeedsTsconfig = args =>
         [...TSCONFIG_SUITE_DIRS].some(dir => new RegExp(`[\\\\/]${dir}[\\\\/]`).test(arg))
     )
 const phases = userArgs.includes("--run")
-    ? [{ name: "single", args: userArgs, env: phaseNeedsTsconfig(userArgs) }]
+    ? [
+          {
+              name: "single",
+              args: userArgs,
+              files: [],
+              env: phaseNeedsTsconfig(userArgs),
+              checkEmpty: false
+          }
+      ]
     : suiteDirectories().map(dir => ({
           name: dir.name,
+          files: dir.files,
           args: ["--run", ...dir.files, ...userArgs],
-          env: TSCONFIG_SUITE_DIRS.has(dir.name)
+          env: TSCONFIG_SUITE_DIRS.has(dir.name),
+          checkEmpty: true
       }))
 
 let currentChild = null
@@ -73,8 +83,17 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 
 let exitCode = 0
 for (const phase of phases) {
+    if (phase.checkEmpty) {
+        // 标记数不为 0 时会被 --grep @known-bug --invert 排除，打印出来便于发现误标
+        const markers = countKnownBugMarkers(phase.files)
+        process.stdout.write(
+            markers
+                ? `[e2e] ${phase.name}: ${markers} @known-bug marker(s) will be excluded\n`
+                : `[e2e] ${phase.name}: no @known-bug cases\n`
+        )
+    }
     process.stdout.write(`\n===== [e2e] ${phase.name} =====\n`)
-    exitCode = (await runPhase(phase.args, phase.env)) || exitCode
+    exitCode = (await runPhase(phase)) || exitCode
 }
 process.exit(exitCode)
 
@@ -96,31 +115,59 @@ function suiteDirectories() {
         .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function runPhase(args, withTsconfig) {
+// 统计该窗口文件里的 @known-bug 标记数，避免误标导致用例被静默排除
+function countKnownBugMarkers(files) {
+    let count = 0
+    for (const file of files) {
+        count += nodeFs.readFileSync(file, "utf8").split("@known-bug").length - 1
+    }
+    return count
+}
+
+function runPhase(phase) {
     return new Promise(resolve => {
-        const child = (currentChild = nodeChildProcess.spawn(process.execPath, [binMjs, ...args], {
-            stdio: ["inherit", "pipe", "pipe"],
-            env: {
-                ...process.env,
-                ...(withTsconfig ? { QK_E2E_TSCONFIG: "1" } : null)
+        let passing = 0
+        const child = (currentChild = nodeChildProcess.spawn(
+            process.execPath,
+            [binMjs, ...phase.args],
+            {
+                stdio: ["inherit", "pipe", "pipe"],
+                env: {
+                    ...process.env,
+                    ...(phase.env ? { QK_E2E_TSCONFIG: "1" } : null)
+                }
             }
-        }))
-        pipeFiltered(child.stdout, process.stdout)
+        ))
+        const onLine = line => {
+            const matched = nodeUtil.stripVTControlCharacters(line).match(/(\d+)\s+passing/)
+            if (matched) {
+                passing = Math.max(passing, Number(matched[1]))
+            }
+        }
+        pipeFiltered(child.stdout, process.stdout, onLine)
         pipeFiltered(child.stderr, process.stderr)
         child.on("exit", (code, signal) => {
             currentChild = null
             if (signal) {
                 process.kill(process.pid, signal)
             }
-            resolve(code ?? 0)
+
+            let exit = code ?? 0
+            if (!signal && exit === 0 && phase.checkEmpty && passing === 0) {
+                process.stderr.write(
+                    `[e2e] ${phase.name}: no tests ran, check the test file placement and the .test.js suffix\n`
+                )
+                exit = 1
+            }
+            resolve(exit)
         })
     })
 }
 
-function pipeFiltered(source, sink) {
+function pipeFiltered(source, sink, onLine) {
+    let skipped = 0
     let buffered = ""
     let skipping = false
-    let skipped = 0
     source.setEncoding("utf8")
     source.on("data", chunk => {
         buffered += chunk
@@ -129,6 +176,8 @@ function pipeFiltered(source, sink) {
             const line = buffered.slice(0, newlineAt)
             buffered = buffered.slice(newlineAt + 1)
             newlineAt = buffered.indexOf("\n")
+            onLine?.(line)
+
             if (line.includes(PROPOSALS_START)) {
                 skipping = true
                 skipped = 0

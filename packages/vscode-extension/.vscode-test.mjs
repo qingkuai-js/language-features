@@ -67,6 +67,7 @@ export default defineConfig({
         ui: "bdd",
         color: true,
         timeout: 240000,
+        forbidOnly: true,
         require: [nodePath.join(extRoot, "tests/e2e/utils/global-setup.js")]
     },
     launchArgs: [

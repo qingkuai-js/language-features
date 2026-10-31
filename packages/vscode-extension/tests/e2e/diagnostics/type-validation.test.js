@@ -1,7 +1,12 @@
 const vscode = require("vscode")
 const nodeAssert = require("node:assert")
 
-const { openFixture, eventually, diagnosticsOf } = require("../utils/helpers")
+const {
+    openFixture,
+    eventually,
+    diagnosticsOf,
+    waitForWorkspaceReady
+} = require("../utils/helpers")
 
 /** 等待指定文件出现至少一个 Error 级诊断（可选限定行号），返回命中诊断 */
 async function waitForError(uri, linePredicate, message) {
@@ -19,22 +24,26 @@ async function waitForError(uri, linePredicate, message) {
     )
 }
 
-/** 等待指定文件错误诊断为空 */
+/** 等待指定文件错误诊断为空：先确认工作区就绪，再要求连续多次采样都为空 */
 async function waitForClean(uri) {
-    return eventually(
-        () => {
-            const errs = diagnosticsOf(uri).filter(
-                d => d.severity === vscode.DiagnosticSeverity.Error
-            )
-            nodeAssert.strictEqual(
-                errs.length,
-                0,
-                `there should be no error diagnostics, got: ${errs.map(d => d.message)}`
-            )
+    await waitForWorkspaceReady()
+
+    let cleanSamples = 0
+    const deadline = Date.now() + 8000
+    while (Date.now() < deadline) {
+        const errs = diagnosticsOf(uri).filter(d => d.severity === vscode.DiagnosticSeverity.Error)
+        nodeAssert.strictEqual(
+            errs.length,
+            0,
+            `there should be no error diagnostics, got: ${errs.map(d => d.message)}`
+        )
+
+        if (++cleanSamples >= 4) {
             return true
-        },
-        { message: "error diagnostics not cleared" }
-    )
+        }
+        await new Promise(resolve => setTimeout(resolve, 250))
+    }
+    nodeAssert.ok(cleanSamples >= 4, "diagnostics did not stay clean for the observation window")
 }
 
 describe("diagnostics/type-validation", function () {
@@ -52,6 +61,10 @@ describe("diagnostics/type-validation", function () {
     })
 
     it("no error when event handler types match", async function () {
+        // 先让同目录的报错样例产生诊断，确认语言服务已经在该窗口出诊断
+        const errorDoc = await openFixture("diagnostics", "type-event.qk")
+        await waitForError(errorDoc.uri, null, "type diagnostics should be active")
+
         const doc = await openFixture("diagnostics", "type-event-ok.qk")
         await waitForClean(doc.uri)
     })
@@ -103,6 +116,10 @@ describe("diagnostics/type-validation", function () {
     })
 
     it("correct usage of directives and bindings produces no errors", async function () {
+        // 先让同目录的报错样例产生诊断，确认语言服务已经在该窗口出诊断
+        const errorDoc = await openFixture("diagnostics", "type-event.qk")
+        await waitForError(errorDoc.uri, null, "type diagnostics should be active")
+
         await openFixture("diagnostics", "refs-child.qk")
 
         const doc = await openFixture("diagnostics", "type-clean.qk")
