@@ -1,5 +1,6 @@
-<lang-js>
+<lang-ts>
     import RefsChild from "./refs-child.qk"
-</lang-js>
+    const str = "str"
+</lang-ts>
 
-<RefsChild &refCount={"str"} />
+<RefsChild &refCount={str} />

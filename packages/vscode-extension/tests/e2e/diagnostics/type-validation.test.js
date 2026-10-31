@@ -1,12 +1,7 @@
 const vscode = require("vscode")
 const nodeAssert = require("node:assert")
 
-const {
-    openFixture,
-    eventually,
-    diagnosticsOf,
-    waitForWorkspaceReady
-} = require("../utils/helpers")
+const { openFixture, eventually, diagnosticsOf, waitForNoErrors } = require("../utils/helpers")
 
 /** 等待指定文件出现至少一个 Error 级诊断（可选限定行号），返回命中诊断 */
 async function waitForError(uri, linePredicate, message) {
@@ -22,28 +17,6 @@ async function waitForError(uri, linePredicate, message) {
         },
         { message: message + " (did not arrive before timeout)" }
     )
-}
-
-/** 等待指定文件错误诊断为空：先确认工作区就绪，再要求连续多次采样都为空 */
-async function waitForClean(uri) {
-    await waitForWorkspaceReady()
-
-    let cleanSamples = 0
-    const deadline = Date.now() + 8000
-    while (Date.now() < deadline) {
-        const errs = diagnosticsOf(uri).filter(d => d.severity === vscode.DiagnosticSeverity.Error)
-        nodeAssert.strictEqual(
-            errs.length,
-            0,
-            `there should be no error diagnostics, got: ${errs.map(d => d.message)}`
-        )
-
-        if (++cleanSamples >= 4) {
-            return true
-        }
-        await new Promise(resolve => setTimeout(resolve, 250))
-    }
-    nodeAssert.ok(cleanSamples >= 4, "diagnostics did not stay clean for the observation window")
 }
 
 describe("diagnostics/type-validation", function () {
@@ -66,7 +39,7 @@ describe("diagnostics/type-validation", function () {
         await waitForError(errorDoc.uri, null, "type diagnostics should be active")
 
         const doc = await openFixture("diagnostics", "type-event-ok.qk")
-        await waitForClean(doc.uri)
+        await waitForNoErrors(doc.uri)
     })
 
     it("refs binding type mismatch should error (component &refCount passes string to number)", async function () {
@@ -123,6 +96,6 @@ describe("diagnostics/type-validation", function () {
         await openFixture("diagnostics", "refs-child.qk")
 
         const doc = await openFixture("diagnostics", "type-clean.qk")
-        await waitForClean(doc.uri)
+        await waitForNoErrors(doc.uri)
     })
 })
