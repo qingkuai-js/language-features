@@ -28,4 +28,27 @@ describe("tsconfig/no-ts-input", function () {
             forbidden: ["No inputs were found"]
         })
     })
+
+    it("keeps a jsconfig project without missing-input errors", async function () {
+        const doc = await openFixture("jsconfig", "app.qk")
+        await eventually(() => {
+            const messages = diagnosticsOf(doc.uri)
+                .filter(diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error)
+                .map(diagnostic => diagnostic.message)
+            nodeAssert.ok(
+                messages.some(message => /assignable/.test(message)),
+                `expected a type error from the strict jsconfig, got: ${JSON.stringify(messages)}`
+            )
+            return true
+        })
+
+        const configDoc = await openFixture("jsconfig", "jsconfig.json")
+        await waitForNoErrors(configDoc.uri, {
+            duration: 2000,
+            interval: 200,
+            hold: true,
+            failOnAnyError: true,
+            forbidden: ["No inputs were found"]
+        })
+    })
 })

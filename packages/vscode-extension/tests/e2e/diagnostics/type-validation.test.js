@@ -46,7 +46,15 @@ describe("diagnostics/type-validation", function () {
         await openFixture("diagnostics", "refs-child.qk")
 
         const doc = await openFixture("diagnostics", "type-refs.qk")
-        await waitForError(doc.uri, null, "refs type mismatch should produce a diagnostic")
+        const errs = await waitForError(
+            doc.uri,
+            null,
+            "refs type mismatch should produce a diagnostic"
+        )
+        nodeAssert.ok(
+            errs.some(d => /assignable|number/.test(d.message)),
+            `refs mismatch should report string→number, got: ${JSON.stringify(errs.map(d => d.message))}`
+        )
     })
 
     it("member access on dom node from &handle validated against declared type", async function () {

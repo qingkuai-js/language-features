@@ -2,7 +2,7 @@ const vscode = require("vscode")
 const nodePath = require("node:path")
 const nodeAssert = require("node:assert")
 
-const { openFixture, eventually, diagnosticsOf } = require("../utils/helpers")
+const { openFixture, eventually, diagnosticsOf, waitForNoErrors } = require("../utils/helpers")
 
 const CONST_REACTIVE_HINT = "allowConstReactive"
 const MARK_REQUIRED_HINT = "must be explicitly marked"
@@ -87,6 +87,24 @@ describe("configuration/config-resolution", function () {
                 Buffer.from(
                     JSON.stringify({ requireReactivityMark: false, allowConstReactive: false })
                 )
+            )
+        }
+    })
+
+    it("falls back to the current config after the extends target is removed", async function () {
+        const doc = await openFixture("config-resolution", "extends-delete", "conf", "src", "app.qk")
+        await waitForError(doc.uri, CONST_REACTIVE_HINT)
+
+        const baseUri = fixtureUri("config-resolution", "extends-delete", "shared", "base.json")
+        try {
+            await vscode.workspace.fs.delete(baseUri, { useTrash: false })
+
+            // 继承目标消失后应回退到当前文件的配置（默认 allowConstReactive 为 true）
+            await waitForNoErrors(doc.uri)
+        } finally {
+            await vscode.workspace.fs.writeFile(
+                baseUri,
+                Buffer.from(JSON.stringify({ allowConstReactive: false }))
             )
         }
     })
