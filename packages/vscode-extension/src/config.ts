@@ -15,9 +15,11 @@ import nodePath from "node:path"
 
 import { debounce } from "../../../shared-util/sundry"
 import { isBoolean, isNumber } from "../../../shared-util/assert"
+import { ConfigParsingMessageKind } from "qingkuai-language-service"
 import { IDENTIFY, LS_HANDLERS } from "../../../shared-util/constant"
 import { client, disposables, qingkuaiConfigResolver } from "./state"
-import { ConfigParsingMessageKind } from "qingkuai-language-service"
+
+const dependencyWatchers = new Map<string, vscode.FileSystemWatcher>()
 
 // 向语言服务器发送清空配置缓存的通知
 const notifyServerCleanConfigCache = debounce(
@@ -27,6 +29,48 @@ const notifyServerCleanConfigCache = debounce(
     300,
     IDENTIFY
 )
+
+// 配置或被继承文件变化后清空扩展侧缓存，并让语言服务器按受影响的配置目录重新解析
+function handleConfigFileChange(uri: vscode.Uri) {
+    const affectedConfigPaths = qingkuaiConfigResolver.removeCacheByPath(uri.fsPath)
+    const scopes = new Set(
+        affectedConfigPaths.length
+            ? affectedConfigPaths.map(configPath => nodePath.dirname(configPath))
+            : [nodePath.dirname(uri.fsPath)]
+    )
+
+    // 多个目录受影响时清空全部缓存，避免 debounce 只保留最后一个目录
+    notifyServerCleanConfigCache(scopes.size === 1 ? [...scopes][0] : undefined)
+}
+
+// 为 extends 目标注册监听；.qingkuairc 由 startConfigWatcher 的通配监听覆盖
+function watchConfigDependencies() {
+    for (const dependencyPath of qingkuaiConfigResolver.getDependencyPaths()) {
+        if (nodePath.basename(dependencyPath) === ".qingkuairc") {
+            continue
+        }
+
+        const key = process.platform === "win32" ? dependencyPath.toLowerCase() : dependencyPath
+        if (dependencyWatchers.has(key)) {
+            continue
+        }
+
+        const watcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(
+                vscode.Uri.file(nodePath.dirname(dependencyPath)),
+                nodePath.basename(dependencyPath)
+            )
+        )
+        const callback = () => handleConfigFileChange(vscode.Uri.file(dependencyPath))
+        disposables.push(
+            watcher,
+            watcher.onDidCreate(callback),
+            watcher.onDidChange(callback),
+            watcher.onDidDelete(callback)
+        )
+        dependencyWatchers.set(key, watcher)
+    }
+}
 
 export function getVscodeConfigTarget(config: vscode.WorkspaceConfiguration, section: string) {
     const inspected = config.inspect(section)
@@ -40,7 +84,7 @@ export function getVscodeConfigTarget(config: vscode.WorkspaceConfiguration, sec
 }
 
 export function getQingkuaiConfig(uri: vscode.Uri): QingkuaiConfiguration {
-    return qingkuaiConfigResolver.resolve(uri.fsPath, (filePath, message) => {
+    const config = qingkuaiConfigResolver.resolve(uri.fsPath, (filePath, message) => {
         const showMessage =
             message.kind === ConfigParsingMessageKind.Error
                 ? vscode.window.showErrorMessage
@@ -52,6 +96,8 @@ export function getQingkuaiConfig(uri: vscode.Uri): QingkuaiConfiguration {
             }
         })
     })
+    watchConfigDependencies()
+    return config
 }
 
 // 获取 typescript 配置项
@@ -105,8 +151,8 @@ export function getExtensionConfig(uri: vscode.Uri): ExtensionConfiguration {
     } as any
 }
 
+// 监听扩展配置项变化，并通知 qingkuai 语言服务器清空配置项缓存
 export function startConfigWatcher() {
-    // 监听扩展配置项变化，并通知 qingkuai 语言服务器清空配置项缓存
     disposables.push(
         vscode.workspace.onDidChangeConfiguration(({ affectsConfiguration }) => {
             if (
@@ -125,13 +171,10 @@ export function startConfigWatcher() {
     const watcher = vscode.workspace.createFileSystemWatcher(
         "**/{.qingkuairc,.prettierrc*,prettier.config*,package.json}"
     )
-    const configFileChangeCallback = (uri: vscode.Uri) => {
-        notifyServerCleanConfigCache(nodePath.dirname(uri.fsPath))
-    }
     disposables.push(
-        watcher.onDidCreate(configFileChangeCallback),
-        watcher.onDidChange(configFileChangeCallback),
-        watcher.onDidDelete(configFileChangeCallback)
+        watcher.onDidCreate(handleConfigFileChange),
+        watcher.onDidChange(handleConfigFileChange),
+        watcher.onDidDelete(handleConfigFileChange)
     )
 }
 
