@@ -3,7 +3,7 @@
     "license": "MIT",
     "author": "mlgq",
     "type": "module",
-    "version": "1.0.22",
+    "version": "1.0.23",
     "keywords": [
         "qingkuai",
         "language-service"
@@ -13,6 +13,11 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js",
             "require": "./dist/index.cjs"
+        },
+        "./config": {
+            "types": "./dist/config.d.ts",
+            "import": "./dist/config.js",
+            "require": "./dist/config.cjs"
         },
         "./adapters": {
             "types": "./dist/adapters.d.ts",
@@ -28,6 +33,11 @@
                 "types": "./dist/index.d.ts",
                 "import": "./dist/index.js",
                 "require": "./dist/index.cjs"
+            },
+            "./config": {
+                "types": "./dist/config.d.ts",
+                "import": "./dist/config.js",
+                "require": "./dist/config.cjs"
             },
             "./adapters": {
                 "types": "./dist/adapters.d.ts",

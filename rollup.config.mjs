@@ -44,6 +44,7 @@ export default defineConfig(commandLineArgs => {
         {
             input: {
                 index: "./packages/language-service/src/index.ts",
+                config: "./packages/language-service/src/config.ts",
                 adapters: "./packages/language-service/src/adapters/index.ts"
             },
             output: {
@@ -58,6 +59,7 @@ export default defineConfig(commandLineArgs => {
         {
             input: {
                 index: "./packages/language-service/src/index.ts",
+                config: "./packages/language-service/src/config.ts",
                 adapters: "./packages/language-service/src/adapters/adapter.ts"
             },
             output: {
@@ -139,6 +141,18 @@ export default defineConfig(commandLineArgs => {
             },
             plugins: [dts()],
             external: [...languageExternal, "node:fs", "node:path"]
+        })
+
+        // 单独打包配置类型，避免共享 chunk 把语言服务依赖的类型一并带入
+        result.push({
+            input: "./packages/language-service/dist/temp-types/packages/language-service/src/config.d.ts",
+            output: {
+                format: "es",
+                sourcemap: false,
+                file: "./packages/language-service/dist/config.d.ts"
+            },
+            plugins: [dts()],
+            external: [...languageExternal, "node:fs", "node:path", "typescript"]
         })
     }
 
