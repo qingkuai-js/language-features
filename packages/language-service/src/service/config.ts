@@ -49,6 +49,17 @@ class ConfigResolver {
         return { ...this.defaultConfig }
     }
 
+    // 已读取的配置文件与被继承文件路径，供调用方注册文件监听
+    getDependencyPaths() {
+        const paths = new Set<string>()
+        for (const entry of this.cache.values()) {
+            for (const file of entry.files) {
+                paths.add(file)
+            }
+        }
+        return [...paths]
+    }
+
     // 失效配置文件本身或 extends 目标对应的缓存，返回需要重新解析的配置文件路径
     removeCacheByPath(filePath: string) {
         const dirs = this.index.get(this.normalize(filePath))
