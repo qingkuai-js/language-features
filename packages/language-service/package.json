@@ -14,6 +14,11 @@
             "import": "./dist/index.js",
             "require": "./dist/index.cjs"
         },
+        "./config": {
+            "types": "./dist/config.d.ts",
+            "import": "./dist/config.js",
+            "require": "./dist/config.cjs"
+        },
         "./adapters": {
             "types": "./dist/adapters.d.ts",
             "import": "./dist/adapters.js",
@@ -28,6 +33,11 @@
                 "types": "./dist/index.d.ts",
                 "import": "./dist/index.js",
                 "require": "./dist/index.cjs"
+            },
+            "./config": {
+                "types": "./dist/config.d.ts",
+                "import": "./dist/config.js",
+                "require": "./dist/config.cjs"
             },
             "./adapters": {
                 "types": "./dist/adapters.d.ts",

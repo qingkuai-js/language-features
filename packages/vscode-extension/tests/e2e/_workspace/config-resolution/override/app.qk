@@ -1,0 +1,6 @@
+<lang-js>
+    let count = 1
+    const value = reactive(count)
+</lang-js>
+
+<div>{count}</div>
