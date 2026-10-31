@@ -92,7 +92,13 @@ describe("configuration/config-resolution", function () {
     })
 
     it("falls back to the current config after the extends target is removed", async function () {
-        const doc = await openFixture("config-resolution", "extends-delete", "conf", "src", "app.qk")
+        const doc = await openFixture(
+            "config-resolution",
+            "extends-delete",
+            "conf",
+            "src",
+            "app.qk"
+        )
         await waitForError(doc.uri, CONST_REACTIVE_HINT)
 
         const baseUri = fixtureUri("config-resolution", "extends-delete", "shared", "base.json")
@@ -107,6 +113,34 @@ describe("configuration/config-resolution", function () {
                 Buffer.from(JSON.stringify({ allowConstReactive: false }))
             )
         }
+    })
+
+    it("applies extends only one level deep", async function () {
+        const doc = await openFixture(
+            "config-resolution",
+            "extends-single",
+            "conf",
+            "src",
+            "app.qk"
+        )
+        await eventually(() => {
+            const messages = diagnosticsOf(doc.uri)
+                .filter(diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error)
+                .map(diagnostic => diagnostic.message)
+            nodeAssert.ok(
+                messages.some(message => message.includes(EMPTY_INTERPOLATION_HINT)),
+                `the component should be compiled, got: ${JSON.stringify(messages)}`
+            )
+            nodeAssert.ok(
+                !messages.some(message => message.includes(CONST_REACTIVE_HINT)),
+                "a nested extends target must not be applied (allowConstReactive)"
+            )
+            nodeAssert.ok(
+                !messages.some(message => message.includes(MARK_REQUIRED_HINT)),
+                "a nested extends target must not be applied (requireReactivityMark)"
+            )
+            return true
+        })
     })
 
     it("reports an unparsable config through an error message", async function () {
