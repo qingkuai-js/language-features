@@ -73,16 +73,29 @@ export default defineConfig(commandLineArgs => {
             plugins: [nodeResolve(), commonjs(), esbuild(), reloadAsRaw()]
         },
 
-        // vscode extension and language server
+        // language server：独立构建，避免扩展宿主入口把服务端代码一起加载
         {
-            input: {
-                server: "./packages/language-server/src/index.ts",
-                client: "./packages/vscode-extension/src/extension.ts"
-            },
+            input: "./packages/language-server/src/index.ts",
             output: {
                 format: "cjs",
                 sourcemap: true,
-                chunkFileNames: "chunks/[name].js",
+                entryFileNames: "server.js",
+                chunkFileNames: "chunks/server-[name].js",
+                dir: "packages/vscode-extension/dist",
+                manualChunks: chunkNameOfDependency
+            },
+            ...languageOnWarnAndExternal,
+            plugins: [nodeResolve(), commonjs(), esbuild(shippedCode)]
+        },
+
+        // vscode extension：只打包扩展宿主需要的代码
+        {
+            input: "./packages/vscode-extension/src/extension.ts",
+            output: {
+                format: "cjs",
+                sourcemap: true,
+                entryFileNames: "client.js",
+                chunkFileNames: "chunks/client-[name].js",
                 dir: "packages/vscode-extension/dist",
                 manualChunks: chunkNameOfDependency
             },
@@ -197,6 +210,12 @@ function reloadAsRaw() {
 function chunkNameOfDependency(id) {
     const normalized = id.replaceAll("\\", "/")
     const groups = [
+        // 扩展客户端只用到 ./config 子路径，单独成 chunk，避免把整个语言服务带进激活
+        [
+            "config-entry",
+            "/packages/language-service/dist/config.js",
+            "/packages/language-service/dist/chunks/shared.js"
+        ],
         [
             "language-service",
             "/packages/language-service/",
@@ -205,6 +224,8 @@ function chunkNameOfDependency(id) {
             "/emmet/",
             "/@emmetio/"
         ],
+        // 客户端与服务端共用的小型运行时库单独成 chunk，避免客户端把服务端 chunk 拖进来
+        ["shared-runtime", "/vscode-uri/", "/vscode-languageserver-types/", "/vscode-jsonrpc/"],
         ["language-server", "/vscode-languageserver", "/vscode-jsonrpc/", "/vscode-uri/"],
         ["language-client", "/vscode-languageclient/"],
         [

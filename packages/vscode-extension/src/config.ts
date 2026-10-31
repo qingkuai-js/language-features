@@ -10,14 +10,13 @@ import type {
 
 import * as vscode from "vscode"
 
-import prettier from "prettier"
 import nodePath from "node:path"
 
 import { debounce } from "../../../shared-util/sundry"
 import { isBoolean, isNumber } from "../../../shared-util/assert"
-import { ConfigParsingMessageKind } from "qingkuai-language-service"
 import { IDENTIFY, LS_HANDLERS } from "../../../shared-util/constant"
 import { client, disposables, qingkuaiConfigResolver } from "./state"
+import { ConfigParsingMessageKind } from "qingkuai-language-service/config"
 
 const dependencyWatchers = new Map<string, vscode.FileSystemWatcher>()
 
@@ -111,6 +110,7 @@ export function getTypescriptConfig(uri: vscode.Uri) {
 
 export async function getPrettierConfig(uri: vscode.Uri) {
     const byVscode = vscode.workspace.getConfiguration("prettier")
+    const { default: prettier } = await import("prettier")
     const byConfigFile = await prettier.resolveConfig(uri.fsPath, {
         useCache: false,
         editorconfig: true
