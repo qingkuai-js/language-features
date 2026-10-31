@@ -1,0 +1,5 @@
+<lang-ts>
+    const value: string = null
+</lang-ts>
+
+<div>text</div>
