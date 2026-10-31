@@ -268,8 +268,24 @@ async function assertPrettierConfigResolution(stageRoot) {
     }
 }
 
-function runMcp(entry, workDir, env, tools) {
-    return new Promise(resolve => {
+// 客户端只在格式化时加载 prettier：入口必须保留动态 import，不能退回激活期的静态 require
+// the client only loads prettier when formatting: keep the dynamic import and reject an eager require
+function assertLazyPrettierImport(stageRoot) {
+    const clientEntry = nodePath.join(stageRoot, "dist/client.js")
+    if (!nodeFs.existsSync(clientEntry)) {
+        throw new Error("the staged payload has no dist/client.js, is the extension built?")
+    }
+
+    const source = nodeFs.readFileSync(clientEntry, "utf-8")
+    if (!/import\(\s*["']prettier["']\s*\)/.test(source)) {
+        throw new Error("dist/client.js no longer lazily imports prettier")
+    }
+    if (/require\(\s*["']prettier["']\s*\)/.test(source)) {
+        throw new Error("dist/client.js eagerly requires prettier")
+    }
+}
+
+function runMcp(entry, workDir, env, tools) {    return new Promise(resolve => {
         const child = nodeChildProcess.spawn(process.execPath, [entry], {
             cwd: workDir,
             env,
@@ -333,6 +349,7 @@ async function main() {
     }
     assertInjectableCompiler(stageRoot)
     await assertPrettierConfigResolution(stageRoot)
+    assertLazyPrettierImport(stageRoot)
 
     const typescriptEntry = findHostTypeScript()
     if (!typescriptEntry) {
