@@ -51,6 +51,11 @@ jobs:
             - name: Verify config entry
               run: node scripts/verify-config-entry.mjs
 
+            # 产物按 .vscodeignore 裁剪后仍需可用
+            - name: Verify packed payload
+              working-directory: packages/vscode-extension
+              run: node scripts/verify-packed-payload.mjs
+
             # @vscode/test-electron 把下载的 VS Code 放在这里；
             # 缓存 key 跟随 .vscode-test.mjs 中固定的版本
             - name: Cache VS Code
