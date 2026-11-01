@@ -1,53 +1,26 @@
+---
+description: "Qingkuai debugging: source maps for script and style blocks, reactive identifier wrappers in DevTools, directive context debug info, and interpolation update mapping points."
+keywords: ["debug", "debugging", "source map", "devtools", "breakpoint", "调试"]
+---
+
 # Debugging
 
-Debugging is an essential part of locating and fixing issues during development. Qingkuai component files are compiled into standard JavaScript modules, so you can use browser DevTools, the [VS Code](https://code.visualstudio.com/) debugger, and tools like [Vite](https://vitejs.dev/) to inspect component logic, reactive state, and rendering behavior. This article covers common debugging techniques for Qingkuai projects.
+Component files compile to standard JavaScript modules, so browser DevTools, the VS Code debugger, and Vite inspect component logic, reactive state, and rendering behavior directly.
 
----
+## Rules
 
-## Source Maps
+1. In development mode the compiler generates source maps by default, in two dimensions: **script mapping** (compiled JS back to script blocks / template interpolations — set breakpoints in the original source) and **style mapping** (built CSS back to the style block — the Styles panel shows original rules).
+2. Enable `JavaScript source maps` and `CSS source maps` in browser DevTools settings; with `vite-plugin-qingkuai` they are on by default in development mode.
+3. In development mode the compiler preserves original identifiers of reactive values. The DevTools `Scope` panel also shows a compiler-internal wrapper value (usually `_`-prefixed) — ignore it; debug code keeps the original identifier in sync automatically.
+4. The compiler attaches debug information to directive-created context identifiers, clarifying each directive's execution context.
+5. Mapping points are created at the start and end of every interpolation block, showing DOM state before/after operations. With multiple interpolation blocks in one tag's content, the first block's start and the last block's end correspond to the before/after DOM states.
+6. For styles, click the file path next to a rule in the `Elements` panel to jump to the original rule in the component file (`Sources` panel).
 
-In development mode, the compiler generates [source maps](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/SourceMap) for component files by default, mapping compiled output back to the original component file across two dimensions:
+## Examples
 
-- **Script mapping**: Maps compiled JavaScript code back to the script block or template interpolation in the component file, so you can inspect variables and set breakpoints in the original source.
-- **Style mapping**: Maps the built CSS back to the style block in the component file, so the browser's Styles panel shows the original rules instead of the compiled stylesheet.
+Typical workflow: open the component file in DevTools `Sources`, set a breakpoint inside the script block, trigger the update, then inspect original reactive identifiers in `Scope` — not their `_`-prefixed internal wrappers.
 
----
+## See also
 
-## Prerequisites
-
-- Make sure `JavaScript source maps` and `CSS source maps` are enabled in your browser's DevTools settings.
-- If you use [vite-plugin-qingkuai](https://www.npmjs.com/package/vite-plugin-qingkuai), source maps are enabled by default in development mode. For other build tools, refer to their documentation for configuration.
-
----
-
-## Script Debugging
-
-For code inside embedded script blocks and template interpolations, you can open the corresponding component file in the browser DevTools `Sources` panel and set breakpoints there:
-<img src="/static/medias/script-debugging.png" alt="Script debugging" />
-
-### Reactive Values
-
-In development mode, the compiler preserves the original identifiers of reactive values. In the DevTools `Scope` panel, you will notice that each reactive identifier has a corresponding wrapper value (usually prefixed with `_`), which is the actual reactive value used by the compiler internally. You can ignore it during debugging — the compiler-generated debug code automatically syncs the original identifier whenever the reactive value changes, so you can always focus solely on the original identifier:
-<img src="/static/medias/reactivity-debugging.png" alt="Reactive value debugging" />
-
-### Directive Context
-
-In development mode, the compiler attaches debug information to context identifiers created by directives, giving you a clearer picture of the directive's execution context:
-<img src="/static/medias/directive-debugging.png" alt="Directive context debugging" />
-
-### Interpolation Block Updates
-
-As you may have noticed from the screenshots above, within the component file the compiler creates mapping points at the start and end of each interpolation block. This is so that during debugging you can clearly see the state of the DOM before and after the operation, helping you better understand the component's update process.
-
-> [!TIP]
-> If a tag's content contains multiple interpolation blocks, the start of the first block and the end of the last block correspond to the states before and after the DOM operation, respectively.
-
----
-
-## Style Debugging
-
-For style blocks in component files, you can inspect element styles in the browser DevTools `Elements` panel. Click the file path next to a rule to navigate to the original style in the component file:
-<img src="/static/medias/style-debugging-1.png" alt="Style debugging" style="width: 60%; margin-left: 20%;" />
-
-This will jump to the `Sources` panel and highlight the corresponding rule in the style block:
-<img src="/static/medias/style-debugging-2.png" alt="Style debugging" />
+- [Reactivity](docs://basic/reactivity.md)
+- [Language Features](docs://misc/language-features.md)

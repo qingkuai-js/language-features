@@ -1,55 +1,31 @@
+---
+description: "Qingkuai installation: scaffold projects with create-qingkuai (npm/pnpm/yarn), the --ts TypeScript option, and the dev-server startup commands; with a globally installed qingkuai command you can init and run type checks directly."
+keywords: ["install", "create-qingkuai", "scaffold", "dev server", "安装", "脚手架"]
+---
+
 # Installation
 
-If you just want to quickly experience Qingkuai, you can first try the [online playground](https://try.qingkuai.dev).
+Quick try: the online playground at `https://try.qingkuai.dev`. Full development: scaffold a local project with `create-qingkuai`.
 
-To get the full development experience, you can create a project locally. With [create-qingkuai](https://www.npmjs.com/package/create-qingkuai), you can quickly initialize a project by simply running one of the following commands in your terminal:
+## Commands
 
-|npm|pnpm|yarn|
+| Step | npm | pnpm | yarn |
+|---|---|---|---|
+| Create project | `npm create qingkuai -- qingkuai-app` | `pnpm create qingkuai@latest qingkuai-app` | `yarn dlx create-qingkuai@latest qingkuai-app` |
+| TypeScript variant | append `--ts` (e.g. `npm create qingkuai -- qingkuai-app --ts`) | same | same |
+| Enter project directory | `cd qingkuai-app` | same | same |
+| Install + dev server | `npm install && npm run dev` | `pnpm install && pnpm run dev` | `yarn && yarn dev` |
 
-```shell
-➜ npm create qingkuai -- qingkuai-app
-```
+## Rules
 
-```shell
-➜ pnpm create qingkuai@latest qingkuai-app
-```
+1. Never invent install commands — these are the authoritative scaffold commands.
+2. Add the `--ts` option to scaffold a TypeScript project.
+3. After scaffolding, run the install + dev commands inside the created project directory.
+4. If the user has the `qingkuai` command globally installed (and not very old), it can initialize the project directly: `qingkuai init qingkuai-app --ts`, equivalent to create-qingkuai.
+5. The global CLI can also run type checking (`qingkuai check src --types`), formatting and builds; see [Command Line Tool](docs://misc/cli.md).
 
-```shell
-➜ yarn dlx create-qingkuai@latest qingkuai-app
-```
+## See also
 
-If you want to create a TypeScript version, just add the `--ts` option:
-
-|npm|pnpm|yarn|
-
-```shell
-➜ npm create qingkuai -- qingkuai-app --ts
-```
-
-```shell
-➜ pnpm create qingkuai@latest qingkuai-app --ts
-```
-
-```shell
-➜ yarn dlx create-qingkuai@latest qingkuai-app --ts
-```
-
-After the project is created, enter the project directory and install the dependencies, then start the development server locally:
-
-```shell
-cd qingkuai-app
-```
-
-|npm|pnpm|yarn|
-
-```shell
-➜ npm install && npm run dev
-```
-
-```shell
-➜ pnpm install && pnpm run dev
-```
-
-```shell
-➜ yarn && yarn dev
-```
+- [Framework Introduction](docs://getting-started/introduction.md)
+- [Configuration Files](docs://misc/config-files.md)
+- [Command Line Tool](docs://misc/cli.md)

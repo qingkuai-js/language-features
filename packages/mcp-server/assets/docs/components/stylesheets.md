@@ -1,24 +1,39 @@
-# Stylesheets
-
-Stylesheets serve not only to beautify pages but also as vital complements to component functionality. A well-designed styling system not only enhances user experience but also strengthens component expressiveness and reusability. In component-based development, traditional global styles tend to cause conflicts and increase maintenance costs, while the scoping mechanism can effectively alleviate these issues. By confining styles within components, developers can define class names and rules with greater confidence, without worrying about affecting other components or page elements. This approach preserves the flexibility of CSS while delivering stronger controllability and maintainability.
-
+---
+description: "Qingkuai stylesheets: scoped embedded style blocks, #scope style penetration, src/@import external styles, global style blocks, and qk-scope selector positioning."
+keywords: ["style", "stylesheet", "scoped styles", "lang-css", "global", "#scope", "qk-scope", "样式"]
 ---
 
-## Style Scoping
+# Component Stylesheets
 
-All content in component templates receives a scoping attribute during rendering, for example:
+Embedded style blocks (e.g. `<lang-css>`) in component files are scoped: rendered template elements receive a scoping attribute (e.g. `qk-dbb1016b`), and style rules get it appended to their selectors, preventing global pollution.
 
-```html
-<div>...</div>
-```
+## Syntax
 
-Is rendered as an HTML fragment similar to:
+| Form | Syntax | Meaning |
+|---|---|---|
+| Scoped style block | `<lang-css> div { color: red; } </lang-css>` | Compiles to `div[qk-xxxx] { ... }` |
+| Global style block | `<lang-css global> ... </lang-css>` | Rules receive no scoping attribute |
+| External stylesheet | `<lang-scss src="./styles/theme.scss" />` | `src` attribute; the tag must have no content |
+| Import inside styles | an `@import` statement in the block body, e.g. `@import "./styles/base.css";` | Style rules stay inside the block body |
+| Global + external | `<lang-css global src="./index.css" />` | Combines both |
+| Scope position control | `div[qk-scope] p { }` | `qk-scope` attribute selector marks where the scoping attribute lands: `div[qk-xxxx] p { }` |
+| Style penetration | `#scope` directive on a component tag | Passes the parent's scope attribute to the child's root element (see Compilation Directives) |
 
-```html
-<div qk-dbb1016b>...</div>
-```
+## Rules
 
-To prevent component styles from polluting global styles or other components, embedded styles are likewise given scoping attributes, for example:
+1. All template content receives a scoping attribute during rendering; embedded style rules are scoped with the same attribute automatically.
+2. Default position of the scoping attribute is after the last selector (`div p[qk-xxxx]`, `.container .box[qk-xxxx]`); move it with the `qk-scope` attribute selector.
+3. Embedded style blocks may use any style language tag supported by the toolchain (`lang-css`, `lang-scss`, ...).
+4. `#scope` on a component tag lets parent styles affect the child's root element; it is composable along the ancestor chain.
+
+## Constraints
+
+- A style tag using the `src` attribute cannot contain tag content.
+- Avoid having the same shared stylesheet repeatedly imported through `src`/`@import` by component scoped styles — the compilation result may generate multiple copies of equivalent rules with different scope identifiers attached; see the optimization doc for how to reuse shared styles.
+
+## Examples
+
+Scoped embedded styles:
 
 ```qk
 <lang-css>
@@ -26,49 +41,11 @@ To prevent component styles from polluting global styles or other components, em
         color: red;
     }
 </lang-css>
+
+<div>Scoped red text</div>
 ```
 
-Gets converted to:
-
-```css
-div[qk-dbb1016b] {
-    color: red;
-}
-```
-
----
-
-## External Style Sources
-
-Embedded style blocks support two ways to bring in external style files: via a static `src` attribute on the tag, or via an `@import` statement in the style content:
-
-```qk
-<lang-scss src="./styles/theme.scss" />
-```
-
-> [!WARNING]
-> When using the `src` attribute, the embedded style tag cannot contain tag content.
-
-When using `@import`, style rules are written in the content body of the embedded style tag:
-
-```qk
-<lang-css>
-    @import "./styles/base.css";
-
-    .local-rule {
-        /* ... */
-    }
-</lang-css>
-```
-
-> [!WARNING]
-> When the same shared stylesheet is repeatedly imported by component scoped styles through `src` or `@import`, the compilation result may generate multiple copies of equivalent rules (with different scope identifiers attached). Try to avoid this pattern: [Optimization - Style Reuse](docs://misc/optimization.md#style-reuse).
-
----
-
-## Global Styles
-
-By default, embedded styles automatically receive component scope attributes. If you want the current style block to be treated as global styles, add the boolean attribute `global` to the embedded style tag — for example, `.page-title` below will not be attached component scope attributes:
+Global style block:
 
 ```qk
 <lang-css global>
@@ -76,47 +53,39 @@ By default, embedded styles automatically receive component scope attributes. If
         color: #111;
     }
 </lang-css>
+
+<h1 class="page-title">Page Title</h1>
 ```
 
-In addition, `global` can also be combined with `src`:
+External sources (shown as written; not compiled here):
 
-```qk
+```text
+<lang-scss src="./styles/theme.scss" />
 <lang-css global src="./index.css" />
+
+<lang-css>
+    @import "./styles/base.css";
+    .local-rule { color: #333; }
+</lang-css>
 ```
 
----
-
-## Scoping Attribute Position
-
-Normally, the scoping attribute is appended after the last selector:
+Scoping-attribute position control (CSS view):
 
 ```css
-div p[qk-dbb1016b] {
-}
-.container .box[qk-dbb1016b] {
-}
-```
-
-But we can manually adjust the position where the scoping attribute is added using the `qk-scope` attribute selector, for example:
-
-```css
+/* written */
 div[qk-scope] p {
 }
 [qk-scope] .container .box {
 }
-```
 
-Gets converted to:
-
-```css
+/* compiled */
 div[qk-dbb1016b] p {
 }
 [qk-dbb1016b] .container .box {
 }
 ```
 
----
+## See also
 
-## Style Penetration
-
-Scoped styles guarantee the independence of components, but in some scenarios you may want the style rules of a parent component to be able to affect the root element of a child component. Qingkuai provides the [#scope directive](docs://basic/compilation-directives.md#scope-directive) to fulfill this need.
+- [Compilation Directives](docs://basic/compilation-directives.md)
+- [Optimization](docs://misc/optimization.md)

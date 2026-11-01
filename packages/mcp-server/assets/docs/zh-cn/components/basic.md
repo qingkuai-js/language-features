@@ -1,16 +1,29 @@
-# 基础
-
-在 Qingkuai 中，组件是构建用户界面的基本单位。每个组件都代表一个独立、可复用的界面片段，既可以是简单的按钮，也可以是复杂的页面。组件天然具有封装性和组合性，使界面开发更加清晰、高效。
-
-<img src="/static/medias/component-basic.png" />
-
+---
+description: "Qingkuai 组件文件：基于文件的定义模型、导入与标签使用、kebab-case/camelCase 命名等价性，以及成员访问标签。"
+keywords: ["component", "component file", ".qk", "import", "tag", "kebab-case", "组件"]
 ---
 
-## 定义及使用
+# 组件基础
 
-Qingkuai 的组件定义采取了与 [Vue](https://cn.vuejs.org) 和 [Svelte](https://svelte.dev) 相同的方式，即文件级组件定义。每个组件都定义在一个扩展名为 `.qk` 的文件中，经编译器处理后，该文件会被转换为一个具有 [默认导出](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Modules#%E9%BB%98%E8%AE%A4%E5%AF%BC%E5%87%BA%E4%B8%8E%E5%85%B7%E5%90%8D%E5%AF%BC%E5%87%BA)的 [JavaScript 模块](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Guide/Modules)。
+组件是构建 Qingkuai 界面的基本单元。每个 `.qk` 文件定义一个组件；编译后它成为一个带默认导出的 JavaScript 模块。
 
-假设我们已经通过 `Component.qk` 文件定义了一个组件，在其他组件文件中，可以通过 [import 语法](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/import) 导入，并在模板部分添加与导入标识符名称相同的标签来重复使用它：
+## 语法
+
+| 形式 | 语法 | 含义 |
+|---|---|---|
+| 导入组件 | `import Component from "./Component.qk"` | 在嵌入脚本块内 |
+| 使用组件 | `<Component />` | 标签名与导入标识符同名；可多次使用 |
+| kebab-case 标签 | `<my-component />` | 等价于 `<MyComponent />` |
+| 成员访问标签 | `<Module.default />` | 常见于异步组件 |
+
+## 规则
+
+1. 一个 `.qk` 文件对应一个组件；导入后在模板区以与导入标识符同名的标签复用。
+2. 以大写字母开头或包含 `-`、`.` 的标签名会被视为组件标签。
+3. 默认情况下，格式化会把组件名转换为 camelCase；在 `.prettierrc` 中配置 `{"componentTagFormatPreference": "kebab"}` 可切换为 kebab-case，语言服务也会随之在补全中优先给出 kebab-case 标签。
+4. 组件标签支持成员访问语法（`<Module.default />`），常见于异步组件。
+
+## 示例
 
 ```qk
 <lang-js>
@@ -21,29 +34,8 @@ Qingkuai 的组件定义采取了与 [Vue](https://cn.vuejs.org) 和 [Svelte](ht
 <Component />
 ```
 
-> [!TIP]
-> 之后我们都用 `组件文件` 这一术语指代扩展名为 `.qk` 的文件。
+## 参见
 
-组件名称支持使用串型（kebab）格式，下面的写法是等效的：
-
-```qk
-<MyComponent />
-<my-component />
-```
-
-默认情况下，格式化组件文件时会将所有组件名称整理为驼峰格式，但你可以在组件文件所在目录或其上级目录中添加 `.prettierrc` 文件，并输入以下内容将组件名称偏好修改为 kebab 格式：
-
-```json
-{
-    "componentTagFormatPreference": "kebab"
-}
-```
-
-> [!TIP]
-> 使用此配置时，Qingkuai 语言服务器在提供组件标签补全建议时，也会优先提示串型组件标签。
-
-此外，组件标签还支持成员访问语法，这在配合[异步组件](docs://zh-cn/components/async-components.md)使用时很常见：
-
-```qk
-<Module.default />
-```
+- [组件属性](docs://zh-cn/components/attributes.md)
+- [成员导出](docs://zh-cn/components/exports.md)
+- [异步组件](docs://zh-cn/components/async-components.md)

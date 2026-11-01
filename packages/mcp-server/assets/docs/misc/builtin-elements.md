@@ -1,14 +1,28 @@
-# Built-in Elements
-
-In Qingkuai, built-in elements are used to extend template syntax and provide stronger expressive power than standard HTML. They usually take on special framework-level responsibilities with specific semantics and behavior, and they play an important role when handling rendering logic or control structures. Built-in elements are typically prefixed with `qk:` to avoid conflicts with future built-in HTML tags or taking over component naming space.
-
+---
+description: "Qingkuai built-in elements: qk:spread as a virtual directive mounting point for sibling groups and text nodes, rendered as nothing."
+keywords: ["built-in element", "qk:spread", "virtual element", "内置元素"]
 ---
 
-## Spread
+# Built-in Elements
 
-In the example code of previous chapters, we have already used the `qk:spread` built-in element many times. Its main role is to act as a virtual mounting point for directives, so all of its child elements are affected together by the mounted directives. Most importantly, it is not rendered as an actual HTML element, so it does not interfere with the final page structure.
+Built-in elements are used to extend template syntax and take on special framework-level responsibilities, providing stronger expressive power than standard HTML. They are prefixed with `qk:` to avoid conflicts with future built-in HTML tags or taking over component naming space.
 
-Suppose we want to create multiple `p + button` elements in a loop but do not want to introduce an extra meaningless parent element, we can do this:
+## Syntax
+
+| Element | Syntax | Meaning |
+|---|---|---|
+| `qk:spread` | `<qk:spread #for={...}>...</qk:spread>` | Virtual mounting point for directives; all child elements are affected together by the mounted directives; NOT rendered as an actual HTML element |
+
+## Rules
+
+1. Use `qk:spread` to apply directives uniformly to multiple sibling elements that do not share a common parent — that is exactly what the word "spread" in its name conveys: to scatter, to spread out.
+2. Typical cases: `#for` creating multiple `p + button` elements in a loop, `#if` conditionally showing several `li`, `#slot` wrapping slot content made up of multiple sibling elements.
+3. It can also attach a directive to a text node.
+4. Prefer `qk:spread` over additionally introducing meaningless parent elements — it does not interfere with the final page structure.
+
+## Examples
+
+Loop-rendering sibling groups without a wrapper:
 
 ```qk
 <qk:spread #for={3}>
@@ -17,9 +31,13 @@ Suppose we want to create multiple `p + button` elements in a loop but do not wa
 </qk:spread>
 ```
 
-Another example is when we need to conditionally show multiple `li` elements:
+Conditionally showing multiple list items:
 
 ```qk
+<lang-js>
+    let visible = true
+</lang-js>
+
 <ul class="list">
     <li>normal list 1</li>
     <li>normal list 2</li>
@@ -30,7 +48,7 @@ Another example is when we need to conditionally show multiple `li` elements:
 </ul>
 ```
 
-When slot content consists of multiple sibling elements:
+Multi-element slot content:
 
 ```qk
 <Component>
@@ -41,9 +59,13 @@ When slot content consists of multiple sibling elements:
 </Component>
 ```
 
-Adding a directive to a text node:
+Directive on a text node:
 
 ```qk
+<lang-js>
+    const pms = Promise.resolve("data")
+</lang-js>
+
 <qk:spread
     #await={pms}
     #then={target}
@@ -52,5 +74,7 @@ Adding a directive to a text node:
 </qk:spread>
 ```
 
-> [!TIP]
-> One common point can be seen: `qk:spread` is usually used to add directives uniformly to multiple sibling elements that do not share a common parent, which is also exactly what the word “spread” in its name conveys: to scatter, to spread out.
+## See also
+
+- [Compilation Directives](docs://basic/compilation-directives.md)
+- [Slots](docs://components/slots.md)

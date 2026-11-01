@@ -1,159 +1,66 @@
+---
+description: "Qingkuai runtime and compiler package API reference: instance-bound runtime APIs, contexts operations, reactivity controls, state/scheduling functions, and compiler entry exports."
+keywords: ["api", "runtime package", "qingkuai", "compiler", "mountApp", "nextTick", "runtime"]
+---
+
 # API Reference
 
-Qingkuai's API is organized by entry package, making on-demand imports easy and keeping responsibility boundaries clear. This article lists the public APIs exported from the source entry files of two packages: the runtime package `qingkuai` and the compiler package `qingkuai/compiler`.
+APIs are organized by entry package, making on-demand imports easy and keeping responsibility boundaries clear: the runtime package `qingkuai` and the compiler package `qingkuai/compiler`. The internal `qingkuai/internal` package is intended for framework internals; application code is generally not recommended to depend on it directly.
 
-> [!TIP]
-> The internal package `qingkuai/internal` is mainly intended for framework internals, and application code is generally not recommended to depend on it directly, so it is not covered here.
+## Runtime Package
 
----
+### Type exports
 
-## Runtime
+`BoundEffectFunc`, `BoundLifecycleFunc`, `BoundSetContextFunc`, `BoundSetContextGetterFunc`, `BoundWatchFunc`, `ComponentContexts`, `ComponentExports`, `ComponentInstance`, `ComponentProps`, `ComponentRefs`, `ComponentShape`, `ComponentSlots`, `DeclareComponent`, `EffectCallback`, `EffectHandle`, `HtmlBlockOptions`, `WatchCallback` — see TypeScript Support for usage.
 
-The runtime package exports APIs for component lifecycle methods, contexts, reactive side effects, performance optimization, and state conversion.
+### Instance-bound APIs
 
-### Type Exports
+| Group | Exports | External-call rule |
+|---|---|---|
+| Lifecycle | `onAfterMount`, `onBeforeUpdate`, `onAfterUpdate`, `onBeforeDestroy`, `onAfterDestroy` | First argument = target component instance |
+| Watchers / effects | `watch`, `preWatch`, `postWatch`, `syncWatch`, `effect`, `preEffect`, `postEffect`, `syncEffect` | First argument = component instance, or `null` for global (manual `stop()`) |
+| Contexts | `setContext`, `setContextGetter`, `getContexts` | First argument = target instance; `setContext` writes a value into its contexts layer, `setContextGetter` writes a reactive getter, `getContexts` returns the contexts chain-head object of the target instance |
 
-- `BoundEffectFunc`
-- `BoundLifecycleFunc`
-- `BoundSetContextFunc`
-- `BoundSetContextGetterFunc`
-- `BoundWatchFunc`
-- `ComponentContexts`
-- `ComponentExports`
-- `ComponentInstance`
-- `ComponentProps`
-- `ComponentRefs`
-- `ComponentShape`
-- `ComponentSlots`
-- `DeclareComponent`
-- `EffectCallback`
-- `EffectHandle`
-- `HtmlBlockOptions`
-- `WatchCallback`
+Inside component files these same names are built-in methods (no import, already instance-bound; contexts also has the `setContextExp` shorthand). Importing an identifier with the same name inside a component file is a compile error — alias the import.
 
-See: [Utility Types](docs://misc/typescript.md#utility-types)
+### Reactivity optimization controls
 
-### Lifecycle
+`batchAndNoTracking`, `batchUpdating`, `noTracking`, `noUpdating`, `pauseTracking`, `pauseUpdating`, `resumeTracking`, `resumeUpdating`, `startBatchUpdating`, `stopBatchUpdating`.
 
-- `onAfterDestroy`{builtin}
-- `onAfterMount`{builtin}
-- `onAfterUpdate`{builtin}
-- `onBeforeDestroy`{builtin}
-- `onBeforeUpdate`{builtin}
+### State and scheduling
 
-See: [Lifecycle](docs://components/lifecycle.md). Note that inside component files these methods are [built-in methods](docs://references/terminology.md#built-in-methods) and can be called directly without importing. When importing them from the runtime package, the target component instance must be explicitly passed as the first argument.
+| Export | Meaning |
+|---|---|
+| `mountApp` | Mount the application |
+| `nextTick` | Promise resolving after the update scheduler settles |
+| `getCurrentInstance` | Current instance — valid ONLY during synchronous init/update phase; prefer passing the built-in `instance` instead |
+| `createStore` / `createShallowStore` | Reactive state store (deep / shallow) for cross-component sharing |
+| `toReactive` / `toShallow` / `toRaw` | State conversion |
 
-### Side Effects and Watchers
+### Other exports
 
-- `effect`{builtin}
-- `postEffect`{builtin}
-- `postWatch`{builtin}
-- `preEffect`{builtin}
-- `preWatch`{builtin}
-- `syncEffect`{builtin}
-- `syncWatch`{builtin}
-- `watch`{builtin}
+`DESTRUCT_HTML`, `version`.
 
-See: [Watchers and Side Effects](docs://basic/watchers-and-side-effects.md). Like the lifecycle methods, when importing them from the runtime package, the first argument is the component instance or `null`.
+## Compiler Package
 
-### Contexts
+Used to parse and compile component source code; consumed by build tools, language services, and plugin ecosystems.
 
-- `getContexts`
-- `setContext`{builtin}
-- `setContextGetter`{builtin}
+- **Methods**: `compile`, `compileIntermediate`, `isCompileError`, `isCompileWarning`, `parseDirectiveValue`, `parseEventFlag`, `parseTemplate`.
+- **Types**: `ASTLocation`, `ASTPosition`, `ASTPositionWithFlag`, `CompileIntermediateOptions`, `CompileIntermediateResult`, `CompileOptions`, `CompileResult`, `IdentifierStatus`, `ScriptDescriptor`, `StyleDescriptor`, `TemplateAttribute`, `TemplateNode`, `TemplateNodeContext`, `TextContentPart`.
+- **`constants` object**: `LSC`, `PRESERVED_IDPREFIX`, `SPREAD_TAG`.
+- **`util` object**: `camel2Kebab`, `findEndBracket`, `findOutOfComment`, `findOutOfLiteral`, `findOutOfLiteralComment`, `formatSourceCode`, `isEmbeddedLanguageTag`, `isEmbeddedStyleTag`, `isRequiredValueDirective`, `isVoidTag`, `kebab2Camel`, `toPropertyKey`.
+- **Flags**: `PositionFlag`, `TestingMode`.
 
-Used to operate on the contexts of a specific component instance in external logic: `setContext` writes a value into the target instance's contexts layer, `setContextGetter` writes a reactive getter, and `getContexts` returns the contexts chain-head object of the target instance. Inside component files, use the [built-in methods](docs://references/terminology.md#built-in-methods) `setContext`, `setContextExp`, and `setContextGetter` together with the [built-in identifier](docs://references/terminology.md#built-in-identifiers) `contexts` instead.
+## Rules
 
-See: [Contexts](docs://components/contexts.md)
+1. Never import instance-bound APIs inside a component file; use the built-ins. In external modules, import and bind explicitly.
+2. `getCurrentInstance()` is unreliable in async logic — pass `instance` as a parameter through the call chain instead.
+3. `EffectHandle` (`stop`/`pause`/`resume`) is the return type of all watcher/effect registrations; global (`null`-bound) registrations MUST be stopped manually.
 
-### Reactivity Optimization Controls
+## See also
 
-- `batchAndNoTracking`
-- `batchUpdating`
-- `noTracking`
-- `noUpdating`
-- `pauseTracking`
-- `pauseUpdating`
-- `resumeTracking`
-- `resumeUpdating`
-- `startBatchUpdating`
-- `stopBatchUpdating`
-
-### State and Scheduling
-
-- `createShallowStore`
-- `createStore`
-- `getCurrentInstance`
-- `mountApp`
-- `nextTick`
-- `toRaw`
-- `toReactive`
-- `toShallow`
-
-### Other Exports
-
-- `DESTRUCT_HTML`
-- `version`
-
----
-
-## Compiler (`qingkuai/compiler`)
-
-The compiler package is used to parse and compile component source code. It is mainly consumed by build tools, language services, and plugin ecosystems.
-
-### Type Exports
-
-- `ASTLocation`
-- `ASTPosition`
-- `ASTPositionWithFlag`
-- `CompileIntermediateOptions`
-- `CompileIntermediateResult`
-- `CompileOptions`
-- `CompileResult`
-- `IdentifierStatus`
-- `ScriptDescriptor`
-- `StyleDescriptor`
-- `TemplateAttribute`
-- `TemplateNode`
-- `TemplateNodeContext`
-- `TextContentPart`
-
-### Constants Object
-
-The `constants` object exported by the compiler package contains the following properties:
-
-- `LSC`
-- `PRESERVED_IDPREFIX`
-- `SPREAD_TAG`
-
-### Utility Object
-
-The `util` object exported by the compiler package contains the following properties:
-
-- `camel2Kebab`
-- `findEndBracket`
-- `findOutOfComment`
-- `findOutOfLiteral`
-- `findOutOfLiteralComment`
-- `formatSourceCode`
-- `isEmbeddedLanguageTag`
-- `isEmbeddedStyleTag`
-- `isRequiredValueDirective`
-- `isVoidTag`
-- `kebab2Camel`
-- `toPropertyKey`
-
-### Flags
-
-- `PositionFlag`
-- `TestingMode`
-
-### Methods
-
-- `compile`
-- `compileIntermediate`
-- `isCompileError`
-- `isCompileWarning`
-- `parseDirectiveValue`
-- `parseEventFlag`
-- `parseTemplate`
+- [Built-in Identifiers](docs://references/intrinsics.md)
+- [Lifecycle](docs://components/lifecycle.md)
+- [Contexts](docs://components/contexts.md)
+- [Watchers and Side Effects](docs://basic/watchers-and-side-effects.md)
+- [TypeScript Support](docs://misc/typescript.md)

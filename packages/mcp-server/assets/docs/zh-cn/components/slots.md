@@ -1,102 +1,45 @@
+---
+description: "Qingkuai 插槽：声明插槽出口、具名插槽、回退内容、作用域插槽上下文，以及按插槽存在性渲染。"
+keywords: ["slot", "slots", "scoped slot", "slot context", "插槽", "作用域插槽"]
+---
+
 # 插槽
 
-组件插槽用于向组件传递一段结构化的 UI 内容（即模板片段），它与属性（attributes）最大的区别在于传递内容的类型不同：属性用于传递数据，而插槽用于传递界面结构。通过插槽，父组件可以将自定义 DOM 内容插入到子组件的指定位置，从而实现更高的灵活性和复用性。这使得插槽成为构建布局容器、弹窗、列表渲染等通用组件时不可或缺的机制。
+插槽向组件传入结构化的 UI 内容，即模板片段；属性传数据，插槽传界面结构。子组件内 `slot` 标签声明插入点（插槽出口），写在组件标签上的子元素即插槽内容。
 
-<img src="/static/medias/component-slots.png" />
+## 语法
 
----
+| 特性 | 子级（插槽出口） | 父级（插槽内容） |
+|---|---|---|
+| 默认插槽 | `<slot></slot>` | `<Inner>...</Inner>` |
+| 具名插槽 | `<slot name="footer"></slot>` | `<p #slot={"footer"}>...</p>` |
+| 显式默认名 | （未命名的插槽名为 `default`） | `<div #slot={"default"}>...</div>`（可省略名称） |
+| 虚拟父级（纯文本/避免包装） | — | `<qk:spread #slot={"footer"}>...</qk:spread>` |
+| 回退内容 | `<slot>Default content</slot>` | （未传入内容时） |
+| 上下文传递 | `<slot !time={article.time} !title={article.title}></slot>` | `#slot={articleInfo from "default"}` |
+| 上下文解构 | — | `#slot={{ title, time } from "default"}` |
+| 存在性检查 | `#if={slots.footer}` | — |
 
-## 基本用法
+内建 `slots` 对象将插槽名映射为布尔值：该插槽被传入时为 `true`，否则为 `false`。
 
-在组件内部使用 `slot` 标签声明插槽位置，它被称作 [插槽出口](docs://zh-cn/references/terminology.md#插槽出口)，后续会统一使用这个术语指代 `slot` 标签所在的位置：
+## 规则
 
-```qk
-<!-- Inner.qk -->
-<div class="inner-box">
-    <slot></slot>
-</div>
-```
+1. 插槽内容可以是任意合法模板内容：文本、元素、组件与指令（如 `#for`）。
+2. 插槽内容只能访问它书写处组件作用域的数据；子组件数据只能通过插槽上下文获取。
+3. 没有 `name` 属性的插槽名为 `default`。用 `slot` 指令 `#slot={...}` 指定目标插槽；目标为 `default` 时可省略名称。
+4. `slot` 标签内部的子元素是插槽的默认（回退）内容，外部未传入插槽内容时渲染。
+5. 加在 `slot` 标签上的属性作为上下文传给插槽内容；在出口处以 `identifier from "slotName"` 或解构 `{{ a, b } from "slotName"}` 接收。
+6. `#if={slots.footer}` 式检查让组件可以按特定插槽是否被传入来条件渲染部分结构。
 
-使用组件时，我们可以为其提供一个子元素来填充这个插槽，这个子元素被称作 [插槽内容](docs://zh-cn/references/terminology.md#插槽内容)：
+## 约束
 
-```qk
-<!-- Outer.qk -->
-<Inner>...</Inner>
-```
+- `slot` 标签上的 `name` 属性仅用于指定插槽名称，不会被传递给插槽内容。
+- 解构后的上下文值通常会失去响应性；若某个值本身是响应式的复杂结构，其属性访问仍保持响应式。
+- 插槽内容为纯文本、或要避免添加无意义包装标签时，使用 `qk:spread` 内建元素作为虚拟父级。
 
-此时 `Outer` 组件的渲染结果为：
+## 示例
 
-```html
-<div class="inner-box">...</div>
-```
-
-当然，插槽内容不只局限于文本内容，还可以是元素、组件等任意合法的模板内容：
-
-```qk
-<Inner>
-    <FontIcon name="tip" />
-    <p #for={3}>...</p>
-</Inner>
-```
-
----
-
-## 作用域
-
-插槽内容可以访问其所在组件的数据：
-
-```qk
-<!-- Inner组件代码同上 -->
-<lang-js>
-    const langs = ["js", "ts", "qk"]
-</lang-js>
-
-<Inner>
-    <p #for={item, index of langs}>
-        {index + 1}/{langs.length}: {item}
-    </p>
-</Inner>
-```
-
-此时 `Outer` 组件的渲染结果为：
-
-```html
-<div class="inner-box">
-    <p>1/3: js</p>
-    <p>2/3: ts</p>
-    <p>3/3: qk</p>
-</div>
-```
-
----
-
-## 默认内容
-
-`slot` 标签内的子元素会被视为插槽的默认内容。如果外部在使用组件时未传入插槽内容，那么默认内容会被渲染，这一点有些类似于 JavaScript 中函数参数的默认值：
-
-```qk
-<!-- Outer.qk -->
-<Inner />
-```
-
-```qk
-<!-- Inner.qk -->
-<div class="inner-box">
-    <slot>Default content</slot>
-</div>
-```
-
-此时 `Outer` 组件的渲染结果为：
-
-```html
-<div class="inner-box">Default content</div>
-```
-
----
-
-## 指定插槽名称
-
-很多时候，一个组件并不只有一个插槽。当组件拥有多个插槽时，我们需要通过 `name` 属性为它们指定名称以进行区分：
+默认与具名插槽：
 
 ```qk
 <!-- Article.qk -->
@@ -104,68 +47,43 @@
     <slot></slot>
 </article>
 <footer>
-    <slot name="footer"></slot>
+    <slot name="footer">Default footer</slot>
 </footer>
 ```
 
-> [!TIP]
-> 未添加 `name` 属性的插槽名称默认为 `default`。
-
-在使用组件时，可以通过 `slot` [指令](docs://zh-cn/basic/compilation-directives.md) 指定插槽名称：
-
 ```qk
-<Article>
-    <!-- 插槽名称为 default 时可省略 -->
-    <div #slot={"default"}>Article contents...</div>
-    <p #slot={"footer"}>Copyright informations...</p>
-</Article>
-```
+<!-- Outer.qk -->
+<lang-js>
+    import Article from "./Article.qk"
+</lang-js>
 
-当 [插槽内容](docs://zh-cn/references/terminology.md#插槽内容) 仅为一段文本，或希望避免添加额外的无意义标签时，可以使用 `qk:spread` [内置元素](docs://zh-cn/misc/builtin-elements.md) 作为虚拟父元素：
-
-```qk
 <Article>
     <qk:spread>Article contents...</qk:spread>
     <qk:spread #slot={"footer"}>
-        <p>Released informations...</p>
-        <p>Copyright informations...</p>
+        <p>Release information...</p>
     </qk:spread>
 </Article>
 ```
 
----
-
-## 传递上下文
-
-我们在本节的 [作用域](#作用域) 部分介绍过，插槽内容默认只能访问其所在组件的作用域数据。但在实际开发中，我们常常需要访问子组件内部的数据。为此，可以在 `slot` 标签上添加属性，并将这些属性作为上下文传递给 [插槽内容](docs://zh-cn/references/terminology.md#插槽内容)：
+作用域插槽上下文：
 
 ```qk
 <!-- Article.qk -->
+<lang-js>
+    const article = { time: "2026-09-01", title: "Hello" }
+</lang-js>
+
 <article>
-    <slot
-        !time={article.time}
-        !title={article.title}
-    ></slot>
+    <slot !time={article.time} !title={article.title}></slot>
 </article>
 ```
 
-> [!TIP]
-> `slot` 标签上的 `name` 属性仅用于指定插槽名称，不会被传递给插槽内容。
-
-[插槽出口](docs://zh-cn/references/terminology.md#插槽出口) 处可以通过 `slot` [指令](docs://zh-cn/basic/compilation-directives.md) 接收这个上下文对象，并为其指定一个标识符以便使用：
-
 ```qk
-<Article>
-    <qk:spread #slot={articleInfo from "default"}>
-        <h1>{articleInfo.title}</h1>
-        <p>Published in {articleInfo.time}</p>
-    </qk:spread>
-</Article>
-```
+<!-- Outer.qk -->
+<lang-js>
+    import Article from "./Article.qk"
+</lang-js>
 
-使用 `slot` 指令接收上下文对象时还可以直接解构它：
-
-```qk
 <Article>
     <qk:spread #slot={{ title, time } from "default"}>
         <h1>{title}</h1>
@@ -174,28 +92,21 @@
 </Article>
 ```
 
-> [!WARNING]
-> 解构上下文对象后，解构得到的值通常会失去响应性。但如果其中某个值本身是响应式的复杂结构，那么访问其属性时，响应性仍然会保留。使用解构语法时需要特别注意这一点。
-
----
-
-## 根据传递状态渲染
-
-有些情况下，我们需要根据某个插槽是否已被传递，来决定组件是否渲染对应的结构。此时可以使用 `slots` 内建标识符。`slots` 是一个对象，访问其中与插槽名称对应的属性会得到一个布尔值：若该插槽已被传递，则结果为 `true`；否则为 `false`。
-
-下面的示例中，只有当外部实际传入了 `footer` 插槽内容时，页脚区域才会被渲染：
+按插槽存在性渲染：
 
 ```qk
+<!-- Panel.qk -->
 <section class="panel">
     <div class="panel-content">
         <slot></slot>
     </div>
-
-    <footer
-        class="panel-footer"
-        #if={slots.footer}
-    >
+    <footer class="panel-footer" #if={slots.footer}>
         <slot name="footer"></slot>
     </footer>
 </section>
 ```
+
+## 参见
+
+- [组件属性](docs://zh-cn/components/attributes.md)
+- [编译指令](docs://zh-cn/basic/compilation-directives.md)

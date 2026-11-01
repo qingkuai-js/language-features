@@ -81,7 +81,7 @@ Reference-attribute values must be assignable lvalues: identifiers, `arr[index]`
 1. Two-way form binding uses reference attributes (`&value`), not `!value` plus `@input={...}`.
 2. Obtain DOM elements with `&handle` on the element instead of manual DOM queries; the bound variable resets to `null` on element destruction.
 3. Declare reactivity the way the user does: keep compiler inference when the user relies on it, and use `reactive`, `shallow`, or `raw` marks when the user prefers explicit declarations; follow the `reactivityMode`, `requireReactivityMark`, and `allowConstReactive` settings for the concrete form.
-4. When the user cares about runtime performance, combine `"reactivityMode": "shallow"` with `"allowConstReactive": false` in `.qingkuairc` to enter Signal Mode (see [optimization.md](docs://agent/misc/optimization.md)); in this mode updates are triggered only by reassigning the identifier itself.
+4. When the user cares about runtime performance, combine `"reactivityMode": "shallow"` with `"allowConstReactive": false` in `.qingkuairc` to enter Signal Mode (see [optimization.md](docs://misc/optimization.md)); in this mode updates are triggered only by reassigning the identifier itself.
 5. Derived state uses `derived`; prefer `derivedExp` or the `$` prefix shorthand when a plain expression suffices.
 6. Use `qk:spread` as a virtual directive mount point instead of introducing meaningless wrapper elements.
 7. Add `#key` to `#for`-rendered elements that carry local state; keys must be unique within the same list.
@@ -94,47 +94,47 @@ Reference-attribute values must be assignable lvalues: identifiers, `arr[index]`
 
 | Task | Doc |
 | --- | --- |
-| Conditional rendering, list rendering, async rendering, `#html`/`#target`/`#scope` | [compilation-directives.md](docs://agent/basic/compilation-directives.md) |
-| Declaring and using reactive state | [reactivity.md](docs://agent/basic/reactivity.md) |
-| Whether an identifier is inferred raw, reactive, or shallow | [reactivity-infer-rules.md](docs://agent/references/reactivity-infer-rules.md) |
-| Form input processing and binding | [forms.md](docs://agent/basic/forms.md) |
-| Reference attributes (`&value`, `&number`, `&checked`, `&group`, `&handle`) | [reference-attributes.md](docs://agent/basic/reference-attributes.md), [forms.md](docs://agent/basic/forms.md) |
-| Passing attributes and events into components (`props`, `defaults`) | [attributes.md](docs://agent/components/attributes.md) |
-| Event listeners (`@click` and event attributes) | [event-handling.md](docs://agent/basic/event-handling.md) |
-| Slot content and slot context (`#slot`, `slots`) | [slots.md](docs://agent/components/slots.md) |
-| Component lifecycle callbacks (`onAfterMount`, ...) | [lifecycle.md](docs://agent/components/lifecycle.md) |
-| Cross-component context sharing (`contexts`, `setContext`) | [contexts.md](docs://agent/components/contexts.md) |
-| Component scoped styles and embedded style blocks | [stylesheets.md](docs://agent/components/stylesheets.md) |
-| Async component loading | [async-components.md](docs://agent/components/async-components.md) |
-| Dynamic component switching | [dynamic-components.md](docs://agent/components/dynamic-components.md) |
-| Component exports | [exports.md](docs://agent/components/exports.md) |
-| Component file structure and basics | [basic.md](docs://agent/components/basic.md) |
-| Text interpolation `{expr}` | [interpolation.md](docs://agent/basic/interpolation.md) |
-| Watchers and side effects (`watch`/`effect` families) | [watchers-and-side-effects.md](docs://agent/basic/watchers-and-side-effects.md) |
-| All built-in identifiers | [intrinsics.md](docs://agent/references/intrinsics.md) |
-| Runtime package API | [api.md](docs://agent/references/api.md) |
-| Terminology (embedded blocks, runtime package) | [terminology.md](docs://agent/references/terminology.md) |
-| Compiler/runtime error codes | [error-code.md](docs://agent/references/error-code.md) |
-| TypeScript support and component instance types | [typescript.md](docs://agent/misc/typescript.md) |
-| Config files | [config-files.md](docs://agent/misc/config-files.md) |
-| Debugging | [debugging.md](docs://agent/misc/debugging.md) |
-| Optimization | [optimization.md](docs://agent/misc/optimization.md) |
-| Built-in elements (`qk:spread`) | [builtin-elements.md](docs://agent/misc/builtin-elements.md) |
-| Language features overview | [language-features.md](docs://agent/misc/language-features.md) |
-| Installation | [install.md](docs://agent/getting-started/install.md) |
-| Command line tool (init / type checking / formatting / build) | [cli.md](docs://agent/misc/cli.md) |
-| MCP server integration (AI assistant setup, tools, and working protocol) | [mcp-server.md](docs://agent/misc/mcp-server.md) |
-| Framework overview and design philosophy | [introduction.md](docs://agent/getting-started/introduction.md) |
+| Conditional rendering, list rendering, async rendering, `#html`/`#target`/`#scope` | [compilation-directives.md](docs://basic/compilation-directives.md) |
+| Declaring and using reactive state | [reactivity.md](docs://basic/reactivity.md) |
+| Whether an identifier is inferred raw, reactive, or shallow | [reactivity-infer-rules.md](docs://references/reactivity-infer-rules.md) |
+| Form input processing and binding | [forms.md](docs://basic/forms.md) |
+| Reference attributes (`&value`, `&number`, `&checked`, `&group`, `&handle`) | [reference-attributes.md](docs://basic/reference-attributes.md), [forms.md](docs://basic/forms.md) |
+| Passing attributes and events into components (`props`, `defaults`) | [attributes.md](docs://components/attributes.md) |
+| Event listeners (`@click` and event attributes) | [event-handling.md](docs://basic/event-handling.md) |
+| Slot content and slot context (`#slot`, `slots`) | [slots.md](docs://components/slots.md) |
+| Component lifecycle callbacks (`onAfterMount`, ...) | [lifecycle.md](docs://components/lifecycle.md) |
+| Cross-component context sharing (`contexts`, `setContext`) | [contexts.md](docs://components/contexts.md) |
+| Component scoped styles and embedded style blocks | [stylesheets.md](docs://components/stylesheets.md) |
+| Async component loading | [async-components.md](docs://components/async-components.md) |
+| Dynamic component switching | [dynamic-components.md](docs://components/dynamic-components.md) |
+| Component exports | [exports.md](docs://components/exports.md) |
+| Component file structure and basics | [basic.md](docs://components/basic.md) |
+| Text interpolation `{expr}` | [interpolation.md](docs://basic/interpolation.md) |
+| Watchers and side effects (`watch`/`effect` families) | [watchers-and-side-effects.md](docs://basic/watchers-and-side-effects.md) |
+| All built-in identifiers | [intrinsics.md](docs://references/intrinsics.md) |
+| Runtime package API | [api.md](docs://references/api.md) |
+| Terminology (embedded blocks, runtime package) | [terminology.md](docs://references/terminology.md) |
+| Compiler/runtime error codes | [error-code.md](docs://references/error-code.md) |
+| TypeScript support and component instance types | [typescript.md](docs://misc/typescript.md) |
+| Config files | [config-files.md](docs://misc/config-files.md) |
+| Debugging | [debugging.md](docs://misc/debugging.md) |
+| Optimization | [optimization.md](docs://misc/optimization.md) |
+| Built-in elements (`qk:spread`) | [builtin-elements.md](docs://misc/builtin-elements.md) |
+| Language features overview | [language-features.md](docs://misc/language-features.md) |
+| Installation | [install.md](docs://getting-started/install.md) |
+| Command line tool (init / type checking / formatting / build) | [cli.md](docs://misc/cli.md) |
+| MCP server integration (AI assistant setup, tools, and working protocol) | [mcp-server.md](docs://misc/mcp-server.md) |
+| Framework overview and design philosophy | [introduction.md](docs://getting-started/introduction.md) |
 
 ## Syntax Dependency Route
 
-- `qk:spread` appears → read [builtin-elements.md](docs://agent/misc/builtin-elements.md)
-- `#slot` appears → read [compilation-directives.md](docs://agent/basic/compilation-directives.md) and [slots.md](docs://agent/components/slots.md)
-- `props`/`refs`/`slots` intrinsic identifiers appear → read [intrinsics.md](docs://agent/references/intrinsics.md)
-- reactivity ambiguity (raw vs reactive vs shallow) → read [reactivity-infer-rules.md](docs://agent/references/reactivity-infer-rules.md)
-- async directives with component loading → read [compilation-directives.md](docs://agent/basic/compilation-directives.md) and [async-components.md](docs://agent/components/async-components.md)
+- `qk:spread` appears → read [builtin-elements.md](docs://misc/builtin-elements.md)
+- `#slot` appears → read [compilation-directives.md](docs://basic/compilation-directives.md) and [slots.md](docs://components/slots.md)
+- `props`/`refs`/`slots` intrinsic identifiers appear → read [intrinsics.md](docs://references/intrinsics.md)
+- reactivity ambiguity (raw vs reactive vs shallow) → read [reactivity-infer-rules.md](docs://references/reactivity-infer-rules.md)
+- async directives with component loading → read [compilation-directives.md](docs://basic/compilation-directives.md) and [async-components.md](docs://components/async-components.md)
 
 ## Multi-Doc Priority Rules
 
-- Editing markup + state together: [compilation-directives.md](docs://agent/basic/compilation-directives.md) → [reactivity.md](docs://agent/basic/reactivity.md) → [reactivity-infer-rules.md](docs://agent/references/reactivity-infer-rules.md)
-- Component boundary APIs: [attributes.md](docs://agent/components/attributes.md) → [intrinsics.md](docs://agent/references/intrinsics.md) → [slots.md](docs://agent/components/slots.md)
+- Editing markup + state together: [compilation-directives.md](docs://basic/compilation-directives.md) → [reactivity.md](docs://basic/reactivity.md) → [reactivity-infer-rules.md](docs://references/reactivity-infer-rules.md)
+- Component boundary APIs: [attributes.md](docs://components/attributes.md) → [intrinsics.md](docs://references/intrinsics.md) → [slots.md](docs://components/slots.md)

@@ -1,17 +1,37 @@
-# 插值块
-
-Qingkuai 的模板语法与 HTML 语法非常相似，甚至可以说它就是 HTML，但仍有一些细微区别：
-
-- 模板语法中属性值未使用引号或花括号包裹时会导致编译器致命错误；
-- 以 `!` 、 `@` 、 `#` 、 `&` 这四个字符开头的属性名称是特殊的，这些属性由编译器处理；
-- 以大写字母开头或含有 `-` 或 `.` 字符的标签名会被认为是组件标签（嵌入语言标签除外）；
-- 在模板文本或属性值中，可以使用花括号添加 `插值块` 来访问嵌入脚本语言中的值；
-
+---
+description: "Qingkuai 插值块：文本插值、动态属性、动态 class 的对象/数组形式，以及花括号内仅允许表达式的规则。"
+keywords: ["interpolation", "dynamic attribute", "class binding", "expression", "插值", "动态属性", "模板"]
 ---
 
-## 文本插值
+# 插值块
 
-要在模板中访问嵌入脚本语言的值，只需在文本处写一对花括号，并在其中编写 JS/TS 表达式即可：
+Qingkuai 的模板语法几乎就是 HTML，但有细微差异：属性值必须用引号或花括号包裹；以 `!`、`@`、`#`、`&` 开头的属性名由编译器处理；以大写字母开头或包含 `-`、`.` 的标签名是组件标签（嵌入语言标签除外）；文本或属性值中的花括号开启一个插值块。
+
+## 语法
+
+| 形式 | 语法 | 含义 |
+|---|---|---|
+| 文本插值 | `<p>{variable}</p>` | 将表达式结果渲染为文本；值变化时自动更新 |
+| 动态属性 | `<div !id={dynamicId}></div>` | `!` 前缀；值用花括号包裹 |
+| 动态属性简写 | `<div !id></div>` | 标识符与属性名同名时等价于 `!id={id}`；属性名是语言关键字/保留字时不可用（如 `class`、`for`） |
+| 动态 class（对象） | `!class={{ active, "dark-mode": isDarkMode }}` | 值为真的键会被应用进 class 列表 |
+| 动态 class（数组） | `!class={[a, b, c]}` | 数组中的每一项都会被应用 |
+| 静态 + 动态 class | `class="container" !class={list}` | 只有 `class` 允许在同一标签出现两次；编译器合并两份 class 列表 |
+
+## 规则
+
+1. 花括号内只允许表达式，即任何能出现在赋值右侧的内容。合法示例：`{a * b - 5}`、``{`Hello ${str}`}``、`{new Date()}`、`{() => {}}`、`{condition ? a : b}`、`{str.split("").reverse().join("")}`，甚至类/函数表达式 `{class MyClass{}}`。
+2. 语句绝不合法，会触发致命编译错误：`{id;}`、`{return 10}`、`{const n = 10}`、`{if(cond){}}`、`{switch(v){}}`、`{for(const u of users){}}`、`{import {raw} from "qingkuai"}`。
+3. 同一标签不能声明两个同名属性，即使一个是普通属性一个是动态属性。`class` 是唯一例外（允许一个普通 + 一个动态，由编译器合并）。
+
+## 约束
+
+- 属性值不加引号或花括号是致命编译错误。
+- 简写 `!id`（即 `!id={id}`）在属性名是嵌入脚本语言的关键字或保留字时不可用。
+
+## 示例
+
+带响应式值的文本插值：
 
 ```qk
 <lang-js>
@@ -21,23 +41,17 @@ Qingkuai 的模板语法与 HTML 语法非常相似，甚至可以说它就是 H
 <p>value of variable is: {variable}</p>
 ```
 
-| 此时页面会显示：<u>value of variable is: Qingkuai</u>，并且当 `variable` 的值发生变化时，页面也会同步更新。
-
----
-
-## 动态属性
-
-然而，有些时候我们不只需要在文本处插值，还需要在属性值处插值。此时可以在普通属性名前添加英文感叹号 `!`，并将属性值用花括号包裹，以使用动态属性语法：
+动态属性，包括对象/数组形式的 class：
 
 ```qk
+<lang-js>
+    let dynamicId = "top-box"
+    let active = true
+    let isDarkMode = false
+    let extra = "highlight"
+</lang-js>
+
 <div !id={dynamicId}></div>
-```
-
-
-当 `class` 作为动态属性时，还可以接受对象或数组作为值：当值为对象时，属性值为真值（truthy）的键名会被应用到 class 列表；当值为数组时，数组中的每一项都会被应用到 class 列表。也就是说，下面两种语法都允许：
-
-```qk
-<!-- 对象形式的动态 class 属性 -->
 <div
     !class={
         {
@@ -46,71 +60,32 @@ Qingkuai 的模板语法与 HTML 语法非常相似，甚至可以说它就是 H
         }
     }
 ></div>
-
-<!-- 数组形式的动态 class 属性 -->
-<div !class={[a, b, c, d]}></div>
+<div class="container" !class={[extra]}></div>
 ```
 
-需要注意，模板语法中同一个标签不能同时拥有多个同名属性，即使一个是普通属性、一个是动态属性也不行。但 `class` 是个例外，它允许普通和动态 class 属性同时存在（两者均只能有一个），编译器会将两种 class 列表合并：
+简写等价形式：
 
 ```qk
-<!-- 编译器报错，属性名重复 -->
-<div id="top-box" !id={dynamicId}></div>
+<lang-js>
+    let title = "hello"
+</lang-js>
 
-<!-- 正常编译，但不能同时存在两个普通 class 属性或两个动态 class 属性 -->
-<div class="container" !class={getDynamicClassList()}></div>
+<div !title></div>
+<div !title={title}></div>
 ```
 
-如果插值块中只需要填写一个与属性名同名的标识符，那么可以省略该插值块。也就是说，下面两种写法等效：
+语句不能出现在插值块内，以下均为致命错误：
 
-```qk
-<div !id></div>
-<div !id={id}></div>
-```
-
-> [!WARNING]
-> 若属性名是嵌入脚本语言中的关键字或保留字，则不支持这种语法，例如 `class` 或 `for`。
-
----
-
-## 合法的插值表达式
-
-无论是文本插值、动态属性插值，还是稍后将介绍的[指令](docs://zh-cn/basic/compilation-directives.md)、[引用属性](docs://zh-cn/basic/reference-attributes.md)或[事件](docs://zh-cn/basic/event-handling.md)插值，都只能编写表达式，不允许使用语句。一个简单的判断方法是：看它能否出现在赋值语句的等号右侧。若不能，它很可能是一条语句，而不是表达式。下面代码中的每一行都是合法的插值表达式：
-
-```qk
-{a * b - 5}
-
-{`Hello ${str}`}
-
-{class MyClass{}}
-
-{new Date()}
-
-{() => {}}
-
-{function anonymous(){}}
-
-{condition ? value1 : value2}
-
-{str.split("").reverse().join("")}
-```
-
-而下面代码中的每一行都是语句，不能出现在插值块中，否则会导致编译器致命错误：
-
-```qk
+```text
 {id;}
-
-{try{}}
-
 {return 10}
-
 {const number = 10}
-
 {if(condition){}}
-
-{switch(value){}}
-
 {for(const user of users){}}
-
-{import {raw} from "qingkuai"}
 ```
+
+## 参见
+
+- [编译指令](docs://zh-cn/basic/compilation-directives.md)
+- [引用属性](docs://zh-cn/basic/reference-attributes.md)
+- [事件处理](docs://zh-cn/basic/event-handling.md)

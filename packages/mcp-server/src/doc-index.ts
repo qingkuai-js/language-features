@@ -3,7 +3,6 @@ import type {
     DocIndex,
     DocInfo,
     DocLang,
-    DocLayer,
     DocSection,
     IndexedDoc,
     ParsedQuery,
@@ -30,12 +29,8 @@ const MAX_SCORED_OCCURRENCES = 4
 /** 单节内 CJK bigram 计分条数上限，防止长中文串刷分 */
 const MAX_SCORED_BIGRAMS = 8
 
-/** agent 层平铺加权：平手时偏向结构化参考，但翻不过内容丰富度差距与路由加权 */
-const AGENT_LAYER_BOOST = 15
-
 export function docInfoFromUri(relativePath: string): DocInfo {
     let lang: DocLang = "en"
-    let layer: DocLayer = "tutorial"
     let canonical = relativePath
 
     if (relativePath.startsWith("zh-cn/")) {
@@ -43,12 +38,7 @@ export function docInfoFromUri(relativePath: string): DocInfo {
         canonical = relativePath.slice("zh-cn/".length)
     }
 
-    // agent 参考层双语（agent/ 与 zh-cn/agent/）：canonical 去掉语言前缀后与英文层同组归并
-    if (canonical.startsWith("agent/")) {
-        layer = "agent"
-    }
-
-    return { lang, layer, canonicalUri: `docs://${canonical}` }
+    return { lang, canonicalUri: `docs://${canonical}` }
 }
 
 /** 与 GitHub 风格一致的标题 slug：小写、去标点、空白转连字符，保留 CJK */
@@ -95,8 +85,7 @@ export function parseDocSections(doc: IndexedDoc, content: string, docTitle: str
                 anchor: currentAnchor,
                 title: currentTitle,
                 content: text,
-                lang: doc.lang,
-                layer: doc.layer
+                lang: doc.lang
             })
         }
         buffer = []
@@ -129,12 +118,11 @@ export function buildDocIndex(docs: DocEntry[]): DocIndex {
         const info = docInfoFromUri(doc.uri.slice("docs://".length))
         const indexed: IndexedDoc = {
             uri: doc.uri,
-            canonicalUri: info.canonicalUri,
             name: doc.name,
-            description: doc.description,
-            keywords: doc.keywords,
             lang: info.lang,
-            layer: info.layer
+            keywords: doc.keywords,
+            description: doc.description,
+            canonicalUri: info.canonicalUri
         }
         docMap.set(doc.uri, indexed)
         return indexed
@@ -154,19 +142,6 @@ export function buildDocIndex(docs: DocEntry[]): DocIndex {
             }
         } else if (counterpart) {
             doc.zhUri = counterpart.uri
-        }
-    }
-
-    // agent 层文档继承同主题教程层的 zh-cn 阅读路径（agent 参考层仅英文）
-    for (const doc of indexedDocs) {
-        if (doc.layer !== "agent" || doc.zhUri) {
-            continue
-        }
-        const tutorialPath = doc.canonicalUri.replace("docs://agent/", "docs://")
-        const tutorialEn = indexedDocs.find(d => d.canonicalUri === tutorialPath)
-        if (tutorialEn) {
-            doc.enUri = tutorialEn.uri
-            doc.zhUri = tutorialEn.zhUri
         }
     }
 
@@ -300,7 +275,7 @@ export function searchDocIndex(
         }
     }
 
-    // 分组：同一 canonical 文档（en+zh）合并，agent 层独立成组
+    // 分组：同一 canonical 文档的 en/zh 版本合并成一组
     const groupMap = new Map<string, SectionGroup>()
 
     const rankedSections = Array.from(scored.entries())
@@ -325,11 +300,11 @@ export function searchDocIndex(
         .map(group => {
             const best = group.sections[0]?.score ?? 0
             const docLevel = scoreDocLevel(group.doc, query)
-            const boost =
-                (group.doc.layer === "agent" ? AGENT_LAYER_BOOST : 0) +
-                routeBoost(group.doc, query) +
-                (scoreBoost ? scoreBoost(group.doc) : 0)
-            return { ...group, score: best + docLevel + boost }
+            const boost = routeBoost(group.doc, query) + (scoreBoost ? scoreBoost(group.doc) : 0)
+            return {
+                ...group,
+                score: best + docLevel + boost
+            }
         })
         .sort((a, b) => b.score - a.score)
         .slice(0, limit)

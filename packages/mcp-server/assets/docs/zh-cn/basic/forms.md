@@ -1,12 +1,39 @@
-# 表单处理
-
-在前面的[引用属性](docs://zh-cn/basic/reference-attributes.md)文档中，我们已经初步了解了通过 `&` 语法获取变量引用的基本用法。在实际开发中，表单元素的值往往需要与状态变量保持同步，因此在表单处理场景中，引用属性显得尤为重要。本节将聚焦表单元素的引用属性使用细节，介绍如何借助这一机制高效地获取和控制表单数据，实现响应式的数据绑定与更新。
-
+---
+description: "Qingkuai 通过引用属性实现表单元素双向绑定：input/textarea/select 上的 &value、input 上的 &number、单选/复选输入上的 &checked 与 &group。"
+keywords: ["forms", "&value", "&number", "&checked", "&group", "two-way binding", "表单", "双向绑定"]
 ---
 
-## 文本输入
+# 表单处理
 
-在引用属性文档的[表单输入处理](docs://zh-cn/basic/reference-attributes.md#表单输入处理)部分中，我们介绍了如何在 `input` 标签上使用 `&value` 引用属性实现输入内容与嵌入脚本变量值间的同步。类似地，`textarea` 标签同样支持相同的用法：
+## 语法
+
+| 属性 | 适用元素 | 绑定目标 | 行为 |
+| --- | --- | --- | --- |
+| `&value` | `input`、`textarea` | 保存输入内容的变量 | 输入内容与变量同步。 |
+| `&value` | `select` | 单选：值的变量；`multiple`：Array 或 Set | 同步选中的项。 |
+| `&number` | `input` | 接收数字的变量 | 将输入值转换为数字后同步。 |
+| `&checked` | `type="radio"` 或 `type="checkbox"` 的 `input` | 保存选中状态的变量 | 选中状态与变量同步。 |
+| `&group` | 单选和复选 `input` | Array 或 Set | 同步多个输入的组合状态。 |
+
+## 规则
+
+1. `input`/`textarea` 上的 `&value` 使输入内容与绑定的脚本变量保持同步；`textarea` 支持与 `input` 相同的模式。
+2. 单选 `select` 上的 `&value` 同步选中项；示例中绑定的是字符串变量（`let selected = "TypeScript"`）。
+3. `multiple` 的 `select` 上的 `&value` 接受 Array 或 Set，两者完全等价。目标可以是常量，因为 Qingkuai 只调用其方法、不修改目标本身。
+4. `input` 上的 `&number` 在同步到目标变量之前把输入值转换为数字；输入值无法转换为有效数字时目标被置为 `NaN`。
+5. 单选/复选输入上的 `&checked` 将选中状态与变量值同步；示例绑定布尔值（`let radioChecked = false`）。
+6. 单选/复选输入上的 `&group` 接收保存组合状态的 Array 或 Set；示例将其声明为 `const`，并通过 `checkedArr[index]` 读取各项状态。
+
+## 约束
+
+- `&number` 对非数字输入写入 `NaN`；它通常应与 `input` 标签的 `type="number"` 属性配合使用，以确保输入值的有效性。
+- `const` 目标例外仅针对 `multiple` `select` 上的 `&value`；一般情况下引用属性的值必须是可赋值、非常量的目标（参见[引用属性](docs://zh-cn/basic/reference-attributes.md)）。
+- `&group` 对单选按钮的语义没有在文档中示例；仅演示了复选框 + Array 的情况。
+- 示例中复选框 `&group` 输入与 `!id`/`!for` 的 label 绑定成对出现，`select` 的选项设置 `!value={item}`。
+
+## 示例
+
+`&value` 绑定 textarea：
 
 ```qk
 <lang-js>
@@ -17,25 +44,7 @@
 <textarea &value={inputValue}></textarea>
 ```
 
-此外 `input` 标签上还可接受一个 `&number` 引用属性，它的作用是将输入值转换为数字类型后同步给目标变量：
-
-```qk
-<lang-js>
-    let numericValue = 0
-</lang-js>
-
-<p>The numericValue is: {numericValue}</p>
-<input type="number" &number={numericValue} />
-```
-
-> [!WARNING]
-> 需要注意的是，`&number` 引用属性会在输入值无法被转换为有效数字时将目标变量设置为 `NaN`，因此它通常应该与 `input` 标签的 `type="number"` 属性配合使用，以确保输入值的有效性。
-
----
-
-## 选择框
-
-对于单选框和复选框，可以为其添加 `&checked` 来同步选中状态与变量值：
+单选/复选使用 `&checked`：
 
 ```qk
 <lang-js>
@@ -43,25 +52,13 @@
     let checkboxChecked = false
 </lang-js>
 
-<input
-    type="radio"
-    &checked={radioChecked}
-/>
-<input
-    type="checkbox"
-    &checked={checkboxChecked}
-/>
+<input type="radio" &checked={radioChecked} />
+<input type="checkbox" &checked={checkboxChecked} />
 <p>radio: {radioChecked ? "" : "not"} checked</p>
 <p>checkbox: {checkboxChecked ? "" : "not"} checked</p>
 ```
 
----
-
-## 选择框组合
-
-有时你可能需要同步多个复选框或单选框的组合状态，此时可以使用 `&group` 属性，并传入[Array](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array) 或 [Set](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Set)来实现：
-
-|js|ts|
+复选框 `&group` 搭配 `const` 数组：
 
 ```qk
 <lang-js>
@@ -70,17 +67,8 @@
 </lang-js>
 
 <qk:spread #for={item, index of choices}>
-    <input
-        type="checkbox"
-        !id={"choice" + item}
-        &group={checkedArr}
-    />
-    <label
-        !for={"choice" + item}
-        style="margin-right: 20px;"
-    >
-        {item}
-    </label>
+    <input type="checkbox" !id={"choice" + item} &group={checkedArr} />
+    <label !for={"choice" + item} style="margin-right: 20px;">{item}</label>
 </qk:spread>
 
 <qk:spread #for={item, index of choices}>
@@ -88,55 +76,7 @@
 </qk:spread>
 ```
 
-```qk
-<lang-ts>
-    const checkedArr: boolean[] = []
-    const choices = ["Qingkuai", "JavaScript", "TypeScript"]
-</lang-ts>
-
-<qk:spread #for={item, index of choices}>
-    <input
-        type="checkbox"
-        !id={"choice" + item}
-        &group={checkedArr}
-    />
-    <label
-        !for={"choice" + item}
-        style="margin-right: 20px;"
-    >
-        {item}
-    </label>
-</qk:spread>
-
-<qk:spread #for={item, index of choices}>
-    <p>{item}: {checkedArr[index] ? "" : "not"} checked</p>
-</qk:spread>
-```
-
----
-
-## 选择器
-
-`select` 标签可使用 `&value` 引用属性同步选中的项目：
-
-```qk
-<lang-js>
-    let selected = "TypeScript"
-    const choices = ["Qingkuai", "JavaScript", "TypeScript"]
-</lang-js>
-
-<select &value={selected}>
-    <option
-        !value={item}
-        #for={item of choices}
-    >
-        {item}
-    </option>
-</select>
-<p>Your selected: {selected}</p>
-```
-
-如果是支持多选的 `select`，可以为它的 `&value` 属性传入 [Array](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array) 或 [Set](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Set)。此时目标可以是常量，因为 Qingkuai 只会调用它的方法，而不会修改它本身：
+多选 `&value` 搭配 `const` 数组（`Set` 完全等价）：
 
 ```qk
 <lang-js>
@@ -144,38 +84,13 @@
     const choices = ["Qingkuai", "JavaScript", "TypeScript"]
 </lang-js>
 
-<select
-    multiple
-    &value={selectedItems}
->
-    <option
-        !value={item}
-        #for={item of choices}
-    >
-        {item}
-    </option>
+<select multiple &value={selectedItems}>
+    <option !value={item} #for={item of choices}>{item}</option>
 </select>
 <p>Selected items: {selectedItems.join(", ")}</p>
 ```
 
-换用 Set 也是完全等效的：
+## 参见
 
-```qk
-<lang-js>
-    const selectedItems = new Set(["Qingkuai", "TypeScript"])
-    const choices = ["Qingkuai", "JavaScript", "TypeScript"]
-</lang-js>
-
-<select
-    multiple
-    &value={selectedItems}
->
-    <option
-        !value={item}
-        #for={item of choices}
-    >
-        {item}
-    </option>
-</select>
-<p>Selected items: {Array.from(selectedItems).join(", ")}</p>
-```
+- [引用属性](docs://zh-cn/basic/reference-attributes.md)
+- [事件处理](docs://zh-cn/basic/event-handling.md)

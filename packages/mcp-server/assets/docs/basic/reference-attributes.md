@@ -1,43 +1,42 @@
+---
+description: "Qingkuai reference attributes pass variable references through &-prefixed attributes (&handle for DOM elements, &value/&number/&checked/&group for form state) via setter invocations."
+keywords: ["reference attributes", "&value", "&checked", "&handle", "refs", "two-way binding", "引用属性", "双向绑定"]
+---
+
 # Reference Attributes
 
-In Qingkuai, reference attributes are a syntax for passing variable references by prefixing attribute names with `&` (such as `&value`). They let you establish a reference relationship between an attribute and an external variable in templates, so the attribute value can be read and written directly from outside, enabling flexible data linkage and state transfer.
+## Syntax
 
-JavaScript itself does not support [pass-by-reference](https://stackoverflow.com/questions/373419/whats-the-difference-between-passing-by-reference-vs-passing-by-value), but through the compiler's processing, Qingkuai's reference attributes can simulate the effect of reference (pointer) passing in languages such as C, C++, and Go — under the hood, this is essentially a `setter` invocation. With reference attributes, variables can be explicitly "passed by address" into an element or component, so you can share and operate on the same state source across multiple contexts. This mechanism is concise and powerful, improving both expressiveness and control in template state management. The following pseudocode helps illustrate the difference between pass-by-reference and pass-by-value:
+A reference attribute prefixes an attribute name with `&` (e.g. `&value`) to pass a variable reference, so the attribute value can be read and written directly from outside.
 
-```js
-let num = 10
+| Attribute | Applies to | Receives |
+| --- | --- | --- |
+| `&handle` | any regular tag | the tag's DOM element |
+| `&value` | `input`, `textarea`, `select` | input content; for a `multiple` `select`: Array or Set of selections |
+| `&number` | `input` | the input value converted to a number |
+| `&checked` | radio/checkbox `input`s | the checked state |
+| `&group` | radio/checkbox `input`s | Array or Set holding the combined group state |
 
-function passByValue(n) {
-    // In pass-by-value, n is a copy of num,
-    // and they are two separate locations in memory.
-    // Modifying n does not affect the original num value.
-    n = n + 1
-}
+## Rules
 
-function passByReference(n) {
-    // * is the dereference operator. It is used to:
-    // Read the value at the location pointed to by n,
-    // then add 1 and write the result back to that location.
-    *n = *n + 1
-}
+1. Reference attributes simulate pass-by-reference: the variable is "passed by address" into an element or component, and under the hood a write is essentially a `setter` invocation, so multiple contexts share and operate on the same state source.
+2. For form input, prefer `&value` over simulating the binding with a dynamic `!value={inputValue}` attribute plus `@input={inputValue = $arg.target.value}`; the reference attribute achieves the same synchronization concisely.
+3. `&handle` is how you obtain the DOM element corresponding to a regular template tag; the variable receives the element after the component has finished mounting and rendering, as shown by reading it inside `onAfterMount`.
+4. When the bound element is destroyed, the reference attribute automatically resets the bound variable to `null` to avoid dangling references.
+5. Like dynamic attributes, when a reference attribute and variable share the same name, the interpolation block can be omitted: `<div &handle></div>` is equivalent to `<div &handle={handle}></div>`.
+6. A reference attribute value must be an assignable (in other languages, usually called an lvalue or addressable), non-constant target — roughly an expression that can appear on the left side of `=`. Valid: `{identifier}`, `{arr[index]}`, `{obj.property}`.
+7. In TypeScript, `&handle` values are strictly typed per tag (`HTMLDivElement` for `div`, `HTMLParagraphElement` for `p`); the receiver may also be typed as the base class `HTMLElement`.
 
-passByValue(num)
-console.log(num) // logs: 10
+## Constraints
 
-// & is the address-of operator. It is used to:
-// Get the memory address of variable num,
-// then pass it as an argument to passByReference.
-passByReference(&num)
-console.log(num) // logs: 11
-```
+- The shorthand omission is not supported when the attribute name is a keyword or reserved word in the embedded script language, such as `class` or `for`.
+- Invalid reference attribute values: a function call `{test()}`, optional chaining `{arr?.[index]}` or `{obj?.property}`, or a ternary `{condition ? v1: v2}`.
+- Non-constant is the general requirement, but the `&value` target of a `multiple` `select` may be `const` because Qingkuai only calls its methods (see [Forms](docs://basic/forms.md)).
+- `&handle` is demonstrated together with `onAfterMount`, a lifecycle callback that runs after a component has finished mounting and rendering; do not assume the reference is assigned before that.
 
----
+## Examples
 
-## Getting DOM Elements
-
-When you need to get the DOM element corresponding to a regular tag in the template, you can do so by adding the `&handle` attribute to that element:
-
-|js|ts|
+`&handle` DOM element reference:
 
 ```qk
 <lang-js>
@@ -51,27 +50,7 @@ When you need to get the DOM element corresponding to a regular tag in the templ
 <div &handle={div}></div>
 ```
 
-```qk
-<lang-ts>
-    let div!: HTMLDivElement | null = null
-
-    onAfterMount(() => {
-        console.log(div)
-    })
-</lang-ts>
-
-<div &handle={div}></div>
-```
-
-> [!TIP]
-> `onAfterMount` is a Qingkuai callback that runs after a component has finished mounting and rendering. It is part of the [component lifecycle](docs://components/lifecycle.md).
-
-> [!TIP]
-> If your embedded script language is [TypeScript](https://www.typescriptlang.org/), the value of `&handle` is strictly typed. For example, for a `div` tag, the type is [HTMLDivElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLDivElement); for a `p` element, the type is [HTMLParagraphElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLParagraphElement). Of course, you can also define the receiver type as the base element class [HTMLElement](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement).
-
-When the element is destroyed, the reference attribute automatically resets the bound variable to `null` to avoid dangling references:
-
-|js|ts|
+Automatic reset to `null` when the element is destroyed:
 
 ```qk
 <lang-js>
@@ -91,109 +70,29 @@ When the element is destroyed, the reference attribute automatically resets the 
 <button @click={handleDestroyDiv}>Destroy Div</button>
 ```
 
+`&value` replacing `!value` + `@input`:
+
 ```qk
-<lang-ts>
-    import { nextTick } from "qingkuai"
+<lang-js>
+    let inputValue = "Initial value"
+</lang-js>
 
-    let show = true
-    let div: HTMLDivElement | null = null
+<p>The inputValue is: {inputValue}</p>
 
-    function handleDestroyDiv() {
-        show = false
-        nextTick(() => {
-            console.log(div) // logs: null
-        })
-    }
-</lang-ts>
-<div #if={show} &handle={div}></div>
-<button @click={handleDestroyDiv}>Destroy Div</button>
+<input type="text" &value={inputValue} />
 ```
 
-Like dynamic attributes, when a reference attribute and variable share the same name, you can omit the interpolation block. So the following two forms are equivalent:
+Shorthand when the variable name matches the attribute name:
 
 ```qk
+<lang-js>
+    let handle = null
+</lang-js>
+
 <div &handle></div>
-<div &handle={handle}></div>
 ```
 
-> [!WARNING]
-> If the attribute name is a keyword or reserved word in the embedded script language, this syntax is not supported, such as `class` or `for`.
+## See also
 
----
-
-## Form Input Processing
-
-When handling forms, we often need to synchronize input content to variables in the embedded script. In typical usage, we might use a dynamic `value` attribute on an `input` element and listen to user input to update the variable:
-
-|js|ts|
-
-```qk
-<lang-js>
-    let inputValue = "Initial value"
-</lang-js>
-
-The inputValue is: {inputValue}
-
-<div>
-    <input
-        type="text"
-        !value={inputValue}
-        @input={inputValue = $arg.target.value}
-    />
-</div>
-```
-
-```qk
-<lang-ts>
-    let inputValue = "Initial value"
-</lang-ts>
-
-The inputValue is: {inputValue}
-
-<div>
-    <input
-        type="text"
-        !value={inputValue}
-        @input={inputValue = ($arg.target as HTMLInputElement).value}
-    />
-</div>
-```
-
-Compared with the somewhat verbose approach above, we can now implement this more concisely through the `&value` reference attribute:
-
-```qk
-<lang-js>
-    let inputValue = "Initial value"
-</lang-js>
-
-The inputValue is: {inputValue}
-
-<div>
-    <input
-        type="text"
-        &value={inputValue}
-    />
-</div>
-```
-
-> [!TIP]
-> Here we only briefly introduced reference attributes in form input scenarios. More usage details will be covered in the [Form Handling](docs://basic/forms.md) section.
-
----
-
-## Valid Values for Reference Attributes
-
-Like in other languages that support pass-by-reference, the value of a reference attribute must be an assignable (in other languages, usually called an lvalue or addressable target) and non-constant target. You can roughly understand it as an expression that can appear on the left side of `=`:
-
-```qk
-<!-- Valid values -->
-<p &handle={identifier}></p>
-<p &handle={arr[index]}></p>
-<p &handle={obj.property}></p>
-
-<!-- Invalid values -->
-<p &handle={test()}></p>
-<p &handle={arr?.[index]}></p>
-<p &handle={obj?.property}></p>
-<p &handle={condition ? v1: v2}></p>
-```
+- [Forms](docs://basic/forms.md)
+- [Component Attributes](docs://components/attributes.md)

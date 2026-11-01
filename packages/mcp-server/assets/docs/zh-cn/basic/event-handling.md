@@ -1,21 +1,74 @@
-# 事件处理
-
-在前端开发中，用户与页面的交互往往通过事件驱动。Qingkuai 提供了简洁直观的事件绑定语法，使你可以轻松为元素添加点击、输入、键盘等各种事件处理逻辑，帮助实现响应式的交互体验。
-
-在 Qingkuai 中，以 `@` 字符开头的属性用于绑定事件处理器，例如 `@click` 表示监听点击事件。这种语法与 HTML 中的 `onclick` 属性类似，但更强大：支持使用插值块编写任意表达式作为事件处理逻辑，不仅更简洁，也更具表现力。
-
+---
+description: "通过 @ 属性绑定 DOM 与组件事件：方法引用、带 $arg 的内联处理器、事件处理标志，以及编译器托管的事件委托。"
+keywords: ["events", "@click", "@keydown", "$arg", "event handler flags", "event delegation", "事件", "事件处理"]
 ---
 
-## 绑定事件
+# 事件处理
 
-下面这段代码为 button 元素绑定了一个点击事件，按钮被点击时，`handleAddCount` 方法会被调用：
+## 语法
+
+以 `@` 开头的属性绑定事件处理器（如 `@click` 监听 click 事件）：
+
+| 形式 | 含义 |
+| --- | --- |
+| `@click={handleAddCount}` | 方法引用；处理器像原生 `addEventListener` 一样以原生事件对象为第一个参数 |
+| `@click` | `@click={click}` 的简写；仅当事件名与变量名相同时有效 |
+| `@click={() => count++}` | 箭头函数直接作为事件处理器 |
+| `@click={count++}` | 内联事件处理器：插值块内直接写 JS/TS 表达式，编译为包装后的 `$arg => count++` |
+| `@click={handleAddCount($arg)}` | 内联处理器中的调用表达式；被调用方法内的 `this` 自动绑定到当前元素 |
+| `@click\|self\|once={...}` | 事件处理标志，以 `\|` 追加在事件名之后 |
+
+事件对象访问：普通处理器声明参数（`e.target === this`，都指向被点击元素）；内联处理器使用 `$arg`，在元素上是原生事件对象，在组件内联事件处理器上则是传入的任意参数。使用 `<lang-ts>` 时 `$arg` 的类型被严格推导：`@keydown` 为 `KeyboardEvent`，`@click` 为 `MouseEvent`。
+
+功能标志：
+
+| 标志 | 含义 |
+| --- | --- |
+| `self` | 仅当 `event.target` 是元素本身时执行处理器，但不阻止事件触发 |
+| `stop` | 在处理器末尾调用 `stopPropagation` 阻止冒泡 |
+| `prevent` | 在处理器末尾调用 `preventDefault` 阻止默认行为 |
+| `once` | 处理器运行一次后被移除（`addEventListener` 的 `options.once`） |
+| `capture` | 在捕获阶段触发处理器（`options.capture`） |
+| `passive` | 告知浏览器处理器内绝不会调用 `event.preventDefault`；移动端性能优化（`options.passive`） |
+
+按键标志，只在相关按键按住时运行处理器；仅可用于 `keyup`、`keydown` 等键盘相关事件：
+
+| 标志 | 含义 |
+| --- | --- |
+| `enter` `tab` `del` `esc` `up` `down` `left` `right` `space` | 普通按键标志 |
+| `meta` `alt` `ctrl` `shift` | 系统按键标志 |
+
+## 规则
+
+1. 每个以 `@` 开头的属性绑定一个事件处理器；`@` 之后的标记是事件名（如 `@click`、`@keydown`）。
+2. 普通处理器行为等同原生 `addEventListener` 回调：第一个参数是事件对象，`this` 是被绑定元素。
+3. 不带插值块的 `@click` 等价于 `@click={click}`；事件名是嵌入脚本语言的关键字或保留字（如 `class`、`for`）时不支持该简写。
+4. 当插值表达式是独立标识符、属性访问表达式、函数声明（具名或匿名）或箭头函数时，编译器视其为普通（不包装的）事件处理器：`@click={identifier}`、`@click={handlers.click}`、`@click={function(){}}`、`@click={function unnamed(){}}`、`@click={()=>{}}`。
+5. 其他任何插值表达式都会被编译为包装成 `$arg => ...` 的内联事件处理器：`@click={count++}`、`@click={handlers?.click()}`、`@click={n > 10 ? yes() : no()}`。
+6. `$arg`（不是 `$event`）是编译后的内联事件处理器的固定默认参数名。
+7. 在内联事件处理器中调用其他方法时，Qingkuai 自动把这些方法内的 `this` 绑定到当前元素，因此 `@click={handleAddCount($arg)}` 仍能把 `this` 读作元素。
+8. 标志以 `|` 链接在事件名之后（如 `@click|self|once`）。系统按键标志按 AND 组合：`@click|alt|shift` 只在 alt 和 shift 同时按住时触发。
+9. 编译器自动为以下事件类型启用事件委托（绑定在父元素上的基于冒泡的监听）：`beforeinput` `input` `change`；`keydown` `keypress` `keyup`；`click` `dblclick` `mousedown` `mousemove` `mouseup` `mouseover` `mouseout` `contextmenu`；`copy` `cut` `paste`；`drag` `dragstart` `dragenter` `dragover` `dragleave` `drop` `dragend`；`pointerdown` `pointermove` `pointerover` `pointerout` `pointerup` `pointercancel`；`select` `selectionchange` `selectstart`；`touchstart` `touchmove` `touchend` `touchcancel`。
+
+## 约束
+
+- 按键标志只能用于 `keyup`、`keydown` 等键盘相关事件。
+- `self` 只控制处理器是否执行，绝不阻止事件触发。
+- `stop` 与 `prevent` 在处理器末尾生效，不在处理器体之前。
+- `passive` 是对"该处理器内绝不调用 preventDefault"的承诺。
+- 事件名是关键字或保留字（`class`、`for`）时不能使用 `@click` 简写形式。
+
+## 示例
+
+方法引用；修改响应性变量自动更新视图：
 
 ```qk
 <lang-js>
     let count = 0
 
-    function handleAddCount(){
-        count++ // 修改响应性变量，p元素内容会被自动更新
+    function handleAddCount(e) {
+        count++ // 修改响应性变量，p 元素自动更新
+        console.log(e.target === this) // logs: true
     }
 </lang-js>
 
@@ -23,84 +76,7 @@
 <button @click={handleAddCount}>Add Count</button>
 ```
 
-像 `handleAddCount` 这样的函数被称为事件处理器，它们可以声明参数来接收事件对象，这一点与原生调用 `addEventListener` 时的行为是一致的：
-
-|js|ts|
-
-```js
-function handleAddCount(e) {
-    count++
-    console.log(e.target === this) // logs: true
-}
-```
-
-```ts
-function handleAddCount(this: HTMLButtonElement, e: MouseEvent) {
-    count++
-    console.log(e.target === this) // logs: true
-}
-```
-
-与[动态属性](docs://zh-cn/basic/interpolation.md#动态属性)一样，事件与变量名称一致时可省略插值块，所以下面两种写法等效：
-
-```qk
-<button @click></button>
-<button @click={click}></button>
-```
-
-> [!WARNING]
-> 若事件名称是嵌入脚本语言中的关键字或保留字，则不支持这种语法，如 `class` 或 `for` 属性等。
-
----
-
-## 内联事件处理器
-
-在上方示例中，事件处理器仅包含一行代码，因此我们似乎没有必要单独为其声明一个方法。此时我们有两种方式简化代码：
-
-1.  使用箭头函数作为事件处理器：
-
-    ```qk
-    <button @click={() => count++}>Add Count</button>
-    ```
-
-2.  使用内联事件处理器语法，即在插值块中直接编写 JS/TS 表达式：
-
-    ```qk
-    <button @click={count++}>Add Count</button>
-    ```
-
-第二种方法中的内联事件处理器会被编译器处理为类似下面的代码：
-
-```qk
-<button @click={$arg => count++}>Add Count</button>
-```
-
-| 所以我们还可以在内联事件处理器中通过 `$arg` 访问原生事件对象：
-
-```qk
-<button @click={$arg => console.log($arg.target)}>Add Count</button>
-```
-
-> [!TIP]
-> 从原生事件的角度来看，将 `$arg` 命名为 `$event` 可能更直观；但从语义一致性的角度出发，使用 $arg 更能涵盖我们之后将介绍的[组件](docs://zh-cn/components/basic.md)内联事件处理器所传入的任意参数。因此，在 Qingkuai 中我们统一使用 $arg 作为事件处理器的默认参数名，以体现其在组件与原生事件中的通用性：它既可以表示原生事件对象，也可以表示组件传入的任意参数。
-
-如果你在内联事件处理器中调用了其他方法，Qingkuai 会自动将这些被调用方法中的 this 绑定为当前元素：
-
-|js|ts|
-
-```qk
-<lang-js>
-    let count = 0
-
-    function handleAddCount(e) {
-        count++
-        console.log(e.target === this) // logs: true
-    }
-</lang-js>
-
-<p>current count: {count}</p>
-<button @click={handleAddCount($arg)}>Add Count</button>
-```
+内联处理器使用 `$arg`，被调用方法内的 `this` 自动绑定：
 
 ```qk
 <lang-ts>
@@ -114,78 +90,21 @@ function handleAddCount(this: HTMLButtonElement, e: MouseEvent) {
 
 <p>current count: {count}</p>
 <button @click={handleAddCount($arg)}>Add Count</button>
+<button @click={$arg => console.log($arg.target)}>Log Target</button>
 ```
 
-> [!TIP]
-> 如果你的嵌入脚本语言类型为 [TypeScript](https://www.typescriptlang.org)，`$arg` 的类型是严格的。例如：对于 `@keydown` 事件，它的类型是 [KeyboardEvent](https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent)；对于 `@click` 事件，它的类型是 [MouseEvent](https://developer.mozilla.org/zh-CN/docs/Web/API/MouseEvent)。
-
----
-
-## 处理器类型判定
-
-看到这里你可能会有一个疑问：什么情况下是内联事件处理器，什么情况下又是普通事件处理器？在 Qingkuai 编译器的视角中，内联事件处理器指的是那些需要被编译为包裹在函数中的插值表达式；而当插值表达式是单独的标识符、属性访问表达式、函数声明或箭头函数时，编译器会将其认作完整函数，因而无需额外包裹，属于普通事件处理器：
+标志：`self|once` 门槛与组合系统按键标志：
 
 ```qk
-<!-- 普通事件处理器 -->
-<tag @click={()=>{}}></tag>
+<lang-js>
+    let clicks = 0
+</lang-js>
 
-<tag @click={identifier}></tag>
-
-<tag @click={handlers.click}></tag>
-
-<tag @click={function(){}}></tag>
-
-<tag @click={function unnamed(){}}></tag>
-
-<!-- 内联事件处理器 -->
-<tag @click={count++}></tag>
-
-<tag @click={handlers?.click()}></tag>
-
-<tag @click={n > 10 ? yes() : no()}></tag>
+<button @click|self|once={clicks++}>Click <span>Me</span></button>
+<button @click|alt|shift={console.log("ok")}>Click Me</button>
 ```
 
----
+## 参见
 
-## 事件处理器标志
-
-Qingkuai 允许在事件名称后附加一些标志，用于简化常见交互需求的代码编写。目前支持的标志类型包括以下几种：
-
-1.  功能性标志：
-    - self：仅当 `event.target` 是自身时才执行绑定的事件处理器（不阻止触发）；
-    - stop：在事件处理器的最后调用 [stopPropagation](https://developer.mozilla.org/zh-CN/docs/Web/API/Event/stopPropagation) 以阻止冒泡传播；
-    - prevent：在事件处理器的最后调用 [preventDefault](https://developer.mozilla.org/zh-CN/docs/Web/API/Event/preventDefault) 以阻止默认行为；
-    - once：事件处理器在第一次被触发并执行后会被移除，效果同 [addEventListener options.once](https://developer.mozilla.org/zh-CN/docs/Web/API/EventTarget/addEventListener#options)；
-    - capture：是否在捕获阶段触发绑定的事件处理器，效果同 [addEventListener options.capture](https://developer.mozilla.org/zh-CN/docs/Web/API/EventTarget/addEventListener#options)；
-    - passive：告知客户端事件处理器中永远不会调用 `event.preventDefault`，多用于移动端性能优化，效果同[addEventListener options.passive](https://developer.mozilla.org/zh-CN/docs/Web/API/EventTarget/addEventListener#options)；
-
-2.  按键标志，只有相关按键保持按下才会触发绑定的事件处理器，这些标志只能用于键盘相关事件（keyup、keydown 等）：
-    - 普通按键标志：enter、tab、del、esc、up、down、left、right、space；
-    - 系统按键标志：meta、alt、ctrl、shift；
-
-以下是一些为事件处理器传递标志的示例：
-
-```qk
-<!-- 仅点击 Click 文本区域（非 span 区域）时才触发事件处理器，且只执行一次 -->
-<button @click|self|once={console.log("ok")}>
-    Click <span>Me</span>
-</button>
-
-<!-- 仅当alt键和shift键被同时保持按下且点击按钮时才触发执行事件处理器 -->
-<button @click|alt|shift={console.log("ok")}> Click Me </button>
-```
-
----
-
-## 事件委托
-
-Qingkuai 使用了事件委托（Event Delegation）模式。这是一种常见的事件处理方式：利用[事件冒泡](https://developer.mozilla.org/zh-CN/docs/Learn_web_development/Core/Scripting/Event_bubbling)机制，将事件监听器绑定到父元素上，而不是为每个子元素分别绑定监听器。这种方式可以显著减少内存占用并提升性能，尤其适合处理大量动态生成的元素。编译器会对以下事件类型自动启用事件委托：
-
-- 表单与输入事件：beforeinput、input、change；
-- 键盘事件：keydown、keypress、keyup；
-- 鼠标与菜单事件：click、dblclick、mousedown、mousemove、mouseup、mouseover、mouseout、contextmenu；
-- 剪贴板事件：copy、cut、paste；
-- 拖拽事件：drag、dragstart、dragenter、dragover、dragleave、drop、dragend；
-- 指针事件：pointerdown、pointermove、pointerover、pointerout、pointerup、pointercancel；
-- 选择事件：select、selectionchange、selectstart；
-- 触摸事件：touchstart、touchmove、touchend、touchcancel。
+- [引用属性](docs://zh-cn/basic/reference-attributes.md)
+- [表单处理](docs://zh-cn/basic/forms.md)

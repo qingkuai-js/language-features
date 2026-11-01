@@ -1,122 +1,61 @@
+---
+description: "Ordered rules the Qingkuai compiler uses to infer each top-level identifier's reactivity type: explicit markers, degeneration conditions, and implicit template-usage-based inference."
+keywords: ["reactivity inference", "inference rules", "raw", "reactive", "const", "推导规则", "响应性"]
+---
+
 # Reactivity Inference Rules
 
-In Qingkuai, the compiler automatically determines the reactivity type of each identifier based on a set of inference rules. Understanding these rules helps developers manage state better and override default behavior through explicit markers when necessary.
+For each identifier in the top-level scope of a script block, the compiler infers its reactivity type by performing the following steps in order: check explicit markers first, then apply implicit rules.
 
----
+## Rules
 
-## Inference Flow
+1. **Explicit markers**: if a variable declaration calls `reactive`, `shallow`, or `raw` in its initializer, that explicit marker takes priority and determines the reactivity type. Markers must be called in the initializer of a variable declaration.
+2. **Degeneration** (checked even when an explicit marker is used): the identifier degenerates into a raw value and the marker is ignored if BOTH conditions hold — it is declared with `const`, and its initial value is a literal type (such as a numeric literal or string literal). If degeneration does not occur, the identifier is inferred as the reactivity type specified by the marker.
+3. **Aliases and derived values** (independent of the explicit marking flow): alias bindings can only be created explicitly through the `alias` built-in method; derived reactive values can only be created and explicitly marked through the `derived` or `derivedExp` built-in methods.
+4. **Implicit inference** (no explicit marker), based on template usage and declaration form:
+   1. Not accessed in the template: inferred as a raw value. Such identifiers exist only in script logic and do not participate in dependency collection and the update flow. Identifiers wrapped with `raw` as a non-reactive read in interpolations and embedded script expressions are not counted as accessed even when they appear in the template.
+   2. Accessed in the template: the compiler checks whether the identifier is modified in the script. This check applies to identifiers declared with `let` or `var` whose initial value is a literal type, identifiers declared by `class` and `function` declarations, as well as mutable identifiers in `shallow` mode whose initial value is a non-literal expression.
+      - Not modified: inferred as a raw value to avoid unnecessary dependency collection and update overhead.
+      - Modified: inferred as the reactivity type corresponding to the current reactivity mode.
+      - Access propagation: when a derived value is accessed in the template, identifiers read inside its `derived` getter or `derivedExp` expression literal are also counted as accessed in the template and participate in inference under the same modified-check above (the script must still contain a modification).
+   3. Used by reference attributes (such as `&value` and `&handle`): mutable identifiers declared with `let` or `var` are treated as having a reachable mutation path and are inferred as reactive, even without an explicit assignment, increment, or other mutation statement in the script.
+   4. Other declaration forms: non-variable declarations such as `class` declarations, `function` declarations, and TypeScript `enum` declarations cannot be explicitly marked with `reactive`, `shallow`, or `raw`; their reactivity is decided entirely by implicit inference. `class`/`function` declarations go through the same modified-check as `let`/`var` declarations with literal initial values — they are inferred as reactive only when the name is assigned in the script (or used by a reference attribute) and accessed in the template; `enum` declarations compile to mutable bindings initialized through assignment, always count as modified, and are directly inferred as the corresponding reactivity type per the current reactivity mode when accessed in the template.
+5. **`allowConstReactive` option** (default `true`): when set to `false` — during implicit inference, constants declared with `const` are not inferred as reactive and are uniformly treated as raw values; during explicit marking, using `reactive` or `shallow` to mark a constant declaration whose initial value is not a literal expression is disallowed and raises compile error 1070.
 
-The compiler performs reactivity inference for each identifier in the top-level scope of a script block in the following order:
+## Constraints
 
-1. **Check explicit markers**: if a variable declaration calls `reactive`, `shallow`, or `raw` in its initial value, inference follows the explicit marker with priority;
-2. **Apply implicit rules**: if no explicit marker is used, the identifier is implicitly inferred based on whether it is accessed in the template and its declaration form.
+- Explicit markers are only valid in variable-declaration initializers; `class`, `function`, and TypeScript `enum` declarations cannot be explicitly marked with `reactive`, `shallow`, or `raw`.
+- Degeneration requires both conditions simultaneously (`const` + literal-type initial value); `const c = reactive({})` does not degenerate — its final reactivity depends on later usage.
+- The template-usage modified-check does not cover every identifier: it applies to `let`/`var` declarations whose initial value is a literal type, `class`/`function` declarations, and mutable identifiers in `shallow` mode whose initial value is a non-literal expression.
+- Alias and derived values cannot be produced by the `reactive`/`shallow`/`raw` marking flow; they have dedicated creation forms only.
 
----
+## Examples
 
-## Explicit Markers
-
-Built-in reactivity marker methods must be called in the initial value part of a variable declaration. When an identifier is explicitly marked with one of the above built-in methods, the compiler infers it as the corresponding reactivity type with priority:
-
-```js
-const config = raw([1, 2, 3]) // raw value
-const list = shallow({ debug: false }) // shallow reactive
-const user = reactive({ name: "Qingkuai" }) // deeply reactive
-```
-
-### Degenerate Behavior
-
-Even when an explicit marker is used, if a declaration meets both of the following conditions, the identifier **degenerates into a raw value** and the explicit marker will be ignored by the compiler:
-
-- It is declared with `const`
-- Its initial value is a literal type (such as a numeric literal, a string literal, etc.)
-
-```js
-// degenerates into a raw value; shallow is ignored
-const a = shallow(1)
-
-// degenerates into a raw value; reactive is ignored
-const b = reactive("")
-
-// inferred normally; its reactivity type is determined by later usage
-const c = reactive({})
-```
-
-If degeneration does not occur, the identifier is inferred as the reactivity type specified by the explicit marker.
-
----
-
-## Aliases and Derived Values
-
-- Alias bindings can only be created explicitly through the `alias` built-in method.
-- Derived reactive values can only be explicitly marked and created through the `derived` or `derivedExp` built-in methods.
-
-These rules are independent of the explicit marking flow for `reactive`, `shallow`, and `raw`:
-
-```js
-const firstName = reactive("Qing")
-const lastName = reactive("kuai")
-
-const userName = alias(props.userInfo.name)
-
-const fullName = derived(() => firstName + " " + lastName)
-const shortName = derivedExp(firstName + "-" + lastName)
-```
-
----
-
-## Implicit Inference
-
-When an identifier does not use any explicit marker, the compiler first splits paths by whether it is accessed in the template, then combines the declaration form and modifications in the script to reach the inference result.
-
-### Not Accessed in the Template
-
-When an identifier is not accessed in the template, the compiler infers it as a raw value. Such identifiers exist only in script logic and do not participate in dependency collection and the update flow.
+Explicit markers, with degeneration on `const` + literal initializers:
 
 ```qk
 <lang-ts>
-    // never accessed in the template → raw value
-    let count = 0
-
-    // never accessed in the template → raw value
-    let message = ""
+    const a = shallow(1) // degenerates into a raw value; shallow is ignored
+    const b = reactive("") // degenerates into a raw value; reactive is ignored
+    const config = raw([1, 2, 3]) // raw value
+    const list = shallow({ debug: false }) // shallow reactive
+    const user = reactive({ name: "Qingkuai" }) // deeply reactive
 </lang-ts>
 
-<p> count and message are not accessed here </p>
+<p>{list.debug} {user.name} {config.length}</p>
 ```
 
-Note that not every identifier that appears in the template counts as accessed: in template interpolations and embedded script expressions, identifiers wrapped with the built-in method `raw` as a [non-reactive read](docs://basic/reactivity.md#non-reactive-reads) are not considered accessed in the template.
-
-```qk
-<lang-ts>
-    let user = {
-        name: "Qingkuai"
-    }
-
-    // no valid reactive access in the template → raw value
-    let config = load()
-</lang-ts>
-
-<p>{user.name + raw(config).label}</p>
-<p>{user.name + raw(config.label)}</p>
-```
-
-### Accessed in the Template
-
-When an identifier is accessed in the template, the compiler checks whether it is modified in the script. This check applies to identifiers declared with `let` or `var` whose initial value is a literal type, identifiers declared by `class` and `function` declarations, as well as mutable identifiers in `shallow` mode whose initial value is a non-literal expression:
-
-- **Not modified**: inferred as a raw value, avoiding unnecessary dependency collection and update overhead
-- **Modified**: inferred as the reactivity type corresponding to the current reactivity mode
+Implicit inference in `shallow` mode — only identifiers modified in the script become reactive:
 
 ```qk
 <lang-js shallow>
     let count = 0
-
-    // never assigned → not reactive
-    let state = load()
-
+    let state = load() // never assigned → stays a raw variable
+    function load() {
+        return "ready"
+    }
     function setCount(v) {
-        // assignment exists in the source → count is inferred as shallow
-        count = v
+        count = v // assignment exists in the source → count is inferred as shallow
     }
 </lang-js>
 
@@ -124,99 +63,30 @@ When an identifier is accessed in the template, the compiler checks whether it i
 <button @click={setCount}>{ count }</button>
 ```
 
-The modified-check is not limited to explicit assignments, increments, or other mutation statements in the script; there are two special rules:
+Reference attributes make the identifier reactive without any script mutation:
 
-1. For mutable identifiers declared with `let` or `var`, when they are used by a reference attribute (such as `&value`, `&handle`), the compiler treats the identifier as having a reachable mutation path; even if there is no mutation statement in the script, it is still inferred as reactive:
+```qk
+<lang-ts>
+    let inputValue = "Initial value"
+</lang-ts>
 
-    ```qk
-    <lang-ts>
-        let inputValue = "Initial value"
-    </lang-ts>
+<input type="text" &value={inputValue} />
+```
 
-    <input type="text" &value={inputValue} />
-    ```
-
-2. For non-variable declarations such as `class` declarations, `function` declarations, and TypeScript `enum` declarations: these declarations cannot use explicit markers, and their reactivity is decided entirely by implicit inference. Among them, `class` and `function` declarations follow the same modified-check as `let`/`var` declarations with literal initial values: they are inferred as reactive only when the name is assigned in the script (or used by a reference attribute) and accessed in the template; an `enum` declaration compiles to a mutable binding initialized through assignment, and the compiler treats it as always modified: when accessed in the template, it is directly inferred as the corresponding reactivity type per the current reactivity mode:
-
-    ```qk
-    <lang-ts>
-        class User {
-            name = "Qingkuai"
-        }
-
-        function getUser() {
-            return new User()
-        }
-
-        enum Status {
-            Active,
-            Inactive
-        }
-
-        function reload() {
-            // the name is assigned → satisfies the modified-check
-            getUser = () => new User()
-        }
-    </lang-ts>
-
-    <!-- assigned + accessed in the template → inferred as reactive -->
-    <p>{ getUser().name }</p>
-
-    <!-- enum is always treated as modified → inferred as reactive -->
-    <p>{ Status.Active }</p>
-    ```
-
-### Access Propagation of Derived Sources
-
-When a derived reactive value is accessed in the template, identifiers read inside its `derived` getter or `derivedExp` expression literal are also counted as accessed in the template and participate in inference under the rules of the previous section (the script must still contain a modification):
+Access propagation of derived sources — when the derived value is accessed in the template, identifiers read inside its `derived` getter or `derivedExp` expression literal participate in inference as if accessed in the template (the script must still contain a modification):
 
 ```qk
 <lang-js>
     let count = 0
-
     function setCount(v) {
-        // modification exists → count is inferred as reactive
         count = v
     }
-
     const double = derivedExp(count * 2)
 </lang-js>
 
 <button @click={setCount}>{ double }</button>
 ```
 
----
+## See also
 
-## The allowConstReactive Option
-
-The [`allowConstReactive`](docs://misc/config-files.md#allowconstreactive) runtime configuration option controls whether constant declarations participate in reactivity inference. Its default value is `true`. When this option is set to `false`:
-
-- During implicit inference, constants declared with `const` are not inferred as reactive and are uniformly treated as raw values;
-- During explicit marking, using `reactive` or `shallow` to mark a constant declaration whose initial value is a non-literal expression is disallowed and raises a compile error:
-
-```js
-const list = shallow(getList()) // compile error: 1070
-const config = reactive(loadConfig()) // compile error: 1070
-```
-
----
-
-## Inference Hints
-
-If the Qingkuai [VS Code extension](docs://misc/language-features.md#ide-extensions) is installed, identifiers in the top-level scope of embedded scripts show inlay hints of the reactivity status inferred by the compiler:
-
-<img src="/static/medias/inferred-inlay-hint.png" alt="inferred-inlay-hint.png" style="width:60%; margin-left:20%;"  />
-
-> [!TIP]
-> You can enable or disable this hint by modifying the `inlayHintReactiveStatus` setting in the VS Code extension.
-
-When hovering the mouse pointer over an identifier in the top-level scope, the language server also shows the reactivity type inferred by the compiler in the tooltip:
-
-<img src="/static/medias/inferred-reactive.png" alt="inferred-reactive.png" style="width:60%; margin-left:20%;" />
-<img src="/static/medias/inferred-raw-never-mutated.png" alt="inferred-raw-never-mutated.png" style="width:60%; margin-left:20%;"  />
-<img src="/static/medias/inferred-alias.png" alt="inferred-alias.png" style="width:60%; margin-left:20%;" />
-<img src="/static/medias/inferred-derived.png" alt="inferred-derived.png" style="width:60%; margin-left:20%;" />
-<img src="/static/medias/inferred-downgraded.png" alt="inferred-downgraded.png" style="width:60%; margin-left:20%;" />
-
-> [!TIP]
-> You can enable or disable this hint by modifying the `hoverHintReactiveStatus` setting in the VS Code extension.
+- [Reactivity](docs://basic/reactivity.md)

@@ -1,12 +1,32 @@
-# Member Exports
-
-In component-based development, the export mechanism determines which capabilities a component exposes externally and how those capabilities should be consumed. A well-designed export interface improves reusability and maintainability, while also constraining internal implementation details to avoid unnecessary coupling. In this section, you will learn the export rules and common practices in Qingkuai component files, helping you strike a balance between encapsulation and external usability.
-
+---
+description: "Qingkuai member exports: supported export statement forms, consumption through the component instance via &handle, and prohibited export forms."
+keywords: ["export", "member exports", "component instance", "handle", "导出"]
 ---
 
-## Definition and Usage
+# Member Exports
 
-Inside the embedded script block of a component file, you can use `export` statements just like in regular JS/TS modules to export variables, functions, classes, and more:
+`export` statements inside a component file attach exported members to the component instance — a component file compiles to a default-exported function, so exports are consumed through the instance, not through `import`.
+
+## Syntax
+
+| Form | Supported | Consumption |
+|---|---|---|
+| Export declaration | `export const someValue = "..."` / `export function f() {}` | Via instance member: `child.someValue` |
+| Export list | `export { someFunction }` | Via instance member: `child.someFunction()` |
+| Default export | ✗ Not supported | — |
+| Re-export (`export { x } from "..."`) | ✗ Not supported | — |
+| `export =` | ✗ Not supported | — |
+| Type exports (`export type`/`export interface`/exporting types in lists) | ✗ Not allowed — types do not exist at runtime | Share types via an external `.ts` file imported by each component |
+
+## Rules
+
+1. Exported members are accessed through the component instance obtained with `&handle` (e.g. `<Child &handle={child} />`), then `child.exportedValue` / `child.exportedFunction()` — typically inside `onAfterMount`.
+2. To share types across components (e.g. the `Meta` contract type), define them in an external `.ts` file and `import type` them in each component; importing `Meta` binds the component to that type automatically.
+3. Only `export declarations` and `export lists` are valid inside component files.
+
+## Examples
+
+Exporting members:
 
 ```qk
 <lang-js>
@@ -18,9 +38,7 @@ Inside the embedded script block of a component file, you can use `export` state
 </lang-js>
 ```
 
-After compiler processing, a component file becomes a default-exported function, and `export` statements are attached to the component instance. Therefore, when accessing exported members from a component, you cannot use an `import` statement as you would with regular module members. Instead, you need to access them through the component instance:
-
-|js|ts|
+Consuming through the instance:
 
 ```qk
 <lang-js>
@@ -37,71 +55,7 @@ After compiler processing, a component file becomes a default-exported function,
 <Child &handle={child} />
 ```
 
-```qk
-<lang-js>
-    import type { ComponentInstance } from "qingkuai"
-
-    import Child from "./Child.qk"
-
-    let child: ComponentInstance<typeof Child> | null = null
-
-    onAfterMount(() => {
-        console.log(child.exportedValue) // logs: This value is exported
-        child.exportedFunction() // logs: This function is exported
-    })
-</lang-js>
-
-<Child &handle={child} />
-```
-
----
-
-## Syntax Limitations
-
-Because exports in component files are attached to the component instance, export statements in component files have certain limitations. Only `export declarations` and `export lists` are supported:
-
-```qk
-<lang-js>
-    // Export declaration is supported
-    export const someValue = "This value is exported"
-
-    // Export list is supported
-    const someFunction = () => {
-        console.log("This function is exported")
-    }
-    export { someFunction }
-</lang-js>
-```
-
-Other forms of export statements are not supported, including `default exports`, `re-exports`, and `export =`:
-
-```qk
-<lang-ts>
-    // Default export is not supported
-    export default function defaultExportedFunction() {}
-
-    // Re-export is not supported
-    export { someFunction } from "./someModule"
-</lang-ts>
-```
-
-Exports in component files are attached to the component instance, while types do not exist at runtime. Therefore, component files are not allowed to export any types:
-
-```qk
-<lang-ts>
-    type SomeTypeAlias = {}
-
-    export { SomeTypeAlias }
-
-    export type SomeType = {}
-
-    export interface SomeInterface {}
-
-    export type { ExternalType } from "./types"
-</lang-ts>
-```
-
-If you need to share types across components (for example, the component contract type `Meta`), the recommended approach is to define these types in an external `.ts` file and import them in each component:
+Sharing the `Meta` contract type externally:
 
 ```ts
 // types.ts
@@ -118,5 +72,13 @@ export interface Meta {
 </lang-ts>
 ```
 
-> [!TIP]
-> Once a component imports the `Meta` type, it is already bound to that type — no extra steps are needed. See [TypeScript Support](docs://misc/typescript.md) for details.
+## Constraints
+
+- Never use `import` to consume component exports; they are instance members.
+- Do not add `export default`, re-exports, or type exports to a component file — all are compile errors.
+
+## See also
+
+- [Component Basics](docs://components/basic.md)
+- [TypeScript Support](docs://misc/typescript.md)
+- [Component Attributes](docs://components/attributes.md)

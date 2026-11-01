@@ -177,11 +177,11 @@ function mapGroups(
         const entry = entriesByUri.get(group.doc.uri)
         const relatedDocs = entry ? extractDocLinks(entry.content).slice(0, 5) : []
         return {
-            uri: group.doc.canonicalUri,
-            zhUri: group.doc.zhUri,
+            relatedDocs,
             name: group.doc.name,
+            zhUri: group.doc.zhUri,
+            uri: group.doc.canonicalUri,
             description: group.doc.description,
-            layer: group.doc.layer,
             matchedSections: group.sections.map(ranked => ({
                 uri:
                     ranked.section.anchor.length > 0
@@ -192,8 +192,7 @@ function mapGroups(
                 score: Math.round(ranked.score * 100) / 100,
                 snippet: ranked.snippet,
                 content: truncate(ranked.section.content, SEARCH_SECTION_MAX_CHARS)
-            })),
-            relatedDocs
+            }))
         }
     })
 }
@@ -216,11 +215,10 @@ function parseSectionsOf(entry: DocEntry): DocSection[] {
     const stub = {
         uri: entry.uri,
         name: entry.name,
-        canonicalUri: entry.uri,
-        description: entry.description,
-        keywords: entry.keywords,
         lang: entry.lang,
-        layer: entry.layer
+        canonicalUri: entry.uri,
+        keywords: entry.keywords,
+        description: entry.description,
     }
     return parseDocSections(stub, entry.content, extractDocTitle(entry.content) ?? entry.name)
 }

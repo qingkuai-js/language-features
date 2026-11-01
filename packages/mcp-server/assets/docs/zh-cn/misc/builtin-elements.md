@@ -1,14 +1,28 @@
-# 内置元素
-
-在 Qingkuai 中，内置元素用于扩展模板语法，提供比标准 HTML 更强的表达能力。它们通常承担框架层面的特殊职责，具有特定语义与行为，在处理渲染逻辑或控制结构时扮演重要角色。内置元素通常以 `qk:` 开头，这样做是为了避免与未来的 HTML 内置标签冲突，或占用组件的命名空间。
-
+---
+description: "Qingkuai 内置元素：qk:spread 作为兄弟节点组与文本节点的指令虚拟挂载点，本身不渲染。"
+keywords: ["built-in element", "qk:spread", "virtual element", "内置元素"]
 ---
 
-## Spread
+# 内置元素
 
-在之前章节的示例代码中，我们已经多次使用过 `qk:spread` 内置元素。它的主要作用是作为指令的虚拟挂载点，其子元素会统一受到所挂载指令的影响。最关键的是，它本身不会被渲染为实际的 HTML 元素，从而不会干扰最终页面结构。
+内置元素用于扩展模板语法、承担框架层面的特殊职责，提供比标准 HTML 更强的表达能力。它们以 `qk:` 为前缀，避免与未来 HTML 内置标签冲突或占用组件命名空间。
 
-假设我们想循环创建多个 p + button 元素，但不想额外引入一个无意义的父元素，就可以这样做：
+## 语法
+
+| 元素 | 语法 | 含义 |
+|---|---|---|
+| `qk:spread` | `<qk:spread #for={...}>...</qk:spread>` | 指令的虚拟挂载点；被挂载的指令共同作用于全部子元素；不会被渲染为真实 HTML 元素 |
+
+## 规则
+
+1. 用 `qk:spread` 把指令统一作用于没有共同父元素的多个并列元素，这正是"spread"一词的含义：分散、展开。
+2. 典型场景：`#for` 循环创建多个 `p + button` 元素、`#if` 按条件展示多个 `li`、`#slot` 包装由多个并列元素组成的插槽内容。
+3. 也可以把指令附加到文本节点上。
+4. 优先用 `qk:spread` 而不是额外引入无意义的父元素，它不会干扰最终页面结构。
+
+## 示例
+
+无包装地循环渲染兄弟组：
 
 ```qk
 <qk:spread #for={3}>
@@ -17,9 +31,13 @@
 </qk:spread>
 ```
 
-再比如，当我们需要按条件展示多个 `li` 元素时：
+按条件展示多个列表项：
 
 ```qk
+<lang-js>
+    let visible = true
+</lang-js>
+
 <ul class="list">
     <li>normal list 1</li>
     <li>normal list 2</li>
@@ -30,7 +48,7 @@
 </ul>
 ```
 
-当插槽内容由多个并列元素组成时：
+多元素插槽内容：
 
 ```qk
 <Component>
@@ -41,9 +59,13 @@
 </Component>
 ```
 
-为一个文本节点添加指令：
+文本节点上的指令：
 
 ```qk
+<lang-js>
+    const pms = Promise.resolve("data")
+</lang-js>
+
 <qk:spread
     #await={pms}
     #then={target}
@@ -52,5 +74,7 @@
 </qk:spread>
 ```
 
-> [!TIP]
-> 可以看出一个共同点：`qk:spread` 通常用于为多个没有共同父元素的并列元素统一添加指令，这也正是其名称中 “spread” 所表达的含义：分散、展开。
+## 参见
+
+- [编译指令](docs://zh-cn/basic/compilation-directives.md)
+- [插槽](docs://zh-cn/components/slots.md)

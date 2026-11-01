@@ -1,70 +1,22 @@
+---
+description: "Qingkuai language features: LSP-based service, VS Code extension, Emmet syntax difference, formatting, language-server restart, code navigation, and the MCP server for AI agents."
+keywords: ["language features", "LSP", "vscode", "emmet", "formatting", "navigation", "MCP", "语言服务"]
+---
+
 # Language Features
 
-Qingkuai does not build complex syntax extensions into the compiler. Instead, it provides rich language features through an [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)-based language service. These features include type inference, intelligent completion, diagnostics, quick navigation, and semantic highlighting, covering framework capabilities such as component attributes, slots, style scoping, directives, and reference passing. With LSP, Qingkuai keeps syntax concise while significantly improving developer experience and type safety.
+Qingkuai keeps the compiler free of complex syntax extensions and ships rich language features through an LSP-based language service: type inference, intelligent completion, diagnostics, quick navigation, semantic highlighting — covering component attributes, slots, style scoping, directives, and reference passing, while keeping syntax concise and improving developer experience and type safety.
 
----
+## Rules
 
-## IDE Extensions
+1. IDE support is published as a VS Code extension (`Qingkuai` in the Extensions view / VS Code Marketplace); report IDE issues in the `language-features` repository.
+2. Emmet works in component files, EXCEPT attribute removal: because `!` conflicts with dynamic attributes, use `-` to remove attributes — `input[-type]` creates an `input` without `type`; `input[!type]` creates a dynamic attribute `<input !type={}>`.
+3. Document formatting is implemented by `prettier-plugin-qingkuai`; formatting may fail when a file contains syntax errors — check the IDE output panel.
+4. When the language service misbehaves, run `Qingkuai: Restart Language Server` from the command palette.
+5. Code navigation: meta-click the `slot` attribute on a first-level child of a component to find slot definitions; meta-click a component tag or component identifier in script to find component definitions; right-click a `slot` tag → "Go to References" for slot references; right-click an embedded language tag → "Go to References" for component references (or enable Code Lens).
+6. AI agents integrate through the `qingkuai-mcp-server` package, mainly to improve agent response speed and stability, and to strengthen understanding and generation for DSL syntax and component files; with the VS Code extension installed, AI features in component files connect to the MCP server automatically — no extra configuration — and the service can also be connected directly from other environments.
 
-Currently, we only publish the extension for [VS Code](https://code.visualstudio.com). You can install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=qingkuai-tools.qingkuai-language-features) or by searching for `Qingkuai` in the VS Code Extensions view.
+## See also
 
-<img src="/static/medias/extension.png" alt="VS Code extension" />
-
-> [!TIP]
-> If you encounter IDE-related issues, please submit an issue in Qingkuai's [language-features](https://github.com/qingkuai-js/language-features) repository.
-
----
-
-## Emmet
-
-Qingkuai language service provides solid [Emmet](https://emmet.io) support. However, because dynamic attributes conflict with Emmet's attribute-removal syntax, component files use the `-` character to remove attributes. The example below uses Emmet syntax to create an `input` tag without a `type` attribute in a component file:
-
-```txt
-input[-type]
-```
-
-The original syntax:
-
-```txt
-input[!type]
-```
-
-creates a dynamic attribute:
-
-```qk
-<input !type={}>
-```
-
----
-
-## Formatting
-
-Qingkuai language service includes built-in document formatting, implemented by [prettier-plugin-qingkuai](https://www.npmjs.com/package/prettier-plugin-qingkuai). If a component file contains syntax errors, formatting may fail. In that case, you can view the failure message in the IDE `output` panel:
-
-<img src="/static/medias/format-error.png" alt="formatting error" />
-
----
-
-## Restart Language Service
-
-When language service behavior is abnormal, open the VS Code command palette (`Ctrl+Shift+P` or `Cmd+Shift+P`), then run `Qingkuai: Restart Language Server` to restart the language service:
-<img src="/static/medias/restart-language-server.png" alt="restart language service" />
-
----
-
-## Code Navigation
-
-Code navigation is frequently used during development, and has some specific usages in component files:
-
-- Find slot definitions: Hold down the meta key and left-click the `slot` attribute on a first-level child element of a component;
-- Find component definitions: Hold down the meta key and left-click a component tag or a component identifier in an embedded script;
-- Find slot references: Right-click a `slot` tag and select "Go to References", or enable Code Lens;
-- Find component references: Right-click an embedded language tag and select "Go to References", or enable Code Lens;
-
----
-
-## AI Agents
-
-In Qingkuai projects, AI can be used as a development assistant to help you build components faster, complete code, troubleshoot issues, and understand documentation. It does not replace the compiler or language service. Instead, it works alongside the existing toolchain to reduce repetitive work and improve development efficiency.
-
-Qingkuai's MCP server is provided through [qingkuai-mcp-server](https://www.npmjs.com/package/qingkuai-mcp-server). It is mainly used to improve agent response speed and stability, and to strengthen understanding and generation for DSL syntax and component files. The VS Code extension connects to the MCP server automatically — AI features in component files need no extra configuration. To use or integrate these AI capabilities in other environments, connect to the service directly; see [MCP Server](docs://misc/mcp-server.md) for setup and the full capability list.
+- [Configuration Files](docs://misc/config-files.md)
+- [Debugging](docs://misc/debugging.md)

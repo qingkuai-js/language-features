@@ -72,12 +72,11 @@ export function loadDocEntries(): DocEntry[] {
         const parseResult = parseDocContent(nodeFs.readFileSync(filePath, "utf-8"))
         docs.push({
             uri,
+            lang: info.lang,
             name: camelDocName,
             content: parseResult.content,
-            description: parseResult.description,
             keywords: parseResult.keywords,
-            lang: info.lang,
-            layer: info.layer
+            description: parseResult.description,
         })
     }
 
@@ -96,8 +95,7 @@ function resolveReadText(uri: string, fullContent: string, requestUri: URL): str
         canonicalUri: uri,
         description: "",
         keywords: [],
-        lang: "en" as const,
-        layer: "tutorial" as const
+        lang: "en" as const
     }
     const titleMatch = /^#\s+(.+)$/m.exec(fullContent)
     const sections = parseDocSections(stub, fullContent, titleMatch ? titleMatch[1] : "")

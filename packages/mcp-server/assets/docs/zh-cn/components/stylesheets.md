@@ -1,24 +1,39 @@
-# 样式表
-
-样式表不仅用于美化页面，也常常是组件功能的重要补充。良好的样式体系不仅能提升用户体验，还能增强组件的表达力和复用性。在组件化开发中，传统全局样式容易引发冲突并增加维护成本，而作用域机制可以有效缓解这些问题。通过将样式限定在组件内部，开发者可以更放心地定义类名和规则，无需担心影响其他组件或页面元素。这种方式既保留了 CSS 的灵活性，也带来了更强的可控性与可维护性。
-
+---
+description: "Qingkuai 样式表：作用域化的嵌入样式块、#scope 样式穿透、src/@import 外部样式、global 样式块，以及 qk-scope 选择器定位。"
+keywords: ["style", "stylesheet", "scoped styles", "lang-css", "global", "#scope", "qk-scope", "样式"]
 ---
 
-## 样式作用域
+# 组件样式表
 
-组件模板中的内容在渲染时都会被添加作用域属性，例如：
+组件文件中的嵌入样式块（如 `<lang-css>`）是作用域化的：渲染的模板元素会收到一个作用域属性（如 `qk-dbb1016b`），样式规则的选择器也会被追加上该属性，避免全局污染。
 
-```html
-<div>...</div>
-```
+## 语法
 
-会被渲染为类似这样的 HTML 片段：
+| 形式 | 语法 | 含义 |
+|---|---|---|
+| 作用域样式块 | `<lang-css> div { color: red; } </lang-css>` | 编译为 `div[qk-xxxx] { ... }` |
+| 全局样式块 | `<lang-css global> ... </lang-css>` | 规则不附加作用域属性 |
+| 外部样式表 | `<lang-scss src="./styles/theme.scss" />` | `src` 属性；该标签不能有内容 |
+| 样式内导入 | 块体中的 `@import` 语句，如 `@import "./styles/base.css";` | 样式规则仍写在块体内 |
+| 全局 + 外部 | `<lang-css global src="./index.css" />` | 两者组合 |
+| 作用域属性定位 | `div[qk-scope] p { }` | `qk-scope` 属性选择器标记作用域属性落点：`div[qk-xxxx] p { }` |
+| 样式穿透 | 组件标签上的 `#scope` 指令 | 把父级作用域属性传给子组件根元素（见编译指令） |
 
-```html
-<div qk-dbb1016b>...</div>
-```
+## 规则
 
-为了避免组件样式污染全局或其他组件，嵌入样式同样会被添加作用域属性，例如：
+1. 所有模板内容在渲染时都会收到作用域属性；嵌入样式规则自动以同一属性作用域化。
+2. 作用域属性的默认位置在最后一个选择器之后（`div p[qk-xxxx]`、`.container .box[qk-xxxx]`）；用 `qk-scope` 属性选择器移动它。
+3. 嵌入样式块可使用工具链支持的任意样式语言标签（`lang-css`、`lang-scss` 等）。
+4. 组件标签上的 `#scope` 让父级样式作用于子组件根元素；可沿祖先链组合。
+
+## 约束
+
+- 使用 `src` 属性的样式标签不能包含标签内容。
+- 避免同一份共享样式表被组件作用域样式通过 `src`/`@import` 重复引入，编译结果可能会生成多份附加不同作用域标识的等价规则副本；共享样式的复用方式参见性能优化文档。
+
+## 示例
+
+作用域化的嵌入样式：
 
 ```qk
 <lang-css>
@@ -26,49 +41,11 @@
         color: red;
     }
 </lang-css>
+
+<div>Scoped red text</div>
 ```
 
-会被转换为：
-
-```css
-div[qk-dbb1016b] {
-    color: red;
-}
-```
-
----
-
-## 外部样式源
-
-嵌入样式块支持两种方式引入外部样式文件：通过标签上的静态 `src` 属性，或通过样式内容中的 `@import` 语句：
-
-```qk
-<lang-scss src="./styles/theme.scss" />
-```
-
-> [!WARNING]
-> 使用 `src` 属性时，嵌入样式标签不能包含标签内容。
-
-使用 `@import` 时，样式规则在嵌入样式标签的内容体中编写：
-
-```qk
-<lang-css>
-    @import "./styles/base.css";
-
-    .local-rule {
-        /* ... */
-    }
-</lang-css>
-```
-
-> [!WARNING]
-> 通过 `src` 或 `@import` 被组件作用域样式重复引入同一份共享样式表时，编译结果可能会生成多份等价规则副本（附加不同作用域标识），应尽量避免这种模式：[优化 - 样式复用](docs://zh-cn/misc/optimization.md#样式复用)。
-
----
-
-## 全局样式
-
-默认情况下，嵌入样式会自动添加组件作用域属性。若希望当前样式块按全局样式处理，可在嵌入样式标签上添加布尔属性 `global`，例如下面的 `.page-title` 不会被附加组件作用域属性：
+全局样式块：
 
 ```qk
 <lang-css global>
@@ -76,47 +53,39 @@ div[qk-dbb1016b] {
         color: #111;
     }
 </lang-css>
+
+<h1 class="page-title">Page Title</h1>
 ```
 
-此外 `global` 也可以与 `src` 组合使用：
+外部样式源（书写形式；不参与编译示例）：
 
-```qk
+```text
+<lang-scss src="./styles/theme.scss" />
 <lang-css global src="./index.css" />
+
+<lang-css>
+    @import "./styles/base.css";
+    .local-rule { color: #333; }
+</lang-css>
 ```
 
----
-
-## 作用域属性位置
-
-通常情况下，作用域属性会被添加到最后一个选择器后：
+作用域属性定位控制（CSS 视角）：
 
 ```css
-div p[qk-dbb1016b] {
-}
-.container .box[qk-dbb1016b] {
-}
-```
-
-但我们可以通过 `qk-scope` 属性选择器手动调整作用域属性添加的位置，例如：
-
-```css
+/* 书写 */
 div[qk-scope] p {
 }
 [qk-scope] .container .box {
 }
-```
 
-会被转换为：
-
-```css
+/* 编译后 */
 div[qk-dbb1016b] p {
 }
 [qk-dbb1016b] .container .box {
 }
 ```
 
----
+## 参见
 
-## 样式穿透
-
-作用域样式保证了组件的独立性，但某些场景下你可能希望父组件的样式规则能够影响到子组件的根元素。Qingkuai 提供了 [#scope 指令](docs://zh-cn/basic/compilation-directives.md#scope-指令) 来实现这一需求。
+- [编译指令](docs://zh-cn/basic/compilation-directives.md)
+- [性能优化](docs://zh-cn/misc/optimization.md)

@@ -79,7 +79,7 @@ export const QUERY_EXPANSION_MAP: Record<string, string[]> = {
 }
 
 /**
- * 任务意图：文档路由（canonical 路径后缀匹配，en/zh-cn/agent 层共享）。
+ * 任务意图：文档路由（canonical 路径后缀匹配，en/zh-cn 共享）。
  * 与 docs/articles/agent/index.md 的 Task To Docs 保持同步。
  */
 export const TASK_ROUTES: TaskRoute[] = [

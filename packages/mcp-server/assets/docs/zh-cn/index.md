@@ -81,7 +81,7 @@ keywords: ["qingkuai", ".qk", "syntax", "指令", "引用属性", "组件", "响
 1. 表单双向绑定使用引用属性（`&value`），而不是 `!value` 加 `@input={...}`。
 2. 用元素上的 `&handle` 获取 DOM 元素，而不是手动 DOM 查询；元素销毁时绑定变量重置为 `null`。
 3. 按用户的编写习惯声明响应性：用户依赖编译器推导时保持推导，用户习惯显式声明时用 `reactive`、`shallow` 或 `raw` 标记；结合 `reactivityMode`、`requireReactivityMark`、`allowConstReactive` 配置确定具体方式。
-4. 用户比较在意运行时性能时，可在 `.qingkuairc` 中搭配 `"reactivityMode": "shallow"` 与 `"allowConstReactive": false` 进入信号模式（详见 [optimization.md](docs://zh-cn/agent/misc/optimization.md)）；此模式下只能通过为标识符重新赋值来触发更新。
+4. 用户比较在意运行时性能时，可在 `.qingkuairc` 中搭配 `"reactivityMode": "shallow"` 与 `"allowConstReactive": false` 进入信号模式（详见 [optimization.md](docs://zh-cn/misc/optimization.md)）；此模式下只能通过为标识符重新赋值来触发更新。
 5. 衍生状态使用 `derived`；普通表达式够用时优先使用 `derivedExp` 或 `$` 前缀简写。
 6. 用 `qk:spread` 作为指令的虚拟挂载点，而不是引入无意义的包装元素。
 7. 为持有本地状态的 `#for` 渲染元素添加 `#key`；键在同一列表内必须唯一。
@@ -94,47 +94,47 @@ keywords: ["qingkuai", ".qk", "syntax", "指令", "引用属性", "组件", "响
 
 | 任务 | 文档 |
 | --- | --- |
-| 条件渲染、列表渲染、异步渲染、`#html`/`#target`/`#scope` | [compilation-directives.md](docs://zh-cn/agent/basic/compilation-directives.md) |
-| 声明与使用响应式状态 | [reactivity.md](docs://zh-cn/agent/basic/reactivity.md) |
-| 判断标识符被推导为 raw、响应式还是浅响应式 | [reactivity-infer-rules.md](docs://zh-cn/agent/references/reactivity-infer-rules.md) |
-| 表单输入处理与绑定 | [forms.md](docs://zh-cn/agent/basic/forms.md) |
-| 引用属性（`&value`、`&number`、`&checked`、`&group`、`&handle`） | [reference-attributes.md](docs://zh-cn/agent/basic/reference-attributes.md)、[forms.md](docs://zh-cn/agent/basic/forms.md) |
-| 向组件传入属性与事件（`props`、`defaults`） | [attributes.md](docs://zh-cn/agent/components/attributes.md) |
-| 事件监听（`@click` 及事件属性） | [event-handling.md](docs://zh-cn/agent/basic/event-handling.md) |
-| 插槽内容与插槽上下文（`#slot`、`slots`） | [slots.md](docs://zh-cn/agent/components/slots.md) |
-| 组件生命周期回调（`onAfterMount` 等） | [lifecycle.md](docs://zh-cn/agent/components/lifecycle.md) |
-| 跨组件上下文共享（`contexts`、`setContext`） | [contexts.md](docs://zh-cn/agent/components/contexts.md) |
-| 组件作用域样式与嵌入样式块 | [stylesheets.md](docs://zh-cn/agent/components/stylesheets.md) |
-| 异步组件加载 | [async-components.md](docs://zh-cn/agent/components/async-components.md) |
-| 动态组件切换 | [dynamic-components.md](docs://zh-cn/agent/components/dynamic-components.md) |
-| 组件成员导出 | [exports.md](docs://zh-cn/agent/components/exports.md) |
-| 组件文件结构与基础 | [basic.md](docs://zh-cn/agent/components/basic.md) |
-| 文本插值 `{expr}` | [interpolation.md](docs://zh-cn/agent/basic/interpolation.md) |
-| 监视器与副作用（`watch`/`effect` 家族） | [watchers-and-side-effects.md](docs://zh-cn/agent/basic/watchers-and-side-effects.md) |
-| 全部内建标识符 | [intrinsics.md](docs://zh-cn/agent/references/intrinsics.md) |
-| 运行时包 API | [api.md](docs://zh-cn/agent/references/api.md) |
-| 术语（嵌入块、运行时包） | [terminology.md](docs://zh-cn/agent/references/terminology.md) |
-| 编译器/运行时错误码 | [error-code.md](docs://zh-cn/agent/references/error-code.md) |
-| TypeScript 支持与组件实例类型 | [typescript.md](docs://zh-cn/agent/misc/typescript.md) |
-| 配置文件 | [config-files.md](docs://zh-cn/agent/misc/config-files.md) |
-| 调试 | [debugging.md](docs://zh-cn/agent/misc/debugging.md) |
-| 性能优化 | [optimization.md](docs://zh-cn/agent/misc/optimization.md) |
-| 内置元素（`qk:spread`） | [builtin-elements.md](docs://zh-cn/agent/misc/builtin-elements.md) |
-| 语言功能概览 | [language-features.md](docs://zh-cn/agent/misc/language-features.md) |
-| 安装 | [install.md](docs://zh-cn/agent/getting-started/install.md) |
-| 命令行工具（初始化 / 类型检查 / 格式化 / 构建） | [cli.md](docs://zh-cn/agent/misc/cli.md) |
-| 接入 MCP 服务器（AI 助手集成、工具与工作协议） | [mcp-server.md](docs://zh-cn/agent/misc/mcp-server.md) |
-| 框架概览与设计哲学 | [introduction.md](docs://zh-cn/agent/getting-started/introduction.md) |
+| 条件渲染、列表渲染、异步渲染、`#html`/`#target`/`#scope` | [compilation-directives.md](docs://zh-cn/basic/compilation-directives.md) |
+| 声明与使用响应式状态 | [reactivity.md](docs://zh-cn/basic/reactivity.md) |
+| 判断标识符被推导为 raw、响应式还是浅响应式 | [reactivity-infer-rules.md](docs://zh-cn/references/reactivity-infer-rules.md) |
+| 表单输入处理与绑定 | [forms.md](docs://zh-cn/basic/forms.md) |
+| 引用属性（`&value`、`&number`、`&checked`、`&group`、`&handle`） | [reference-attributes.md](docs://zh-cn/basic/reference-attributes.md)、[forms.md](docs://zh-cn/basic/forms.md) |
+| 向组件传入属性与事件（`props`、`defaults`） | [attributes.md](docs://zh-cn/components/attributes.md) |
+| 事件监听（`@click` 及事件属性） | [event-handling.md](docs://zh-cn/basic/event-handling.md) |
+| 插槽内容与插槽上下文（`#slot`、`slots`） | [slots.md](docs://zh-cn/components/slots.md) |
+| 组件生命周期回调（`onAfterMount` 等） | [lifecycle.md](docs://zh-cn/components/lifecycle.md) |
+| 跨组件上下文共享（`contexts`、`setContext`） | [contexts.md](docs://zh-cn/components/contexts.md) |
+| 组件作用域样式与嵌入样式块 | [stylesheets.md](docs://zh-cn/components/stylesheets.md) |
+| 异步组件加载 | [async-components.md](docs://zh-cn/components/async-components.md) |
+| 动态组件切换 | [dynamic-components.md](docs://zh-cn/components/dynamic-components.md) |
+| 组件成员导出 | [exports.md](docs://zh-cn/components/exports.md) |
+| 组件文件结构与基础 | [basic.md](docs://zh-cn/components/basic.md) |
+| 文本插值 `{expr}` | [interpolation.md](docs://zh-cn/basic/interpolation.md) |
+| 监视器与副作用（`watch`/`effect` 家族） | [watchers-and-side-effects.md](docs://zh-cn/basic/watchers-and-side-effects.md) |
+| 全部内建标识符 | [intrinsics.md](docs://zh-cn/references/intrinsics.md) |
+| 运行时包 API | [api.md](docs://zh-cn/references/api.md) |
+| 术语（嵌入块、运行时包） | [terminology.md](docs://zh-cn/references/terminology.md) |
+| 编译器/运行时错误码 | [error-code.md](docs://zh-cn/references/error-code.md) |
+| TypeScript 支持与组件实例类型 | [typescript.md](docs://zh-cn/misc/typescript.md) |
+| 配置文件 | [config-files.md](docs://zh-cn/misc/config-files.md) |
+| 调试 | [debugging.md](docs://zh-cn/misc/debugging.md) |
+| 性能优化 | [optimization.md](docs://zh-cn/misc/optimization.md) |
+| 内置元素（`qk:spread`） | [builtin-elements.md](docs://zh-cn/misc/builtin-elements.md) |
+| 语言功能概览 | [language-features.md](docs://zh-cn/misc/language-features.md) |
+| 安装 | [install.md](docs://zh-cn/getting-started/install.md) |
+| 命令行工具（初始化 / 类型检查 / 格式化 / 构建） | [cli.md](docs://zh-cn/misc/cli.md) |
+| 接入 MCP 服务器（AI 助手集成、工具与工作协议） | [mcp-server.md](docs://zh-cn/misc/mcp-server.md) |
+| 框架概览与设计哲学 | [introduction.md](docs://zh-cn/getting-started/introduction.md) |
 
 ## 语法依赖路由
 
-- 出现 `qk:spread` → 阅读 [builtin-elements.md](docs://zh-cn/agent/misc/builtin-elements.md)
-- 出现 `#slot` → 阅读 [compilation-directives.md](docs://zh-cn/agent/basic/compilation-directives.md) 与 [slots.md](docs://zh-cn/agent/components/slots.md)
-- 出现 `props`/`refs`/`slots` 内建标识符 → 阅读 [intrinsics.md](docs://zh-cn/agent/references/intrinsics.md)
-- 响应性歧义（raw vs reactive vs shallow）→ 阅读 [reactivity-infer-rules.md](docs://zh-cn/agent/references/reactivity-infer-rules.md)
-- 异步指令配合组件加载 → 阅读 [compilation-directives.md](docs://zh-cn/agent/basic/compilation-directives.md) 与 [async-components.md](docs://zh-cn/agent/components/async-components.md)
+- 出现 `qk:spread` → 阅读 [builtin-elements.md](docs://zh-cn/misc/builtin-elements.md)
+- 出现 `#slot` → 阅读 [compilation-directives.md](docs://zh-cn/basic/compilation-directives.md) 与 [slots.md](docs://zh-cn/components/slots.md)
+- 出现 `props`/`refs`/`slots` 内建标识符 → 阅读 [intrinsics.md](docs://zh-cn/references/intrinsics.md)
+- 响应性歧义（raw vs reactive vs shallow）→ 阅读 [reactivity-infer-rules.md](docs://zh-cn/references/reactivity-infer-rules.md)
+- 异步指令配合组件加载 → 阅读 [compilation-directives.md](docs://zh-cn/basic/compilation-directives.md) 与 [async-components.md](docs://zh-cn/components/async-components.md)
 
 ## 多文档优先级规则
 
-- 同时编辑标记与状态：[compilation-directives.md](docs://zh-cn/agent/basic/compilation-directives.md) → [reactivity.md](docs://zh-cn/agent/basic/reactivity.md) → [reactivity-infer-rules.md](docs://zh-cn/agent/references/reactivity-infer-rules.md)
-- 组件边界 API：[attributes.md](docs://zh-cn/agent/components/attributes.md) → [intrinsics.md](docs://zh-cn/agent/references/intrinsics.md) → [slots.md](docs://zh-cn/agent/components/slots.md)
+- 同时编辑标记与状态：[compilation-directives.md](docs://zh-cn/basic/compilation-directives.md) → [reactivity.md](docs://zh-cn/basic/reactivity.md) → [reactivity-infer-rules.md](docs://zh-cn/references/reactivity-infer-rules.md)
+- 组件边界 API：[attributes.md](docs://zh-cn/components/attributes.md) → [intrinsics.md](docs://zh-cn/references/intrinsics.md) → [slots.md](docs://zh-cn/components/slots.md)

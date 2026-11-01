@@ -1,11 +1,8 @@
 export type DocLang = "en" | "zh-cn"
 
-export type DocLayer = "agent" | "tutorial"
-
-/** 从 docs:// URI 解析出的语言层与规范 URI */
+/** 从 docs:// URI 解析出的语言与规范 URI */
 export type DocInfo = {
     lang: DocLang
-    layer: DocLayer
     canonicalUri: string
 }
 
@@ -16,7 +13,6 @@ export type DocEntry = {
     description: string
     keywords: string[]
     lang: DocLang
-    layer: DocLayer
 }
 
 export type DocSection = {
@@ -28,12 +24,11 @@ export type DocSection = {
     title: string
     content: string
     lang: DocLang
-    layer: DocLayer
 }
 
 export type IndexedDoc = {
     uri: string
-    /** en/zh 同一主题文档合并分组用的规范 URI（zh-cn 归并到 en 路径；agent 层独立） */
+    /** en/zh 同一主题文档合并分组用的规范 URI（zh-cn 归并到 en 路径） */
     canonicalUri: string
     zhUri?: string
     enUri?: string
@@ -41,7 +36,6 @@ export type IndexedDoc = {
     description: string
     keywords: string[]
     lang: DocLang
-    layer: DocLayer
 }
 
 export type IndexedSection = {
