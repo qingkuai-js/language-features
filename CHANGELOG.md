@@ -1,5 +1,17 @@
 # 2026-11-01
 
+> packages version: vscode-extension@1.0.41, language-service@1.0.24, mcp-server@1.0.13
+
+features:
+
+1. bundled only the agent reference layer in the MCP server: the corpus shrinks from 128 pages (about 1.0 MB) to 64 pages (about 372 KB), resource URIs are flattened from `docs://agent/basic/forms.md` to `docs://basic/forms.md`, search results no longer carry the `layer` field, and the bundled docs describe the English and Chinese corpora without the layer wording ([cd76ea9](https://github.com/qingkuai-js/language-features/commit/cd76ea9))
+
+others:
+
+1. release workflow: synced `server.json` with the package version and published the MCP server to the registry, authenticating with GitHub OIDC, skipping versions the registry already has and pinning `mcp-publisher` to v1.7.2, and shortened the release title with a fixed link text ([dcd18d4](https://github.com/qingkuai-js/language-features/commit/dcd18d4), [d07ddb3](https://github.com/qingkuai-js/language-features/commit/d07ddb3), [834f13f](https://github.com/qingkuai-js/language-features/commit/834f13f))
+
+# 2026-11-01
+
 > packages version: vscode-extension@1.0.40, language-service@1.0.24, mcp-server@1.0.12
 
 features:
