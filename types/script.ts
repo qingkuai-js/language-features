@@ -11,14 +11,14 @@ export interface PackageVersion {
     version: string
 }
 
-export interface ExtensionIdentity extends PackageVersion {
-    publisher: string
-}
-
 export interface MinimalManifest {
     dependencies?: Record<string, string>
     devDependencies?: Record<string, string>
     peerDependencies?: Record<string, string>
+}
+
+export interface ExtensionIdentity extends PackageVersion {
+    publisher: string
 }
 
 export type VsceMode = "package" | "publish"

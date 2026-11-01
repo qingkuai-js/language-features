@@ -42,7 +42,7 @@ async function main(): Promise<void> {
     const payload: ReleaseRequest = {
         tag_name: tag,
         name: `VS Code Extension v${version}`,
-        body: [`[${displayName} on the VS Code Marketplace](${marketLink})`, changelogNotes()]
+        body: [`[VS Code Marketplace](${marketLink})`, changelogNotes()]
             .filter(Boolean)
             .join("\n\n"),
         draft: false,
