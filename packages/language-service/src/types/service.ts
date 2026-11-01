@@ -20,6 +20,7 @@ import type {
     MaybePromise,
     CompileResult,
     ComponentInfo,
+    QingkuaiConfiguration,
     TsPluginQingkuaiConfig
 } from "../../../../types/common"
 import type { QingkuaiFileInfo } from "../adapters/file"
@@ -59,6 +60,16 @@ export interface TextEditWithPosRange {
 export interface ConfigParsingMessage {
     value: string
     kind: ConfigParsingMessageKind
+}
+
+export type ConfigCacheEntry = {
+    files: string[]
+    config: QingkuaiConfiguration
+    configPath?: string
+}
+
+export type ConfigFileContent = QingkuaiConfiguration & {
+    extends?: unknown
 }
 
 export type CompletionData = ResolveCompletionParams & {

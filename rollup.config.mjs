@@ -44,6 +44,7 @@ export default defineConfig(commandLineArgs => {
         {
             input: {
                 index: "./packages/language-service/src/index.ts",
+                config: "./packages/language-service/src/config.ts",
                 adapters: "./packages/language-service/src/adapters/index.ts"
             },
             output: {
@@ -58,6 +59,7 @@ export default defineConfig(commandLineArgs => {
         {
             input: {
                 index: "./packages/language-service/src/index.ts",
+                config: "./packages/language-service/src/config.ts",
                 adapters: "./packages/language-service/src/adapters/adapter.ts"
             },
             output: {
@@ -71,16 +73,29 @@ export default defineConfig(commandLineArgs => {
             plugins: [nodeResolve(), commonjs(), esbuild(), reloadAsRaw()]
         },
 
-        // vscode extension and language server
+        // language server：独立构建，避免扩展宿主入口把服务端代码一起加载
         {
-            input: {
-                server: "./packages/language-server/src/index.ts",
-                client: "./packages/vscode-extension/src/extension.ts"
-            },
+            input: "./packages/language-server/src/index.ts",
             output: {
                 format: "cjs",
                 sourcemap: true,
-                chunkFileNames: "chunks/[name].js",
+                entryFileNames: "server.js",
+                chunkFileNames: "chunks/server-[name].js",
+                dir: "packages/vscode-extension/dist",
+                manualChunks: chunkNameOfDependency
+            },
+            ...languageOnWarnAndExternal,
+            plugins: [nodeResolve(), commonjs(), esbuild(shippedCode)]
+        },
+
+        // vscode extension：只打包扩展宿主需要的代码
+        {
+            input: "./packages/vscode-extension/src/extension.ts",
+            output: {
+                format: "cjs",
+                sourcemap: true,
+                entryFileNames: "client.js",
+                chunkFileNames: "chunks/client-[name].js",
                 dir: "packages/vscode-extension/dist",
                 manualChunks: chunkNameOfDependency
             },
@@ -140,6 +155,18 @@ export default defineConfig(commandLineArgs => {
             plugins: [dts()],
             external: [...languageExternal, "node:fs", "node:path"]
         })
+
+        // 单独打包配置类型，避免共享 chunk 把语言服务依赖的类型一并带入
+        result.push({
+            input: "./packages/language-service/dist/temp-types/packages/language-service/src/config.d.ts",
+            output: {
+                format: "es",
+                sourcemap: false,
+                file: "./packages/language-service/dist/config.d.ts"
+            },
+            plugins: [dts()],
+            external: [...languageExternal, "node:fs", "node:path", "typescript"]
+        })
     }
 
     return result
@@ -183,6 +210,12 @@ function reloadAsRaw() {
 function chunkNameOfDependency(id) {
     const normalized = id.replaceAll("\\", "/")
     const groups = [
+        // 扩展客户端只用到 ./config 子路径，单独成 chunk，避免把整个语言服务带进激活
+        [
+            "config-entry",
+            "/packages/language-service/dist/config.js",
+            "/packages/language-service/dist/chunks/shared.js"
+        ],
         [
             "language-service",
             "/packages/language-service/",
@@ -191,6 +224,8 @@ function chunkNameOfDependency(id) {
             "/emmet/",
             "/@emmetio/"
         ],
+        // 客户端与服务端共用的小型运行时库单独成 chunk，避免客户端把服务端 chunk 拖进来
+        ["shared-runtime", "/vscode-uri/", "/vscode-languageserver-types/", "/vscode-jsonrpc/"],
         ["language-server", "/vscode-languageserver", "/vscode-jsonrpc/", "/vscode-uri/"],
         ["language-client", "/vscode-languageclient/"],
         [

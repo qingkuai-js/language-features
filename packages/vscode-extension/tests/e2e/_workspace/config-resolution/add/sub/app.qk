@@ -1,0 +1,6 @@
+<lang-js>
+    let count = 1
+</lang-js>
+
+<p>{}</p>
+<div>{count}</div>

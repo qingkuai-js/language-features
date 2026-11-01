@@ -187,6 +187,93 @@ async function waitForWorkspaceReady(timeout = 120000) {
     nodeAssert.ok(ok, "timed out waiting for language server workspace readiness")
 }
 
+/**
+ * 等待指定文件没有 Error 诊断。
+ *
+ * 反向断言必须有观察窗：诊断尚未到达时查一次就返回会假通过。
+ * - 默认容忍首次编译的瞬时错误，要求连续 stableSamples 次采样都干净
+ * - failOnAnyError 时窗口内出现任何错误立即失败
+ * - hold 时观察满 duration 才返回（配合 failOnAnyError 用于静态配置诊断这类不该有瞬态的场景）
+ */
+async function waitForNoErrors(
+    uri,
+    {
+        duration = 8000,
+        interval = 250,
+        stableSamples = 4,
+        forbidden = [],
+        hold = false,
+        failOnAnyError = false
+    } = {}
+) {
+    await waitForWorkspaceReady()
+
+    let stable = 0
+    let lastProblems = []
+    const deadline = Date.now() + duration
+    do {
+        const diagnostics = diagnosticsOf(uri)
+        lastProblems = [
+            ...diagnostics
+                .filter(diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error)
+                .map(diagnostic => diagnostic.message),
+            ...forbidden
+                .filter(fragment =>
+                    diagnostics.some(diagnostic => diagnostic.message.includes(fragment))
+                )
+                .map(fragment => `diagnostic containing "${fragment}" is not allowed`)
+        ]
+        if (lastProblems.length) {
+            if (failOnAnyError) {
+                nodeAssert.fail(`unexpected diagnostics: ${JSON.stringify(lastProblems)}`)
+            }
+            stable = 0
+        } else if (!hold && ++stable >= stableSamples) {
+            return
+        }
+        await new Promise(resolve => setTimeout(resolve, interval))
+    } while (Date.now() < deadline)
+
+    if (hold) {
+        return
+    }
+    nodeAssert.fail(
+        `error diagnostics did not clear for the observation window: ${JSON.stringify(lastProblems)}`
+    )
+}
+
+/**
+ * 等待指定片段不再出现在任何诊断里：只关心 forbidden 片段，其它诊断忽略。
+ * 用于“正向信号已经到达、旧错误应当消失”的场景，避免依赖诊断同批发布。
+ */
+async function waitForNoMatchingDiagnostics(
+    uri,
+    fragments,
+    { duration = 1200, interval = 200, stableSamples = 3 } = {}
+) {
+    await waitForWorkspaceReady()
+
+    let stable = 0
+    let lastHits = []
+    const deadline = Date.now() + duration
+    do {
+        const messages = diagnosticsOf(uri).map(diagnostic => diagnostic.message)
+        lastHits = fragments.filter(fragment =>
+            messages.some(message => message.includes(fragment))
+        )
+        if (lastHits.length === 0) {
+            if (++stable >= stableSamples) {
+                return
+            }
+        } else {
+            stable = 0
+        }
+        await new Promise(resolve => setTimeout(resolve, interval))
+    } while (Date.now() < deadline)
+
+    nodeAssert.fail(`diagnostics containing ${JSON.stringify(lastHits)} did not disappear`)
+}
+
 module.exports = {
     openFixture,
     writeFixture,
@@ -200,5 +287,7 @@ module.exports = {
     labelOf,
     completeAt,
     pollItems,
+    waitForNoErrors,
+    waitForNoMatchingDiagnostics,
     waitForWorkspaceReady
 }

@@ -1,7 +1,7 @@
 const vscode = require("vscode")
 const nodeAssert = require("node:assert")
 
-const { openFixture, eventually, diagnosticsOf } = require("../utils/helpers")
+const { openFixture, eventually, diagnosticsOf, waitForNoErrors } = require("../utils/helpers")
 
 /** 等待指定文件出现至少一个 Error 级诊断（可选限定行号），返回命中诊断 */
 async function waitForError(uri, linePredicate, message) {
@@ -16,24 +16,6 @@ async function waitForError(uri, linePredicate, message) {
             return errs
         },
         { message: message + " (did not arrive before timeout)" }
-    )
-}
-
-/** 等待指定文件错误诊断为空 */
-async function waitForClean(uri) {
-    return eventually(
-        () => {
-            const errs = diagnosticsOf(uri).filter(
-                d => d.severity === vscode.DiagnosticSeverity.Error
-            )
-            nodeAssert.strictEqual(
-                errs.length,
-                0,
-                `there should be no error diagnostics, got: ${errs.map(d => d.message)}`
-            )
-            return true
-        },
-        { message: "error diagnostics not cleared" }
     )
 }
 
@@ -52,15 +34,27 @@ describe("diagnostics/type-validation", function () {
     })
 
     it("no error when event handler types match", async function () {
+        // 先让同目录的报错样例产生诊断，确认语言服务已经在该窗口出诊断
+        const errorDoc = await openFixture("diagnostics", "type-event.qk")
+        await waitForError(errorDoc.uri, null, "type diagnostics should be active")
+
         const doc = await openFixture("diagnostics", "type-event-ok.qk")
-        await waitForClean(doc.uri)
+        await waitForNoErrors(doc.uri)
     })
 
     it("refs binding type mismatch should error (component &refCount passes string to number)", async function () {
         await openFixture("diagnostics", "refs-child.qk")
 
         const doc = await openFixture("diagnostics", "type-refs.qk")
-        await waitForError(doc.uri, null, "refs type mismatch should produce a diagnostic")
+        const errs = await waitForError(
+            doc.uri,
+            null,
+            "refs type mismatch should produce a diagnostic"
+        )
+        nodeAssert.ok(
+            errs.some(d => /assignable|number/.test(d.message)),
+            `refs mismatch should report string→number, got: ${JSON.stringify(errs.map(d => d.message))}`
+        )
     })
 
     it("member access on dom node from &handle validated against declared type", async function () {
@@ -103,9 +97,13 @@ describe("diagnostics/type-validation", function () {
     })
 
     it("correct usage of directives and bindings produces no errors", async function () {
+        // 先让同目录的报错样例产生诊断，确认语言服务已经在该窗口出诊断
+        const errorDoc = await openFixture("diagnostics", "type-event.qk")
+        await waitForError(errorDoc.uri, null, "type diagnostics should be active")
+
         await openFixture("diagnostics", "refs-child.qk")
 
         const doc = await openFixture("diagnostics", "type-clean.qk")
-        await waitForClean(doc.uri)
+        await waitForNoErrors(doc.uri)
     })
 })

@@ -1,0 +1,6 @@
+<lang-js>
+    let value = 1
+    value = "str"
+</lang-js>
+
+<div>text</div>

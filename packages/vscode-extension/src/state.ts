@@ -6,7 +6,7 @@ import * as vscode from "vscode"
 import { createLogger } from "../../../shared-util/log"
 import { isUndefined } from "../../../shared-util/assert"
 import { ProjectKind } from "../../../shared-util/constant"
-import { createConfigResolver } from "qingkuai-language-service"
+import { createConfigResolver } from "qingkuai-language-service/config"
 import { ADAPTER_FS, ADAPTER_PATH } from "../../../shared-util/constant"
 import { generatePromiseAndResolver } from "../../../shared-util/sundry"
 

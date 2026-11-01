@@ -59,6 +59,30 @@ import Component from "./Component"
 
 该属性用于配置是否在编译结果中插入解释性注释，布尔值，默认值为 `true`
 
+### extends
+
+该属性用于继承另一个 JSON 配置文件，字符串，值为目标文件路径，相对于当前配置文件所在目录解析。被继承文件的选项会先应用，当前文件的同名选项会覆盖它；继承只展开一层，被继承文件中的 `extends` 不会被继续解析。目标文件不存在或内容不是合法的 JSON 对象时，继承会被忽略并给出警告。
+
+下面示例中 `src/App.qk` 最终生效的配置为 `reactivityMode: "shallow"` 与 `whitespace: "preserve"`。
+
+`.qingkuairc`：
+
+```json
+{
+    "extends": "./config/base.json",
+    "whitespace": "preserve"
+}
+```
+
+`config/base.json`：
+
+```json
+{
+    "reactivityMode": "shallow",
+    "whitespace": "collapse"
+}
+```
+
 ---
 
 ## 格式化配置

@@ -1,7 +1,7 @@
 const vscode = require("vscode")
 const nodeAssert = require("node:assert")
 
-const { openFixture, eventually, diagnosticsOf } = require("../utils/helpers")
+const { openFixture, eventually, diagnosticsOf, waitForNoErrors } = require("../utils/helpers")
 
 describe("diagnostics/slot-type", function () {
     it("slot context accessing an undeclared member should error", async function () {
@@ -27,19 +27,6 @@ describe("diagnostics/slot-type", function () {
         await openFixture("diagnostics", "slot-child.qk")
 
         const doc = await openFixture("diagnostics", "slot-parent-good.qk")
-        await eventually(
-            () => {
-                const errs = diagnosticsOf(doc.uri).filter(
-                    d => d.severity === vscode.DiagnosticSeverity.Error
-                )
-                nodeAssert.strictEqual(
-                    errs.length,
-                    0,
-                    `correct slot context access should not error, got: ${JSON.stringify(errs.map(d => d.message))}`
-                )
-                return true
-            },
-            { message: "error diagnostic present for correct slot usage" }
-        )
+        await waitForNoErrors(doc.uri)
     })
 })
