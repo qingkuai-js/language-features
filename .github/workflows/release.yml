@@ -13,8 +13,21 @@ concurrency:
     cancel-in-progress: false
 
 jobs:
+    main-guard:
+        name: main guard
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - name: Ensure the tag commit is on main
+              run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
     language-service:
         name: qingkuai-language-service
+        needs: main-guard
         if: startsWith(github.ref_name, 'ls-v')
         runs-on: ubuntu-latest
         timeout-minutes: 30
@@ -48,6 +61,7 @@ jobs:
               run: pnpm exec tsx scripts/publish-package.ts packages/language-service
 
     mcp-server:
+        needs: main-guard
         name: qingkuai-mcp-server
         if: startsWith(github.ref_name, 'mcp-v')
         runs-on: ubuntu-latest
@@ -102,6 +116,7 @@ jobs:
                   "$GITHUB_WORKSPACE/mcp-publisher" publish
 
     extension:
+        needs: main-guard
         name: qingkuai-language-features
         if: startsWith(github.ref_name, 'ext-v')
         runs-on: ubuntu-latest
