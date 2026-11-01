@@ -1,0 +1,118 @@
+name: Release
+
+on:
+    push:
+        tags: ["ls-v*", "mcp-v*", "ext-v*"]
+
+permissions:
+    contents: write
+    id-token: write
+
+concurrency:
+    group: release-${{ github.ref_name }}
+    cancel-in-progress: false
+
+jobs:
+    language-service:
+        name: qingkuai-language-service
+        if: startsWith(github.ref_name, 'ls-v')
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Check the tag against the package version
+              run: |
+                  version=$(node -p "require('./packages/language-service/package.json').version")
+                  test "$GITHUB_REF_NAME" = "ls-v$version"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build grammars
+              working-directory: packages/vscode-extension
+              run: pnpm run build:grammars
+
+            - name: Build
+              run: pnpm run build
+
+            - name: Publish
+              run: pnpm exec tsx scripts/publish-package.ts packages/language-service
+
+    mcp-server:
+        name: qingkuai-mcp-server
+        if: startsWith(github.ref_name, 'mcp-v')
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Check the tag against the package version
+              run: |
+                  version=$(node -p "require('./packages/mcp-server/package.json').version")
+                  test "$GITHUB_REF_NAME" = "mcp-v$version"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build grammars
+              working-directory: packages/vscode-extension
+              run: pnpm run build:grammars
+
+            - name: Build
+              run: pnpm run build
+
+            - name: Publish
+              run: pnpm exec tsx scripts/publish-package.ts packages/mcp-server
+
+    extension:
+        name: qingkuai-language-features
+        if: startsWith(github.ref_name, 'ext-v')
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 2
+
+            - uses: pnpm/action-setup@v6
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+                  cache: pnpm
+
+            - name: Check the tag against the package version
+              run: |
+                  version=$(node -p "require('./packages/vscode-extension/package.json').version")
+                  test "$GITHUB_REF_NAME" = "ext-v$version"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Publish
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: pnpm exec tsx scripts/publish-extension.ts
+
+            - name: Create the GitHub release
+              env:
+                  GITHUB_TOKEN: ${{ github.token }}
+              run: pnpm exec tsx scripts/create-release.ts packages/vscode-extension

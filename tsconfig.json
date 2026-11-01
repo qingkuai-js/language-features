@@ -8,6 +8,7 @@
         "module": "Preserve",
         "skipLibCheck": true,
         "moduleResolution": "Bundler",
+        "allowImportingTsExtensions": true,
         "forceConsistentCasingInFileNames": true,
         "paths": {
             "qingkuai-language-service": ["./packages/language-service/src"],

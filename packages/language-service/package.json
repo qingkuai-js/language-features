@@ -2,6 +2,10 @@
     "name": "qingkuai-language-service",
     "license": "MIT",
     "author": "mlgq",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/qingkuai-js/language-features"
+    },
     "type": "module",
     "version": "1.0.23",
     "keywords": [
