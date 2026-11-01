@@ -12,7 +12,6 @@ export interface PackageVersion {
 }
 
 export interface ExtensionIdentity extends PackageVersion {
-    displayName: string
     publisher: string
 }
 

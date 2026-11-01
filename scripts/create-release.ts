@@ -36,12 +36,12 @@ async function main(): Promise<void> {
     }
 
     const raw = nodeFs.readFileSync(nodePath.join(ROOT, dir, "package.json"), "utf-8")
-    const { displayName, name, publisher, version } = JSON.parse(raw) as ExtensionIdentity
+    const { name, publisher, version } = JSON.parse(raw) as ExtensionIdentity
     const marketLink = `${MARKETPLACE}${publisher}.${name}`
 
     const payload: ReleaseRequest = {
         tag_name: tag,
-        name: `${displayName} VS Code extension v${version}`,
+        name: `VS Code Extension v${version}`,
         body: [`[${displayName} on the VS Code Marketplace](${marketLink})`, changelogNotes()]
             .filter(Boolean)
             .join("\n\n"),
