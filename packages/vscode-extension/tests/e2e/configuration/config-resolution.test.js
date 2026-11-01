@@ -131,25 +131,45 @@ describe("configuration/config-resolution", function () {
         }
     })
 
-    it("applies extends only one level deep", async function () {
-        const doc = await openFixture(
-            "config-resolution",
-            "extends-single",
-            "conf",
-            "src",
-            "app.qk"
-        )
-        await eventually(() => {
-            const messages = diagnosticsOf(doc.uri)
-                .filter(diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error)
-                .map(diagnostic => diagnostic.message)
-            nodeAssert.ok(
-                messages.some(message => message.includes(EMPTY_INTERPOLATION_HINT)),
-                `the component should be compiled, got: ${JSON.stringify(messages)}`
+    it("follows the whole extends chain", async function () {
+        const doc = await openFixture("config-resolution", "extends-chain", "conf", "src", "app.qk")
+        // requireReactivityMark 只出现在第二条继承链上，命中它说明更远的祖先也被读取；
+        // allowConstReactive 来自更近的一层，覆盖了远处祖先的同名项
+        // requireReactivityMark only exists further up the chain, so seeing it proves the
+        // ancestor was read; allowConstReactive comes from the nearer layer and wins
+        await waitForError(doc.uri, MARK_REQUIRED_HINT)
+        await waitForNoMatchingDiagnostics(doc.uri, [CONST_REACTIVE_HINT])
+    })
+
+    it("cuts an extends chain that points back to a visited file", async function () {
+        const warnings = []
+        const originalShowWarningMessage = vscode.window.showWarningMessage
+        vscode.window.showWarningMessage = message => {
+            warnings.push(message)
+            return Promise.resolve(undefined)
+        }
+
+        try {
+            const doc = await openFixture(
+                "config-resolution",
+                "extends-cycle",
+                "conf",
+                "src",
+                "app.qk"
             )
-            return true
-        })
-        await waitForNoMatchingDiagnostics(doc.uri, [CONST_REACTIVE_HINT, MARK_REQUIRED_HINT])
+            // 链条被截断后仍应拿到已读取层的配置，而不是整份配置失效
+            // Cutting the chain must keep the layers already read, not drop the config
+            await waitForError(doc.uri, MARK_REQUIRED_HINT)
+            await eventually(() => {
+                nodeAssert.ok(
+                    warnings.some(message => message.includes("Circular")),
+                    `expected a circular extends warning, got: ${JSON.stringify(warnings)}`
+                )
+                return true
+            })
+        } finally {
+            vscode.window.showWarningMessage = originalShowWarningMessage
+        }
     })
 
     it("reports an unparsable config through an error message", async function () {

@@ -18,7 +18,7 @@ The runtime configuration is modified per directory through the `.qingkuairc` fi
 | `resolveImportExtension` | boolean | `true` | Allows omitting `.qk` in imports: `import Component from "./Component"` |
 | `allowConstReactive` | boolean | `true` | when `false`, variables declared in constant declarations are not inferred as having reactivity, and explicitly marking a constant declaration with `reactive`/`shallow` raises compile error 1070 |
 | `interpretiveComments` | boolean | `true` | Inserts interpretive comments into the compilation result |
-| `extends` | string | — | Inherits another configuration file: resolved relative to the current file, one level only; the current file overrides inherited options, and an invalid target is ignored with a warning |
+| `extends` | string | — | Inherits another configuration file: resolved relative to the current file, following the chain as in `tsconfig.json`; options are applied from the farthest ancestor to the current file, an already visited file cuts the chain with a warning, and an invalid target ends the chain with a warning |
 
 ## Formatting configuration (.prettierrc)
 
@@ -32,20 +32,22 @@ The runtime configuration is modified per directory through the `.qingkuairc` fi
 ## Rules
 
 1. Nearest `.qingkuairc` wins: a component picks up the config file in its own directory first, then walks up parents.
-2. `extends` is one level deep: options from the inherited file are applied first and overridden by the current file; a missing or invalid target is ignored with a warning.
+2. `extends` chains like `tsconfig.json`: options are applied from the farthest ancestor to the current file; a chain pointing back to a visited file is cut off, and a missing or invalid target ends the chain, both with a warning.
 3. All runtime options have defaults; a project works out of the box with no config file.
 4. Formatting is implemented by `prettier-plugin-qingkuai`; standard Prettier options (`tabWidth`, `printWidth`, ...) apply as usual.
 
 ## Examples
 
-```json
+```jsonc
+// .qingkuairc
 {
     "reactivityMode": "shallow",
     "whitespace": "preserve"
 }
 ```
 
-```json
+```jsonc
+// .prettierrc
 {
     "tabWidth": 4,
     "printWidth": 80,

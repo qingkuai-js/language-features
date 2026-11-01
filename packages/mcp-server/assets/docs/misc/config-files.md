@@ -61,25 +61,36 @@ This property configures whether interpretive comments are inserted into compila
 
 ### extends
 
-This property configures the configuration to inherit another JSON configuration file. It is a string whose value is the target file path, resolved relative to the directory of the current configuration file. Options from the inherited file are applied first, and options in the current file override them. Inheritance is only one level deep: an `extends` field inside the inherited file is not followed. If the target file is missing or its content is not a valid JSON object, inheritance is ignored and a warning is reported.
+This property configures the configuration to inherit another JSON configuration file. It is a string whose value is the target file path, resolved relative to the directory of the current configuration file.
 
-In the following example, the configuration in effect for `src/App.qk` is `reactivityMode: "shallow"` and `whitespace: "preserve"`.
+- The chain is followed as in `tsconfig.json`: the inherited file may extend another file, and options are applied from the farthest ancestor to the current file, so the closer the file, the higher its priority.
+- A chain that points back to a file already visited is cut off with a warning.
+- If a target file is missing or its content is not a valid JSON object, the rest of the chain is ignored and a warning is reported.
 
-`.qingkuairc`:
+Given a `.qingkuairc` file like this:
 
 ```json
 {
-    "extends": "./config/base.json",
+    "extends": "./base.json",
     "whitespace": "preserve"
 }
 ```
 
-`config/base.json`:
+and a `base.json` with the following content:
 
 ```json
 {
     "reactivityMode": "shallow",
     "whitespace": "collapse"
+}
+```
+
+the configuration in effect is:
+
+```json
+{
+    "reactivityMode": "shallow",
+    "whitespace": "preserve"
 }
 ```
 

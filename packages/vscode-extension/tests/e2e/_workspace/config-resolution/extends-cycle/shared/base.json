@@ -1,0 +1,4 @@
+{
+    "extends": "../conf/.qingkuairc",
+    "requireReactivityMark": true
+}

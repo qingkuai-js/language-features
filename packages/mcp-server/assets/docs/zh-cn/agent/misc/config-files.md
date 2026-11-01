@@ -32,20 +32,22 @@ keywords: ["config", ".qingkuairc", "prettierrc", "reactivityMode", "whitespace"
 ## 规则
 
 1. 最近的 `.qingkuairc` 生效：组件优先采用其所在目录的配置文件，其次向上遍历父目录。
-2. `extends` 只展开一层：被继承文件的选项先应用，当前文件覆盖同名项；目标缺失或内容非法时忽略继承并给出警告。
+2. `extends` 与 `tsconfig.json` 一样支持继承链：选项从最远的祖先依次应用到当前文件；链回到已读取过的文件时截断，目标缺失或内容非法时链条在该处结束，两种情况都给出警告。
 3. 所有运行时选项都有默认值；没有配置文件的项目开箱即用。
 4. 格式化由 `prettier-plugin-qingkuai` 实现；标准 Prettier 选项（`tabWidth`、`printWidth` 等）照常生效。
 
 ## 示例
 
-```json
+```jsonc
+// .qingkuairc
 {
     "reactivityMode": "shallow",
     "whitespace": "preserve"
 }
 ```
 
-```json
+```jsonc
+// .prettierrc
 {
     "tabWidth": 4,
     "printWidth": 80,

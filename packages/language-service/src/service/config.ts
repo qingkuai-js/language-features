@@ -120,66 +120,84 @@ class ConfigResolver {
         files: string[],
         onmessage?: HandleConfigParsingMessage
     ) {
-        let parsed: unknown
-        try {
-            parsed = JSON.parse(this.fs.read(configPath))
-        } catch {
-            onmessage?.(configPath, {
-                kind: ConfigParsingMessageKind.Error,
-                value: "The configuration file content is not valid JSON."
-            })
-            return this.cacheAndReturn(dir, { ...this.defaultConfig }, files, configPath)
-        }
+        let isEntry = true
+        let currentPath = configPath
 
-        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            onmessage?.(configPath, {
-                kind: ConfigParsingMessageKind.Error,
-                value: "The configuration file content must be a JSON object."
-            })
-            return this.cacheAndReturn(dir, { ...this.defaultConfig }, files, configPath)
-        }
+        const visited = new Set<string>()
+        const layers: Partial<QingkuaiConfiguration>[] = []
 
-        const { extends: extendsField, ...config } = parsed as ConfigFileContent
-        let inherited: Partial<QingkuaiConfiguration> = {}
+        while (true) {
+            const key = this.normalize(currentPath)
+            if (visited.has(key)) {
+                onmessage?.(currentPath, {
+                    kind: ConfigParsingMessageKind.Warning,
+                    value: `Circular "extends" chain detected, the file is ignored.`
+                })
+                break
+            }
+            visited.add(key)
 
-        if (typeof extendsField === "string" && extendsField !== "") {
-            const extendsPath = this.path.resolve(this.path.dir(configPath), extendsField)
+            let parsed: unknown
+            try {
+                parsed = JSON.parse(this.fs.read(currentPath))
+            } catch {
+                onmessage?.(currentPath, {
+                    kind: isEntry
+                        ? ConfigParsingMessageKind.Error
+                        : ConfigParsingMessageKind.Warning,
+                    value: isEntry
+                        ? "The configuration file content is not valid JSON."
+                        : `The configuration file content referenced by "extends" field is not valid JSON.`
+                })
+                break
+            }
+
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+                onmessage?.(currentPath, {
+                    kind: isEntry
+                        ? ConfigParsingMessageKind.Error
+                        : ConfigParsingMessageKind.Warning,
+                    value: isEntry
+                        ? "The configuration file content must be a JSON object."
+                        : `The configuration file content referenced by "extends" field must be a JSON object.`
+                })
+                break
+            }
+
+            const { extends: extendsField, ...layer } = parsed as ConfigFileContent
+            layers.push(layer)
+
+            if (extendsField === undefined) {
+                break
+            }
+            if (typeof extendsField !== "string" || extendsField === "") {
+                onmessage?.(currentPath, {
+                    kind: ConfigParsingMessageKind.Warning,
+                    value: "Invalid extends field, ensure it's a valid file path."
+                })
+                break
+            }
+
+            const extendsPath = this.path.resolve(this.path.dir(currentPath), extendsField)
             files.push(extendsPath)
-
             if (!this.fs.exist(extendsPath)) {
-                onmessage?.(configPath, {
+                onmessage?.(currentPath, {
                     kind: ConfigParsingMessageKind.Warning,
                     value: `The file referenced by "extends" does not exist.`
                 })
-            } else {
-                try {
-                    const extended: unknown = JSON.parse(this.fs.read(extendsPath))
-                    if (!extended || typeof extended !== "object" || Array.isArray(extended)) {
-                        throw new Error()
-                    }
-
-                    const { extends: _, ...rest } = extended as ConfigFileContent
-                    inherited = rest
-                } catch {
-                    onmessage?.(configPath, {
-                        kind: ConfigParsingMessageKind.Warning,
-                        value: `The configuration file content referenced by "extends" field is not valid JSON.`
-                    })
-                }
+                break
             }
-        } else if (extendsField !== undefined) {
-            onmessage?.(configPath, {
-                kind: ConfigParsingMessageKind.Warning,
-                value: "Invalid extends field, ensure it's a valid file path."
-            })
+
+            currentPath = extendsPath
+            isEntry = false
         }
 
-        return this.cacheAndReturn(
-            dir,
-            { ...this.defaultConfig, ...inherited, ...config },
-            files,
-            configPath
-        )
+        // 收集顺序是从当前文件到最远祖先，倒序合并才能让越远的祖先优先级越低
+        const config: QingkuaiConfiguration = { ...this.defaultConfig }
+        for (let i = layers.length - 1; i >= 0; i--) {
+            Object.assign(config, layers[i])
+        }
+        return this.cacheAndReturn(dir, config, files, configPath)
     }
 
     private cacheAndReturn(

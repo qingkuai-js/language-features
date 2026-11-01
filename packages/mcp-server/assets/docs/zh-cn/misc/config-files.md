@@ -61,25 +61,36 @@ import Component from "./Component"
 
 ### extends
 
-该属性用于继承另一个 JSON 配置文件，字符串，值为目标文件路径，相对于当前配置文件所在目录解析。被继承文件的选项会先应用，当前文件的同名选项会覆盖它；继承只展开一层，被继承文件中的 `extends` 不会被继续解析。目标文件不存在或内容不是合法的 JSON 对象时，继承会被忽略并给出警告。
+该属性用于继承另一个 JSON 配置文件，字符串，值为目标文件路径，相对于当前配置文件所在目录解析。
 
-下面示例中 `src/App.qk` 最终生效的配置为 `reactivityMode: "shallow"` 与 `whitespace: "preserve"`。
+- 继承链与 `tsconfig.json` 的 `extends` 一致：被继承文件可以继续继承，选项从最远的祖先依次应用到当前文件，越靠近当前文件优先级越高；
+- 链回到已读取过的文件时会在该处截断并给出警告；
+- 某一层目标文件不存在或内容不是合法的 JSON 对象时，链条余下部分被忽略并给出警告。
 
-`.qingkuairc`：
+假设有一份 `.qingkuairc` 配置文件：
 
 ```json
 {
-    "extends": "./config/base.json",
+    "extends": "./base.json",
     "whitespace": "preserve"
 }
 ```
 
-`config/base.json`：
+其中 `base.json` 内容如下：
 
 ```json
 {
     "reactivityMode": "shallow",
     "whitespace": "collapse"
+}
+```
+
+那么实际应用的配置如下：
+
+```json
+{
+    "reactivityMode": "shallow",
+    "whitespace": "preserve"
 }
 ```
 
