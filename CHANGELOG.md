@@ -1,3 +1,19 @@
+# 2026-11-01
+
+> packages version: vscode-extension@1.0.40, language-service@1.0.24, mcp-server@1.0.12
+
+features:
+
+1. followed the whole `extends` chain as `tsconfig.json` does: a config file inherited by another config file is applied too, options are applied from the farthest ancestor to the current file, a chain pointing back to a file already visited is cut off with a warning, and a missing or invalid target ends the chain while the layers already read stay in effect ([b2423c1](https://github.com/qingkuai-js/language-tools/commit/b2423c1))
+
+docs:
+
+1. documented the `extends` chain in the bundled MCP server docs, for both bodies and agent digests in English and Chinese ([b2423c1](https://github.com/qingkuai-js/language-tools/commit/b2423c1))
+
+tests:
+
+1. covered a three-level `extends` chain and a chain that points back to a visited file in the configuration e2e cases ([b2423c1](https://github.com/qingkuai-js/language-tools/commit/b2423c1))
+
 # 2026-10-31
 
 > packages version: vscode-extension@1.0.39, language-service@1.0.23, mcp-server@1.0.11

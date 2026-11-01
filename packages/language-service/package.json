@@ -7,7 +7,7 @@
         "url": "https://github.com/qingkuai-js/language-features"
     },
     "type": "module",
-    "version": "1.0.23",
+    "version": "1.0.24",
     "keywords": [
         "qingkuai",
         "language-service"
