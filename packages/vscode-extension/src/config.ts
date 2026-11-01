@@ -109,8 +109,8 @@ export function getTypescriptConfig(uri: vscode.Uri) {
 }
 
 export async function getPrettierConfig(uri: vscode.Uri) {
-    const byVscode = vscode.workspace.getConfiguration("prettier")
     const { default: prettier } = await import("prettier")
+    const byVscode = vscode.workspace.getConfiguration("prettier")
     const byConfigFile = await prettier.resolveConfig(uri.fsPath, {
         useCache: false,
         editorconfig: true

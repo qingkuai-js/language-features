@@ -285,7 +285,8 @@ function assertLazyPrettierImport(stageRoot) {
     }
 }
 
-function runMcp(entry, workDir, env, tools) {    return new Promise(resolve => {
+function runMcp(entry, workDir, env, tools) {
+    return new Promise(resolve => {
         const child = nodeChildProcess.spawn(process.execPath, [entry], {
             cwd: workDir,
             env,

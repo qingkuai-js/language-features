@@ -1,3 +1,28 @@
+# 2026-10-31
+
+> packages version: vscode-extension@1.0.39, language-service@1.0.23, mcp-server@1.0.11
+
+features:
+
+1. inherited configuration for the language service: the nearest `.qingkuairc` is searched up the parent directories and `extends` is supported, resolved relative to the current file, one level only, overridden by the current file and ignored with a warning when the target is missing or not a valid JSON object ([8403468](https://github.com/qingkuai-js/language-tools/commit/8403468))
+
+fixes:
+
+1. refreshed configuration caches when a `.qingkuairc` or its `extends` target changes: the language service tracks the files behind each cache entry and reports the affected configuration directories, and the client watches `extends` targets so an edit re-resolves in place, clearing everything when several directories are affected ([4d9cec3](https://github.com/qingkuai-js/language-tools/commit/4d9cec3))
+
+docs:
+
+1. documented the `extends` option and its rules in the bundled MCP server docs, for both bodies and agent digests in English and Chinese ([f7a645b](https://github.com/qingkuai-js/language-tools/commit/f7a645b))
+
+tests:
+
+1. covered configuration resolution (inheritance, single level, overriding, invalid targets, recovery after create, change and delete), `tsconfig` without TS inputs and `jsconfig` `checkJs`, added `waitForNoErrors` and `waitForNoMatchingDiagnostics` helpers so "no error" expectations observe a window instead of checking once, and made the runner fail on `.only`, empty windows and vacuous clean checks ([8403468](https://github.com/qingkuai-js/language-tools/commit/8403468), [f7a645b](https://github.com/qingkuai-js/language-tools/commit/f7a645b), [3d9402c](https://github.com/qingkuai-js/language-tools/commit/3d9402c), [cf6aafc](https://github.com/qingkuai-js/language-tools/commit/cf6aafc), [56bae32](https://github.com/qingkuai-js/language-tools/commit/56bae32), [0231de4](https://github.com/qingkuai-js/language-tools/commit/0231de4), [16524a1](https://github.com/qingkuai-js/language-tools/commit/16524a1), [ff7cdbf](https://github.com/qingkuai-js/language-tools/commit/ff7cdbf), [20cf4ac](https://github.com/qingkuai-js/language-tools/commit/20cf4ac))
+2. added payload checks: the `./config` entry must load standalone without bare package imports and the packed client must keep prettier as a dynamic import, both enforced on macOS and Windows in CI ([f7a645b](https://github.com/qingkuai-js/language-tools/commit/f7a645b), [cbddd2b](https://github.com/qingkuai-js/language-tools/commit/cbddd2b), [3d775f4](https://github.com/qingkuai-js/language-tools/commit/3d775f4))
+
+others:
+
+1. cut the extension activation cost by loading prettier on demand, importing only the `config` subpath, and building the language server and the extension host as separate bundles with a dedicated config chunk ([1e3601a](https://github.com/qingkuai-js/language-tools/commit/1e3601a))
+
 # 2026-10-29
 
 > packages version: mcp-server@1.0.10, language-service@1.0.22
