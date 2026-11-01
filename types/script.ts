@@ -11,6 +11,11 @@ export interface PackageVersion {
     version: string
 }
 
+export interface ServerManifest {
+    version: string
+    packages?: { version: string }[]
+}
+
 export interface MinimalManifest {
     dependencies?: Record<string, string>
     devDependencies?: Record<string, string>

@@ -81,6 +81,26 @@ jobs:
             - name: Publish
               run: pnpm exec tsx scripts/publish-package.ts packages/mcp-server
 
+            - name: Sync server.json version
+              run: pnpm exec tsx scripts/sync-server-json.ts
+
+            - name: Install mcp-publisher
+              run: |
+                  curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.7.2/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+            - name: Publish to MCP registry
+              working-directory: packages/mcp-server
+              run: |
+                  version=$(node -p "require('./package.json').version")
+                  name=$(node -p "require('./server.json').name")
+                  status=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.modelcontextprotocol.io/v0/servers/${name//\//%2F}/versions/$version")
+                  if [ "$status" = "200" ]; then
+                      echo "$name@$version is already published"
+                      exit 0
+                  fi
+                  "$GITHUB_WORKSPACE/mcp-publisher" login github-oidc
+                  "$GITHUB_WORKSPACE/mcp-publisher" publish
+
     extension:
         name: qingkuai-language-features
         if: startsWith(github.ref_name, 'ext-v')
